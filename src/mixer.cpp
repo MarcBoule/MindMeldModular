@@ -28,10 +28,10 @@ struct Mixer : Module {
 	// none
 	
 	// Need to save, with reset
-	// none
+	char trackLabels[4 * 16 + 1];// 4 chars per track, null terminate the end of the 16th track only
 	
 	// No need to save, with reset
-	// noone
+	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -47,9 +47,11 @@ struct Mixer : Module {
 
 	
 	void onReset() override {
+		snprintf(trackLabels, 4 * 16 + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-");		
 		resetNonJson();
 	}
 	void resetNonJson() {
+		resetTrackLabelRequest = 0;// setting to 0 will trigger 1, 2, 3 etc on each video frame afterwards
 	}
 
 
@@ -60,11 +62,18 @@ struct Mixer : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 
+		// text
+		json_object_set_new(rootJ, "text", json_string(trackLabels));
+
 		return rootJ;
 	}
 
 
 	void dataFromJson(json_t *rootJ) override {
+		// text
+		json_t *textJ = json_object_get(rootJ, "text");
+		if (textJ)
+			snprintf(trackLabels, 4 * 16 + 1, json_string_value(textJ));
 		
 		resetNonJson();
 	}
@@ -106,9 +115,9 @@ struct TrackDisplay : LedDisplayTextField {
 	int index;
 	
 	TrackDisplay() {
-		box.size = Vec(37, 16);
+		box.size = Vec(38, 16);// 37 no good, will overflow when zoom out too much
 		textOffset = Vec(3.0f, -2.0f);
-		text = "-13-";
+		text = "-13-";// TODO: in case module is null, need to set properly
 	};
 	void draw(const DrawArgs &args) override {
 		if (cursor > 4) {
@@ -122,8 +131,8 @@ struct TrackDisplay : LedDisplayTextField {
 
 
 struct MixerWidget : ModuleWidget {
-	TrackDisplay *textField;
-	
+	TrackDisplay* trackDisplays[16];
+	unsigned int trackLabelIndexToPush = 0;
 
 	MixerWidget(Mixer *module) {
 		setModule(module);
@@ -132,30 +141,42 @@ struct MixerWidget : ModuleWidget {
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Mixer.svg")));
 		
 		// Track label master
-		addChild(textField = createLedDisplayTextField<TrackDisplay>(Vec(30, 17), 0));
+		for (int i = 0; i < 16; i++) {
+			addChild(trackDisplays[i] = createLedDisplayTextField<TrackDisplay>(Vec(30 + 44 * i, 17), i));
+		}
 
 		// Knob with arc effect
 		addParam(createDynamicParamCentered<DynSmallKnob>(Vec(100, 100), module, Mixer::KNOB_PARAM, NULL));
 	}
 	
-	json_t *toJson() override {
-		json_t *rootJ = ModuleWidget::toJson();
-
-		// text
-		json_object_set_new(rootJ, "text", json_string(textField->text.c_str()));
-
-		return rootJ;
+	void step() override {
+		Mixer* moduleM = (Mixer*)module;
+		if (moduleM) {
+			int trackLabelIndexToPull = moduleM->resetTrackLabelRequest;
+			if (trackLabelIndexToPull >= 0) {// pull from module
+				trackDisplays[trackLabelIndexToPull]->text = std::string(&(moduleM->trackLabels[trackLabelIndexToPull * 4]), 4);
+				moduleM->resetTrackLabelRequest++;
+				if (moduleM->resetTrackLabelRequest >= 16) {
+					moduleM->resetTrackLabelRequest = -1;// all done pulling
+				}
+			}
+			else {// push to module
+				int unsigned i = 0;
+				for (; i < trackDisplays[trackLabelIndexToPush]->text.length(); i++) {
+					moduleM->trackLabels[trackLabelIndexToPush * 4 + i] = trackDisplays[trackLabelIndexToPush]->text[i];
+				}
+				for (; i < 4; i++) {
+					moduleM->trackLabels[trackLabelIndexToPush * 4 + i] = ' ';
+				}
+				trackLabelIndexToPush++;
+				if (trackLabelIndexToPush >= 16) {
+					trackLabelIndexToPush = 0;
+				}
+			}
+			
+		}
+		Widget::step();
 	}
-
-	void fromJson(json_t *rootJ) override {
-		ModuleWidget::fromJson(rootJ);
-
-		// text
-		json_t *textJ = json_object_get(rootJ, "text");
-		if (textJ)
-			textField->text = json_string_value(textJ);
-	}
-
 };
 
 Model *modelMixer = createModel<Mixer, MixerWidget>("Mixer");
