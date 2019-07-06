@@ -104,7 +104,7 @@ void DynamicSVGKnob::draw(const DrawArgs &args) {
 			nvgBeginPath(args.vg);
 			nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
 			nvgStrokeWidth(args.vg, 1.5f);// arc thickness
-			nvgStrokeColor(args.vg, nvgRGB(255, 245, 0));
+			nvgStrokeColor(args.vg, nvgRGB(255, 245, 0));// arc color
 			nvgStroke(args.vg);
 		}
 	}
