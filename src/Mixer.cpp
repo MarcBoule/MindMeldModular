@@ -106,18 +106,17 @@ struct Mixer : Module {
 template <class TWidget>
 TWidget* createLedDisplayTextField(Vec pos, int index) {
 	TWidget *dynWidget = createWidget<TWidget>(pos);
-	dynWidget->index = index;
+	static char buf[5];
+	snprintf(buf, 5, "-%02u-", (unsigned)index);
+	dynWidget->text = std::string(buf);
 	return dynWidget;
 }
 
 
 struct TrackDisplay : LedDisplayTextField {
-	int index;
-	
 	TrackDisplay() {
 		box.size = Vec(38, 16);// 37 no good, will overflow when zoom out too much
 		textOffset = Vec(3.0f, -2.0f);
-		text = "-13-";// TODO: in case module is null, need to set properly
 	};
 	void draw(const DrawArgs &args) override {
 		if (cursor > 4) {
@@ -125,7 +124,31 @@ struct TrackDisplay : LedDisplayTextField {
 			cursor = 4;
 			selection = 4;
 		}
-		LedDisplayTextField::draw(args);
+		
+		//LedDisplayTextField::draw(args); do this manually since background should be in panel svg for better performance
+		// -------
+		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+		// Background:
+		// nvgBeginPath(args.vg);
+		// nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 5.0);
+		// nvgFillColor(args.vg, nvgRGB(0x00, 0x00, 0x00));
+		// nvgFill(args.vg);
+		// Text:
+		if (font->handle >= 0) {
+			bndSetFont(font->handle);
+
+			NVGcolor highlightColor = color;
+			highlightColor.a = 0.5;
+			int begin = std::min(cursor, selection);
+			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
+			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
+				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
+				-1, color, 12, text.c_str(), highlightColor, begin, end);
+
+			bndSetFont(APP->window->uiFont->handle);
+		}
+		nvgResetScissor(args.vg);
+		// -------
 	}
 };
 
@@ -153,7 +176,7 @@ struct MixerWidget : ModuleWidget {
 		Mixer* moduleM = (Mixer*)module;
 		if (moduleM) {
 			int trackLabelIndexToPull = moduleM->resetTrackLabelRequest;
-			if (trackLabelIndexToPull >= 0) {// pull from module
+			if (trackLabelIndexToPull >= 0) {// pull request from module
 				trackDisplays[trackLabelIndexToPull]->text = std::string(&(moduleM->trackLabels[trackLabelIndexToPull * 4]), 4);
 				moduleM->resetTrackLabelRequest++;
 				if (moduleM->resetTrackLabelRequest >= 16) {
@@ -162,11 +185,9 @@ struct MixerWidget : ModuleWidget {
 			}
 			else {// push to module
 				int unsigned i = 0;
+				*((uint32_t*)(&(moduleM->trackLabels[trackLabelIndexToPush * 4]))) = 0x20202020;
 				for (; i < trackDisplays[trackLabelIndexToPush]->text.length(); i++) {
 					moduleM->trackLabels[trackLabelIndexToPush * 4 + i] = trackDisplays[trackLabelIndexToPush]->text[i];
-				}
-				for (; i < 4; i++) {
-					moduleM->trackLabels[trackLabelIndexToPush * 4 + i] = ' ';
 				}
 				trackLabelIndexToPush++;
 				if (trackLabelIndexToPush >= 16) {
