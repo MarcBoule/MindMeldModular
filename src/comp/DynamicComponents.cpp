@@ -28,7 +28,7 @@ void DynamicSVGPort::step() {
         oldMode = *mode;
         fb->dirty = true;
     }
-	PortWidget::step();
+	SvgPort::step();
 }
 
 
@@ -79,24 +79,11 @@ void DynamicSVGKnob::addFrameAll(std::shared_ptr<Svg> svg) {
 
 void DynamicSVGKnob::step() {
     if(mode != NULL && *mode != oldMode) {
-        if (*mode > 0 && !frameAltName.empty() && !frameEffectName.empty()) {// JIT loading of alternate skin
+        if (*mode > 0 && !frameAltName.empty()) {// JIT loading of alternate skin
 			framesAll.push_back(APP->window->loadSvg(frameAltName));
-			effect = new SvgWidget();
-			effect->setSvg(APP->window->loadSvg(frameEffectName));
-			effect->visible = false;
-			addChild(effect);
 			frameAltName.clear();// don't reload!
-			frameEffectName.clear();// don't reload!
 		}
-        if ((*mode) == 0) {
-			setSvg(framesAll[0]);
-			if (effect != NULL)
-				effect->visible = false;
-		}
-		else {
-			setSvg(framesAll[1]);
-			effect->visible = true;
-		}
+		setSvg(framesAll[*mode]);
         oldMode = *mode;
 		fb->dirty = true;
     }
@@ -104,20 +91,21 @@ void DynamicSVGKnob::step() {
 }
 
 void DynamicSVGKnob::draw(const DrawArgs &args) {
+	static const float a0 = 3.0f * M_PI / 2.0f;
+	
 	SvgKnob::draw(args);
-	
 	if (paramQuantity) {
-		Vec cVec = box.size.div(2.0f);
-		float r = box.size.x / 2.0f + 3.0f;
-		float a0 = 3.0f * M_PI / 2.0f;
-		float a1 = math::rescale(paramQuantity->getScaledValue(), 0.f, 1.f, minAngle, maxAngle) + a0;
-		int dir = a0 < a1 ? NVG_CW : NVG_CCW;
-	
-		NVGcolor visColor = nvgRGB(255, 245, 0);
-		nvgBeginPath(args.vg);
-		nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-		nvgStrokeWidth(args.vg, 1.5f);
-		nvgStrokeColor(args.vg, visColor);
-		nvgStroke(args.vg);
+		float normalizedParam = paramQuantity->getScaledValue();
+		if (normalizedParam != 0.5f) {
+			float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
+			Vec cVec = box.size.div(2.0f);
+			float r = box.size.x / 2.0f + 3.0f;// arc radius
+			int dir = a0 < a1 ? NVG_CW : NVG_CCW;
+			nvgBeginPath(args.vg);
+			nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
+			nvgStrokeWidth(args.vg, 1.5f);// arc thickness
+			nvgStrokeColor(args.vg, nvgRGB(255, 245, 0));
+			nvgStroke(args.vg);
+		}
 	}
 }

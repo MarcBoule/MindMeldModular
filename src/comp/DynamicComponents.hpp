@@ -63,7 +63,7 @@ struct DynamicSVGPort : SvgPort {
 
 struct DynPort : DynamicSVGPort {
 	DynPort() {
-		//addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/PJ301M.svg")));
+		// addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/PJ301M.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/PJ301M.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/PJ301M.svg"));
 		shadow->blurRadius = 1.0f;
@@ -104,13 +104,10 @@ struct DynamicSVGKnob : SvgKnob {
     int* mode = NULL;
     int oldMode = -1;
 	std::vector<std::shared_ptr<Svg>> framesAll;
-	SvgWidget* effect = NULL;
 	std::string frameAltName;
-	std::string frameEffectName;
 
 	void addFrameAll(std::shared_ptr<Svg> svg);
     void addFrameAlt(std::string filename) {frameAltName = filename;}	
-	void addFrameEffect(std::string filename) {frameEffectName = filename;}	
     void step() override;
 	void draw(const DrawArgs &args) override;
 };
@@ -138,9 +135,8 @@ struct DynSmallKnob : DynKnob {
 	DynSmallKnob() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/RoundSmallBlackKnob.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
-		//addFrameEffect(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnobEffects.svg"));		
-		//shadow->blurRadius = box.size.y * blurRadiusRatio;
-		shadow->opacity = 0.0;
+		shadow->blurRadius = box.size.y * blurRadiusRatio;
+		// shadow->opacity = 0.1;
 		// shadow->box.pos = Vec(0.0, box.size.y * 0.15);
 	}
 };
