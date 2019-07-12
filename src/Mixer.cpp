@@ -11,7 +11,7 @@
 
 struct Mixer : Module {
 	enum ParamIds {
-		KNOB_PARAM,
+		ENUMS(PAN_PARAMS, 16),
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -40,7 +40,11 @@ struct Mixer : Module {
 	Mixer() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
-		configParam(KNOB_PARAM, 0.0f, 1.0f, 0.5f, "Knob");
+		char strBuf[32];
+		for (int i = 0; i < 16; i++) {
+			snprintf(strBuf, 32, "Pan knob channel #%i", i + 1);
+			configParam(PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf);
+		}
 		
 		onReset();
 	}
@@ -105,7 +109,7 @@ struct Mixer : Module {
 
 template <class TWidget>
 TWidget* createLedDisplayTextField(Vec pos, int index) {
-	TWidget *dynWidget = createWidget<TWidget>(pos);
+	TWidget *dynWidget = createWidgetCentered<TWidget>(pos);
 	static char buf[5];
 	snprintf(buf, 5, "-%02u-", (unsigned)index);
 	dynWidget->text = std::string(buf);
@@ -116,7 +120,7 @@ TWidget* createLedDisplayTextField(Vec pos, int index) {
 struct TrackDisplay : LedDisplayTextField {
 	TrackDisplay() {
 		box.size = Vec(38, 16);// 37 no good, will overflow when zoom out too much
-		textOffset = Vec(3.0f, -2.0f);
+		textOffset = Vec(3.0f, -2.8f);
 	};
 	void draw(const DrawArgs &args) override {
 		if (cursor > 4) {
@@ -161,15 +165,18 @@ struct MixerWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Mixer.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster-jr.svg")));
 		
-		// Track label master
+		// Track labels
 		for (int i = 0; i < 16; i++) {
-			addChild(trackDisplays[i] = createLedDisplayTextField<TrackDisplay>(Vec(30 + 44 * i, 17), i));
+			addChild(trackDisplays[i] = createLedDisplayTextField<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i, 4.2)), i));
 		}
 
-		// Knob with arc effect
-		addParam(createDynamicParamCentered<DynSmallKnob>(Vec(100, 100), module, Mixer::KNOB_PARAM, NULL));
+		// Pan knobs
+		// Track labels
+		for (int i = 0; i < 16; i++) {
+			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51)), module, Mixer::PAN_PARAMS + i, NULL));
+		}
 	}
 	
 	void step() override {

@@ -133,7 +133,7 @@ struct DynKnob : DynamicSVGKnob {
 };
 struct DynSmallKnob : DynKnob {
 	DynSmallKnob() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/RoundSmallBlackKnob.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		shadow->blurRadius = box.size.y * blurRadiusRatio;
 		// shadow->opacity = 0.1;
