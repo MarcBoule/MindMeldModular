@@ -78,6 +78,18 @@ struct Mixer : Module {
 		json_t *textJ = json_object_get(rootJ, "text");
 		if (textJ)
 			snprintf(trackLabels, 4 * 16 + 1, json_string_value(textJ));
+		// TODO warning on Mac on above line:
+		/*
+src/Mixer.cpp:80:38: warning: format string is not a string literal
+      (potentially insecure) [-Wformat-security]
+  ...snprintf(trackLabels, 4 * 16 + 1, json_string_value(textJ));
+                                       ^~~~~~~~~~~~~~~~~~~~~~~~
+src/Mixer.cpp:80:38: note: treat the string as an argument to avoid this
+                        snprintf(trackLabels, 4 * 16 + 1, json_string_va...
+                                                          ^
+                                                          "%s", 
+1 warning generated.
+*/		
 		
 		resetNonJson();
 	}
@@ -120,7 +132,7 @@ TWidget* createLedDisplayTextField(Vec pos, int index) {
 struct TrackDisplay : LedDisplayTextField {
 	TrackDisplay() {
 		box.size = Vec(38, 16);// 37 no good, will overflow when zoom out too much
-		textOffset = Vec(3.0f, -2.8f);
+		textOffset = Vec(3.6f, -2.2f);
 	};
 	void draw(const DrawArgs &args) override {
 		if (cursor > 4) {
