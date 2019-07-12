@@ -207,4 +207,4 @@ struct MixerWidget : ModuleWidget {
 	}
 };
 
-Model *modelMixer = createModel<Mixer, MixerWidget>("Mixer");
+Model *modelMixer = createModel<Mixer, MixerWidget>("MixMaster-jr");

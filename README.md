@@ -1,2 +1,2 @@
-# MBSB
-SBMB Modules for VCV Rack
+# Mind Meld Modular
+Mind Meld Modular - Modules for VCV Rack
