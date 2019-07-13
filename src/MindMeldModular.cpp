@@ -1,11 +1,11 @@
 //***********************************************************************************************
-//MBSB: Modules for VCV Rack by Steve Baker and Marc Boulé
+//Mind Meld Modular: Modules for VCV Rack by Steve Baker and Marc Boulé
 //
 //Based on code from the Fundamental plugins by Andrew Belt 
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
 
-#include "MBSB.hpp"
+#include "MindMeldModular.hpp"
 
 
 Plugin *pluginInstance;

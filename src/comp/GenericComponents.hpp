@@ -1,5 +1,5 @@
 //***********************************************************************************************
-//MBSB: Modules for VCV Rack by Steve Baker and Marc Boulé
+//Mind Meld Modular: Modules for VCV Rack by Steve Baker and Marc Boulé
 //
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************

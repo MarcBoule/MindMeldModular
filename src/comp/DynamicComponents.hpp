@@ -1,5 +1,5 @@
 //***********************************************************************************************
-//MBSB: Modules for VCV Rack by Steve Baker and Marc Boulé
+//Mind Meld Modular: Modules for VCV Rack by Steve Baker and Marc Boulé
 //
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
@@ -63,11 +63,10 @@ struct DynamicSVGPort : SvgPort {
 
 struct DynPort : DynamicSVGPort {
 	DynPort() {
-		// addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/PJ301M.svg")));
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/PJ301M.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/Jack.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/PJ301M.svg"));
 		shadow->blurRadius = 1.0f;
-		// shadow->opacity = 0.8;
+		shadow->opacity = 0.0f;// Turn off shadows
 	}
 };
 
@@ -112,6 +111,16 @@ struct DynamicSVGKnob : SvgKnob {
 	void draw(const DrawArgs &args) override;
 };
 
+struct DynamicSVGSlider : SvgSlider {
+    int* mode = NULL;
+    int oldMode = -1;
+	std::vector<std::shared_ptr<Svg>> framesAll;
+	std::string frameAltName;
+
+	void addFrameAll(std::shared_ptr<Svg> svg);
+    void addFrameAlt(std::string filename) {frameAltName = filename;}	
+    void step() override;
+};
 
 
 struct DynPushButton : DynamicSVGSwitch {
@@ -121,6 +130,7 @@ struct DynPushButton : DynamicSVGSwitch {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/TL1105_1.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
 	}
 };
 
@@ -129,15 +139,13 @@ struct DynKnob : DynamicSVGKnob {
 	DynKnob() {
 		minAngle = -0.83*M_PI;
 		maxAngle = 0.83*M_PI;
+		shadow->opacity = 0.0;
 	}
 };
 struct DynSmallKnob : DynKnob {
 	DynSmallKnob() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
-		shadow->blurRadius = box.size.y * blurRadiusRatio;
-		// shadow->opacity = 0.1;
-		// shadow->box.pos = Vec(0.0, box.size.y * 0.15);
 	}
 };
 struct DynSmallKnobNoRandom : DynSmallKnob {
@@ -149,6 +157,18 @@ struct DynSmallSnapKnob : DynSmallKnob {
 	}
 };
 
+
+struct DynSmallFader : DynamicSVGSlider {
+	DynSmallFader() {
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel-bg.svg")));
+		minHandlePos = Vec(0, background->box.size.y - 0.01f);// 0.01f is epsilon so handle doesn't disappear at bottom
+		background->visible = false;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel.svg")));
+		Vec margin = Vec(0.0, handle->box.size.y / 2.0f);
+		background->box.pos = margin;
+		box.size = background->box.size.plus(margin.mult(2.0f));
+	}
+};
 
 
 

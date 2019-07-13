@@ -1,5 +1,5 @@
 //***********************************************************************************************
-//MBSB: Modules for VCV Rack by Steve Baker and Marc Boulé
+//Mind Meld Modular: Modules for VCV Rack by Steve Baker and Marc Boulé
 //
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
@@ -108,4 +108,28 @@ void DynamicSVGKnob::draw(const DrawArgs &args) {
 			nvgStroke(args.vg);
 		}
 	}
+}
+
+
+
+// Dynamic SVGSlider
+
+void DynamicSVGSlider::addFrameAll(std::shared_ptr<Svg> svg) {
+    framesAll.push_back(svg);
+	if (framesAll.size() == 1) {
+		setHandleSvg(svg);
+	}
+}
+
+void DynamicSVGSlider::step() {
+    if(mode != NULL && *mode != oldMode) {
+        if (*mode > 0 && !frameAltName.empty()) {// JIT loading of alternate skin
+			framesAll.push_back(APP->window->loadSvg(frameAltName));
+			frameAltName.clear();// don't reload!
+		}
+		setHandleSvg(framesAll[*mode]);
+        oldMode = *mode;
+		fb->dirty = true;
+    }
+	SvgSlider::step();
 }
