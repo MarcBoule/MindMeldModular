@@ -121,7 +121,7 @@ src/Mixer.cpp:80:38: note: treat the string as an argument to avoid this
 
 template <class TWidget>
 TWidget* createLedDisplayTextField(Vec pos, int index) {
-	TWidget *dynWidget = createWidgetCentered<TWidget>(pos);
+	TWidget *dynWidget = createWidgetCentered<TWidget>(pos.plus(Vec(1,0)));
 	static char buf[5];
 	snprintf(buf, 5, "-%02u-", (unsigned)index);
 	dynWidget->text = std::string(buf);
@@ -132,24 +132,16 @@ TWidget* createLedDisplayTextField(Vec pos, int index) {
 struct TrackDisplay : LedDisplayTextField {
 	TrackDisplay() {
 		box.size = Vec(38, 16);// 37 no good, will overflow when zoom out too much
-		textOffset = Vec(3.6f, -2.2f);
+		textOffset = Vec(2.6f, -2.2f);
 	};
-	void draw(const DrawArgs &args) override {
+	void draw(const DrawArgs &args) override {// override and do not call LedDisplayTextField.draw() since draw manually here
 		if (cursor > 4) {
 			text.resize(4);
 			cursor = 4;
 			selection = 4;
 		}
 		
-		//LedDisplayTextField::draw(args); do this manually since background should be in panel svg for better performance
-		// -------
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		// Background:
-		// nvgBeginPath(args.vg);
-		// nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 5.0);
-		// nvgFillColor(args.vg, nvgRGB(0x00, 0x00, 0x00));
-		// nvgFill(args.vg);
-		// Text:
 		if (font->handle >= 0) {
 			bndSetFont(font->handle);
 
@@ -164,7 +156,6 @@ struct TrackDisplay : LedDisplayTextField {
 			bndSetFont(APP->window->uiFont->handle);
 		}
 		nvgResetScissor(args.vg);
-		// -------
 	}
 };
 
