@@ -123,11 +123,44 @@ struct DynamicSVGSlider : SvgSlider {
 };
 
 
-struct DynPushButton : DynamicSVGSwitch {
-	DynPushButton() {
+struct DynMuteButton : DynamicSVGSwitch {
+	DynMuteButton() {
+		momentary = false;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-on.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
+struct DynSoloButton : DynamicSVGSwitch {
+	DynSoloButton() {
+		momentary = false;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/solo-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/solo-on.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
+struct DynGroupMinusButton : DynamicSVGSwitch {
+	DynGroupMinusButton() {
 		momentary = true;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/TL1105_0.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/TL1105_1.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-minus.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-minus-active.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
+struct DynGroupPlusButton : DynamicSVGSwitch {
+	DynGroupPlusButton() {
+		momentary = true;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-plus.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-plus-active.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;

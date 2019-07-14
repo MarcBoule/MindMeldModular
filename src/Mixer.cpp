@@ -15,7 +15,13 @@ struct Mixer : Module {
 		ENUMS(GROUP_FADER_PARAMS, 4),
 		ENUMS(TRACK_PAN_PARAMS, 16),
 		ENUMS(GROUP_PAN_PARAMS, 4),
+		ENUMS(TRACK_MUTE_PARAMS, 16),
+		ENUMS(GROUP_MUTE_PARAMS, 4),
+		ENUMS(TRACK_SOLO_PARAMS, 16),
+		ENUMS(GROUP_SOLO_PARAMS, 4),
 		MAIN_FADER_PARAM,
+		ENUMS(GRP_INC_PARAMS, 16),
+		ENUMS(GRP_DEC_PARAMS, 16),
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -40,10 +46,10 @@ struct Mixer : Module {
 
 
 	// Constants
-	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling 
+	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float masterFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling 
-	static constexpr float masterFaderMaxLinearGain = 3.0f; // for example, 2.0f is +6 dB
+	static constexpr float masterFaderScalingExponent = 3.0f; 
+	static constexpr float masterFaderMaxLinearGain = 3.0f; 
 
 
 	// Need to save, no reset
@@ -64,13 +70,26 @@ struct Mixer : Module {
 		
 		char strBuf[32];
 		// Track
+		float maxTFader = std::pow(trackFaderMaxLinearGain, 1.0f / trackFaderScalingExponent);
 		for (int i = 0; i < 16; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Track #%i pan", i + 1);
 			configParam(TRACK_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Track #%i level", i + 1);
-			configParam(TRACK_FADER_PARAMS + i, 0.0f, std::pow(trackFaderMaxLinearGain, 1.0f / trackFaderScalingExponent), 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
+			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
+			// Mute
+			snprintf(strBuf, 32, "Track #%i mute", i + 1);
+			configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+			// Solo
+			snprintf(strBuf, 32, "Track #%i solo", i + 1);
+			configParam(TRACK_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+			// Group decrement
+			snprintf(strBuf, 32, "Track #%i group -", i + 1);
+			configParam(GRP_DEC_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+			// Group increment
+			snprintf(strBuf, 32, "Track #%i group +", i + 1);
+			configParam(GRP_INC_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
 		// Group
 		for (int i = 0; i < 4; i++) {
@@ -79,9 +98,16 @@ struct Mixer : Module {
 			configParam(GROUP_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
-			configParam(GROUP_FADER_PARAMS + i, 0.0f, std::pow(trackFaderMaxLinearGain, 1.0f / trackFaderScalingExponent), 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
+			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
+			// Mute
+			snprintf(strBuf, 32, "Group #%i mute", i + 1);
+			configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+			// Solo
+			snprintf(strBuf, 32, "Group #%i solo", i + 1);
+			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		configParam(MAIN_FADER_PARAM, 0.0f, std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent), 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
+		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent);
+		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		
 		onReset();
 
@@ -138,10 +164,44 @@ struct Mixer : Module {
 		
 		
 		//********** Outputs and lights **********
-		
-		
-		// outputs
-		// none
+		float mix[2] = {};
+
+		// Tracks
+		for (int i = 0; i < 16; i++) {
+			if (inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0].isConnected()) {
+				// Get input
+				float in = inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0].getVoltage();
+
+				// Apply fader gain
+				float gain = std::pow(params[TRACK_FADER_PARAMS + i].getValue(), trackFaderScalingExponent);
+				in *= gain;
+
+				// Apply CV gain
+				if (inputs[TRACK_VOL_INPUTS + i].isConnected()) {
+					float cv = clamp(inputs[TRACK_VOL_INPUTS + i].getVoltage() / 10.f, 0.f, 1.f);
+					in *= cv;
+				}
+
+				// Add to mix
+				mix[0] += in;
+			}
+		}
+
+		// Main output
+		if (outputs[MAIN_OUTPUTS + 0].isConnected()) {
+			// Apply mastet fader gain
+			float gain = std::pow(params[MAIN_FADER_PARAM].getValue(), trackFaderScalingExponent);
+			mix[0] *= gain;
+
+			// Apply mix CV gain
+			// if (inputs[MAIN_FADER_CV_INPUT].isConnected()) {
+				// float cv = clamp(inputs[MAIN_FADER_CV_INPUT].getVoltage() / 10.f, 0.f, 1.f);
+				// mix[c] *= cv;
+			// }
+
+			// Set mix output
+			outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
+		}		
 		
 		
 		// lights
@@ -154,9 +214,11 @@ struct Mixer : Module {
 };
 
 
+
+
 struct TrackDisplay : LedDisplayTextField {
 	TrackDisplay() {
-		box.size = Vec(38, 16);// 37 no good, will overflow when zoom out too much
+		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
 	};
 	void draw(const DrawArgs &args) override {// override and do not call LedDisplayTextField.draw() since draw manually here
@@ -166,6 +228,7 @@ struct TrackDisplay : LedDisplayTextField {
 			selection = 4;
 		}
 		
+		// the code below is from LedDisplayTextField.draw()
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		if (font->handle >= 0) {
 			bndSetFont(font->handle);
@@ -198,7 +261,7 @@ struct MixerWidget : ModuleWidget {
 		// Tracks
 		for (int i = 0; i < 16; i++) {
 			// Labels
-			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i, 4.2))));
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.2))));
 			// Left inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, Mixer::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
@@ -212,6 +275,16 @@ struct MixerWidget : ModuleWidget {
 			
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4)), module, Mixer::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			
+			// Mutes
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109)), module, Mixer::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			// Solos
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3)), module, Mixer::TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			// Group dec
+			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6)), module, Mixer::GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			// Group inc
+			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6)), module, Mixer::GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+
 		}
 		
 		// Monitor outputs and groups
@@ -220,7 +293,7 @@ struct MixerWidget : ModuleWidget {
 			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12)), false, module, Mixer::MONITOR_OUTPUTS + i, module ? &module->panelTheme : NULL));			
 
 			// Labels
-			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i, 22.7))));
+			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7))));
 			// Volume inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7)), true, module, Mixer::GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
@@ -230,6 +303,11 @@ struct MixerWidget : ModuleWidget {
 			
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4)), module, Mixer::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+
+			// Mutes
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(220.84 + 12.7 * i, 109)), module, Mixer::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			// Solos
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(220.84 + 12.7 * i, 115.3)), module, Mixer::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 		}
 		
 		// Main outputs
