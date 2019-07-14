@@ -15,6 +15,7 @@ struct Mixer : Module {
 		ENUMS(GROUP_FADER_PARAMS, 4),
 		ENUMS(TRACK_PAN_PARAMS, 16),
 		ENUMS(GROUP_PAN_PARAMS, 4),
+		MAIN_FADER_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -27,12 +28,24 @@ struct Mixer : Module {
 	};
 	enum OutputIds {
 		ENUMS(MONITOR_OUTPUTS, 4), // Track 1-8, Track 9-16, Groups and Aux
+		ENUMS(MAIN_OUTPUTS, 2),
 		NUM_OUTPUTS
 	};
 	enum LightIds {
 		NUM_LIGHTS
 	};
 	
+	// Expander
+	// float rightMessages[2][5] = {};// messages from expander
+
+
+	// Constants
+	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling 
+	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float masterFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling 
+	static constexpr float masterFaderMaxLinearGain = 3.0f; // for example, 2.0f is +6 dB
+
+
 	// Need to save, no reset
 	int panelTheme;
 	
@@ -57,7 +70,7 @@ struct Mixer : Module {
 			configParam(TRACK_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Track #%i level", i + 1);
-			configParam(TRACK_FADER_PARAMS + i, 0.0, M_SQRT2, 1.0, strBuf, " dB", -10, 40);
+			configParam(TRACK_FADER_PARAMS + i, 0.0f, std::pow(trackFaderMaxLinearGain, 1.0f / trackFaderScalingExponent), 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
 		}
 		// Group
 		for (int i = 0; i < 4; i++) {
@@ -66,8 +79,9 @@ struct Mixer : Module {
 			configParam(GROUP_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
-			configParam(GROUP_FADER_PARAMS + i, 0.0, M_SQRT2, 1.0, strBuf, " dB", -10, 40);
+			configParam(GROUP_FADER_PARAMS + i, 0.0f, std::pow(trackFaderMaxLinearGain, 1.0f / trackFaderScalingExponent), 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
 		}
+		configParam(MAIN_FADER_PARAM, 0.0f, std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent), 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		
 		onReset();
 
@@ -217,6 +231,13 @@ struct MixerWidget : ModuleWidget {
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4)), module, Mixer::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 		}
+		
+		// Main outputs
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 12)), false, module, Mixer::MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21)), false, module, Mixer::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		
+		// Main fader
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, Mixer::MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));		
 		
 	}
 	
