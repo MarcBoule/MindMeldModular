@@ -99,7 +99,7 @@ void DynamicSVGKnob::draw(const DrawArgs &args) {
 		if (normalizedParam != 0.5f) {
 			float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
 			Vec cVec = box.size.div(2.0f);
-			float r = box.size.x / 2.0f + 3.0f;// arc radius
+			float r = box.size.x / 2.0f + 2.6f;// arc radius
 			int dir = a0 < a1 ? NVG_CW : NVG_CCW;
 			nvgBeginPath(args.vg);
 			nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);

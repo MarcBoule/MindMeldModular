@@ -49,7 +49,7 @@ struct Mixer : Module {
 	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float masterFaderScalingExponent = 3.0f; 
-	static constexpr float masterFaderMaxLinearGain = 3.0f; 
+	static constexpr float masterFaderMaxLinearGain = 2.0f; 
 
 
 	// Need to save, no reset
@@ -305,9 +305,9 @@ struct MixerWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4)), module, Mixer::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(220.84 + 12.7 * i, 109)), module, Mixer::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109)), module, Mixer::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(220.84 + 12.7 * i, 115.3)), module, Mixer::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3)), module, Mixer::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 		}
 		
 		// Main outputs
