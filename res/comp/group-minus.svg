@@ -1,43 +1,71 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Generator: Adobe Illustrator 23.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="5.38583px" height="5.38583px" viewBox="0 0 5.38583 5.38583" enable-background="new 0 0 5.38583 5.38583"
-	 xml:space="preserve">
-<g id="Layer_1">
-</g>
-<g id="Grp_No._Buttons">
-	<g>
-		<path fill="#CCCCCC" d="M0.00101,3.23851V2.14165h5.37814v1.09685H0.00101z"/>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-	<g>
-	</g>
-</g>
-</svg>
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.0"
+   x="0px"
+   y="0px"
+   width="1.9mm"
+   height="1.9mm"
+   viewBox="0 0 7.1811026 7.1811026"
+   enable-background="new 0 0 5.38583 5.38583"
+   xml:space="preserve"
+   id="svg38"
+   sodipodi:docname="group-minus.svg"
+   inkscape:version="0.92.2 5c3e80d, 2017-08-06"><metadata
+     id="metadata44"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+     id="defs42" /><sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="914"
+     inkscape:window-height="782"
+     id="namedview40"
+     showgrid="false"
+     inkscape:document-units="mm"
+     units="mm"
+     inkscape:zoom="43.818688"
+     inkscape:cx="2.692915"
+     inkscape:cy="1.1287369"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg38" /><g
+     id="Layer_1"
+     transform="translate(0,1.7952729)" /><g
+     id="Grp_No._Buttons"
+     transform="matrix(1.3352391,0,0,1.3369589,-3.3859147e-4,0.03182008)"><g
+       id="g5"><path
+         d="M 0.00101,3.23851 V 2.14165 H 5.37915 V 3.2385 H 0.00101 Z"
+         id="path3"
+         inkscape:connector-curvature="0"
+         style="fill:#cccccc" /></g><g
+       id="g7" /><g
+       id="g9" /><g
+       id="g11" /><g
+       id="g13" /><g
+       id="g15" /><g
+       id="g17" /><g
+       id="g19" /><g
+       id="g21" /><g
+       id="g23" /><g
+       id="g25" /><g
+       id="g27" /><g
+       id="g29" /><g
+       id="g31" /><g
+       id="g33" /><g
+       id="g35" /></g></svg>
