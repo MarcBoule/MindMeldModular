@@ -49,7 +49,7 @@ struct Mixer : Module {
 	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float masterFaderScalingExponent = 3.0f; 
-	static constexpr float masterFaderMaxLinearGain = 2.0f; 
+	static constexpr float masterFaderMaxLinearGain = 2.0f;
 
 
 	// Need to save, no reset
