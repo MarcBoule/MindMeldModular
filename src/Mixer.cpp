@@ -8,6 +8,120 @@
 
 #include "MindMeldModular.hpp"
 
+struct MixerTrack {
+	// Constants
+	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
+	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	
+	// need to save, no reset
+	// none
+	
+	// need to save, with reset
+	bool mute;
+	int group;// -1 is no group, 0 to 3 is group
+
+	// no need to save, with reset
+	float panLcoeff;
+	float panRcoeff;
+
+	// no need to save, no reset
+	int trackNum;
+	std::string ids;
+	int *solo;
+	Input *inL;
+	Input *inR;
+	Input *inVol;
+	Input *inPan;
+	Param *paFade;
+
+
+	void construct(int _trackNum, int *_solo, Input *_inL, Input *_inR, Input *_inVol, Input *_inPan, Param *_paFade) {
+		trackNum = _trackNum;
+		ids = "id" + std::to_string(trackNum) + "_";
+		solo = _solo;
+		inL = _inL;
+		inR = _inR;
+		inVol = _inVol;
+		inPan = _inPan;
+		paFade = _paFade;
+	}
+	
+	
+	void onReset() {
+		mute = false;
+		group = -1;
+		// extern must call resetNonJson()
+	}
+	
+	void resetNonJson() {
+		updatePanCoeff();
+	}
+	void updatePanCoeff() {
+		panLcoeff = 1.0f;
+		panRcoeff = 1.0f;
+	}
+	
+	
+	void onRandomize(bool editingSequence) {
+		
+	}
+	
+	
+	
+	void dataToJson(json_t *rootJ) {
+		// mute
+		json_object_set_new(rootJ, (ids + "mute").c_str(), json_boolean(mute));
+
+		// group
+		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
+	}
+	
+	void dataFromJson(json_t *rootJ, bool editingSequence) {
+		// mute
+		json_t *muteJ = json_object_get(rootJ, (ids + "mute").c_str());
+		if (muteJ)
+			mute = json_is_true(muteJ);
+
+		// group
+		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
+		if (groupJ)
+			group = json_integer_value(groupJ);
+		
+		// extern must call resetNonJson()
+	}
+	
+	
+	
+	void process(float *mixL, float *mixR) {
+		if (mute || !inL->isConnected()) {
+			return;
+		}
+		if (*solo != -1 && *solo != trackNum) {
+			return;
+		}
+
+		// Get input
+		float in = inL->getVoltage();
+
+		// Apply fader gain
+		float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+		in *= gain;
+
+		// Apply CV gain
+		if (inVol->isConnected()) {
+			float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
+			in *= cv;
+		}
+
+		// Add to mix
+		*mixL += in;
+		
+	}
+	
+	
+	
+};// struct MixerTrack
+
 
 struct Mixer : Module {
 	enum ParamIds {
@@ -46,23 +160,23 @@ struct Mixer : Module {
 
 
 	// Constants
-	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
-	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float masterFaderScalingExponent = 3.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
-
 
 	// Need to save, no reset
 	int panelTheme;
 	
 	// Need to save, with reset
 	char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	int solo;// -1 is no solo, 0 to 16 is solo track number
+	MixerTrack tracks[16];
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
+	Trigger muteTriggers[16];
 
 		
 	Mixer() {
@@ -70,14 +184,14 @@ struct Mixer : Module {
 		
 		char strBuf[32];
 		// Track
-		float maxTFader = std::pow(trackFaderMaxLinearGain, 1.0f / trackFaderScalingExponent);
+		float maxTFader = std::pow(MixerTrack::trackFaderMaxLinearGain, 1.0f / MixerTrack::trackFaderScalingExponent);
 		for (int i = 0; i < 16; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Track #%i pan", i + 1);
 			configParam(TRACK_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Track #%i level", i + 1);
-			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
+			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerTrack::trackFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Track #%i mute", i + 1);
 			configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
@@ -98,7 +212,7 @@ struct Mixer : Module {
 			configParam(GROUP_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
-			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * trackFaderScalingExponent);
+			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerTrack::trackFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Group #%i mute", i + 1);
 			configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
@@ -109,6 +223,10 @@ struct Mixer : Module {
 		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent);
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		
+		for (int i = 0; i < 16; i++) {
+			tracks[i].construct(i, &solo, &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0], &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 1],
+				&inputs[TRACK_VOL_INPUTS + i], &inputs[TRACK_PAN_INPUTS + i], &params[TRACK_FADER_PARAMS + i]);
+		}
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -117,10 +235,17 @@ struct Mixer : Module {
 	
 	void onReset() override {
 		snprintf(trackLabels, 4 * 20 + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4");		
+		solo = -1;
+		for (int i = 0; i < 16; i++) {
+			tracks[i].onReset();
+		}
 		resetNonJson();
 	}
 	void resetNonJson() {
 		resetTrackLabelRequest = 0;// setting to 0 will trigger 1, 2, 3 etc on each video frame afterwards
+		for (int i = 0; i < 16; i++) {
+			tracks[i].resetNonJson();
+		}
 	}
 
 
@@ -137,6 +262,9 @@ struct Mixer : Module {
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 
+		// solo
+		json_object_set_new(rootJ, "solo", json_integer(solo));
+
 		return rootJ;
 	}
 
@@ -152,12 +280,22 @@ struct Mixer : Module {
 		if (textJ)
 			snprintf(trackLabels, 4 * 20 + 1, "%s", json_string_value(textJ));
 		
+		// solo
+		json_t *soloJ = json_object_get(rootJ, "solo");
+		if (soloJ)
+			solo = json_integer_value(soloJ);
+
 		resetNonJson();
 	}
 
 	
 	void process(const ProcessArgs &args) override {
 		if (refresh.processInputs()) {
+			int trackToProcess = refresh.refreshCounter & (16 - 1);
+			
+			if (muteTriggers[trackToProcess].process(params[TRACK_MUTE_PARAMS + trackToProcess].getValue())) {
+				tracks[trackToProcess].mute = !tracks[trackToProcess].mute;
+			}
 
 		}// userInputs refresh
 		
@@ -168,29 +306,13 @@ struct Mixer : Module {
 
 		// Tracks
 		for (int i = 0; i < 16; i++) {
-			if (inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0].isConnected()) {
-				// Get input
-				float in = inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0].getVoltage();
-
-				// Apply fader gain
-				float gain = std::pow(params[TRACK_FADER_PARAMS + i].getValue(), trackFaderScalingExponent);
-				in *= gain;
-
-				// Apply CV gain
-				if (inputs[TRACK_VOL_INPUTS + i].isConnected()) {
-					float cv = clamp(inputs[TRACK_VOL_INPUTS + i].getVoltage() / 10.f, 0.f, 1.f);
-					in *= cv;
-				}
-
-				// Add to mix
-				mix[0] += in;
-			}
+			tracks[i].process(&mix[0], &mix[1]);
 		}
 
 		// Main output
 		if (outputs[MAIN_OUTPUTS + 0].isConnected()) {
 			// Apply mastet fader gain
-			float gain = std::pow(params[MAIN_FADER_PARAM].getValue(), trackFaderScalingExponent);
+			float gain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
 			mix[0] *= gain;
 
 			// Apply mix CV gain
