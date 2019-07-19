@@ -17,10 +17,10 @@ struct MixerTrack {
 	// none
 	
 	// need to save, with reset
-	bool mute;
 	int group;// -1 is no group, 0 to 3 is group
 
 	// no need to save, with reset
+	bool stereo;// pan coefficients use this, so set up first
 	float panLcoeff;
 	float panRcoeff;
 
@@ -33,9 +33,11 @@ struct MixerTrack {
 	Input *inVol;
 	Input *inPan;
 	Param *paFade;
+	Param *paMute;
+	Param *paPan;
 
 
-	void construct(int _trackNum, int *_solo, Input *_inL, Input *_inR, Input *_inVol, Input *_inPan, Param *_paFade) {
+	void construct(int _trackNum, int *_solo, Input *_inL, Input *_inR, Input *_inVol, Input *_inPan, Param *_paFade, Param *_paMute, Param *_paPan) {
 		trackNum = _trackNum;
 		ids = "id" + std::to_string(trackNum) + "_";
 		solo = _solo;
@@ -44,21 +46,37 @@ struct MixerTrack {
 		inVol = _inVol;
 		inPan = _inPan;
 		paFade = _paFade;
+		paMute = _paMute;
+		paPan = _paPan;
 	}
 	
 	
 	void onReset() {
-		mute = false;
 		group = -1;
 		// extern must call resetNonJson()
 	}
-	
 	void resetNonJson() {
 		updatePanCoeff();
 	}
+	
 	void updatePanCoeff() {
-		panLcoeff = 1.0f;
-		panRcoeff = 1.0f;
+		stereo = inR->isConnected();
+		
+		float pan = paPan->getValue();
+		if (inPan->isConnected()) {
+			pan += inPan->getVoltage() * 0.2f;// this is a -5V to +5V input
+		}
+		if (stereo) {
+			// Balance approach
+			panRcoeff = std::min(1.0f, pan + 1.0f);
+			panLcoeff = std::min(1.0f, 1.0f - pan);
+		}
+		else {
+			// TODO SB wants boost panning laws, with three choices: +3 (equal power), +3.5 (console) and +4.5
+			// Linear panning law
+			panRcoeff = std::max(0.0f, (1.0f + pan)*0.5f);
+			panLcoeff = 1.0f - panRcoeff;
+		}
 	}
 	
 	
@@ -70,17 +88,17 @@ struct MixerTrack {
 	
 	void dataToJson(json_t *rootJ) {
 		// mute
-		json_object_set_new(rootJ, (ids + "mute").c_str(), json_boolean(mute));
+		// json_object_set_new(rootJ, (ids + "mute").c_str(), json_boolean(mute));
 
 		// group
 		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
 	}
 	
-	void dataFromJson(json_t *rootJ, bool editingSequence) {
+	void dataFromJson(json_t *rootJ) {
 		// mute
-		json_t *muteJ = json_object_get(rootJ, (ids + "mute").c_str());
-		if (muteJ)
-			mute = json_is_true(muteJ);
+		// json_t *muteJ = json_object_get(rootJ, (ids + "mute").c_str());
+		// if (muteJ)
+			// mute = json_is_true(muteJ);
 
 		// group
 		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
@@ -93,29 +111,53 @@ struct MixerTrack {
 	
 	
 	void process(float *mixL, float *mixR) {
-		if (mute || !inL->isConnected()) {
+		if (!inL->isConnected() || paMute->getValue() > 0.5f) {
 			return;
 		}
-		if (*solo != -1 && *solo != trackNum) {
+		if (*solo != -1 && *solo != trackNum) {// TODO
 			return;
 		}
 
-		// Get input
-		float in = inL->getVoltage();
-
-		// Apply fader gain
+		// Calc track fader gain
 		float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-		in *= gain;
+		
+		// Get inputs and apply pan
+		float sigL = inL->getVoltage();
+		float sigR;
+		if (stereo) {
+			sigR = inR->getVoltage();
+		
+			// Apply fader gain
+			sigL *= gain;
+			sigR *= gain;
 
-		// Apply CV gain
-		if (inVol->isConnected()) {
-			float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-			in *= cv;
+			// Apply CV gain
+			if (inVol->isConnected()) {
+				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
+				sigL *= cv;
+				sigR *= cv;
+			}
 		}
+		else {
+			// Apply fader gain
+			sigL *= gain;
+
+			// Apply CV gain
+			if (inVol->isConnected()) {
+				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
+				sigL *= cv;
+			}
+
+			sigR = sigL;
+		}
+
+		// Apply pan
+		sigL *= panLcoeff;
+		sigR *= panRcoeff;
 
 		// Add to mix
-		*mixL += in;
-		
+		*mixL += sigL;
+		*mixR += sigR;
 	}
 	
 	
@@ -170,13 +212,13 @@ struct Mixer : Module {
 	char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	int solo;// -1 is no solo, 0 to 16 is solo track number
 	MixerTrack tracks[16];
+	int panLaw;// 0 is linear, 1 is +3.5dB sides
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
-	Trigger muteTriggers[16];
 
 		
 	Mixer() {
@@ -225,7 +267,7 @@ struct Mixer : Module {
 		
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &solo, &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0], &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 1],
-				&inputs[TRACK_VOL_INPUTS + i], &inputs[TRACK_PAN_INPUTS + i], &params[TRACK_FADER_PARAMS + i]);
+				&inputs[TRACK_VOL_INPUTS + i], &inputs[TRACK_PAN_INPUTS + i], &params[TRACK_FADER_PARAMS + i], &params[TRACK_MUTE_PARAMS + i], &params[TRACK_PAN_PARAMS + i]);
 		}
 		onReset();
 
@@ -239,6 +281,7 @@ struct Mixer : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].onReset();
 		}
+		panLaw = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -265,6 +308,14 @@ struct Mixer : Module {
 		// solo
 		json_object_set_new(rootJ, "solo", json_integer(solo));
 
+		// tracks
+		for (int i = 0; i < 16; i++) {
+			tracks[i].dataToJson(rootJ);
+		}
+
+		// panLaw
+		json_object_set_new(rootJ, "panLaw", json_integer(panLaw));
+
 		return rootJ;
 	}
 
@@ -285,6 +336,16 @@ struct Mixer : Module {
 		if (soloJ)
 			solo = json_integer_value(soloJ);
 
+		// tracks
+		for (int i = 0; i < 16; i++) {
+			tracks[i].dataFromJson(rootJ);
+		}
+
+		// panLaw
+		json_t *panLawJ = json_object_get(rootJ, "panLaw");
+		if (panLawJ)
+			panLaw = json_integer_value(panLawJ);
+
 		resetNonJson();
 	}
 
@@ -293,10 +354,8 @@ struct Mixer : Module {
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter & (16 - 1);
 			
-			if (muteTriggers[trackToProcess].process(params[TRACK_MUTE_PARAMS + trackToProcess].getValue())) {
-				tracks[trackToProcess].mute = !tracks[trackToProcess].mute;
-			}
-
+			tracks[trackToProcess].updatePanCoeff();
+			
 		}// userInputs refresh
 		
 		
@@ -310,20 +369,22 @@ struct Mixer : Module {
 		}
 
 		// Main output
-		if (outputs[MAIN_OUTPUTS + 0].isConnected()) {
-			// Apply mastet fader gain
-			float gain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
-			mix[0] *= gain;
 
-			// Apply mix CV gain
-			// if (inputs[MAIN_FADER_CV_INPUT].isConnected()) {
-				// float cv = clamp(inputs[MAIN_FADER_CV_INPUT].getVoltage() / 10.f, 0.f, 1.f);
-				// mix[c] *= cv;
-			// }
+		// Apply mastet fader gain
+		float gain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+		mix[0] *= gain;
+		mix[1] *= gain;
 
-			// Set mix output
-			outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
-		}		
+		// Apply mix CV gain (UNUSED)
+		// if (inputs[MAIN_FADER_CV_INPUT].isConnected()) {
+			// float cv = clamp(inputs[MAIN_FADER_CV_INPUT].getVoltage() / 10.f, 0.f, 1.f);
+			// mix[0] *= cv;
+			// mix[1] *= cv;
+		// }
+
+		// Set mix output
+		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
+		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
 		
 		// lights
@@ -373,6 +434,53 @@ struct TrackDisplay : LedDisplayTextField {
 struct MixerWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[20];
 	unsigned int trackLabelIndexToPush = 0;
+
+
+	// Module's context menu
+	// --------------------
+
+	struct PanLawItem : MenuItem {
+		struct PanLawSubItem : MenuItem {
+			Mixer *module;
+			int setVal = 0;
+			void onAction(const event::Action &e) override {
+				module->panLaw = setVal;
+			}
+		};
+		Mixer *module;
+		Menu *createChildMenu() override {
+			Menu *menu = new Menu;
+
+			PanLawSubItem *law0Item = createMenuItem<PanLawSubItem>("-6 dB center (linear)", CHECKMARK(module->panLaw == 0));
+			law0Item->module = this->module;
+			menu->addChild(law0Item);
+
+			PanLawSubItem *law1Item = createMenuItem<PanLawSubItem>("+3.5 dB sides", CHECKMARK(module->panLaw == 1));
+			law1Item->module = this->module;
+			law1Item->setVal = 1;
+			menu->addChild(law1Item);
+
+			return menu;
+		}
+	};
+
+	void appendContextMenu(Menu *menu) override {
+		Mixer *module = dynamic_cast<Mixer*>(this->module);
+		assert(module);
+
+		menu->addChild(new MenuLabel());// empty line
+		
+		MenuLabel *settingsLabel = new MenuLabel();
+		settingsLabel->text = "Settings";
+		menu->addChild(settingsLabel);
+		
+		PanLawItem *panlawItem = createMenuItem<PanLawItem>("Mono panning law", RIGHT_ARROW);
+		panlawItem->module = module;
+		menu->addChild(panlawItem);
+	}
+
+	// Module's widget
+	// --------------------
 
 	MixerWidget(Mixer *module) {
 		setModule(module);
