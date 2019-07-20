@@ -15,8 +15,8 @@ struct GlobalInfo {
 	// none
 	
 	// need to save, with reset
-	int panLawMono;// 0 = +3dB boost (equal power), 1 = +3.5dB boost (VCV Console), 2 = +4.5dB boost (standard compromize), 3 = linear (+6dB boost)
-	int panLawStereo;// 0 = balanced, 1 = true stereo
+	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
+	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	
 	// no need to save, with reset
 	bool soloAllOff;// when true, nothing to do, when false, a track must check its solo to see it should play
@@ -26,7 +26,7 @@ struct GlobalInfo {
 	
 
 	void onReset() {
-		panLawMono = 0;
+		panLawMono = 1;
 		panLawStereo = 0;
 		// extern must call resetNonJson()
 	}
@@ -93,6 +93,8 @@ struct MixerTrack {
 	bool stereo;// pan coefficients use this, so set up first
 	float panLcoeff;
 	float panRcoeff;
+	float panLinRcoeff;// used only for True stereo panning
+	float panRinLcoeff;// used only for True stereo panning
 
 	// no need to save, no reset
 	int trackNum;
@@ -138,16 +140,44 @@ struct MixerTrack {
 		if (inPan->isConnected()) {
 			pan += inPan->getVoltage() * 0.2f;// this is a -5V to +5V input
 		}
-		if (stereo) {
-			// Balance approach
-			panRcoeff = std::min(1.0f, pan + 1.0f);
-			panLcoeff = std::min(1.0f, 1.0f - pan);
+		
+		panLinRcoeff = 0.0f;
+		panRinLcoeff = 0.0f;
+		if (!stereo) {// mono
+			if (gInfo->panLawMono == 1) {
+				// Equal power panning law (+3dB boost)
+				panRcoeff = std::sin(pan * M_PI_2) * M_SQRT2;
+				panLcoeff = std::cos(pan * M_PI_2) * M_SQRT2;
+			}
+			else if (gInfo->panLawMono == 0) {
+				// No compensation (+0dB boost)
+				panRcoeff = std::min(1.0f, pan * 2.0f);
+				panLcoeff = std::min(1.0f, 2.0f - pan * 2.0f);
+			}
+			else if (gInfo->panLawMono == 2) {
+				// Compromise (+4.5dB boost)
+				panRcoeff = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+				panLcoeff = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+			}
+			else {
+				// Linear panning law (+6dB boost)
+				panRcoeff = pan * 2.0f;
+				panLcoeff = 2.0f - panRcoeff;
+			}
 		}
-		else {
-			// TODO SB wants boost panning laws, with three choices: +3 (equal power), +3.5 (console) and +4.5
-			// Linear panning law
-			panRcoeff = std::max(0.0f, (1.0f + pan)*0.5f);
-			panLcoeff = 1.0f - panRcoeff;
+		else {// stereo
+			if (gInfo->panLawStereo == 0) {
+				// Stereo balance (+3dB), same as mono equal power
+				panRcoeff = std::sin(pan * M_PI_2) * M_SQRT2;
+				panLcoeff = std::cos(pan * M_PI_2) * M_SQRT2;
+			}
+			else {
+				// True panning, equal power
+				panRcoeff = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				panRinLcoeff = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+				panLcoeff = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				panLinRcoeff = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+			}
 		}
 	}
 	
@@ -188,7 +218,19 @@ struct MixerTrack {
 		// Get inputs and apply pan
 		float sigL = inL->getVoltage();
 		float sigR;
-		if (stereo) {
+		if (!stereo) {// mono
+			// Apply fader gain
+			sigL *= gain;
+
+			// Apply CV gain
+			if (inVol->isConnected()) {
+				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
+				sigL *= cv;
+			}
+
+			sigR = sigL;
+		}
+		else {// stereo
 			sigR = inR->getVoltage();
 		
 			// Apply fader gain
@@ -202,26 +244,18 @@ struct MixerTrack {
 				sigR *= cv;
 			}
 		}
-		else {
-			// Apply fader gain
-			sigL *= gain;
-
-			// Apply CV gain
-			if (inVol->isConnected()) {
-				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-				sigL *= cv;
-			}
-
-			sigR = sigL;
-		}
 
 		// Apply pan
-		sigL *= panLcoeff;
-		sigR *= panRcoeff;
+		float pannedSigL = sigL * panLcoeff;
+		float pannedSigR = sigR * panRcoeff;
+		if (stereo && gInfo->panLawStereo != 0) {
+			pannedSigL += sigR * panRinLcoeff;
+			pannedSigR += sigL * panLinRcoeff;
+		}
 
 		// Add to mix
-		*mixL += sigL;
-		*mixR += sigR;
+		*mixL += pannedSigL;
+		*mixR += pannedSigR;
 	}
 	
 	
@@ -296,7 +330,7 @@ struct Mixer : Module {
 		for (int i = 0; i < 16; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Track #%i pan", i + 1);
-			configParam(TRACK_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
+			configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Track #%i level", i + 1);
 			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerTrack::trackFaderScalingExponent);
@@ -317,7 +351,7 @@ struct Mixer : Module {
 		for (int i = 0; i < 4; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Group #%i pan", i + 1);
-			configParam(GROUP_PAN_PARAMS + i, -1.0f, 1.0f, 0.0f, strBuf, "%", 0.0f, 100.0f);
+			configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
 			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerTrack::trackFaderScalingExponent);
@@ -508,19 +542,24 @@ struct MixerWidget : ModuleWidget {
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
 
-			PanLawMonoSubItem *law0Item = createMenuItem<PanLawMonoSubItem>("+3 dB boost (equal power)", CHECKMARK(module->gInfo.panLawMono == 0));
+			PanLawMonoSubItem *law0Item = createMenuItem<PanLawMonoSubItem>("+0 dB (no compensation)", CHECKMARK(module->gInfo.panLawMono == 0));
 			law0Item->module = this->module;
 			menu->addChild(law0Item);
 
-			PanLawMonoSubItem *law1Item = createMenuItem<PanLawMonoSubItem>("+3.5 dB boost", CHECKMARK(module->gInfo.panLawMono == 1));
+			PanLawMonoSubItem *law1Item = createMenuItem<PanLawMonoSubItem>("+3 dB boost (equal power, default)", CHECKMARK(module->gInfo.panLawMono == 1));
 			law1Item->module = this->module;
 			law1Item->setVal = 1;
 			menu->addChild(law1Item);
 
-			PanLawMonoSubItem *law2Item = createMenuItem<PanLawMonoSubItem>("+4.5 dB boost", CHECKMARK(module->gInfo.panLawMono == 2));
+			PanLawMonoSubItem *law2Item = createMenuItem<PanLawMonoSubItem>("+4.5 dB boost (compromise)", CHECKMARK(module->gInfo.panLawMono == 2));
 			law2Item->module = this->module;
 			law2Item->setVal = 2;
 			menu->addChild(law2Item);
+
+			PanLawMonoSubItem *law3Item = createMenuItem<PanLawMonoSubItem>("+6 dB boost (linear)", CHECKMARK(module->gInfo.panLawMono == 3));
+			law3Item->module = this->module;
+			law3Item->setVal = 3;
+			menu->addChild(law3Item);
 
 			return menu;
 		}
@@ -538,11 +577,11 @@ struct MixerWidget : ModuleWidget {
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
 
-			PanLawStereoSubItem *law0Item = createMenuItem<PanLawStereoSubItem>("Balanced", CHECKMARK(module->gInfo.panLawStereo == 0));
+			PanLawStereoSubItem *law0Item = createMenuItem<PanLawStereoSubItem>("Stereo balance (default)", CHECKMARK(module->gInfo.panLawStereo == 0));
 			law0Item->module = this->module;
 			menu->addChild(law0Item);
 
-			PanLawStereoSubItem *law1Item = createMenuItem<PanLawStereoSubItem>("True stereo", CHECKMARK(module->gInfo.panLawStereo == 1));
+			PanLawStereoSubItem *law1Item = createMenuItem<PanLawStereoSubItem>("True panning", CHECKMARK(module->gInfo.panLawStereo == 1));
 			law1Item->module = this->module;
 			law1Item->setVal = 1;
 			menu->addChild(law1Item);
