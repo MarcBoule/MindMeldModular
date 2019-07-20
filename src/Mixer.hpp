@@ -65,7 +65,7 @@ struct GlobalInfo {
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	
 	// no need to save, with reset
-	bool soloAllOff;// when true, nothing to do, when false, a track must check its solo to see it should play
+	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see it should play
 
 	// no need to save, no reset
 	// none
@@ -78,18 +78,23 @@ struct GlobalInfo {
 	}
 	
 	void resetNonJson(Param *soloParams) {
-		updateSoloAllOff(soloParams);
+		updateSoloBitMask(soloParams);
 	}
 	
-	void updateSoloAllOff(Param *soloParams) {
-		bool newSoloAllOff = true;// separate variable so no glitch generated
-		for (int i = 0; i < 16; i++) {
+	void updateSoloBitMask(Param *soloParams) {
+		unsigned long newSoloBitMask = 0ul;// separate variable so no glitch generated
+		for (unsigned long i = 0; i < 16; i++) {
 			if (soloParams[i].getValue() > 0.5) {
-				newSoloAllOff = false;
-				break;
+				newSoloBitMask |= (1 << i);
 			}
 		}
-		soloAllOff = newSoloAllOff;	
+		soloBitMask = newSoloBitMask;	
+	}
+	void updateSoloBit(unsigned int trk, bool state) {
+		if (state) 
+			soloBitMask |= (1 << trk);
+		else
+			soloBitMask &= ~(1 << trk);
 	}
 	
 	void onRandomize(bool editingSequence) {
@@ -126,7 +131,7 @@ struct GlobalInfo {
 
 struct MixerTrack {
 	// Constants
-	static constexpr float trackFaderScalingExponent = 2.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
+	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	
 	// need to save, no reset
@@ -134,6 +139,7 @@ struct MixerTrack {
 	
 	// need to save, with reset
 	int group;// -1 is no group, 0 to 3 is group
+	float gainAdjust;// this is a gain here (not dB)
 
 	// no need to save, with reset
 	bool stereo;// pan coefficients use this, so set up first
@@ -156,23 +162,24 @@ struct MixerTrack {
 	Param *paPan;
 
 
-	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Input *_inR, Input *_inVol, Input *_inPan, Param *_paFade, Param *_paMute, Param *_paSolo, Param *_paPan) {
+	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params) {
 		trackNum = _trackNum;
 		gInfo = _gInfo;
 		ids = "id" + std::to_string(trackNum) + "_";
 		inL = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 0];
-		inR = _inR;
-		inVol = _inVol;
-		inPan = _inPan;
-		paFade = _paFade;
-		paMute = _paMute;
-		paSolo = _paSolo;
-		paPan = _paPan;
+		inR = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 1];
+		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
+		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
+		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
+		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
+		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
+		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 	}
 	
 	
 	void onReset() {
 		group = -1;
+		gainAdjust = 1.0f;
 		// extern must call resetNonJson()
 	}
 	void resetNonJson() {
@@ -237,6 +244,9 @@ struct MixerTrack {
 	void dataToJson(json_t *rootJ) {
 		// group
 		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
+
+		// gainAdjust
+		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -244,6 +254,11 @@ struct MixerTrack {
 		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
 		if (groupJ)
 			group = json_integer_value(groupJ);
+		
+		// gainAdjust
+		json_t *gainAdjustJ = json_object_get(rootJ, (ids + "gainAdjust").c_str());
+		if (gainAdjustJ)
+			gainAdjust = json_number_value(gainAdjustJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -254,7 +269,7 @@ struct MixerTrack {
 		if (!inL->isConnected() || paMute->getValue() > 0.5f) {
 			return;
 		}
-		if (!gInfo->soloAllOff && paSolo->getValue() < 0.5f) {
+		if (gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) {
 			return;
 		}
 
@@ -273,6 +288,9 @@ struct MixerTrack {
 				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
 				sigL *= cv;
 			}
+			
+			// Apply gain adjust
+			sigL *= gainAdjust;
 
 			sigR = sigL;
 		}
@@ -289,6 +307,10 @@ struct MixerTrack {
 				sigL *= cv;
 				sigR *= cv;
 			}
+
+			// Apply gain adjust
+			sigL *= gainAdjust;
+			sigR *= gainAdjust;
 		}
 
 		// Apply pan

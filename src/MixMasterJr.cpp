@@ -15,7 +15,7 @@ struct MixMasterJr : Module {
 
 
 	// Constants
-	static constexpr float masterFaderScalingExponent = 2.0f; 
+	static constexpr float masterFaderScalingExponent = 3.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
 
 	// Need to save, no reset
@@ -24,7 +24,7 @@ struct MixMasterJr : Module {
 	// Need to save, with reset
 	char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	GlobalInfo gInfo;
-	MixerTrack tracks[16];
+	MixerTrack tracks[20];
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
@@ -77,9 +77,8 @@ struct MixMasterJr : Module {
 		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent);
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		
-		for (int i = 0; i < 16; i++) {
-			tracks[i].construct(i, &gInfo, &inputs[0], &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 1],
-				&inputs[TRACK_VOL_INPUTS + i], &inputs[TRACK_PAN_INPUTS + i], &params[TRACK_FADER_PARAMS + i], &params[TRACK_MUTE_PARAMS + i], &params[TRACK_SOLO_PARAMS + i], &params[TRACK_PAN_PARAMS + i]);
+		for (int i = 0; i < 20; i++) {
+			tracks[i].construct(i, &gInfo, &inputs[0], &params[0]);
 		}
 		onReset();
 
@@ -90,7 +89,7 @@ struct MixMasterJr : Module {
 	void onReset() override {
 		snprintf(trackLabels, 4 * 20 + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4");		
 		gInfo.onReset();
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 20; i++) {
 			tracks[i].onReset();
 		}
 		resetNonJson();
@@ -98,7 +97,7 @@ struct MixMasterJr : Module {
 	void resetNonJson() {
 		resetTrackLabelRequest = 0;// setting to 0 will trigger 1, 2, 3 etc on each video frame afterwards
 		gInfo.resetNonJson(&params[TRACK_SOLO_PARAMS]);
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 20; i++) {
 			tracks[i].resetNonJson();
 		}
 	}
@@ -121,7 +120,7 @@ struct MixMasterJr : Module {
 		gInfo.dataToJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 20; i++) {
 			tracks[i].dataToJson(rootJ);
 		}
 
@@ -144,7 +143,7 @@ struct MixMasterJr : Module {
 		gInfo.dataFromJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 20; i++) {
 			tracks[i].dataFromJson(rootJ);
 		}
 
@@ -156,7 +155,7 @@ struct MixMasterJr : Module {
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
-			gInfo.updateSoloAllOff(&params[TRACK_SOLO_PARAMS]);// TODO optimize this (spread in 16 passes?) 
+			gInfo.updateSoloBit(trackToProcess, params[TRACK_SOLO_PARAMS + trackToProcess].getValue() > 0.5f);
 			tracks[trackToProcess].updatePanCoeff();
 			
 		}// userInputs refresh
@@ -167,7 +166,7 @@ struct MixMasterJr : Module {
 		float mix[2] = {};
 
 		// Tracks
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 16; i++) {// groups not done yet so stop at 16 instead of 20
 			tracks[i].process(&mix[0], &mix[1]);
 		}
 
@@ -203,6 +202,39 @@ struct MixMasterJr : Module {
 
 
 struct TrackDisplay : LedDisplayTextField {
+	float gainAdjust = 0.0f;// in dB here, but when push/pull from master, convert to/from linear
+
+	struct TrackGainAdjustQuantity : Quantity {
+		float *gainAdjustPtr = NULL;
+		
+		TrackGainAdjustQuantity(float *_gainAdjust) {
+			gainAdjustPtr = _gainAdjust;
+		}
+		void setValue(float value) override {
+			*gainAdjustPtr = math::clamp(value, getMinValue(), getMaxValue());
+		}
+		float getValue() override {
+			return *gainAdjustPtr;
+		}
+		float getMinValue() override {return -20.0f;}
+		float getMaxValue() override {return 20.0f;}
+		float getDefaultValue() override {return 0.0f;}
+		float getDisplayValue() override {return getValue();}
+		void setDisplayValue(float displayValue) override {setValue(displayValue);}
+		std::string getLabel() override {return "Gain adjust";}
+		std::string getUnit() override {return " dB";}
+	};
+
+	struct GainAdjustSlider : ui::Slider {
+		GainAdjustSlider(float *_gainAdjust) {
+			quantity = new TrackGainAdjustQuantity(_gainAdjust);
+		}
+		~GainAdjustSlider() {
+			delete quantity;
+		}
+	};
+
+
 	TrackDisplay() {
 		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
@@ -231,7 +263,29 @@ struct TrackDisplay : LedDisplayTextField {
 		}
 		nvgResetScissor(args.vg);
 	}
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *lowcutLabel = new MenuLabel();
+			lowcutLabel->text = "Track settings: ";
+			menu->addChild(lowcutLabel);
+			
+			GainAdjustSlider *gainAdjustSlider = new GainAdjustSlider(&gainAdjust);
+			gainAdjustSlider->box.size.x = 200.0;
+			menu->addChild(gainAdjustSlider);
+			
+			e.consume(this);
+			return;
+		}
+		LedDisplayTextField::onButton(e);
+	}
+
 };
+
+
+
+
 
 
 struct MixMasterJrWidget : ModuleWidget {
@@ -394,21 +448,23 @@ struct MixMasterJrWidget : ModuleWidget {
 	void step() override {
 		MixMasterJr* moduleM = (MixMasterJr*)module;
 		if (moduleM) {
-			// Track labels (push and pull from module)
+			// Track labels and other info (push and pull from module)
 			int trackLabelIndexToPull = moduleM->resetTrackLabelRequest;
 			if (trackLabelIndexToPull >= 0) {// pull request from module
 				trackDisplays[trackLabelIndexToPull]->text = std::string(&(moduleM->trackLabels[trackLabelIndexToPull * 4]), 4);
+				trackDisplays[trackLabelIndexToPull]->gainAdjust = 20.0f * std::log10(moduleM->tracks[trackLabelIndexToPull].gainAdjust);// convert linear to dB for slider
 				moduleM->resetTrackLabelRequest++;
 				if (moduleM->resetTrackLabelRequest >= 20) {
 					moduleM->resetTrackLabelRequest = -1;// all done pulling
 				}
 			}
-			else {// push to module
+			else {// push to module regularly
 				int unsigned i = 0;
 				*((uint32_t*)(&(moduleM->trackLabels[trackLabelIndexToPush * 4]))) = 0x20202020;
 				for (; i < trackDisplays[trackLabelIndexToPush]->text.length(); i++) {
 					moduleM->trackLabels[trackLabelIndexToPush * 4 + i] = trackDisplays[trackLabelIndexToPush]->text[i];
 				}
+				moduleM->tracks[trackLabelIndexToPush].gainAdjust = std::pow(10.0f, trackDisplays[trackLabelIndexToPush]->gainAdjust / 20.0f);
 				trackLabelIndexToPush++;
 				if (trackLabelIndexToPush >= 20) {
 					trackLabelIndexToPush = 0;
