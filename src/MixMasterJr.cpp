@@ -6,304 +6,16 @@
 //***********************************************************************************************
 
 
-#include "MindMeldModular.hpp"
+#include "Mixer.hpp"
 
 
-// managed by Mixer, not by tracks (tracks read only)
-struct GlobalInfo {
-	// need to save, no reset
-	// none
-	
-	// need to save, with reset
-	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
-	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
-	
-	// no need to save, with reset
-	bool soloAllOff;// when true, nothing to do, when false, a track must check its solo to see it should play
-
-	// no need to save, no reset
-	// none
-	
-
-	void onReset() {
-		panLawMono = 1;
-		panLawStereo = 0;
-		// extern must call resetNonJson()
-	}
-	
-	void resetNonJson(Param *soloParams) {
-		updateSoloAllOff(soloParams);
-	}
-	
-	void updateSoloAllOff(Param *soloParams) {
-		bool newSoloAllOff = true;// separate variable so no glitch generated
-		for (int i = 0; i < 16; i++) {
-			if (soloParams[i].getValue() > 0.5) {
-				newSoloAllOff = false;
-				break;
-			}
-		}
-		soloAllOff = newSoloAllOff;	
-	}
-	
-	void onRandomize(bool editingSequence) {
-		
-	}
-	
-
-	void dataToJson(json_t *rootJ) {
-		// panLawMono 
-		json_object_set_new(rootJ, "panLawMono", json_integer(panLawMono));
-
-		// panLawStereo
-		json_object_set_new(rootJ, "panLawStereo", json_integer(panLawStereo));
-	}
-	
-	void dataFromJson(json_t *rootJ) {
-		// panLawMono
-		json_t *panLawMonoJ = json_object_get(rootJ, "panLawMono");
-		if (panLawMonoJ)
-			panLawMono = json_integer_value(panLawMonoJ);
-		
-		// panLawStereo
-		json_t *panLawStereoJ = json_object_get(rootJ, "panLawStereo");
-		if (panLawStereoJ)
-			panLawStereo = json_integer_value(panLawStereoJ);
-		
-		// extern must call resetNonJson()
-	}
-};// struct GlobalInfo
-
-
-//*****************************************************************************
-
-
-struct MixerTrack {
-	// Constants
-	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
-	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	
-	// need to save, no reset
-	// none
-	
-	// need to save, with reset
-	int group;// -1 is no group, 0 to 3 is group
-
-	// no need to save, with reset
-	bool stereo;// pan coefficients use this, so set up first
-	float panLcoeff;
-	float panRcoeff;
-	float panLinRcoeff;// used only for True stereo panning
-	float panRinLcoeff;// used only for True stereo panning
-
-	// no need to save, no reset
-	int trackNum;
-	std::string ids;
-	GlobalInfo *gInfo;
-	Input *inL;
-	Input *inR;
-	Input *inVol;
-	Input *inPan;
-	Param *paFade;
-	Param *paMute;
-	Param *paSolo;
-	Param *paPan;
-
-
-	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inL, Input *_inR, Input *_inVol, Input *_inPan, Param *_paFade, Param *_paMute, Param *_paSolo, Param *_paPan) {
-		trackNum = _trackNum;
-		gInfo = _gInfo;
-		ids = "id" + std::to_string(trackNum) + "_";
-		inL = _inL;
-		inR = _inR;
-		inVol = _inVol;
-		inPan = _inPan;
-		paFade = _paFade;
-		paMute = _paMute;
-		paSolo = _paSolo;
-		paPan = _paPan;
-	}
-	
-	
-	void onReset() {
-		group = -1;
-		// extern must call resetNonJson()
-	}
-	void resetNonJson() {
-		updatePanCoeff();
-	}
-	
-	void updatePanCoeff() {
-		stereo = inR->isConnected();
-		
-		float pan = paPan->getValue();
-		if (inPan->isConnected()) {
-			pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
-		}
-		
-		panLinRcoeff = 0.0f;
-		panRinLcoeff = 0.0f;
-		if (!stereo) {// mono
-			if (gInfo->panLawMono == 1) {
-				// Equal power panning law (+3dB boost)
-				panRcoeff = std::sin(pan * M_PI_2) * M_SQRT2;
-				panLcoeff = std::cos(pan * M_PI_2) * M_SQRT2;
-			}
-			else if (gInfo->panLawMono == 0) {
-				// No compensation (+0dB boost)
-				panRcoeff = std::min(1.0f, pan * 2.0f);
-				panLcoeff = std::min(1.0f, 2.0f - pan * 2.0f);
-			}
-			else if (gInfo->panLawMono == 2) {
-				// Compromise (+4.5dB boost)
-				panRcoeff = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-				panLcoeff = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
-			}
-			else {
-				// Linear panning law (+6dB boost)
-				panRcoeff = pan * 2.0f;
-				panLcoeff = 2.0f - panRcoeff;
-			}
-		}
-		else {// stereo
-			if (gInfo->panLawStereo == 0) {
-				// Stereo balance (+3dB), same as mono equal power
-				panRcoeff = std::sin(pan * M_PI_2) * M_SQRT2;
-				panLcoeff = std::cos(pan * M_PI_2) * M_SQRT2;
-			}
-			else {
-				// True panning, equal power
-				panRcoeff = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-				panRinLcoeff = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-				panLcoeff = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-				panLinRcoeff = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
-			}
-		}
-	}
-	
-	
-	void onRandomize(bool editingSequence) {
-		
-	}
-	
-	
-	
-	void dataToJson(json_t *rootJ) {
-		// group
-		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
-	}
-	
-	void dataFromJson(json_t *rootJ) {
-		// group
-		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
-		if (groupJ)
-			group = json_integer_value(groupJ);
-		
-		// extern must call resetNonJson()
-	}
-	
-	
-	
-	void process(float *mixL, float *mixR) {
-		if (!inL->isConnected() || paMute->getValue() > 0.5f) {
-			return;
-		}
-		if (!gInfo->soloAllOff && paSolo->getValue() < 0.5f) {
-			return;
-		}
-
-		// Calc track fader gain
-		float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-		
-		// Get inputs and apply pan
-		float sigL = inL->getVoltage();
-		float sigR;
-		if (!stereo) {// mono
-			// Apply fader gain
-			sigL *= gain;
-
-			// Apply CV gain
-			if (inVol->isConnected()) {
-				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-				sigL *= cv;
-			}
-
-			sigR = sigL;
-		}
-		else {// stereo
-			sigR = inR->getVoltage();
-		
-			// Apply fader gain
-			sigL *= gain;
-			sigR *= gain;
-
-			// Apply CV gain
-			if (inVol->isConnected()) {
-				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-				sigL *= cv;
-				sigR *= cv;
-			}
-		}
-
-		// Apply pan
-		float pannedSigL = sigL * panLcoeff;
-		float pannedSigR = sigR * panRcoeff;
-		if (stereo && gInfo->panLawStereo != 0) {
-			pannedSigL += sigR * panRinLcoeff;
-			pannedSigR += sigL * panLinRcoeff;
-		}
-
-		// Add to mix
-		*mixL += pannedSigL;
-		*mixR += pannedSigR;
-	}
-	
-	
-	
-};// struct MixerTrack
-
-
-//*****************************************************************************
-
-
-struct Mixer : Module {
-	enum ParamIds {
-		ENUMS(TRACK_FADER_PARAMS, 16),
-		ENUMS(GROUP_FADER_PARAMS, 4),
-		ENUMS(TRACK_PAN_PARAMS, 16),
-		ENUMS(GROUP_PAN_PARAMS, 4),
-		ENUMS(TRACK_MUTE_PARAMS, 16),
-		ENUMS(GROUP_MUTE_PARAMS, 4),
-		ENUMS(TRACK_SOLO_PARAMS, 16),
-		ENUMS(GROUP_SOLO_PARAMS, 4),
-		MAIN_FADER_PARAM,
-		ENUMS(GRP_INC_PARAMS, 16),
-		ENUMS(GRP_DEC_PARAMS, 16),
-		NUM_PARAMS
-	};
-	enum InputIds {
-		ENUMS(TRACK_SIGNAL_INPUTS, 16 * 2), // Track 0: 0 = L, 1 = R, Track 1: 2 = L, 3 = R, etc...
-		ENUMS(TRACK_VOL_INPUTS, 16),
-		ENUMS(GROUP_VOL_INPUTS, 4),
-		ENUMS(TRACK_PAN_INPUTS, 16), 
-		ENUMS(GROUP_PAN_INPUTS, 4), 
-		NUM_INPUTS
-	};
-	enum OutputIds {
-		ENUMS(MONITOR_OUTPUTS, 4), // Track 1-8, Track 9-16, Groups and Aux
-		ENUMS(MAIN_OUTPUTS, 2),
-		NUM_OUTPUTS
-	};
-	enum LightIds {
-		NUM_LIGHTS
-	};
-	
+struct MixMasterJr : Module {
 	// Expander
 	// float rightMessages[2][5] = {};// messages from expander
 
 
 	// Constants
-	static constexpr float masterFaderScalingExponent = 3.0f; 
+	static constexpr float masterFaderScalingExponent = 4.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
 
 	// Need to save, no reset
@@ -321,8 +33,8 @@ struct Mixer : Module {
 	RefreshCounter refresh;	
 
 		
-	Mixer() {
-		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
+	MixMasterJr() {
+		config(NUM_PARAMS_JR, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
 		char strBuf[32];
 		// Track
@@ -366,7 +78,7 @@ struct Mixer : Module {
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		
 		for (int i = 0; i < 16; i++) {
-			tracks[i].construct(i, &gInfo, &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 0], &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 1],
+			tracks[i].construct(i, &gInfo, &inputs[0], &inputs[TRACK_SIGNAL_INPUTS + 2 * i + 1],
 				&inputs[TRACK_VOL_INPUTS + i], &inputs[TRACK_PAN_INPUTS + i], &params[TRACK_FADER_PARAMS + i], &params[TRACK_MUTE_PARAMS + i], &params[TRACK_SOLO_PARAMS + i], &params[TRACK_PAN_PARAMS + i]);
 		}
 		onReset();
@@ -522,7 +234,7 @@ struct TrackDisplay : LedDisplayTextField {
 };
 
 
-struct MixerWidget : ModuleWidget {
+struct MixMasterJrWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[20];
 	unsigned int trackLabelIndexToPush = 0;
 
@@ -532,13 +244,13 @@ struct MixerWidget : ModuleWidget {
 
 	struct PanLawMonoItem : MenuItem {
 		struct PanLawMonoSubItem : MenuItem {
-			Mixer *module;
+			MixMasterJr *module;
 			int setVal = 0;
 			void onAction(const event::Action &e) override {
 				module->gInfo.panLawMono = setVal;
 			}
 		};
-		Mixer *module;
+		MixMasterJr *module;
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
 
@@ -567,13 +279,13 @@ struct MixerWidget : ModuleWidget {
 
 	struct PanLawStereoItem : MenuItem {
 		struct PanLawStereoSubItem : MenuItem {
-			Mixer *module;
+			MixMasterJr *module;
 			int setVal = 0;
 			void onAction(const event::Action &e) override {
 				module->gInfo.panLawStereo = setVal;
 			}
 		};
-		Mixer *module;
+		MixMasterJr *module;
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
 
@@ -591,7 +303,7 @@ struct MixerWidget : ModuleWidget {
 	};
 
 	void appendContextMenu(Menu *menu) override {
-		Mixer *module = dynamic_cast<Mixer*>(this->module);
+		MixMasterJr *module = dynamic_cast<MixMasterJr*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuLabel());// empty line
@@ -612,7 +324,7 @@ struct MixerWidget : ModuleWidget {
 	// Module's widget
 	// --------------------
 
-	MixerWidget(Mixer *module) {
+	MixMasterJrWidget(MixMasterJr *module) {
 		setModule(module);
 
 		// Main panels from Inkscape
@@ -623,64 +335,64 @@ struct MixerWidget : ModuleWidget {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.2))));
 			// Left inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, Mixer::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21)), true, module, Mixer::TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 30.7)), true, module, Mixer::TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 30.7)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 39.7)), true, module, Mixer::TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 39.7)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51)), module, Mixer::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Faders
-			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4)), module, Mixer::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109)), module, Mixer::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3)), module, Mixer::TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group dec
-			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6)), module, Mixer::GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group inc
-			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6)), module, Mixer::GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
 
 		}
 		
 		// Monitor outputs and groups
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12)), false, module, Mixer::MONITOR_OUTPUTS + i, module ? &module->panelTheme : NULL));			
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12)), false, module, MONITOR_OUTPUTS + i, module ? &module->panelTheme : NULL));			
 
 			// Labels
 			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7))));
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7)), true, module, Mixer::GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 39.7)), true, module, Mixer::GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 39.7)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(217.17 + 12.7 * i, 51)), module, Mixer::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(217.17 + 12.7 * i, 51)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Faders
-			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4)), module, Mixer::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109)), module, Mixer::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3)), module, Mixer::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 		}
 		
 		// Main outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 12)), false, module, Mixer::MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21)), false, module, Mixer::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 12)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Main fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, Mixer::MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));		
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));		
 		
 	}
 	
 	void step() override {
-		Mixer* moduleM = (Mixer*)module;
+		MixMasterJr* moduleM = (MixMasterJr*)module;
 		if (moduleM) {
 			// Track labels (push and pull from module)
 			int trackLabelIndexToPull = moduleM->resetTrackLabelRequest;
@@ -707,4 +419,4 @@ struct MixerWidget : ModuleWidget {
 	}
 };
 
-Model *modelMixer = createModel<Mixer, MixerWidget>("MixMaster-jr");
+Model *modelMixMasterJr = createModel<MixMasterJr, MixMasterJrWidget>("MixMaster-Jr");

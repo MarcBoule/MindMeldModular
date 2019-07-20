@@ -20,7 +20,7 @@ extern Plugin *pluginInstance;
 
 
 // All modules that are part of pluginInstance go here
-extern Model *modelMixer;
+extern Model *modelMixMasterJr;
 
 
 

@@ -14,7 +14,7 @@ Plugin *pluginInstance;
 void init(rack::Plugin *p) {
 	pluginInstance = p;
 
-	p->addModel(modelMixer);
+	p->addModel(modelMixMasterJr);
 }
 
 

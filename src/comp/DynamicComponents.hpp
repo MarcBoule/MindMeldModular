@@ -4,8 +4,8 @@
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
 
-#ifndef IM_DYNAMICCOMP_HPP
-#define IM_DYNAMICCOMP_HPP
+#ifndef MMM_DYNAMICCOMP_HPP
+#define MMM_DYNAMICCOMP_HPP
 
 
 #include "rack.hpp"

@@ -14,8 +14,8 @@
 	"changelogUrl": "",
 	"modules": [
 		{
-			"slug": "MixMaster-jr",
-			"name": "MixMaster-jr",
+			"slug": "MixMaster-Jr",
+			"name": "MixMaster-Jr",
 			"description": "16-track stereo mixer with 4 aux effects, groups and EQ",
 			"tags": ["Mixer"]
 		}
