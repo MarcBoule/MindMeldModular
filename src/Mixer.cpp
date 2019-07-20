@@ -138,7 +138,7 @@ struct MixerTrack {
 		
 		float pan = paPan->getValue();
 		if (inPan->isConnected()) {
-			pan += inPan->getVoltage() * 0.2f;// this is a -5V to +5V input
+			pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
 		}
 		
 		panLinRcoeff = 0.0f;
@@ -442,7 +442,7 @@ struct Mixer : Module {
 	
 	void process(const ProcessArgs &args) override {
 		if (refresh.processInputs()) {
-			int trackToProcess = refresh.refreshCounter & (16 - 1);
+			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
 			gInfo.updateSoloAllOff(&params[TRACK_SOLO_PARAMS]);// TODO optimize this (spread in 16 passes?) 
 			tracks[trackToProcess].updatePanCoeff();
@@ -600,11 +600,11 @@ struct MixerWidget : ModuleWidget {
 		settingsLabel->text = "Settings";
 		menu->addChild(settingsLabel);
 		
-		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono panning", RIGHT_ARROW);
+		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
 		panLawMonoItem->module = module;
 		menu->addChild(panLawMonoItem);
 		
-		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo panning", RIGHT_ARROW);
+		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 		panLawStereoItem->module = module;
 		menu->addChild(panLawStereoItem);
 	}

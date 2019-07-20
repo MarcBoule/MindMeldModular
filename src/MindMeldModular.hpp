@@ -34,9 +34,10 @@ extern Model *modelMixer;
 struct RefreshCounter {
 	// Note: because of stagger, and asyncronous dataFromJson, should not assume this processInputs() will return true on first run
 	// of module::process()
-	static const unsigned int displayRefreshStepSkips = 256;
+	static const unsigned int displayRefreshStepSkips = 256;// 
 	static const unsigned int userInputsStepSkipMask = 0xF;// sub interval of displayRefreshStepSkips, since inputs should be more responsive than lights
 	// above value should make it such that inputs are sampled > 1kHz so as to not miss 1ms triggers
+	// 256, 0xF will give input sampled at 2756 Hz and lights at 172 Hz
 	
 	unsigned int refreshCounter = (random::u32() % displayRefreshStepSkips);// stagger start values to avoid processing peaks when many Geo and Impromptu modules in the patch
 	
