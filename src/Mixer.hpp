@@ -126,7 +126,7 @@ struct GlobalInfo {
 
 struct MixerTrack {
 	// Constants
-	static constexpr float trackFaderScalingExponent = 4.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
+	static constexpr float trackFaderScalingExponent = 2.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	
 	// need to save, no reset

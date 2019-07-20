@@ -15,7 +15,7 @@ struct MixMasterJr : Module {
 
 
 	// Constants
-	static constexpr float masterFaderScalingExponent = 4.0f; 
+	static constexpr float masterFaderScalingExponent = 2.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
 
 	// Need to save, no reset
