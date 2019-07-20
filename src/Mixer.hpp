@@ -160,6 +160,8 @@ struct MixerTrack {
 	Param *paMute;
 	Param *paSolo;
 	Param *paPan;
+	float finalSigL;// for VUs and post-track monitor outputs
+	float finalSigR;// for VUs and post-track monitor outputs
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params) {
@@ -314,16 +316,16 @@ struct MixerTrack {
 		}
 
 		// Apply pan
-		float pannedSigL = sigL * panLcoeff;
-		float pannedSigR = sigR * panRcoeff;
+		finalSigL = sigL * panLcoeff;
+		finalSigR = sigR * panRcoeff;
 		if (stereo && gInfo->panLawStereo != 0) {
-			pannedSigL += sigR * panRinLcoeff;
-			pannedSigR += sigL * panLinRcoeff;
+			finalSigL += sigR * panRinLcoeff;
+			finalSigR += sigL * panLinRcoeff;
 		}
 
 		// Add to mix
-		*mixL += pannedSigL;
-		*mixR += pannedSigR;
+		*mixL += finalSigL;
+		*mixR += finalSigR;
 	}
 };// struct MixerTrack
 
