@@ -41,13 +41,15 @@ enum InputIds {
 
 
 enum OutputIds {
-	ENUMS(MONITOR_OUTPUTS, 4), // Track 1-8, Track 9-16, Groups and Aux
+	ENUMS(DIRECT_OUTPUTS, 4), // Track 1-8, Track 9-16, Groups and Aux
 	ENUMS(MAIN_OUTPUTS, 2),
 	NUM_OUTPUTS
 };
 
 
 enum LightIds {
+	ENUMS(TRACK_HPF_LIGHTS, 16),
+	ENUMS(GROUP_HPF_LIGHTS, 4),
 	NUM_LIGHTS
 };
 
@@ -63,6 +65,7 @@ struct GlobalInfo {
 	// need to save, with reset
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
+	int directOutsMode;// 0 is pre-fader, 1 is post-fader
 	
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see it should play
@@ -74,6 +77,7 @@ struct GlobalInfo {
 	void onReset() {
 		panLawMono = 1;
 		panLawStereo = 0;
+		directOutsMode = 1;// post should be default
 		// extern must call resetNonJson()
 	}
 	
@@ -108,6 +112,9 @@ struct GlobalInfo {
 
 		// panLawStereo
 		json_object_set_new(rootJ, "panLawStereo", json_integer(panLawStereo));
+
+		// directOutsMode
+		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -120,6 +127,11 @@ struct GlobalInfo {
 		json_t *panLawStereoJ = json_object_get(rootJ, "panLawStereo");
 		if (panLawStereoJ)
 			panLawStereo = json_integer_value(panLawStereoJ);
+		
+		// directOutsMode
+		json_t *directOutsModeJ = json_object_get(rootJ, "directOutsMode");
+		if (directOutsModeJ)
+			directOutsMode = json_integer_value(directOutsModeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -140,13 +152,14 @@ struct MixerTrack {
 	// need to save, with reset
 	int group;// -1 is no group, 0 to 3 is group
 	float gainAdjust;// this is a gain here (not dB)
+	float hpfCutoffFreq;
 
 	// no need to save, with reset
 	bool stereo;// pan coefficients use this, so set up first
-	float panLcoeff;
-	float panRcoeff;
+	float panCoeff[2];
 	float panLinRcoeff;// used only for True stereo panning
 	float panRinLcoeff;// used only for True stereo panning
+	dsp::SlewLimiter gainSlewers[2];
 
 	// no need to save, no reset
 	int trackNum;
@@ -161,10 +174,8 @@ struct MixerTrack {
 	Param *paSolo;
 	Param *paPan;
 	char* trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
-	float preL;// for pre-track (aka fader+pan) monitor outputs
-	float preR;// for pre-track monitor outputs
-	float postL;// for VUs and post-track monitor outputs
-	float postR;// for VUs and post-track monitor outputs
+	float pre[2];// for pre-track (aka fader+pan) monitor outputs
+	float post[2];// for VUs and post-track monitor outputs
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
@@ -180,16 +191,21 @@ struct MixerTrack {
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
+		gainSlewers[0].setRiseFall(400.0f, 400.0f);
+		gainSlewers[0].setRiseFall(400.0f, 400.0f);
 	}
 	
 	
 	void onReset() {
 		group = -1;
 		gainAdjust = 1.0f;
+		hpfCutoffFreq = 1.0f;// off
 		// extern must call resetNonJson()
 	}
 	void resetNonJson() {
 		updatePanCoeff();
+		gainSlewers[0].reset();
+		gainSlewers[1].reset();
 	}
 	
 	void updatePanCoeff() {
@@ -205,36 +221,36 @@ struct MixerTrack {
 		if (!stereo) {// mono
 			if (gInfo->panLawMono == 1) {
 				// Equal power panning law (+3dB boost)
-				panRcoeff = std::sin(pan * M_PI_2) * M_SQRT2;
-				panLcoeff = std::cos(pan * M_PI_2) * M_SQRT2;
+				panCoeff[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				panCoeff[0] = std::cos(pan * M_PI_2) * M_SQRT2;
 			}
 			else if (gInfo->panLawMono == 0) {
 				// No compensation (+0dB boost)
-				panRcoeff = std::min(1.0f, pan * 2.0f);
-				panLcoeff = std::min(1.0f, 2.0f - pan * 2.0f);
+				panCoeff[1] = std::min(1.0f, pan * 2.0f);
+				panCoeff[0] = std::min(1.0f, 2.0f - pan * 2.0f);
 			}
 			else if (gInfo->panLawMono == 2) {
 				// Compromise (+4.5dB boost)
-				panRcoeff = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-				panLcoeff = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+				panCoeff[1] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+				panCoeff[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
 			}
 			else {
 				// Linear panning law (+6dB boost)
-				panRcoeff = pan * 2.0f;
-				panLcoeff = 2.0f - panRcoeff;
+				panCoeff[1] = pan * 2.0f;
+				panCoeff[0] = 2.0f - panCoeff[1];
 			}
 		}
 		else {// stereo
 			if (gInfo->panLawStereo == 0) {
 				// Stereo balance (+3dB), same as mono equal power
-				panRcoeff = std::sin(pan * M_PI_2) * M_SQRT2;
-				panLcoeff = std::cos(pan * M_PI_2) * M_SQRT2;
+				panCoeff[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				panCoeff[0] = std::cos(pan * M_PI_2) * M_SQRT2;
 			}
 			else {
 				// True panning, equal power
-				panRcoeff = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				panCoeff[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
 				panRinLcoeff = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-				panLcoeff = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				panCoeff[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
 				panLinRcoeff = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 			}
 		}
@@ -253,6 +269,9 @@ struct MixerTrack {
 
 		// gainAdjust
 		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
+		
+		// hpfCutoffFreq
+		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(hpfCutoffFreq));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -266,77 +285,75 @@ struct MixerTrack {
 		if (gainAdjustJ)
 			gainAdjust = json_number_value(gainAdjustJ);
 		
+		// hpfCutoffFreq
+		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
+		if (hpfCutoffFreqJ)
+			hpfCutoffFreq = json_number_value(hpfCutoffFreqJ);
+		
 		// extern must call resetNonJson()
 	}
 	
 	
 	
-	void process(float *mixL, float *mixR) {
+	void process(float *mix, float sampleTime) {
 		if (!inL->isConnected()) {
-			preL = 0.0f;
-			preR = 0.0f;
-			postL = 0.0f;
-			postR = 0.0f;
+			pre[0] = 0.0f;
+			pre[1] = 0.0f;
+			post[0] = 0.0f;
+			post[1] = 0.0f;
 			return;
 		}
 		
 		// Here we have an input, so get it
-		float sigL = preL = inL->getVoltage();
-		float sigR = preR = stereo ? inR->getVoltage() : sigL;
+		float sigL = pre[0] = inL->getVoltage();
+		float sigR = pre[1] = stereo ? inR->getVoltage() : sigL;
 		
-		if ( (gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f) ) {// solo and mute			
-			postL = 0.0f;
-			postR = 0.0f;
-			return;
+
+		// Calc track gain
+		// Gain adjust
+		float gain = gainAdjust;
+		// solo and mute
+		if ( (gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f) ) {
+			gain = 0.0f;
 		}
-
-		// Calc track fader gain
-		float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-		
-		// Get inputs and apply pan
-		if (!stereo) {// mono
-			// Apply fader gain
-			sigL *= gain;
-
-			// Apply CV gain
-			if (inVol->isConnected()) {
-				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-				sigL *= cv;
+		if (gain != 0.0f) {
+			// fader
+			float faderGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+			if (gain == 1.0f) {
+				gain = faderGain;
 			}
-			
-			// Apply gain adjust
-			sigL *= gainAdjust;
-
+			else {
+				gain *= faderGain;
+			}
+			// vol CV input
+			if (inVol->isConnected()) {
+				gain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
+			}
+		}
+		float slewedGain = gainSlewers[0].process(sampleTime, gain);
+		// TODO split gain into L,R gains and slew separately
+		
+		// Apply gain
+		if (!stereo) {// mono
+			sigL *= slewedGain;
 			sigR = sigL;
 		}
 		else {// stereo
-			// Apply fader gain
-			sigL *= gain;
-			sigR *= gain;
-
-			// Apply CV gain
-			if (inVol->isConnected()) {
-				float cv = clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-				sigL *= cv;
-				sigR *= cv;
-			}
-
-			// Apply gain adjust
-			sigL *= gainAdjust;
-			sigR *= gainAdjust;
+			sigL *= slewedGain;
+			sigR *= slewedGain;
 		}
 
 		// Apply pan
-		postL = sigL * panLcoeff;
-		postR = sigR * panRcoeff;
+		post[0] = sigL * panCoeff[0];
+		post[1] = sigR * panCoeff[1];
 		if (stereo && gInfo->panLawStereo != 0) {
-			postL += sigR * panRinLcoeff;
-			postR += sigL * panLinRcoeff;
+			post[0] += sigR * panRinLcoeff;
+			post[1] += sigL * panLinRcoeff;
 		}
 
 		// Add to mix
-		*mixL += postL;
-		*mixR += postR;
+		mix[0] += post[0];
+		mix[1] += post[1];
 	}
 };// struct MixerTrack
 

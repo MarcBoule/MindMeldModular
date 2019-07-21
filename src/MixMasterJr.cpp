@@ -18,6 +18,7 @@ struct MixMasterJr : Module {
 	// Constants
 	static constexpr float masterFaderScalingExponent = 3.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
+	int numChannelsDirectOuts = 16;// avoids warning when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
 	int panelTheme;
@@ -168,7 +169,7 @@ struct MixMasterJr : Module {
 
 		// Tracks
 		for (int i = 0; i < 16; i++) {// groups not done yet so stop at 16 instead of 20
-			tracks[i].process(&mix[0], &mix[1]);
+			tracks[i].process(mix, args.sampleTime);
 		}
 
 		// Main output
@@ -185,10 +186,45 @@ struct MixMasterJr : Module {
 			// mix[1] *= cv;
 		// }
 
-		// Set mix output
+		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
+		// Direct outs
+		// P1-8
+		if (outputs[DIRECT_OUTPUTS + 0].isConnected()) {
+			outputs[DIRECT_OUTPUTS + 0].setChannels(numChannelsDirectOuts);
+			if (gInfo.directOutsMode == 1) {// post-fader
+				for (unsigned int i = 0; i < 8; i++) {
+					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].post[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].post[1], 2 * i + 1);
+				}
+			}
+			else// pre-fader
+			{
+				for (unsigned int i = 0; i < 8; i++) {
+					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].pre[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].pre[1], 2 * i + 1);
+				}
+			}
+		}		
+		// P9-16
+		if (outputs[DIRECT_OUTPUTS + 1].isConnected()) {
+			outputs[DIRECT_OUTPUTS + 1].setChannels(numChannelsDirectOuts);
+			if (gInfo.directOutsMode == 1) {// post-fader
+				for (unsigned int i = 0; i < 8; i++) {
+					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].post[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].post[1], 2 * i + 1);
+				}
+			}
+			else// pre-fader
+			{
+				for (unsigned int i = 0; i < 8; i++) {
+					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].pre[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].pre[1], 2 * i + 1);
+				}
+			}
+		}
 		
 		// lights
 		if (refresh.processLights()) {
@@ -218,6 +254,10 @@ struct MixMasterJrWidget : ModuleWidget {
 		settingsLabel->text = "Settings";
 		menu->addChild(settingsLabel);
 		
+		DirectOutsItem *directOutsItem = createMenuItem<DirectOutsItem>("Direct outs", RIGHT_ARROW);
+		directOutsItem->gInfo = &(module->gInfo);
+		menu->addChild(directOutsItem);
+		
 		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
 		panLawMonoItem->gInfo = &(module->gInfo);
 		menu->addChild(panLawMonoItem);
@@ -243,6 +283,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			if (module) {
 				trackDisplays[i]->srcTrack = &(module->tracks[i]);
 			}
+			// HPF lights
+			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(15.6 + 12.7 * i, 7.8)), module, TRACK_HPF_LIGHTS + i));	
 			// Left inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
@@ -271,10 +313,12 @@ struct MixMasterJrWidget : ModuleWidget {
 		// Monitor outputs and groups
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12)), false, module, MONITOR_OUTPUTS + i, module ? &module->panelTheme : NULL));			
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));			
 
 			// Labels
 			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7))));
+			// HPF lights
+			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(217.17 + 4.17 + 12.7 * i, 7.8)), module, GROUP_HPF_LIGHTS + i));	
 			// Volume inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs

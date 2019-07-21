@@ -12,9 +12,10 @@
 #include "Mixer.hpp"
 
 
+// Track context menu
+// --------------------
 
-// TODO: make this thing reference a MixerTrack directly, and store the label in there! (make sure this works re push/pull)
-
+// Gain adjust
 
 struct GainAdjustQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
@@ -49,6 +50,44 @@ struct GainAdjustSlider : ui::Slider {
 	}
 };
 
+
+// HPF cutoff
+
+struct HPFCutoffQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	
+	HPFCutoffQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		srcTrack->hpfCutoffFreq = math::clamp(value, getMinValue(), getMaxValue());
+	}
+	float getValue() override {
+		return srcTrack->hpfCutoffFreq;
+	}
+	float getMinValue() override {return 1.0f;}
+	float getMaxValue() override {return 300.0f;}
+	float getDefaultValue() override {return 1.0f;}
+	float getDisplayValue() override {return getValue();}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "HPF Cutoff";}
+	std::string getUnit() override {return " Hz";}
+};
+
+struct HPFCutoffSlider : ui::Slider {
+	HPFCutoffSlider(MixerTrack *srcTrack) {
+		quantity = new HPFCutoffQuantity(srcTrack);
+	}
+	~HPFCutoffSlider() {
+		delete quantity;
+	}
+};
+
+
+
+
+// Track display editable label
+// --------------------
 
 struct TrackDisplay : LedDisplayTextField {
 	MixerTrack *srcTrack = NULL;
@@ -92,6 +131,10 @@ struct TrackDisplay : LedDisplayTextField {
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
+			
+			HPFCutoffSlider *trackHPFAdjustSlider = new HPFCutoffSlider(srcTrack);
+			trackHPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(trackHPFAdjustSlider);
 			
 			e.consume(this);
 			return;
@@ -149,6 +192,7 @@ struct PanLawMonoItem : MenuItem {
 	}
 };
 
+
 struct PanLawStereoItem : MenuItem {
 	GlobalInfo *gInfo;
 
@@ -176,5 +220,32 @@ struct PanLawStereoItem : MenuItem {
 	}
 };
 
+
+struct DirectOutsItem : MenuItem {
+	GlobalInfo *gInfo;
+
+	struct DirectOutsSubItem : MenuItem {
+		GlobalInfo *gInfo;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			gInfo->directOutsMode = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		DirectOutsSubItem *law0Item = createMenuItem<DirectOutsSubItem>("Pre-fader", CHECKMARK(gInfo->directOutsMode == 0));
+		law0Item->gInfo = gInfo;
+		menu->addChild(law0Item);
+
+		DirectOutsSubItem *law1Item = createMenuItem<DirectOutsSubItem>("Post-fader", CHECKMARK(gInfo->directOutsMode == 1));
+		law1Item->gInfo = gInfo;
+		law1Item->setVal = 1;
+		menu->addChild(law1Item);
+
+		return menu;
+	}
+};
 
 #endif
