@@ -68,10 +68,27 @@ struct HPFCutoffQuantity : Quantity {
 	float getMinValue() override {return 1.0f;}
 	float getMaxValue() override {return 300.0f;}
 	float getDefaultValue() override {return 1.0f;}
+	int getDisplayPrecision() override {return 3;}
 	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut >= 30.0f) {
+			return string::f("%.*g", getDisplayPrecision(), math::normalizeZero(valCut));
+		}
+		else {
+			return "OFF";
+		}
+	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "HPF Cutoff";}
-	std::string getUnit() override {return " Hz";}
+	std::string getUnit() override {
+		if (getDisplayValue() >= 30.0f) {
+			return " Hz";
+		}
+		else {
+			return "";
+		}
+	}
 };
 
 struct HPFCutoffSlider : ui::Slider {
