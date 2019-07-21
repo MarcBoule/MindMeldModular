@@ -193,7 +193,7 @@ struct MixerTrack {
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
 		gainSlewers[0].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
-		gainSlewers[0].setRiseFall(100.0f, 100.0f);
+		gainSlewers[0].setRiseFall(100.0f, 100.0f); // 100.0f was calibrated with SB testing
 	}
 	
 	
