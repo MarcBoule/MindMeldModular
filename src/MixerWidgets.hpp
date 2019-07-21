@@ -68,12 +68,11 @@ struct HPFCutoffQuantity : Quantity {
 	float getMinValue() override {return 1.0f;}
 	float getMaxValue() override {return 300.0f;}
 	float getDefaultValue() override {return 1.0f;}
-	int getDisplayPrecision() override {return 3;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut >= 30.0f) {
-			return string::f("%.*g", getDisplayPrecision(), math::normalizeZero(valCut));
+		if (valCut >= MixerTrack::minHPFCutoffFreq) {
+			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
 		}
 		else {
 			return "OFF";
@@ -82,7 +81,7 @@ struct HPFCutoffQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "HPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= 30.0f) {
+		if (getDisplayValue() >= MixerTrack::minHPFCutoffFreq) {
 			return " Hz";
 		}
 		else {

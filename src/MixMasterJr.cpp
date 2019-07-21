@@ -228,7 +228,9 @@ struct MixMasterJr : Module {
 		
 		// lights
 		if (refresh.processLights()) {
-
+			for (int i = 0; i < 16; i++) {
+				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].hpfCutoffFreq >= MixerTrack::minHPFCutoffFreq ? 1.0f : 0.0f);
+			}
 		}
 		
 	}// process()

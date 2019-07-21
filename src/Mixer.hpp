@@ -145,6 +145,7 @@ struct MixerTrack {
 	// Constants
 	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float minHPFCutoffFreq = 30.0f;
 	
 	// need to save, no reset
 	// none
@@ -191,8 +192,8 @@ struct MixerTrack {
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
-		gainSlewers[0].setRiseFall(400.0f, 400.0f);
-		gainSlewers[0].setRiseFall(400.0f, 400.0f);
+		gainSlewers[0].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers[0].setRiseFall(100.0f, 100.0f);
 	}
 	
 	
