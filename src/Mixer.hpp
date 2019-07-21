@@ -160,11 +160,12 @@ struct MixerTrack {
 	Param *paMute;
 	Param *paSolo;
 	Param *paPan;
+	char* trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float finalSigL;// for VUs and post-track monitor outputs
 	float finalSigR;// for VUs and post-track monitor outputs
 
 
-	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params) {
+	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
 		trackNum = _trackNum;
 		gInfo = _gInfo;
 		ids = "id" + std::to_string(trackNum) + "_";
@@ -176,6 +177,7 @@ struct MixerTrack {
 		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
+		trackName = _trackName;
 	}
 	
 	

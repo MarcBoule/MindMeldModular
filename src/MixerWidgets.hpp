@@ -15,39 +15,43 @@
 
 // TODO: make this thing reference a MixerTrack directly, and store the label in there! (make sure this works re push/pull)
 
+
+struct GainAdjustQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	float gainInDB = 0.0f;
+	
+	GainAdjustQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		gainInDB = math::clamp(value, getMinValue(), getMaxValue());
+		srcTrack->gainAdjust = std::pow(10.0f, gainInDB / 20.0f);
+	}
+	float getValue() override {
+		gainInDB = 20.0f * std::log10(srcTrack->gainAdjust);
+		return gainInDB;
+	}
+	float getMinValue() override {return -20.0f;}
+	float getMaxValue() override {return 20.0f;}
+	float getDefaultValue() override {return 0.0f;}
+	float getDisplayValue() override {return getValue();}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Gain adjust";}
+	std::string getUnit() override {return " dB";}
+};
+
+struct GainAdjustSlider : ui::Slider {
+	GainAdjustSlider(MixerTrack *srcTrack) {
+		quantity = new GainAdjustQuantity(srcTrack);
+	}
+	~GainAdjustSlider() {
+		delete quantity;
+	}
+};
+
+
 struct TrackDisplay : LedDisplayTextField {
-	float gainAdjust = 0.0f;// in dB here, but when push/pull from master, convert to/from linear
-
-	struct TrackGainAdjustQuantity : Quantity {
-		float *gainAdjustPtr = NULL;
-		
-		TrackGainAdjustQuantity(float *_gainAdjust) {
-			gainAdjustPtr = _gainAdjust;
-		}
-		void setValue(float value) override {
-			*gainAdjustPtr = math::clamp(value, getMinValue(), getMaxValue());
-		}
-		float getValue() override {
-			return *gainAdjustPtr;
-		}
-		float getMinValue() override {return -20.0f;}
-		float getMaxValue() override {return 20.0f;}
-		float getDefaultValue() override {return 0.0f;}
-		float getDisplayValue() override {return getValue();}
-		void setDisplayValue(float displayValue) override {setValue(displayValue);}
-		std::string getLabel() override {return "Gain adjust";}
-		std::string getUnit() override {return " dB";}
-	};
-
-	struct GainAdjustSlider : ui::Slider {
-		GainAdjustSlider(float *_gainAdjust) {
-			quantity = new TrackGainAdjustQuantity(_gainAdjust);
-		}
-		~GainAdjustSlider() {
-			delete quantity;
-		}
-	};
-
+	MixerTrack *srcTrack = NULL;
 
 	TrackDisplay() {
 		box.size = Vec(38, 16);
@@ -85,16 +89,22 @@ struct TrackDisplay : LedDisplayTextField {
 			lowcutLabel->text = "Track settings: ";
 			menu->addChild(lowcutLabel);
 			
-			GainAdjustSlider *gainAdjustSlider = new GainAdjustSlider(&gainAdjust);
-			gainAdjustSlider->box.size.x = 200.0;
-			menu->addChild(gainAdjustSlider);
+			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
+			trackGainAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(trackGainAdjustSlider);
 			
 			e.consume(this);
 			return;
 		}
 		LedDisplayTextField::onButton(e);
 	}
-
+	void onChange(const event::Change &e) override {
+		(*((uint32_t*)(srcTrack->trackName))) = 0x20202020;
+		for (unsigned i = 0; i < text.length(); i++) {
+			srcTrack->trackName[i] = text[i];
+		}
+		LedDisplayTextField::onChange(e);
+	};
 };
 
 

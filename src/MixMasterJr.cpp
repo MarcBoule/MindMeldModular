@@ -79,7 +79,7 @@ struct MixMasterJr : Module {
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		
 		for (int i = 0; i < 20; i++) {
-			tracks[i].construct(i, &gInfo, &inputs[0], &params[0]);
+			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
 		}
 		onReset();
 
@@ -203,7 +203,6 @@ struct MixMasterJr : Module {
 
 struct MixMasterJrWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[20];
-	unsigned int trackLabelIndexToPush = 0;
 
 
 	// Module's context menu
@@ -241,6 +240,9 @@ struct MixMasterJrWidget : ModuleWidget {
 		for (int i = 0; i < 16; i++) {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.2))));
+			if (module) {
+				trackDisplays[i]->srcTrack = &(module->tracks[i]);
+			}
 			// Left inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
@@ -301,26 +303,13 @@ struct MixMasterJrWidget : ModuleWidget {
 	void step() override {
 		MixMasterJr* moduleM = (MixMasterJr*)module;
 		if (moduleM) {
-			// Track labels and other info (push and pull from module)
+			// Track labels (pull from module)
 			int trackLabelIndexToPull = moduleM->resetTrackLabelRequest;
 			if (trackLabelIndexToPull >= 0) {// pull request from module
 				trackDisplays[trackLabelIndexToPull]->text = std::string(&(moduleM->trackLabels[trackLabelIndexToPull * 4]), 4);
-				trackDisplays[trackLabelIndexToPull]->gainAdjust = 20.0f * std::log10(moduleM->tracks[trackLabelIndexToPull].gainAdjust);// convert linear to dB for slider
 				moduleM->resetTrackLabelRequest++;
 				if (moduleM->resetTrackLabelRequest >= 20) {
 					moduleM->resetTrackLabelRequest = -1;// all done pulling
-				}
-			}
-			else {// push to module regularly
-				int unsigned i = 0;
-				*((uint32_t*)(&(moduleM->trackLabels[trackLabelIndexToPush * 4]))) = 0x20202020;
-				for (; i < trackDisplays[trackLabelIndexToPush]->text.length(); i++) {
-					moduleM->trackLabels[trackLabelIndexToPush * 4 + i] = trackDisplays[trackLabelIndexToPush]->text[i];
-				}
-				moduleM->tracks[trackLabelIndexToPush].gainAdjust = std::pow(10.0f, trackDisplays[trackLabelIndexToPush]->gainAdjust / 20.0f);
-				trackLabelIndexToPush++;
-				if (trackLabelIndexToPush >= 20) {
-					trackLabelIndexToPush = 0;
 				}
 			}
 		}
