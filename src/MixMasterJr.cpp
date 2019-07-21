@@ -296,21 +296,18 @@ struct MixMasterJrWidget : ModuleWidget {
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Main fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));		
-		
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {
 		MixMasterJr* moduleM = (MixMasterJr*)module;
 		if (moduleM) {
 			// Track labels (pull from module)
-			int trackLabelIndexToPull = moduleM->resetTrackLabelRequest;
-			if (trackLabelIndexToPull >= 0) {// pull request from module
-				trackDisplays[trackLabelIndexToPull]->text = std::string(&(moduleM->trackLabels[trackLabelIndexToPull * 4]), 4);
-				moduleM->resetTrackLabelRequest++;
-				if (moduleM->resetTrackLabelRequest >= 20) {
-					moduleM->resetTrackLabelRequest = -1;// all done pulling
+			if (moduleM->resetTrackLabelRequest >= 0) {// pull request from module
+				for (int trk = 0; trk < 20; trk++) {
+					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
 				}
+				moduleM->resetTrackLabelRequest = -1;// all done pulling
 			}
 		}
 		Widget::step();

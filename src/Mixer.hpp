@@ -161,8 +161,10 @@ struct MixerTrack {
 	Param *paSolo;
 	Param *paPan;
 	char* trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
-	float finalSigL;// for VUs and post-track monitor outputs
-	float finalSigR;// for VUs and post-track monitor outputs
+	float preL;// for pre-track (aka fader+pan) monitor outputs
+	float preR;// for pre-track monitor outputs
+	float postL;// for VUs and post-track monitor outputs
+	float postR;// for VUs and post-track monitor outputs
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
@@ -270,10 +272,21 @@ struct MixerTrack {
 	
 	
 	void process(float *mixL, float *mixR) {
-		if (!inL->isConnected() || paMute->getValue() > 0.5f) {
+		if (!inL->isConnected()) {
+			preL = 0.0f;
+			preR = 0.0f;
+			postL = 0.0f;
+			postR = 0.0f;
 			return;
 		}
-		if (gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) {
+		
+		// Here we have an input, so get it
+		float sigL = preL = inL->getVoltage();
+		float sigR = preR = stereo ? inR->getVoltage() : sigL;
+		
+		if ( (gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f) ) {// solo and mute			
+			postL = 0.0f;
+			postR = 0.0f;
 			return;
 		}
 
@@ -281,8 +294,6 @@ struct MixerTrack {
 		float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
 		
 		// Get inputs and apply pan
-		float sigL = inL->getVoltage();
-		float sigR;
 		if (!stereo) {// mono
 			// Apply fader gain
 			sigL *= gain;
@@ -299,8 +310,6 @@ struct MixerTrack {
 			sigR = sigL;
 		}
 		else {// stereo
-			sigR = inR->getVoltage();
-		
 			// Apply fader gain
 			sigL *= gain;
 			sigR *= gain;
@@ -318,16 +327,16 @@ struct MixerTrack {
 		}
 
 		// Apply pan
-		finalSigL = sigL * panLcoeff;
-		finalSigR = sigR * panRcoeff;
+		postL = sigL * panLcoeff;
+		postR = sigR * panRcoeff;
 		if (stereo && gInfo->panLawStereo != 0) {
-			finalSigL += sigR * panRinLcoeff;
-			finalSigR += sigL * panLinRcoeff;
+			postL += sigR * panRinLcoeff;
+			postR += sigL * panLinRcoeff;
 		}
 
 		// Add to mix
-		*mixL += finalSigL;
-		*mixR += finalSigR;
+		*mixL += postL;
+		*mixR += postR;
 	}
 };// struct MixerTrack
 
