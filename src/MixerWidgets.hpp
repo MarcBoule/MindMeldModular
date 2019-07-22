@@ -65,10 +65,10 @@ struct HPFCutoffQuantity : Quantity {
 		srcTrack = _srcTrack;
 	}
 	void setValue(float value) override {
-		srcTrack->hpfCutoffFreq = math::clamp(value, getMinValue(), getMaxValue());
+		srcTrack->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
 	}
 	float getValue() override {
-		return srcTrack->hpfCutoffFreq;
+		return srcTrack->getHPFCutoffFreq();
 	}
 	float getMinValue() override {return 1.0f;}
 	float getMaxValue() override {return 300.0f;}

@@ -10,6 +10,7 @@
 
 
 #include "MindMeldModular.hpp"
+#include "dsp/Biquad.hpp"
 
 
 enum ParamIds {
@@ -69,9 +70,9 @@ struct GlobalInfo {
 	
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see it should play
+	float sampleTime;
 
 	// no need to save, no reset
-	// none
 	
 
 	void onReset() {
@@ -83,6 +84,7 @@ struct GlobalInfo {
 	
 	void resetNonJson(Param *soloParams) {
 		updateSoloBitMask(soloParams);
+		sampleTime = APP->engine->getSampleTime();
 	}
 	
 	void updateSoloBitMask(Param *soloParams) {
@@ -153,7 +155,9 @@ struct MixerTrack {
 	// need to save, with reset
 	int group;// -1 is no group, 0 to 3 is group
 	float gainAdjust;// this is a gain here (not dB)
-	float hpfCutoffFreq;
+	private:
+	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
+	public:
 
 	// no need to save, with reset
 	bool stereo;// pan coefficients use this, so set up first
@@ -174,9 +178,18 @@ struct MixerTrack {
 	Param *paMute;
 	Param *paSolo;
 	Param *paPan;
-	char* trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float pre[2];// for pre-track (aka fader+pan) monitor outputs
 	float post[2];// for VUs and post-track monitor outputs
+	Biquad hpFilter[2];
+
+
+	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
+		hpfCutoffFreq = fc;
+		hpFilter[0].setFc(fc * gInfo->sampleTime);
+		hpFilter[1].setFc(fc * gInfo->sampleTime);
+	}
+	float getHPFCutoffFreq() {return hpfCutoffFreq;}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
@@ -194,13 +207,15 @@ struct MixerTrack {
 		trackName = _trackName;
 		gainSlewers[0].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
 		gainSlewers[0].setRiseFall(100.0f, 100.0f); // 100.0f was calibrated with SB testing
+		hpFilter[0].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
+		hpFilter[1].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
 	}
 	
 	
 	void onReset() {
 		group = -1;
 		gainAdjust = 1.0f;
-		hpfCutoffFreq = 1.0f;// off
+		setHPFCutoffFreq(1.0f);// off
 		// extern must call resetNonJson()
 	}
 	void resetNonJson() {
@@ -272,7 +287,7 @@ struct MixerTrack {
 		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 		
 		// hpfCutoffFreq
-		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(hpfCutoffFreq));
+		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -289,14 +304,14 @@ struct MixerTrack {
 		// hpfCutoffFreq
 		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
 		if (hpfCutoffFreqJ)
-			hpfCutoffFreq = json_number_value(hpfCutoffFreqJ);
+			setHPFCutoffFreq(json_number_value(hpfCutoffFreqJ));
 		
 		// extern must call resetNonJson()
 	}
 	
 	
 	
-	void process(float *mix, float sampleTime) {
+	void process(float *mix) {
 		if (!inL->isConnected()) {
 			pre[0] = 0.0f;
 			pre[1] = 0.0f;
@@ -309,7 +324,12 @@ struct MixerTrack {
 		float sigL = pre[0] = inL->getVoltage();
 		float sigR = pre[1] = stereo ? inR->getVoltage() : sigL;
 		
-
+		// HPF
+		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			sigL = hpFilter[0].process(sigL);
+			sigR = stereo ? hpFilter[1].process(sigR) : sigL;
+		}
+		
 		// Calc track gain
 		// Gain adjust
 		float gain = gainAdjust;
@@ -331,17 +351,19 @@ struct MixerTrack {
 				gain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
 			}
 		}
-		float slewedGain = gainSlewers[0].process(sampleTime, gain);
+		if (gain != gainSlewers[0].out) {
+			gain = gainSlewers[0].process(gInfo->sampleTime, gain);
+		}
 		// TODO split gain into L,R gains and slew separately
 		
 		// Apply gain
 		if (!stereo) {// mono
-			sigL *= slewedGain;
+			sigL *= gain;
 			sigR = sigL;
 		}
 		else {// stereo
-			sigL *= slewedGain;
-			sigR *= slewedGain;
+			sigL *= gain;
+			sigR *= gain;
 		}
 
 		// Apply pan

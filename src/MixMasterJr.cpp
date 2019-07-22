@@ -152,7 +152,11 @@ struct MixMasterJr : Module {
 		resetNonJson();
 	}
 
-	
+
+	void onSampleRateChange() override {
+		gInfo.sampleTime = APP->engine->getSampleTime();
+	}
+
 	void process(const ProcessArgs &args) override {
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
@@ -169,7 +173,7 @@ struct MixMasterJr : Module {
 
 		// Tracks
 		for (int i = 0; i < 16; i++) {// groups not done yet so stop at 16 instead of 20
-			tracks[i].process(mix, args.sampleTime);
+			tracks[i].process(mix);
 		}
 
 		// Main output
@@ -229,7 +233,7 @@ struct MixMasterJr : Module {
 		// lights
 		if (refresh.processLights()) {
 			for (int i = 0; i < 16; i++) {
-				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].hpfCutoffFreq >= MixerTrack::minHPFCutoffFreq ? 1.0f : 0.0f);
+				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= MixerTrack::minHPFCutoffFreq ? 1.0f : 0.0f);
 			}
 		}
 		
