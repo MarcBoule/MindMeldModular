@@ -234,6 +234,7 @@ struct MixMasterJr : Module {
 		if (refresh.processLights()) {
 			for (int i = 0; i < 16; i++) {
 				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= MixerTrack::minHPFCutoffFreq ? 1.0f : 0.0f);
+				lights[TRACK_LPF_LIGHTS + i].setBrightness(tracks[i].getLPFCutoffFreq() <= MixerTrack::maxLPFCutoffFreq ? 1.0f : 0.0f);
 			}
 		}
 		
@@ -290,7 +291,9 @@ struct MixMasterJrWidget : ModuleWidget {
 				trackDisplays[i]->srcTrack = &(module->tracks[i]);
 			}
 			// HPF lights
-			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(15.6 + 12.7 * i, 7.8)), module, TRACK_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 7.8)), module, TRACK_HPF_LIGHTS + i));	
+			// LPF lights
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(11.43 + 4.17 + 12.7 * i, 7.8)), module, TRACK_LPF_LIGHTS + i));	
 			// Left inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
@@ -324,7 +327,9 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Labels
 			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7))));
 			// HPF lights
-			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(217.17 + 4.17 + 12.7 * i, 7.8)), module, GROUP_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(217.17 - 4.17 + 12.7 * i, 7.8)), module, GROUP_HPF_LIGHTS + i));	
+			// LPF lights
+			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(217.17 + 4.17 + 12.7 * i, 7.8)), module, GROUP_LPF_LIGHTS + i));	
 			// Volume inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs

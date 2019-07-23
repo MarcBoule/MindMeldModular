@@ -56,7 +56,7 @@ struct GainAdjustSlider : ui::Slider {
 };
 
 
-// HPF cutoff
+// HPF filter cutoff
 
 struct HPFCutoffQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
@@ -70,9 +70,9 @@ struct HPFCutoffQuantity : Quantity {
 	float getValue() override {
 		return srcTrack->getHPFCutoffFreq();
 	}
-	float getMinValue() override {return 1.0f;}
-	float getMaxValue() override {return 300.0f;}
-	float getDefaultValue() override {return 1.0f;}
+	float getMinValue() override {return 13.0f;}
+	float getMaxValue() override {return 350.0f;}
+	float getDefaultValue() override {return 13.0f;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
@@ -106,8 +106,59 @@ struct HPFCutoffSlider : ui::Slider {
 
 
 
+// LPF filter cutoff
 
-// Track display editable label
+struct LPFCutoffQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	
+	LPFCutoffQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		srcTrack->setLPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
+	}
+	float getValue() override {
+		return srcTrack->getLPFCutoffFreq();
+	}
+	float getMinValue() override {return 3000.0f;}
+	float getMaxValue() override {return 21000.0f;}
+	float getDefaultValue() override {return 20010.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut <= MixerTrack::maxLPFCutoffFreq) {
+			valCut =  std::round(valCut / 100.0f);
+			return string::f("%g", math::normalizeZero(valCut / 10.0f));
+		}
+		else {
+			return "OFF";
+		}
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "LPF Cutoff";}
+	std::string getUnit() override {
+		if (getDisplayValue() <= MixerTrack::maxLPFCutoffFreq) {
+			return " kHz";
+		}
+		else {
+			return "";
+		}
+	}
+};
+
+struct LPFCutoffSlider : ui::Slider {
+	LPFCutoffSlider(MixerTrack *srcTrack) {
+		quantity = new LPFCutoffQuantity(srcTrack);
+	}
+	~LPFCutoffSlider() {
+		delete quantity;
+	}
+};
+
+
+
+
+// Track display editable label with menu
 // --------------------
 
 struct TrackDisplay : LedDisplayTextField {
@@ -156,6 +207,10 @@ struct TrackDisplay : LedDisplayTextField {
 			HPFCutoffSlider *trackHPFAdjustSlider = new HPFCutoffSlider(srcTrack);
 			trackHPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackHPFAdjustSlider);
+			
+			LPFCutoffSlider *trackLPFAdjustSlider = new LPFCutoffSlider(srcTrack);
+			trackLPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(trackLPFAdjustSlider);
 			
 			e.consume(this);
 			return;

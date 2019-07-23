@@ -51,6 +51,8 @@ enum OutputIds {
 enum LightIds {
 	ENUMS(TRACK_HPF_LIGHTS, 16),
 	ENUMS(GROUP_HPF_LIGHTS, 4),
+	ENUMS(TRACK_LPF_LIGHTS, 16),
+	ENUMS(GROUP_LPF_LIGHTS, 4),
 	NUM_LIGHTS
 };
 
@@ -147,7 +149,8 @@ struct MixerTrack {
 	// Constants
 	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float minHPFCutoffFreq = 30.0f;
+	static constexpr float minHPFCutoffFreq = 20.0f;
+	static constexpr float maxLPFCutoffFreq = 20000.0f;
 	
 	// need to save, no reset
 	// none
@@ -157,6 +160,7 @@ struct MixerTrack {
 	float gainAdjust;// this is a gain here (not dB)
 	private:
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
+	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
 
 	// no need to save, with reset
@@ -182,6 +186,7 @@ struct MixerTrack {
 	float pre[2];// for pre-track (aka fader+pan) monitor outputs
 	float post[2];// for VUs and post-track monitor outputs
 	Biquad hpFilter[2];
+	Biquad lpFilter[2];
 
 
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
@@ -190,6 +195,12 @@ struct MixerTrack {
 		hpFilter[1].setFc(fc * gInfo->sampleTime);
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
+	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
+		lpfCutoffFreq = fc;
+		lpFilter[0].setFc(fc * gInfo->sampleTime);
+		lpFilter[1].setFc(fc * gInfo->sampleTime);
+	}
+	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
@@ -205,17 +216,19 @@ struct MixerTrack {
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
-		gainSlewers[0].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
-		gainSlewers[0].setRiseFall(100.0f, 100.0f); // 100.0f was calibrated with SB testing
-		hpFilter[0].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
-		hpFilter[1].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
+		for (int i = 0; i < 2; i++) {
+			gainSlewers[i].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
+			hpFilter[i].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
+			lpFilter[i].setBiquad(BQ_TYPE_LOWPASS, 21000.0, 0.707, 0.0);
+		}
 	}
 	
 	
 	void onReset() {
 		group = -1;
 		gainAdjust = 1.0f;
-		setHPFCutoffFreq(1.0f);// off
+		setHPFCutoffFreq(13.0f);// off
+		setLPFCutoffFreq(20010.0f);// off
 		// extern must call resetNonJson()
 	}
 	void resetNonJson() {
@@ -288,6 +301,9 @@ struct MixerTrack {
 		
 		// hpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
+		
+		// lpfCutoffFreq
+		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -305,6 +321,11 @@ struct MixerTrack {
 		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
 		if (hpfCutoffFreqJ)
 			setHPFCutoffFreq(json_number_value(hpfCutoffFreqJ));
+		
+		// lpfCutoffFreq
+		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
+		if (lpfCutoffFreqJ)
+			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
 		
 		// extern must call resetNonJson()
 	}
@@ -328,6 +349,12 @@ struct MixerTrack {
 		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
 			sigL = hpFilter[0].process(sigL);
 			sigR = stereo ? hpFilter[1].process(sigR) : sigL;
+		}
+		
+		// LPF
+		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			sigL = lpFilter[0].process(sigL);
+			sigR = stereo ? lpFilter[1].process(sigR) : sigL;
 		}
 		
 		// Calc track gain
