@@ -350,10 +350,8 @@ struct MixerTrack {
 		
 		// TODO make filters antipop when on/off (make a flush of the shift reg)
 		// HPF
-		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-			sigL = hpFilter[0].process(sigL);
-			sigR = stereo ? hpFilter[1].process(sigR) : sigL;
-		}
+		sigL = hpFilter[0].processHPFopt(sigL);
+		sigR = stereo ? hpFilter[1].processHPFopt(sigR) : sigL;
 		
 		// LPF
 		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
