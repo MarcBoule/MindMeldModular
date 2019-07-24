@@ -348,6 +348,7 @@ struct MixerTrack {
 		float sigL = pre[0] = inL->getVoltage();
 		float sigR = pre[1] = stereo ? inR->getVoltage() : sigL;
 		
+		// TODO make filters antipop when on/off (make a flush of the shift reg)
 		// HPF
 		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
 			sigL = hpFilter[0].process(sigL);
@@ -379,8 +380,6 @@ struct MixerTrack {
 			}
 		}
 		gain = gainSlewers[0].process(gInfo->sampleTime, gain);
-		// TODO split gain into L,R gains and slew separately 
-		// TODO antipop on pan
 		
 		// Apply gain
 		if (!stereo) {// mono
@@ -392,6 +391,7 @@ struct MixerTrack {
 			sigR *= gain;
 		}
 
+		// TODO antipop on pan
 		// Apply pan
 		post[0] = sigL * panCoeff[0];
 		post[1] = sigR * panCoeff[1];

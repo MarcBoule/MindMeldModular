@@ -19,41 +19,8 @@ void init(rack::Plugin *p) {
 
 
 // General objects
-
-
-bool Trigger::process(float in) {
-	if (state) {
-		// HIGH to LOW
-		if (in <= 0.1f) {
-			state = false;
-		}
-	}
-	else {
-		// LOW to HIGH
-		if (in >= 1.0f) {
-			state = true;
-			return true;
-		}
-	}
-	return false;
-}	
-
-bool HoldDetect::process(float paramValue) {
-	bool ret = false;
-	if (modeHoldDetect > 0l) {
-		if (paramValue < 0.5f)
-			modeHoldDetect = 0l;
-		else {
-			if (modeHoldDetect == 1l) {
-				ret = true;
-			}
-			modeHoldDetect--;
-		}
-	}
-	return ret;
-}
+// none
 
 
 // General functions
-
 // none
