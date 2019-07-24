@@ -30,7 +30,8 @@ struct MixMasterJr : Module {
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
-	
+	dsp::SlewLimiter gainSlewer;
+
 	// No need to save, no reset
 	RefreshCounter refresh;	
 
@@ -78,10 +79,19 @@ struct MixMasterJr : Module {
 		}
 		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent);
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
+		// Mute
+		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
+		// Dim
+		configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "Master dim");
+		// Solo
+		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master solo");
+		
+		
 		
 		for (int i = 0; i < 20; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
 		}
+		gainSlewer.setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -102,6 +112,7 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 20; i++) {
 			tracks[i].resetNonJson();
 		}
+		gainSlewer.reset();
 	}
 
 
@@ -176,25 +187,28 @@ struct MixMasterJr : Module {
 			tracks[i].process(mix);
 		}
 
-		// Main output
-
-		// Apply mastet fader gain
-		float gain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+		// Main outputs
+		float gain = 0.0f;
+		if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
+			// Main fader
+			gain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+				gain *= 0.1;// -20 dB dim
+			}
+		}
+		if (gain != gainSlewer.out) {
+			gain = gainSlewer.process(gInfo.sampleTime, gain);
+		}
+		
+		// Apply gain
 		mix[0] *= gain;
 		mix[1] *= gain;
-
-		// Apply mix CV gain (UNUSED)
-		// if (inputs[MAIN_FADER_CV_INPUT].isConnected()) {
-			// float cv = clamp(inputs[MAIN_FADER_CV_INPUT].getVoltage() / 10.f, 0.f, 1.f);
-			// mix[0] *= cv;
-			// mix[1] *= cv;
-		// }
 
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
-		// Direct outs
+		// Direct outs (TODO make separate func, try just one func for both
 		// P1-8
 		if (outputs[DIRECT_OUTPUTS + 0].isConnected()) {
 			outputs[DIRECT_OUTPUTS + 0].setChannels(numChannelsDirectOuts);
@@ -352,6 +366,15 @@ struct MixMasterJrWidget : ModuleWidget {
 		
 		// Main fader
 		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		
+		// Main mute
+		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(272.3, 109.0)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		
+		// Main dim
+		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(266.9, 115.3)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		
+		// Main mono
+		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(277.7, 115.3)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {

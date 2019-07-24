@@ -145,6 +145,28 @@ struct DynSoloButton : DynamicSVGSwitch {
 	}
 };
 
+struct DynDimButton : DynamicSVGSwitch {
+	DynDimButton() {
+		momentary = false;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dim-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dim-on.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
+struct DynMonoButton : DynamicSVGSwitch {
+	DynMonoButton() {
+		momentary = false;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mono-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mono-on.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
 struct DynGroupMinusButton : DynamicSVGSwitch {
 	DynGroupMinusButton() {
 		momentary = true;
