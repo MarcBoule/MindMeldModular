@@ -61,6 +61,15 @@ struct Trigger : dsp::SchmittTrigger {
 	bool process(float in);
 };	
 
+struct Slewer : dsp::SlewLimiter {
+	float process(float deltaTime, float in) {
+		if (in == out)
+			return out;
+		else 
+			return dsp::SlewLimiter::process(deltaTime, in);
+	}
+};
+
 
 struct HoldDetect {
 	long modeHoldDetect;// 0 when not detecting, downward counter when detecting

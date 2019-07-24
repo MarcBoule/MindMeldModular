@@ -171,7 +171,7 @@ struct MixerTrack {
 	float panCoeff[2];
 	float panLinRcoeff;// used only for True stereo panning
 	float panRinLcoeff;// used only for True stereo panning
-	dsp::SlewLimiter gainSlewers[2];
+	Slewer gainSlewers[2];
 
 	// no need to save, no reset
 	int trackNum;
@@ -362,29 +362,25 @@ struct MixerTrack {
 		
 		// Calc track gain
 		// Gain adjust
-		float gain = gainAdjust;
+		float gain = 0.0f;
 		// solo and mute
-		if ( (gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f) ) {
-			gain = 0.0f;
-		}
-		if (gain != 0.0f) {
+		if ( !((gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f)) ) {
 			// fader
-			float faderGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-			if (gain == 1.0f) {
-				gain = faderGain;
+			gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+			
+			// Gain adjust
+			if (gainAdjust != 1.0f) {
+				gain *= gainAdjust;
 			}
-			else {
-				gain *= faderGain;
-			}
+			
 			// vol CV input
 			if (inVol->isConnected()) {
 				gain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
 			}
 		}
-		if (gain != gainSlewers[0].out) {
-			gain = gainSlewers[0].process(gInfo->sampleTime, gain);
-		}
-		// TODO split gain into L,R gains and slew separately
+		gain = gainSlewers[0].process(gInfo->sampleTime, gain);
+		// TODO split gain into L,R gains and slew separately 
+		// TODO antipop on pan
 		
 		// Apply gain
 		if (!stereo) {// mono

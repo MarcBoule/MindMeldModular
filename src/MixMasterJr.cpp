@@ -30,7 +30,7 @@ struct MixMasterJr : Module {
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
-	dsp::SlewLimiter gainSlewer;
+	Slewer gainSlewer;
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -196,54 +196,27 @@ struct MixMasterJr : Module {
 				gain *= 0.1;// -20 dB dim
 			}
 		}
-		if (gain != gainSlewer.out) {
-			gain = gainSlewer.process(gInfo.sampleTime, gain);
-		}
+		gain = gainSlewer.process(gInfo.sampleTime, gain);
 		
 		// Apply gain
 		mix[0] *= gain;
 		mix[1] *= gain;
 
+		// Apply mono conversion if required
+		// TODO antipop
+		if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
+			float monoSig = (mix[0] + mix[1]) * 0.5f;
+			mix[0] = mix[1] = monoSig;
+		}
+
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
-		// Direct outs (TODO make separate func, try just one func for both
-		// P1-8
-		if (outputs[DIRECT_OUTPUTS + 0].isConnected()) {
-			outputs[DIRECT_OUTPUTS + 0].setChannels(numChannelsDirectOuts);
-			if (gInfo.directOutsMode == 1) {// post-fader
-				for (unsigned int i = 0; i < 8; i++) {
-					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].post[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].post[1], 2 * i + 1);
-				}
-			}
-			else// pre-fader
-			{
-				for (unsigned int i = 0; i < 8; i++) {
-					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].pre[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 0].setVoltage(tracks[i].pre[1], 2 * i + 1);
-				}
-			}
-		}		
-		// P9-16
-		if (outputs[DIRECT_OUTPUTS + 1].isConnected()) {
-			outputs[DIRECT_OUTPUTS + 1].setChannels(numChannelsDirectOuts);
-			if (gInfo.directOutsMode == 1) {// post-fader
-				for (unsigned int i = 0; i < 8; i++) {
-					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].post[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].post[1], 2 * i + 1);
-				}
-			}
-			else// pre-fader
-			{
-				for (unsigned int i = 0; i < 8; i++) {
-					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].pre[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 1].setVoltage(tracks[8 + i].pre[1], 2 * i + 1);
-				}
-			}
-		}
-		
+		// Direct outs
+		SetDirectTrackOuts(0);// P1-8
+		SetDirectTrackOuts(8);// P9-16
+				
 		// lights
 		if (refresh.processLights()) {
 			for (int i = 0; i < 16; i++) {
@@ -253,6 +226,27 @@ struct MixMasterJr : Module {
 		}
 		
 	}// process()
+	
+	
+	void SetDirectTrackOuts(const int base) {// base is 0 or 8
+		int outi = base >> 3;
+		if (outputs[DIRECT_OUTPUTS + outi].isConnected()) {
+			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
+			if (gInfo.directOutsMode == 1) {// post-fader
+				for (unsigned int i = 0; i < 8; i++) {
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].post[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].post[1], 2 * i + 1);
+				}
+			}
+			else// pre-fader
+			{
+				for (unsigned int i = 0; i < 8; i++) {
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].pre[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].pre[1], 2 * i + 1);
+				}
+			}
+		}
+	}
 
 };
 
