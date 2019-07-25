@@ -197,8 +197,14 @@ struct MixerTrack {
 
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
-		hpFilter[0].setFc(fc * gInfo->sampleTime);
-		hpFilter[1].setFc(fc * gInfo->sampleTime);
+		if (fc > minHPFCutoffFreq) {
+			hpFilter[0].setFc(fc * gInfo->sampleTime);
+			hpFilter[1].setFc(fc * gInfo->sampleTime);
+		}
+		else {
+			hpFilter[0].setFc(0);
+			hpFilter[1].setFc(0);
+		}
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
 	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
@@ -223,6 +229,7 @@ struct MixerTrack {
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers.setRiseFall(simd::float_4(0.300f), simd::float_4(0.300f)); // for testing all anti-pops
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
 			lpFilter[i].setBiquad(BQ_TYPE_LOWPASS, 21000.0, 0.707, 0.0);
@@ -342,8 +349,12 @@ struct MixerTrack {
 		if (!inL->isConnected()) {
 			post[0] = pre[0] = 0.0f;
 			post[1] = pre[1] = 0.0f;
+			//gainSlewers.reset();
 			return;
 		}
+		
+		// TODO still more optimizations to do in signal flow vs pre, post, sigs
+		// TODO try to do antipop on wire connect, but it is impossible on wire-disconnect
 		
 		// Here we have an input, so get it and form Pre signals
 		post[0] = pre[0] = inL->getVoltage();
@@ -351,23 +362,22 @@ struct MixerTrack {
 		
 		// TODO make filters antipop when on/off (make a flush of the shift reg)
 		// HPF
-		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-			post[0] = hpFilter[0].process(post[0]);
-			post[1] = stereo ? hpFilter[1].process(post[1]) : post[0];
-		}
+		// if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			// post[0] = hpFilter[0].process(post[0]);
+			// post[1] = stereo ? hpFilter[1].process(post[1]) : post[0];
+		// }
 		// LPF
-		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
-			post[0] = lpFilter[0].process(post[0]);
-			post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
-		}
+		// if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			// post[0] = lpFilter[0].process(post[0]);
+			// post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
+		// }
 		
-		// Calc track gain
-		// Gain adjust
-		float gain = 0.0f;
+		// Calc track gains
+		simd::float_4 gains = simd::float_4::zero();
 		// solo and mute
 		if ( !((gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f)) ) {
 			// fader
-			gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+			float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
 			
 			// Gain adjust
 			if (gainAdjust != 1.0f) {
@@ -381,18 +391,17 @@ struct MixerTrack {
 			
 			// master gain
 			gain *= masterGain;
+			
+			// Create gains vectors
+			if (gInfo->paMasterMono->getValue() > 0.5f) {// forced panning when master is mono
+				gains = simd::float_4(gain * 0.5f);
+			}
+			else {
+				gains = simd::float_4(gain);
+				gains *= panCoeffs;
+			}
 		}
 		
-		// Create gains vectors
-		simd::float_4 gains(0.0f);
-		if (gInfo->paMasterMono->getValue() > 0.5f) {
-			gains = simd::float_4(gain * 0.5f);
-		}
-		else {
-			gains = simd::float_4(gain);
-			gains *= panCoeffs;
-		}
-	
 		// Gain slewer
 		if (movemask(gains == gainSlewers.out) != 0xF) {
 			gains = gainSlewers.process(gInfo->sampleTime, gains);
