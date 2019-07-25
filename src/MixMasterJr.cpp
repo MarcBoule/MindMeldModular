@@ -30,7 +30,6 @@ struct MixMasterJr : Module {
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
-	Slewer gainSlewer;
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -78,7 +77,7 @@ struct MixMasterJr : Module {
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
 		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent);
-		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Main level", " dB", -10, 20.0f * masterFaderScalingExponent);
+		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * masterFaderScalingExponent);
 		// Mute
 		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
 		// Dim
@@ -91,7 +90,7 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 20; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
 		}
-		gainSlewer.setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)
+		gInfo.construct(&params[0]);
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -112,7 +111,6 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 20; i++) {
 			tracks[i].resetNonJson();
 		}
-		gainSlewer.reset();
 	}
 
 
@@ -182,31 +180,20 @@ struct MixMasterJr : Module {
 		//********** Outputs and lights **********
 		float mix[2] = {};
 
-		// Tracks
-		for (int i = 0; i < 16; i++) {// groups not done yet so stop at 16 instead of 20
-			tracks[i].process(mix);
-		}
-
-		// Main outputs
-		float gain = 0.0f;
+		// Master gain
+		float masterGain = 0.0f;
 		if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
 			// Main fader
-			gain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+			masterGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+			// Dim
 			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-				gain *= 0.1;// -20 dB dim
+				masterGain *= 0.1;// -20 dB dim
 			}
 		}
-		gain = gainSlewer.process(gInfo.sampleTime, gain);
 		
-		// Apply gain
-		mix[0] *= gain;
-		mix[1] *= gain;
-
-		// Apply mono conversion if required
-		// TODO antipop
-		if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
-			float monoSig = (mix[0] + mix[1]) * 0.5f;
-			mix[0] = mix[1] = monoSig;
+		// Tracks
+		for (int i = 0; i < 16; i++) {// groups not done yet so stop at 16 instead of 20
+			tracks[i].process(mix, masterGain);
 		}
 
 		// Set master outputs
