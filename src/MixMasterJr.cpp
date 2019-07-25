@@ -83,7 +83,7 @@ struct MixMasterJr : Module {
 		// Dim
 		configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "Master dim");
 		// Solo
-		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master solo");
+		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 		
 		
@@ -281,81 +281,77 @@ struct MixMasterJrWidget : ModuleWidget {
 		// Tracks
 		for (int i = 0; i < 16; i++) {
 			// Labels
-			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.2))));
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.2 + 0.5))));
 			if (module) {
 				trackDisplays[i]->srcTrack = &(module->tracks[i]);
 			}
 			// HPF lights
-			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 7.8)), module, TRACK_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_HPF_LIGHTS + i));	
 			// LPF lights
-			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(11.43 + 4.17 + 12.7 * i, 7.8)), module, TRACK_LPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(11.43 + 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_LPF_LIGHTS + i));	
 			// Left inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12 + 0.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21 + 0.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 30.7)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 30.7 + 0.8)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 39.7)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 39.7 + 0.8)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51 + 0.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Faders
-			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4 + 0.8)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group dec
-			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group inc
-			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
 
 		}
 		
 		// Monitor outputs and groups
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));			
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12 + 0.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));			
 
 			// Labels
-			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7))));
-			// HPF lights
-			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(217.17 - 4.17 + 12.7 * i, 7.8)), module, GROUP_HPF_LIGHTS + i));	
-			// LPF lights
-			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(217.17 + 4.17 + 12.7 * i, 7.8)), module, GROUP_LPF_LIGHTS + i));	
+			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7 + 0.8))));
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7 + 0.8)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 39.7)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 39.7 + 0.8)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(217.17 + 12.7 * i, 51)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(217.17 + 12.7 * i, 51.0 + 0.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Faders
-			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4 + 0.8)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109 + 0.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3 + 0.8)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 		}
 		
 		// Main outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 12)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 12 + 0.8)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21 + 0.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Main fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5 + 0.8)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
 		
 		// Main mute
-		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(272.3, 109.0)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(272.3, 109.0 + 0.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		
 		// Main dim
-		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(266.9, 115.3)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(266.9, 115.3 + 0.8)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
 		
 		// Main mono
-		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(277.7, 115.3)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(277.7, 115.3 + 0.8)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {

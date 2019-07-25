@@ -11,6 +11,7 @@
 
 #include "MindMeldModular.hpp"
 #include "dsp/Biquad.hpp"
+#include <pmmintrin.h>
 
 
 enum ParamIds {
@@ -53,9 +54,7 @@ enum OutputIds {
 
 enum LightIds {
 	ENUMS(TRACK_HPF_LIGHTS, 16),
-	ENUMS(GROUP_HPF_LIGHTS, 4),
 	ENUMS(TRACK_LPF_LIGHTS, 16),
-	ENUMS(GROUP_LPF_LIGHTS, 4),
 	NUM_LIGHTS
 };
 
@@ -395,7 +394,9 @@ struct MixerTrack {
 		}
 	
 		// Gain slewer
-		gains = gainSlewers.process(gInfo->sampleTime, gains);
+		if (movemask(gains == gainSlewers.out) != 0xF) {
+			gains = gainSlewers.process(gInfo->sampleTime, gains);
+		}
 		
 		// Apply gains
 		simd::float_4 sigs(post[0], post[1], post[1], post[0]);
