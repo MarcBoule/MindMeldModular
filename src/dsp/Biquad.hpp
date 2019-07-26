@@ -62,18 +62,18 @@ inline float Biquad::process(float in) {
     return out;
 }
 inline float Biquad::processHPFopt(float in) {
-	if (a0 <= 1.0f) {// 0.998f minimal a0 coefficient for 20Hz HPF at 44100 kHz
+/*	if (a0 <= 1.0f) {// 0.998f minimal a0 coefficient for 20Hz HPF at 44100 kHz
 		z1 = z2 = 0.0f;
 		//a0 = 1.0f;
 		//a1 = b1 = -2.0f; 
 		//a2 = b2 = 1.0f; 
 		
 		return in;
-	}
+	}*/
 	double out = 	in * a0 			+ z1;
     z1 = 			in * a1 - b1 * out 	+ z2;
     z2 = 			in * a2 - b2 * out		;
-	// printf("a0 = %.4f, a1 = %.4f, b1 = %.4f, a2 = %.4f, b2 = %.4f\n    in = %f, out = %f, z1 = %.4f, z2 = %.4f\n", a0, a1, b1, a2, b2,   in, out, z1, z2);
+	printf("a0 = %.4f, a1 = %.4f, b1 = %.4f, a2 = %.4f, b2 = %.4f\n    in = %f, out = %f, z1 = %.4f, z2 = %.4f\n", a0, a1, b1, a2, b2,   in, out, z1, z2);
 	
     return out;
 }

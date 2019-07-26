@@ -26,7 +26,7 @@ struct MixMasterJr : Module {
 	// Need to save, with reset
 	char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	GlobalInfo gInfo;
-	MixerTrack tracks[20];
+	MixerTrack tracks[16];
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
@@ -87,7 +87,7 @@ struct MixMasterJr : Module {
 		
 		
 		
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
 		}
 		gInfo.construct(&params[0]);
@@ -100,7 +100,7 @@ struct MixMasterJr : Module {
 	void onReset() override {
 		snprintf(trackLabels, 4 * 20 + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4");		
 		gInfo.onReset();
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 16; i++) {
 			tracks[i].onReset();
 		}
 		resetNonJson();
@@ -108,7 +108,7 @@ struct MixMasterJr : Module {
 	void resetNonJson() {
 		resetTrackLabelRequest = 0;// setting to 0 will trigger 1, 2, 3 etc on each video frame afterwards
 		gInfo.resetNonJson(&params[TRACK_SOLO_PARAMS]);
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 16; i++) {
 			tracks[i].resetNonJson();
 		}
 	}
@@ -131,7 +131,7 @@ struct MixMasterJr : Module {
 		gInfo.dataToJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 16; i++) {
 			tracks[i].dataToJson(rootJ);
 		}
 
@@ -154,7 +154,7 @@ struct MixMasterJr : Module {
 		gInfo.dataFromJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 16; i++) {
 			tracks[i].dataFromJson(rootJ);
 		}
 
@@ -192,7 +192,7 @@ struct MixMasterJr : Module {
 		}
 		
 		// Tracks
-		for (int i = 0; i < 16; i++) {// groups not done yet so stop at 16 instead of 20
+		for (int i = 0; i < 16; i++) {
 			tracks[i].process(mix, masterGain);
 		}
 
@@ -320,7 +320,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12 + 0.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));			
 
 			// Labels
-			addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7 + 0.8))));
+			// addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7 + 0.8))));
+			
 			// Volume inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7 + 0.8)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
@@ -359,7 +360,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		if (moduleM) {
 			// Track labels (pull from module)
 			if (moduleM->resetTrackLabelRequest >= 0) {// pull request from module
-				for (int trk = 0; trk < 20; trk++) {
+				for (int trk = 0; trk < 16; trk++) {
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
 				}
 				moduleM->resetTrackLabelRequest = -1;// all done pulling

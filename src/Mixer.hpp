@@ -197,8 +197,14 @@ struct MixerTrack {
 
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
-		hpFilter[0].setFc(fc * gInfo->sampleTime);
-		hpFilter[1].setFc(fc * gInfo->sampleTime);
+		// if (fc < minHPFCutoffFreq) {
+			// hpFilter[0].setFc(0.0f);
+			// hpFilter[1].setFc(0.0f);
+		// }
+		// else {
+			hpFilter[0].setFc(fc * gInfo->sampleTime);
+			hpFilter[1].setFc(fc * gInfo->sampleTime);
+		// }
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
 	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
@@ -243,51 +249,62 @@ struct MixerTrack {
 		gainSlewers.reset();
 	}
 	
+	
+	// Contract: 
+	//  * calc stereo
+	//  * calc panCoeffs
 	void updatePanCoeff() {
+		// calc stereo
 		stereo = inR->isConnected();
 		
-		float pan = paPan->getValue();
-		if (inPan->isConnected()) {
-			pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
+		// calc panCoeffs
+		if (gInfo->paMasterMono->getValue() > 0.5f) {// if master is in mono mode	
+			panCoeffs = simd::float_4(0.5f);
 		}
-		pan = clamp(pan, 0.0f, 1.0f);
-		
-		panCoeffs[3] = 0.0f;
-		panCoeffs[2] = 0.0f;
-		if (!stereo) {// mono
-			if (gInfo->panLawMono == 1) {
-				// Equal power panning law (+3dB boost)
-				panCoeffs[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-				panCoeffs[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+		else {	
+			float pan = paPan->getValue();
+			if (inPan->isConnected()) {
+				pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
 			}
-			else if (gInfo->panLawMono == 0) {
-				// No compensation (+0dB boost)
-				panCoeffs[1] = std::min(1.0f, pan * 2.0f);
-				panCoeffs[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+			pan = clamp(pan, 0.0f, 1.0f);
+			
+			panCoeffs[3] = 0.0f;
+			panCoeffs[2] = 0.0f;
+			if (!stereo) {// mono
+				if (gInfo->panLawMono == 1) {
+					// Equal power panning law (+3dB boost)
+					panCoeffs[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+					panCoeffs[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				}
+				else if (gInfo->panLawMono == 0) {
+					// No compensation (+0dB boost)
+					panCoeffs[1] = std::min(1.0f, pan * 2.0f);
+					panCoeffs[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+				}
+				else if (gInfo->panLawMono == 2) {
+					// Compromise (+4.5dB boost)
+					panCoeffs[1] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+					panCoeffs[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+				}
+				else {
+					// Linear panning law (+6dB boost)
+					panCoeffs[1] = pan * 2.0f;
+					panCoeffs[0] = 2.0f - panCoeffs[1];
+				}
 			}
-			else if (gInfo->panLawMono == 2) {
-				// Compromise (+4.5dB boost)
-				panCoeffs[1] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-				panCoeffs[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
-			}
-			else {
-				// Linear panning law (+6dB boost)
-				panCoeffs[1] = pan * 2.0f;
-				panCoeffs[0] = 2.0f - panCoeffs[1];
-			}
-		}
-		else {// stereo
-			if (gInfo->panLawStereo == 0) {
-				// Stereo balance (+3dB), same as mono equal power
-				panCoeffs[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-				panCoeffs[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-			}
-			else {
-				// True panning, equal power
-				panCoeffs[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-				panCoeffs[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-				panCoeffs[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-				panCoeffs[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+			else {// stereo
+				if (gInfo->panLawStereo == 0) {
+					// Stereo balance (+3dB), same as mono equal power
+					panCoeffs[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+					panCoeffs[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				}
+				else {
+					// True panning, equal power
+					panCoeffs[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+					panCoeffs[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+					panCoeffs[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+					panCoeffs[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+				}
 			}
 		}
 	}
@@ -338,7 +355,9 @@ struct MixerTrack {
 	}
 	
 	
-	
+	// Contract: 
+	//  * calc pre[] and post[] vectors
+	//  * add post[] to mix[] when post is non-zero
 	void process(float *mix, float masterGain) {
 		if (!inL->isConnected()) {
 			post[0] = pre[0] = 0.0f;
@@ -346,21 +365,9 @@ struct MixerTrack {
 			return;
 		}
 		
-		// Here we have an input, so get it and form Pre signals
-		post[0] = pre[0] = inL->getVoltage();
-		post[1] = pre[1] = stereo ? inR->getVoltage() : post[0];
-		
-		// TODO make filters antipop when on/off (make a flush of the shift reg)
-		// HPF
-		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-			post[0] = hpFilter[0].process(post[0]);
-			post[1] = stereo ? hpFilter[1].process(post[1]) : post[0];
-		}
-		// LPF
-		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
-			post[0] = lpFilter[0].process(post[0]);
-			post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
-		}
+		// Here we have an input, so get it and set the "pre" values
+		pre[0] = inL->getVoltage();
+		pre[1] = stereo ? inR->getVoltage() : pre[0];
 		
 		// Calc track gains
 		simd::float_4 gains = simd::float_4::zero();
@@ -383,13 +390,8 @@ struct MixerTrack {
 			gain *= masterGain;
 			
 			// Create gains vectors and handle panning
-			if (gInfo->paMasterMono->getValue() > 0.5f) {
-				gains = simd::float_4(gain * 0.5f);// pre-determined panning when master is mono
-			}
-			else {
-				gains = simd::float_4(gain);
-				gains *= panCoeffs;
-			}
+			gains = simd::float_4(gain);
+			gains *= panCoeffs;
 		}
 		
 		// Gain slewer
@@ -402,7 +404,21 @@ struct MixerTrack {
 			post[1] = 0.0f;
 			return;
 		}
-		
+
+		post[0] = pre[0];
+		post[1] = pre[1];
+
+		// HPF
+		//if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			post[0] = hpFilter[0].process(post[0]);
+			post[1] = stereo ? hpFilter[1].process(post[1]) : post[0];
+		//}
+		// LPF
+		//if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			post[0] = lpFilter[0].process(post[0]);
+			post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
+		//}
+
 		// Apply gains
 		simd::float_4 sigs(post[0], post[1], post[1], post[0]);
 		sigs = sigs * gains;
