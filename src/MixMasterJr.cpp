@@ -16,7 +16,6 @@ struct MixMasterJr : Module {
 
 
 	// Constants
-	static constexpr float masterFaderScalingExponent = 3.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
 	int numChannelsDirectOuts = 16;// avoids warning when hardcode 16 (static const or directly use 16 in code below)
 
@@ -76,8 +75,8 @@ struct MixMasterJr : Module {
 			snprintf(strBuf, 32, "Group #%i solo", i + 1);
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / masterFaderScalingExponent);
-		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * masterFaderScalingExponent);
+		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / GlobalInfo::masterFaderScalingExponent);
+		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * GlobalInfo::masterFaderScalingExponent);
 		// Mute
 		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
 		// Dim
@@ -85,12 +84,12 @@ struct MixMasterJr : Module {
 		// Solo
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
-		
-		
+	
+
+		gInfo.construct(&params[0]);
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
 		}
-		gInfo.construct(&params[0]);
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -103,13 +102,15 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].onReset();
 		}
-		resetNonJson();
+		resetNonJson(false);
 	}
-	void resetNonJson() {
+	void resetNonJson(bool recurseNonJson) {
 		resetTrackLabelRequest = 0;// setting to 0 will trigger 1, 2, 3 etc on each video frame afterwards
-		gInfo.resetNonJson(&params[TRACK_SOLO_PARAMS]);
-		for (int i = 0; i < 16; i++) {
-			tracks[i].resetNonJson();
+		if (recurseNonJson) {
+			gInfo.resetNonJson();
+			for (int i = 0; i < 16; i++) {
+				tracks[i].resetNonJson();
+			}
 		}
 	}
 
@@ -158,7 +159,7 @@ struct MixMasterJr : Module {
 			tracks[i].dataFromJson(rootJ);
 		}
 
-		resetNonJson();
+		resetNonJson(true);
 	}
 
 
@@ -170,8 +171,12 @@ struct MixMasterJr : Module {
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
-			gInfo.updateSoloBit(trackToProcess, params[TRACK_SOLO_PARAMS + trackToProcess].getValue() > 0.5f);
-			tracks[trackToProcess].updatePanCoeff();
+			// Tracks
+			gInfo.updateSoloBit(trackToProcess);
+			tracks[trackToProcess].updateSlowValues();
+			
+			// Master
+			gInfo.updateMasterGain();
 			
 		}// userInputs refresh
 		
@@ -179,21 +184,10 @@ struct MixMasterJr : Module {
 		
 		//********** Outputs and lights **********
 		float mix[2] = {};
-
-		// Master gain
-		float masterGain = 0.0f;
-		if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
-			// Main fader
-			masterGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
-			// Dim
-			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-				masterGain *= 0.1;// -20 dB dim
-			}
-		}
 		
 		// Tracks
 		for (int i = 0; i < 16; i++) {
-			tracks[i].process(mix, masterGain);
+			tracks[i].process(mix);
 		}
 
 		// Set master outputs

@@ -11,6 +11,7 @@
 
 #include "MindMeldModular.hpp"
 #include "dsp/Biquad.hpp"
+#include "dsp/OnePole.hpp"
 #include <pmmintrin.h>
 
 
@@ -64,6 +65,11 @@ enum LightIds {
 
 // managed by Mixer, not by tracks (tracks read only)
 struct GlobalInfo {
+	
+	// constants
+	static constexpr float masterFaderScalingExponent = 3.0f; 
+
+	
 	// need to save, no reset
 	// none
 	
@@ -75,13 +81,16 @@ struct GlobalInfo {
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see it should play
 	float sampleTime;
+	float masterGain;
 
 	// no need to save, no reset
-	Param *paMasterMono;
+	Param *params;
+	Param *paSolo;
 	
 	
 	void construct(Param *_params) {
-		paMasterMono = &_params[MAIN_MONO_PARAM];
+		params = _params;
+		paSolo = &_params[TRACK_SOLO_PARAMS];
 	}
 	
 	
@@ -89,28 +98,40 @@ struct GlobalInfo {
 		panLawMono = 1;
 		panLawStereo = 0;
 		directOutsMode = 1;// post should be default
-		// extern must call resetNonJson()
+		resetNonJson();
 	}
 	
-	void resetNonJson(Param *soloParams) {
-		updateSoloBitMask(soloParams);
+	void resetNonJson() {
+		updateSoloBitMask();
 		sampleTime = APP->engine->getSampleTime();
+		updateMasterGain();
 	}
 	
-	void updateSoloBitMask(Param *soloParams) {
+	void updateSoloBitMask() {
 		unsigned long newSoloBitMask = 0ul;// separate variable so no glitch generated
 		for (unsigned long i = 0; i < 16; i++) {
-			if (soloParams[i].getValue() > 0.5) {
+			if (paSolo[i].getValue() > 0.5) {
 				newSoloBitMask |= (1 << i);
 			}
 		}
-		soloBitMask = newSoloBitMask;	
+		soloBitMask = newSoloBitMask;
 	}
-	void updateSoloBit(unsigned int trk, bool state) {
-		if (state) 
+	void updateSoloBit(unsigned int trk) {
+		if (params[TRACK_SOLO_PARAMS + trk].getValue() > 0.5f) 
 			soloBitMask |= (1 << trk);
 		else
 			soloBitMask &= ~(1 << trk);
+	}
+	void updateMasterGain() {
+		masterGain = 0.0f;
+		if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
+			// Main fader
+			masterGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+			// Dim
+			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+				masterGain *= 0.1;// -20 dB dim
+			}
+		}	
 	}
 	
 	void onRandomize(bool editingSequence) {
@@ -174,6 +195,7 @@ struct MixerTrack {
 	// no need to save, with reset
 	bool stereo;// pan coefficients use this, so set up first
 	simd::float_4 panCoeffs;// L, R, RinL, LinR
+	float slowGain;// gain that we don't want to computer each sample (gainAdjust
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 
 	// no need to save, no reset
@@ -191,26 +213,25 @@ struct MixerTrack {
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float pre[2];// for pre-track (aka fader+pan) monitor outputs
 	float post[2];// for VUs and post-track monitor outputs
-	Biquad hpFilter[2];
-	Biquad lpFilter[2];
+	OnePoleFilter hpPreFilter[2];// 6dB/oct
+	Biquad hpFilter[2];// 12dB/oct
+	Biquad lpFilter[2];// 12db/oct
 
 
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
-		// if (fc < minHPFCutoffFreq) {
-			// hpFilter[0].setFc(0.0f);
-			// hpFilter[1].setFc(0.0f);
-		// }
-		// else {
-			hpFilter[0].setFc(fc * gInfo->sampleTime);
-			hpFilter[1].setFc(fc * gInfo->sampleTime);
-		// }
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		for (int i = 0; i < 2; i++) {
+			hpPreFilter[i].setCutoff(fc);
+			hpFilter[i].setFc(fc);
+		}
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
 	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
 		lpfCutoffFreq = fc;
-		lpFilter[0].setFc(fc * gInfo->sampleTime);
-		lpFilter[1].setFc(fc * gInfo->sampleTime);
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		lpFilter[0].setFc(fc);
+		lpFilter[1].setFc(fc);
 	}
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
@@ -229,10 +250,9 @@ struct MixerTrack {
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
-		// gainSlewers.setRiseFall(simd::float_4(0.300f), simd::float_4(0.300f)); // for testing all anti-pops
 		for (int i = 0; i < 2; i++) {
-			hpFilter[i].setBiquad(BQ_TYPE_HIGHPASS, 0.0, 0.707, 0.0);
-			lpFilter[i].setBiquad(BQ_TYPE_LOWPASS, 21000.0, 0.707, 0.0);
+			hpFilter[i].setBiquad(BQ_TYPE_HIGHPASS, 0.1, 1.0, 0.0);// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
+			lpFilter[i].setBiquad(BQ_TYPE_LOWPASS, 0.4, 0.707, 0.0);
 		}
 	}
 	
@@ -242,10 +262,10 @@ struct MixerTrack {
 		gainAdjust = 1.0f;
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
-		// extern must call resetNonJson()
+		resetNonJson();
 	}
 	void resetNonJson() {
-		updatePanCoeff();
+		updateSlowValues();
 		gainSlewers.reset();
 	}
 	
@@ -253,12 +273,13 @@ struct MixerTrack {
 	// Contract: 
 	//  * calc stereo
 	//  * calc panCoeffs
-	void updatePanCoeff() {
+	//  * calc slowGain
+	void updateSlowValues() {
 		// calc stereo
 		stereo = inR->isConnected();
 		
 		// calc panCoeffs
-		if (gInfo->paMasterMono->getValue() > 0.5f) {// if master is in mono mode	
+		if (gInfo->params[MAIN_MONO_PARAM].getValue() > 0.5f) {// if master is in mono mode	
 			panCoeffs = simd::float_4(0.5f);
 		}
 		else {	
@@ -306,6 +327,12 @@ struct MixerTrack {
 					panCoeffs[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 				}
 			}
+		}
+		
+		// slowGain
+		slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+		if (gainAdjust != 1.0f) {
+			slowGain *= gainAdjust;
 		}
 	}
 	
@@ -358,13 +385,13 @@ struct MixerTrack {
 	// Contract: 
 	//  * calc pre[] and post[] vectors
 	//  * add post[] to mix[] when post is non-zero
-	void process(float *mix, float masterGain) {
+	void process(float *mix) {
 		if (!inL->isConnected()) {
 			post[0] = pre[0] = 0.0f;
 			post[1] = pre[1] = 0.0f;
 			return;
 		}
-		
+				
 		// Here we have an input, so get it and set the "pre" values
 		pre[0] = inL->getVoltage();
 		pre[1] = stereo ? inR->getVoltage() : pre[0];
@@ -374,12 +401,7 @@ struct MixerTrack {
 		// solo and mute
 		if ( !((gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f)) ) {
 			// fader
-			float gain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-			
-			// Gain adjust
-			if (gainAdjust != 1.0f) {
-				gain *= gainAdjust;
-			}
+			float gain = slowGain;
 			
 			// vol CV input
 			if (inVol->isConnected()) {
@@ -387,8 +409,8 @@ struct MixerTrack {
 			}
 			
 			// master gain
-			gain *= masterGain;
-			
+			gain *= gInfo->masterGain;
+						
 			// Create gains vectors and handle panning
 			gains = simd::float_4(gain);
 			gains *= panCoeffs;
@@ -409,15 +431,16 @@ struct MixerTrack {
 		post[1] = pre[1];
 
 		// HPF
-		//if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-			post[0] = hpFilter[0].process(post[0]);
-			post[1] = stereo ? hpFilter[1].process(post[1]) : post[0];
-		//}
+		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			post[0] = hpFilter[0].process(hpPreFilter[0].processHP(post[0]));
+			post[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(post[1])) : post[0];
+		}
 		// LPF
-		//if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
 			post[0] = lpFilter[0].process(post[0]);
 			post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
-		//}
+		}
+
 
 		// Apply gains
 		simd::float_4 sigs(post[0], post[1], post[1], post[0]);
