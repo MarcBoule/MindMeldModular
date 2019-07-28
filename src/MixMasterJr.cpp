@@ -8,6 +8,7 @@
 
 #include "Mixer.hpp"
 #include "MixerWidgets.hpp"
+#include "MixerMenus.hpp"
 
 
 struct MixMasterJr : Module {
@@ -97,7 +98,7 @@ struct MixMasterJr : Module {
 
 	
 	void onReset() override {
-		snprintf(trackLabels, 4 * 20 + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4");		
+		snprintf(trackLabels, 4 * 20 + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4");	
 		gInfo.onReset();
 		for (int i = 0; i < 16; i++) {
 			tracks[i].onReset();
@@ -261,6 +262,10 @@ struct MixMasterJrWidget : ModuleWidget {
 		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 		panLawStereoItem->gInfo = &(module->gInfo);
 		menu->addChild(panLawStereoItem);
+		
+		NightModeItem *nightItem = createMenuItem<NightModeItem>("Night mode", CHECKMARK(module->gInfo.nightMode));
+		nightItem->gInfo = &(module->gInfo);
+		menu->addChild(nightItem);
 	}
 
 	// Module's widget
@@ -296,7 +301,12 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4 + 0.8)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
-			
+			// VU meters
+			VuMeter *newVU = createWidgetCentered<VuMeter>(mm2px(Vec(11.43 + 12.7 * i, 80.4 + 0.8)));
+			if (module) {
+				newVU->srcLevels = &(module->tracks[i].vu[0]);
+			}
+			addChild(newVU);
 			// Mutes
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos

@@ -5,11 +5,54 @@
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
 
-
 #ifndef MMM_MIXERWIDGETS_HPP
 #define MMM_MIXERWIDGETS_HPP
 
+
 #include "Mixer.hpp"
+
+
+
+// VU meters
+// --------------------
+
+struct VuMeter : OpaqueWidget {
+	dsp::VuMeter2 *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	float maxTFader;
+	
+	VuMeter() {
+		box.size = mm2px(Vec(2.8, 42));
+	}
+
+	void draw(const DrawArgs &args) override {
+		// TODO: use time() that is used in FOundry to keep track of max in here, not in mixer process, to display peakhold, and reset every n seconds.
+		if (!srcLevels) return;
+		if (srcLevels[0].v <= 0.0f && srcLevels[1].v <= 0.0f) return;
+		// Background
+		nvgBeginPath(args.vg);
+		if (srcLevels[0].v > 0.0f) {
+			float vuHeightL = srcLevels[0].v * 0.2f / MixerTrack::trackFaderMaxLinearGain;
+			vuHeightL = std::pow(vuHeightL, 1.0f / MixerTrack::trackFaderScalingExponent);
+			vuHeightL = std::min(vuHeightL, 1.0f);// normalized is now clamped
+			vuHeightL *= box.size.y;
+			nvgRect(args.vg, 0, box.size.y - vuHeightL, mm2px(1.2f), vuHeightL);
+		}
+		if (srcLevels[1].v > 0.0f) {
+			float vuHeightR = srcLevels[1].v * 0.2f / MixerTrack::trackFaderMaxLinearGain;
+			vuHeightR = std::pow(vuHeightR, 1.0f / MixerTrack::trackFaderScalingExponent);
+			vuHeightR = std::min(vuHeightR, 1.0f);// normalized is now clamped
+			vuHeightR *= box.size.y;
+			nvgRect(args.vg, mm2px(1.2f + 0.4f), box.size.y - vuHeightR, mm2px(1.2f), vuHeightR);
+		}
+		nvgFillColor(args.vg, nvgRGB(122, 201, 67));
+		nvgFill(args.vg);
+
+		Widget::draw(args);
+	}
+};
+
+
+
 
 
 // Track context menu
@@ -20,7 +63,7 @@
 struct GainAdjustQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
 	float gainInDB = 0.0f;
-	
+	  
 	GainAdjustQuantity(MixerTrack *_srcTrack) {
 		srcTrack = _srcTrack;
 	}
@@ -161,14 +204,19 @@ struct LPFCutoffSlider : ui::Slider {
 // Track display editable label with menu
 // --------------------
 
+
 struct TrackDisplay : LedDisplayTextField {
 	MixerTrack *srcTrack = NULL;
 
 	TrackDisplay() {
 		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
+		text = " 20 ";
 	};
-	void draw(const DrawArgs &args) override {// override and do not call LedDisplayTextField.draw() since draw manually here
+	
+	// don't want background so implement adapted version here
+	void draw(const DrawArgs &args) override {
+		// override and do not call LedDisplayTextField.draw() since draw ourselves
 		if (cursor > 4) {
 			text.resize(4);
 			cursor = 4;
@@ -192,6 +240,31 @@ struct TrackDisplay : LedDisplayTextField {
 		}
 		nvgResetScissor(args.vg);
 	}
+	
+	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
+	void onSelectText(const event::SelectText &e) override {
+		if (cursor < 4) {
+			//LedDisplayTextField::onSelectText(e); // copied below to morph spaces
+			if (e.codepoint < 128) {
+				char letter = (char) e.codepoint;
+				if (letter == 0x20) {// space
+					letter = 0x2D;// hyphen
+				}
+				std::string newText(1, letter);
+				insertText(newText);
+			}
+			e.consume(this);	
+			
+			if (text.length() > 4) {
+				text = text.substr(0, 4);
+			}
+		}
+		else {
+			e.consume(this);
+		}
+	}
+
+
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
@@ -219,109 +292,12 @@ struct TrackDisplay : LedDisplayTextField {
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(srcTrack->trackName))) = 0x20202020;
-		for (unsigned i = 0; i < text.length(); i++) {
+		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			srcTrack->trackName[i] = text[i];
 		}
 		LedDisplayTextField::onChange(e);
 	};
 };
 
-
-
-// Module's context menu
-// --------------------
-
-struct PanLawMonoItem : MenuItem {
-	GlobalInfo *gInfo;
-	
-	struct PanLawMonoSubItem : MenuItem {
-		GlobalInfo *gInfo;
-		int setVal = 0;
-		void onAction(const event::Action &e) override {
-			gInfo->panLawMono = setVal;
-		}
-	};
-	
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-
-		PanLawMonoSubItem *law0Item = createMenuItem<PanLawMonoSubItem>("+0 dB (no compensation)", CHECKMARK(gInfo->panLawMono == 0));
-		law0Item->gInfo = gInfo;
-		menu->addChild(law0Item);
-
-		PanLawMonoSubItem *law1Item = createMenuItem<PanLawMonoSubItem>("+3 dB boost (equal power, default)", CHECKMARK(gInfo->panLawMono == 1));
-		law1Item->gInfo = gInfo;
-		law1Item->setVal = 1;
-		menu->addChild(law1Item);
-
-		PanLawMonoSubItem *law2Item = createMenuItem<PanLawMonoSubItem>("+4.5 dB boost (compromise)", CHECKMARK(gInfo->panLawMono == 2));
-		law2Item->gInfo = gInfo;
-		law2Item->setVal = 2;
-		menu->addChild(law2Item);
-
-		PanLawMonoSubItem *law3Item = createMenuItem<PanLawMonoSubItem>("+6 dB boost (linear)", CHECKMARK(gInfo->panLawMono == 3));
-		law3Item->gInfo = gInfo;
-		law3Item->setVal = 3;
-		menu->addChild(law3Item);
-
-		return menu;
-	}
-};
-
-
-struct PanLawStereoItem : MenuItem {
-	GlobalInfo *gInfo;
-
-	struct PanLawStereoSubItem : MenuItem {
-		GlobalInfo *gInfo;
-		int setVal = 0;
-		void onAction(const event::Action &e) override {
-			gInfo->panLawStereo = setVal;
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-
-		PanLawStereoSubItem *law0Item = createMenuItem<PanLawStereoSubItem>("Stereo balance (default)", CHECKMARK(gInfo->panLawStereo == 0));
-		law0Item->gInfo = gInfo;
-		menu->addChild(law0Item);
-
-		PanLawStereoSubItem *law1Item = createMenuItem<PanLawStereoSubItem>("True panning", CHECKMARK(gInfo->panLawStereo == 1));
-		law1Item->gInfo = gInfo;
-		law1Item->setVal = 1;
-		menu->addChild(law1Item);
-
-		return menu;
-	}
-};
-
-
-struct DirectOutsItem : MenuItem {
-	GlobalInfo *gInfo;
-
-	struct DirectOutsSubItem : MenuItem {
-		GlobalInfo *gInfo;
-		int setVal = 0;
-		void onAction(const event::Action &e) override {
-			gInfo->directOutsMode = setVal;
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-
-		DirectOutsSubItem *law0Item = createMenuItem<DirectOutsSubItem>("Pre-fader", CHECKMARK(gInfo->directOutsMode == 0));
-		law0Item->gInfo = gInfo;
-		menu->addChild(law0Item);
-
-		DirectOutsSubItem *law1Item = createMenuItem<DirectOutsSubItem>("Post-fader", CHECKMARK(gInfo->directOutsMode == 1));
-		law1Item->gInfo = gInfo;
-		law1Item->setVal = 1;
-		menu->addChild(law1Item);
-
-		return menu;
-	}
-};
 
 #endif

@@ -77,7 +77,8 @@ struct GlobalInfo {
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader
-	
+	bool nightMode;// turn off track VUs only, keep master VUs
+
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see it should play
 	float sampleTime;
@@ -98,6 +99,7 @@ struct GlobalInfo {
 		panLawMono = 1;
 		panLawStereo = 0;
 		directOutsMode = 1;// post should be default
+		nightMode = false;
 		resetNonJson();
 	}
 	
@@ -148,6 +150,9 @@ struct GlobalInfo {
 
 		// directOutsMode
 		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
+		
+		// nightMode
+		json_object_set_new(rootJ, "nightMode", json_boolean(nightMode));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -166,6 +171,11 @@ struct GlobalInfo {
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
 		
+		// nightMode
+		json_t *nightModeJ = json_object_get(rootJ, "nightMode");
+		if (nightModeJ)
+			nightMode = json_is_true(nightModeJ);
+
 		// extern must call resetNonJson()
 	}
 };// struct GlobalInfo
@@ -197,6 +207,7 @@ struct MixerTrack {
 	simd::float_4 panCoeffs;// L, R, RinL, LinR
 	float slowGain;// gain that we don't want to computer each sample (gainAdjust
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
+	dsp::VuMeter2 vu[2];// use post[]
 
 	// no need to save, no reset
 	int trackNum;
@@ -212,7 +223,7 @@ struct MixerTrack {
 	Param *paPan;
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float pre[2];// for pre-track (aka fader+pan) monitor outputs
-	float post[2];// for VUs and post-track monitor outputs
+	float post[2];// post-track monitor outputs
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	Biquad hpFilter[2];// 12dB/oct
 	Biquad lpFilter[2];// 12db/oct
@@ -267,6 +278,8 @@ struct MixerTrack {
 	void resetNonJson() {
 		updateSlowValues();
 		gainSlewers.reset();
+		vu[0].reset();
+		vu[1].reset();
 	}
 	
 	
@@ -383,12 +396,12 @@ struct MixerTrack {
 	
 	
 	// Contract: 
-	//  * calc pre[] and post[] vectors
+	//  * calc pre[], post[] and vu[] vectors
 	//  * add post[] to mix[] when post is non-zero
 	void process(float *mix) {
 		if (!inL->isConnected()) {
-			post[0] = pre[0] = 0.0f;
-			post[1] = pre[1] = 0.0f;
+			post[0] = pre[0] = vu[0].v = 0.0f;
+			post[1] = pre[1] = vu[1].v = 0.0f;
 			return;
 		}
 				
@@ -453,6 +466,16 @@ struct MixerTrack {
 		// Add to mix
 		mix[0] += post[0];
 		mix[1] += post[1];
+		
+		// VUs
+		if (!gInfo->nightMode) {
+			vu[0].process(gInfo->sampleTime, post[0]);
+			vu[1].process(gInfo->sampleTime, post[1]);
+		}
+		else {
+			vu[0].v = 0.0f;
+			vu[1].v = 0.0f;
+		}
 	}
 };// struct MixerTrack
 
