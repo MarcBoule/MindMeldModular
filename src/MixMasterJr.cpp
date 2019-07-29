@@ -17,7 +17,6 @@ struct MixMasterJr : Module {
 
 
 	// Constants
-	static constexpr float masterFaderMaxLinearGain = 2.0f;
 	int numChannelsDirectOuts = 16;// avoids warning when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
@@ -30,6 +29,8 @@ struct MixMasterJr : Module {
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
+	VuMeterAll vu[2];
+
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -76,7 +77,7 @@ struct MixMasterJr : Module {
 			snprintf(strBuf, 32, "Group #%i solo", i + 1);
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		float maxMFader = std::pow(masterFaderMaxLinearGain, 1.0f / GlobalInfo::masterFaderScalingExponent);
+		float maxMFader = std::pow(GlobalInfo::masterFaderMaxLinearGain, 1.0f / GlobalInfo::masterFaderScalingExponent);
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * GlobalInfo::masterFaderScalingExponent);
 		// Mute
 		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
@@ -113,6 +114,8 @@ struct MixMasterJr : Module {
 				tracks[i].resetNonJson();
 			}
 		}
+		vu[0].reset();
+		vu[1].reset();
 	}
 
 
@@ -192,6 +195,8 @@ struct MixMasterJr : Module {
 		}
 
 		// Set master outputs
+		vu[0].process(args.sampleTime, mix[0]);
+		vu[1].process(args.sampleTime, mix[1]);
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
@@ -302,11 +307,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4 + 0.8)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			// VU meters
-			VuMeter *newVU = createWidgetCentered<VuMeter>(mm2px(Vec(11.43 + 12.7 * i, 80.4 + 0.8)));
 			if (module) {
+				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
+				addChild(newVU);
 			}
-			addChild(newVU);
 			// Mutes
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Solos
@@ -348,6 +353,12 @@ struct MixMasterJrWidget : ModuleWidget {
 		
 		// Main fader
 		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5 + 0.8)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		// VU meter
+		if (module) {
+			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(272.3, 69.5 + 0.8)));
+			newVU->srcLevels = &(module->vu[0]);
+			addChild(newVU);
+		}
 		
 		// Main mute
 		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(272.3, 109.0 + 0.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));

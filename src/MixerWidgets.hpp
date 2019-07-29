@@ -16,42 +16,82 @@
 // VU meters
 // --------------------
 
-struct VuMeter : OpaqueWidget {
-	dsp::VuMeter2 *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
-	float maxTFader;
+struct VuMeterBase : OpaqueWidget {
+	static constexpr float epsilon = 0.001f;// don't show VUs below 1mV
+	const NVGcolor PEAK_GREEN = nvgRGB(45, 133, 52);// 122, 201, 67
+	const NVGcolor RMS_GREEN = nvgRGB(30, 254, 75);
 	
-	VuMeter() {
-		box.size = mm2px(Vec(2.8, 42));
-	}
-
+	// instantiator must setup:
+	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	
+	// derived class must setup:
+	float gapX;// in px
+	float barX;// in px
+	float barY;// in px
+	// box.size // inherited, no need to declare
+	float faderMaxLinearGain;
+	float faderScalingExponent;
+	float zeroDbVoltage;
+	
+	
 	void draw(const DrawArgs &args) override {
-		// TODO: use time() that is used in FOundry to keep track of max in here, not in mixer process, to display peakhold, and reset every n seconds.
-		if (!srcLevels) return;
-		if (srcLevels[0].v <= 0.0f && srcLevels[1].v <= 0.0f) return;
-		// Background
+		// TODO: use time() that is used in Foundry to keep track of max in here, not in mixer process, to display peakhold, and reset every n seconds.
+		
 		nvgBeginPath(args.vg);
-		if (srcLevels[0].v > 0.0f) {
-			float vuHeightL = srcLevels[0].v * 0.2f / MixerTrack::trackFaderMaxLinearGain;
-			vuHeightL = std::pow(vuHeightL, 1.0f / MixerTrack::trackFaderScalingExponent);
-			vuHeightL = std::min(vuHeightL, 1.0f);// normalized is now clamped
-			vuHeightL *= box.size.y;
-			nvgRect(args.vg, 0, box.size.y - vuHeightL, mm2px(1.2f), vuHeightL);
-		}
-		if (srcLevels[1].v > 0.0f) {
-			float vuHeightR = srcLevels[1].v * 0.2f / MixerTrack::trackFaderMaxLinearGain;
-			vuHeightR = std::pow(vuHeightR, 1.0f / MixerTrack::trackFaderScalingExponent);
-			vuHeightR = std::min(vuHeightR, 1.0f);// normalized is now clamped
-			vuHeightR *= box.size.y;
-			nvgRect(args.vg, mm2px(1.2f + 0.4f), box.size.y - vuHeightR, mm2px(1.2f), vuHeightR);
-		}
-		nvgFillColor(args.vg, nvgRGB(122, 201, 67));
+
+		// peak values
+		drawVu(args, srcLevels[0].getPeak(), 0);
+		drawVu(args, srcLevels[1].getPeak(), barX + gapX);
+		nvgFillColor(args.vg, PEAK_GREEN);
 		nvgFill(args.vg);
 
+		nvgBeginPath(args.vg);
+		
+		// rms values
+		drawVu(args, srcLevels[0].getRms(), 0);
+		drawVu(args, srcLevels[1].getRms(), barX + gapX);
+		nvgFillColor(args.vg, RMS_GREEN);
+		nvgFill(args.vg);
+		
 		Widget::draw(args);
+	}
+	
+	void drawVu(const DrawArgs &args, float peakValue, float posX) {
+		if (peakValue >= epsilon) {
+			float vuHeight = peakValue / (faderMaxLinearGain * zeroDbVoltage);
+			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
+			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
+			vuHeight *= barY;
+			nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+		}
 	}
 };
 
+// 2.8mm x 42mm
+struct VuMeterTrack : VuMeterBase {//
+	VuMeterTrack() {
+		gapX = mm2px(0.4);
+		barX = mm2px(1.2);
+		barY = mm2px(42.0);
+		box.size = Vec(barX * 2 + gapX, barY);
+		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
+		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
+		zeroDbVoltage = 5.0f;
+	}
+};
 
+// 3.8mm x 60mm
+struct VuMeterMaster : VuMeterBase {
+	VuMeterMaster() {
+		gapX = mm2px(0.6);
+		barX = mm2px(1.6);
+		barY = mm2px(60.0);
+		box.size = Vec(barX * 2 + gapX, barY);
+		faderMaxLinearGain = GlobalInfo::masterFaderMaxLinearGain;
+		faderScalingExponent = GlobalInfo::masterFaderScalingExponent;
+		zeroDbVoltage = 10.0f;
+	}
+};
 
 
 
@@ -211,7 +251,7 @@ struct TrackDisplay : LedDisplayTextField {
 	TrackDisplay() {
 		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
-		text = " 20 ";
+		text = "-00-";
 	};
 	
 	// don't want background so implement adapted version here

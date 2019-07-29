@@ -12,6 +12,7 @@
 #include "MindMeldModular.hpp"
 #include "dsp/Biquad.hpp"
 #include "dsp/OnePole.hpp"
+#include "dsp/VuMeterAll.hpp"
 #include <pmmintrin.h>
 
 
@@ -68,6 +69,7 @@ struct GlobalInfo {
 	
 	// constants
 	static constexpr float masterFaderScalingExponent = 3.0f; 
+	static constexpr float masterFaderMaxLinearGain = 2.0f;
 
 	
 	// need to save, no reset
@@ -207,7 +209,7 @@ struct MixerTrack {
 	simd::float_4 panCoeffs;// L, R, RinL, LinR
 	float slowGain;// gain that we don't want to computer each sample (gainAdjust
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
-	dsp::VuMeter2 vu[2];// use post[]
+	VuMeterAll vu[2];// use post[]
 
 	// no need to save, no reset
 	int trackNum;
@@ -400,8 +402,10 @@ struct MixerTrack {
 	//  * add post[] to mix[] when post is non-zero
 	void process(float *mix) {
 		if (!inL->isConnected()) {
-			post[0] = pre[0] = vu[0].v = 0.0f;
-			post[1] = pre[1] = vu[1].v = 0.0f;
+			post[0] = pre[0] = 0.0f;
+			post[1] = pre[1] = 0.0f;
+			vu[0].reset();
+			vu[1].reset();
 			return;
 		}
 				
@@ -437,35 +441,35 @@ struct MixerTrack {
 		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
 			post[0] = 0.0f;	
 			post[1] = 0.0f;
-			return;
 		}
+		else {
+			post[0] = pre[0];
+			post[1] = pre[1];
 
-		post[0] = pre[0];
-		post[1] = pre[1];
-
-		// HPF
-		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-			post[0] = hpFilter[0].process(hpPreFilter[0].processHP(post[0]));
-			post[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(post[1])) : post[0];
-		}
-		// LPF
-		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
-			post[0] = lpFilter[0].process(post[0]);
-			post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
-		}
+			// HPF
+			if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+				post[0] = hpFilter[0].process(hpPreFilter[0].processHP(post[0]));
+				post[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(post[1])) : post[0];
+			}
+			// LPF
+			if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+				post[0] = lpFilter[0].process(post[0]);
+				post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
+			}
 
 
-		// Apply gains
-		simd::float_4 sigs(post[0], post[1], post[1], post[0]);
-		sigs = sigs * gains;
-		
-		// Post signals
-		post[0] = sigs[0] + sigs[2];
-		post[1] = sigs[1] + sigs[3];
+			// Apply gains
+			simd::float_4 sigs(post[0], post[1], post[1], post[0]);
+			sigs = sigs * gains;
 			
-		// Add to mix
-		mix[0] += post[0];
-		mix[1] += post[1];
+			// Post signals
+			post[0] = sigs[0] + sigs[2];
+			post[1] = sigs[1] + sigs[3];
+				
+			// Add to mix
+			mix[0] += post[0];
+			mix[1] += post[1];
+		}
 		
 		// VUs
 		if (!gInfo->nightMode) {
@@ -473,8 +477,8 @@ struct MixerTrack {
 			vu[1].process(gInfo->sampleTime, post[1]);
 		}
 		else {
-			vu[0].v = 0.0f;
-			vu[1].v = 0.0f;
+			vu[0].reset();
+			vu[1].reset();
 		}
 	}
 };// struct MixerTrack
