@@ -17,8 +17,8 @@
 // VU meters
 // --------------------
 static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(30, 254, 75)};// peak (darker), rms (lighter)
-static const NVGcolor VU_YELLOW[2] = {nvgRGB(133, 133, 52), nvgRGB(254, 254, 75)};// peak (darker), rms (lighter)
-static const NVGcolor VU_RED[2] =    {nvgRGB(133, 45, 52), 	nvgRGB(254, 30, 75)};// peak (darker), rms (lighter)
+static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
+static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
 static const NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
 
 
@@ -87,28 +87,53 @@ struct VuMeterBase : OpaqueWidget {
 	// used for RMS or PEAK
 	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) {
 		if (vuValue >= epsilon) {
-			nvgBeginPath(args.vg);
 
 			
 			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
-			nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-
-			// if (vuHeight > redThreshold) {
-				// nvgFillColor(args.vg, VU_RED[colorIndex]);
-			// }
-			// else if (vuHeight > yellowThreshold) {
-				// nvgFillColor(args.vg, VU_YELLOW[colorIndex]);
-			// }
-			// else {
+			
+			if (vuHeight > redThreshold) {
+				// Red
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - redThreshold);
+				nvgFillColor(args.vg, VU_RED[colorIndex]);
+				nvgFill(args.vg);
+				// Yellow
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold - yellowThreshold);
+				nvgFillColor(args.vg, VU_YELLOW[colorIndex]);
+				nvgFill(args.vg);			
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
 				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-			// }
-			nvgFill(args.vg);
+				nvgFill(args.vg);			
+			}
+			else if (vuHeight > yellowThreshold) {
+				// Yellow
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
+				nvgFillColor(args.vg, VU_YELLOW[colorIndex]);
+				nvgFill(args.vg);			
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFill(args.vg);			
+			}
+			else {
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFill(args.vg);
+			}
 
 		}
 	}
+	
+	
 	
 	// PEAK_HOLD
 	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) {

@@ -268,7 +268,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		panLawStereoItem->gInfo = &(module->gInfo);
 		menu->addChild(panLawStereoItem);
 		
-		NightModeItem *nightItem = createMenuItem<NightModeItem>("Night mode", CHECKMARK(module->gInfo.nightMode));
+		NightModeItem *nightItem = createMenuItem<NightModeItem>("Cloaked mode", CHECKMARK(module->gInfo.nightMode));
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
 	}
