@@ -10,16 +10,21 @@
 
 
 #include "Mixer.hpp"
+#include <time.h>
 
 
 
 // VU meters
 // --------------------
+static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(30, 254, 75)};// peak (darker), rms (lighter)
+static const NVGcolor VU_YELLOW[2] = {nvgRGB(133, 133, 52), nvgRGB(254, 254, 75)};// peak (darker), rms (lighter)
+static const NVGcolor VU_RED[2] =    {nvgRGB(133, 45, 52), 	nvgRGB(254, 30, 75)};// peak (darker), rms (lighter)
+static const NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
+
 
 struct VuMeterBase : OpaqueWidget {
 	static constexpr float epsilon = 0.001f;// don't show VUs below 1mV
-	const NVGcolor PEAK_GREEN = nvgRGB(45, 133, 52);// 122, 201, 67
-	const NVGcolor RMS_GREEN = nvgRGB(30, 254, 75);
+
 	
 	// instantiator must setup:
 	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
@@ -33,36 +38,86 @@ struct VuMeterBase : OpaqueWidget {
 	float faderScalingExponent;
 	float zeroDbVoltage;
 	
+	// local 
+	float peakHold[2] = {0.0f, 0.0f};
+	long oldTime = -1;
+	float yellowThreshold;// in px, before vertical inversion
+	float redThreshold;// in px, before vertical inversion
+	
+	
+	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb) {
+		float maxLin = std::pow(faderMaxLinearGain, 1.0f / faderScalingExponent);
+		float yellowLin = std::pow(std::pow(10.0f, yellowMinDb / 20.0f), 1.0f / faderScalingExponent);
+		yellowThreshold = barY * (yellowLin / maxLin);
+		float redLin = std::pow(std::pow(10.0f, redMinDb / 20.0f), 1.0f / faderScalingExponent);
+		redThreshold = barY * (redLin / maxLin);
+	}
+	
 	
 	void draw(const DrawArgs &args) override {
-		// TODO: use time() that is used in Foundry to keep track of max in here, not in mixer process, to display peakhold, and reset every n seconds.
-		
-		nvgBeginPath(args.vg);
+		// PEAK
+		drawVu(args, srcLevels[0].getPeak(), 0, 0);
+		drawVu(args, srcLevels[1].getPeak(), barX + gapX, 0);
 
-		// peak values
-		drawVu(args, srcLevels[0].getPeak(), 0);
-		drawVu(args, srcLevels[1].getPeak(), barX + gapX);
-		nvgFillColor(args.vg, PEAK_GREEN);
-		nvgFill(args.vg);
-
+		// RMS
+		drawVu(args, srcLevels[0].getRms(), 0, 1);
+		drawVu(args, srcLevels[1].getRms(), barX + gapX, 1);
+		
+		// PEAK_HOLD
 		nvgBeginPath(args.vg);
-		
-		// rms values
-		drawVu(args, srcLevels[0].getRms(), 0);
-		drawVu(args, srcLevels[1].getRms(), barX + gapX);
-		nvgFillColor(args.vg, RMS_GREEN);
+		long newTime = time(0);
+		if ( (newTime != oldTime) && ((newTime & 0x1) == 0) ) {
+			oldTime = newTime;
+			peakHold[0] = 0.0f;
+			peakHold[1] = 0.0f;
+		}		
+		for (int i = 0; i < 2; i++) {
+			if (srcLevels[i].getPeak() > peakHold[i]) {
+				peakHold[i] = srcLevels[i].getPeak();
+			}
+		}
+		drawPeakHold(args, peakHold[0], 0);
+		drawPeakHold(args, peakHold[1], barX + gapX);
+		nvgFillColor(args.vg, PEAK_HOLD);
 		nvgFill(args.vg);
-		
+				
 		Widget::draw(args);
 	}
 	
-	void drawVu(const DrawArgs &args, float peakValue, float posX) {
-		if (peakValue >= epsilon) {
-			float vuHeight = peakValue / (faderMaxLinearGain * zeroDbVoltage);
+	// used for RMS or PEAK
+	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) {
+		if (vuValue >= epsilon) {
+			nvgBeginPath(args.vg);
+
+			
+			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
 			nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+
+			// if (vuHeight > redThreshold) {
+				// nvgFillColor(args.vg, VU_RED[colorIndex]);
+			// }
+			// else if (vuHeight > yellowThreshold) {
+				// nvgFillColor(args.vg, VU_YELLOW[colorIndex]);
+			// }
+			// else {
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+			// }
+			nvgFill(args.vg);
+
+		}
+	}
+	
+	// PEAK_HOLD
+	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) {
+		if (holdValue >= epsilon) {
+			float vuHeight = holdValue / (faderMaxLinearGain * zeroDbVoltage);
+			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
+			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
+			vuHeight *= barY;
+			nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
 		}
 	}
 };
@@ -77,6 +132,7 @@ struct VuMeterTrack : VuMeterBase {//
 		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
 		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
 		zeroDbVoltage = 5.0f;
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// in dB
 	}
 };
 
@@ -90,6 +146,7 @@ struct VuMeterMaster : VuMeterBase {
 		faderMaxLinearGain = GlobalInfo::masterFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::masterFaderScalingExponent;
 		zeroDbVoltage = 10.0f;
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// in dB
 	}
 };
 
