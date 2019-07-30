@@ -365,7 +365,7 @@ struct TrackDisplay : LedDisplayTextField {
 	
 	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
 	void onSelectText(const event::SelectText &e) override {
-		if (cursor < 4) {
+		// if (cursor < 4) {
 			//LedDisplayTextField::onSelectText(e); // copied below to morph spaces
 			if (e.codepoint < 128) {
 				char letter = (char) e.codepoint;
@@ -380,10 +380,11 @@ struct TrackDisplay : LedDisplayTextField {
 			if (text.length() > 4) {
 				text = text.substr(0, 4);
 			}
-		}
-		else {
-			e.consume(this);
-		}
+		// }
+		// else {
+			// INFO("Consumed with cursor = %i, selection = %i", cursor, selection);
+			// e.consume(this);
+		// }
 	}
 
 
