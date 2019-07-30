@@ -365,26 +365,19 @@ struct TrackDisplay : LedDisplayTextField {
 	
 	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
 	void onSelectText(const event::SelectText &e) override {
-		// if (cursor < 4) {
-			//LedDisplayTextField::onSelectText(e); // copied below to morph spaces
-			if (e.codepoint < 128) {
-				char letter = (char) e.codepoint;
-				if (letter == 0x20) {// space
-					letter = 0x2D;// hyphen
-				}
-				std::string newText(1, letter);
-				insertText(newText);
+		if (e.codepoint < 128) {
+			char letter = (char) e.codepoint;
+			if (letter == 0x20) {// space
+				letter = 0x2D;// hyphen
 			}
-			e.consume(this);	
-			
-			if (text.length() > 4) {
-				text = text.substr(0, 4);
-			}
-		// }
-		// else {
-			// INFO("Consumed with cursor = %i, selection = %i", cursor, selection);
-			// e.consume(this);
-		// }
+			std::string newText(1, letter);
+			insertText(newText);
+		}
+		e.consume(this);	
+		
+		if (text.length() > 4) {
+			text = text.substr(0, 4);
+		}
 	}
 
 
@@ -422,5 +415,70 @@ struct TrackDisplay : LedDisplayTextField {
 	};
 };
 
+
+struct GroupSelectDisplay : LedDisplayTextField {
+	MixerTrack *srcTrack = NULL;
+
+	GroupSelectDisplay() {
+		box.size = Vec(18, 16);
+		textOffset = Vec(2.6f, -2.2f);
+		text = "-";
+	};
+	
+	// don't want background so implement adapted version here
+	void draw(const DrawArgs &args) override {
+		// override and do not call LedDisplayTextField.draw() since draw ourselves
+		if (cursor > 1) {
+			text.resize(1);
+			cursor = 1;
+			selection = 1;
+		}
+		
+		// the code below is from LedDisplayTextField.draw()
+		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+		if (font->handle >= 0) {
+			bndSetFont(font->handle);
+
+			NVGcolor highlightColor = color;
+			highlightColor.a = 0.5;
+			int begin = std::min(cursor, selection);
+			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
+			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
+				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
+				-1, color, 12, text.c_str(), highlightColor, begin, end);
+
+			bndSetFont(APP->window->uiFont->handle);
+		}
+		nvgResetScissor(args.vg);
+	}
+	
+	// convert anything that is not a number from 1 to 4 into -
+	void onSelectText(const event::SelectText &e) override {
+		if (e.codepoint < 128) {
+			char letter = (char) e.codepoint;
+			if (text[0] < '1' || text[0] > '4') {
+				letter = 0x2D;// hyphen
+			}
+			std::string newText(1, letter);
+			insertText(newText);
+		}
+		e.consume(this);	
+		
+		if (text.length() > 1) {
+			text = text.substr(0, 1);
+		}
+	}
+
+	void onChange(const event::Change &e) override {
+		if (text[0] >= '1' && text[0] <= '4') {
+			srcTrack->group = text[0] - 0x30 - 1;
+		}
+		else {
+			srcTrack->group = -1;
+		}
+		INFO("Wrote group %i", srcTrack->group);
+		LedDisplayTextField::onChange(e);
+	};
+};
 
 #endif

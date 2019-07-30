@@ -240,7 +240,8 @@ struct MixMasterJr : Module {
 
 
 struct MixMasterJrWidget : ModuleWidget {
-	TrackDisplay* trackDisplays[20];
+	TrackDisplay* trackDisplays[16];
+	GroupSelectDisplay* groupSelectDisplays[16];
 
 
 	// Module's context menu
@@ -320,7 +321,12 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group inc
 			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
-
+			// Group select displays
+			// Labels
+			addChild(groupSelectDisplays[i] = createWidgetCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 122.6 + 0.5))));
+			if (module) {
+				groupSelectDisplays[i]->srcTrack = &(module->tracks[i]);
+			}
 		}
 		
 		// Monitor outputs and groups
@@ -376,7 +382,13 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Track labels (pull from module)
 			if (moduleM->resetTrackLabelRequest >= 0) {// pull request from module
 				for (int trk = 0; trk < 16; trk++) {
+					// track displays
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
+					
+					// group select displays
+					char group[2] = {(char)(moduleM->tracks[trk].group + '1'), 0};
+					if (group[0] < '1') group[0] = '-';
+					groupSelectDisplays[trk]->text = std::string(group);
 				}
 				moduleM->resetTrackLabelRequest = -1;// all done pulling
 			}
