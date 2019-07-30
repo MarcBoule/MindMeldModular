@@ -79,7 +79,7 @@ struct GlobalInfo {
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader
-	bool nightMode;// turn off track VUs only, keep master VUs
+	bool nightMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see it should play
@@ -142,7 +142,6 @@ struct GlobalInfo {
 		
 	}
 	
-
 	void dataToJson(json_t *rootJ) {
 		// panLawMono 
 		json_object_set_new(rootJ, "panLawMono", json_integer(panLawMono));
@@ -186,9 +185,9 @@ struct GlobalInfo {
 //*****************************************************************************
 
 
-struct MixerTrack {
+struct MixerGroup {
 	// Constants
-	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling (seems to be what Console uses) (must be integer for best performance)
+	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float minHPFCutoffFreq = 20.0f;
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
@@ -197,7 +196,174 @@ struct MixerTrack {
 	// none
 	
 	// need to save, with reset
-	int group;// -1 is no group, 0 to 3 is group
+	// none
+
+	// no need to save, with reset
+	simd::float_4 panCoeffs;// L, R, RinL, LinR
+	float slowGain;// gain that we don't want to computer each sample (gainAdjust * fader)
+	dsp::TSlewLimiter<simd::float_4> gainSlewers;
+	VuMeterAll vu[2];// use post[]
+
+	// no need to save, no reset
+	int groupNum;// 0 to 3
+	//std::string ids;
+	GlobalInfo *gInfo;
+	Input *inVol;
+	Input *inPan;
+	Param *paFade;
+	Param *paMute;
+	Param *paSolo;
+	Param *paPan;
+	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+	float pre[2];// for pre-track (aka fader+pan) monitor outputs
+	float post[2];// post-track monitor outputs
+
+	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
+		groupNum = _groupNum;
+		gInfo = _gInfo;
+		//ids = "id" + std::to_string(groupNum) + "_";
+		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
+		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
+		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
+		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
+		paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
+		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
+		trackName = _trackName;
+		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+	}
+	
+	
+	void onReset() {
+		resetNonJson();
+	}
+	void resetNonJson() {
+		updateSlowValues();
+		gainSlewers.reset();
+		vu[0].reset();
+		vu[1].reset();
+	}
+	
+	
+	// Contract: 
+	//  * calc panCoeffs
+	//  * calc slowGain
+	void updateSlowValues() {
+		// calc panCoeffs
+		if (gInfo->params[MAIN_MONO_PARAM].getValue() > 0.5f) {// if master is in mono mode	
+			panCoeffs = simd::float_4(0.5f);
+		}
+		else {	
+			float pan = paPan->getValue();
+			if (inPan->isConnected()) {
+				pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
+			}
+			pan = clamp(pan, 0.0f, 1.0f);
+			
+			panCoeffs[3] = 0.0f;
+			panCoeffs[2] = 0.0f;
+			// implicitly stereo
+			if (gInfo->panLawStereo == 0) {
+				// Stereo balance (+3dB), same as mono equal power
+				panCoeffs[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				panCoeffs[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+			}
+			else {
+				// True panning, equal power
+				panCoeffs[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				panCoeffs[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+				panCoeffs[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				panCoeffs[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+			}
+		}
+		
+		// slowGain
+		slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+	}
+	
+	
+	// Contract: 
+	//  * calc pre[], post[] and vu[] vectors
+	//  * add post[] to mix[] when post is non-zero
+	void process(float *mix) {// give the full mix[10] vector, proper offset will be computed in here
+		pre[0] = mix[groupNum * 2 + 2];
+		pre[1] = mix[groupNum * 2 + 3];
+		
+		// Calc track gains
+		simd::float_4 gains = simd::float_4::zero();
+		// solo and mute
+		// TODO!!!!!!!!!!!!!!!!!
+		if ( !((gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f)) ) {
+			// fader
+			float gain = slowGain;
+			
+			// vol CV input
+			if (inVol->isConnected()) {
+				gain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
+			}
+			
+			// master gain
+			gain *= gInfo->masterGain;
+						
+			// Create gains vectors and handle panning
+			gains = simd::float_4(gain);
+			gains *= panCoeffs;
+		}
+		
+		// Gain slewer
+		if (movemask(gains == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gains = gainSlewers.process(gInfo->sampleTime, gains);
+		}
+		
+		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
+			post[0] = 0.0f;	
+			post[1] = 0.0f;
+		}
+		else {
+			post[0] = pre[0];
+			post[1] = pre[1];
+
+			// Apply gains
+			simd::float_4 sigs(post[0], post[1], post[1], post[0]);
+			sigs = sigs * gains;
+			
+			// Post signals
+			post[0] = sigs[0] + sigs[2];
+			post[1] = sigs[1] + sigs[3];
+				
+			// Add to mix
+			mix[0] += post[0];
+			mix[1] += post[1];
+		}
+		
+		// VUs
+		if (!gInfo->nightMode) {
+			vu[0].process(gInfo->sampleTime, post[0]);
+			vu[1].process(gInfo->sampleTime, post[1]);
+		}
+		else {
+			vu[0].reset();
+			vu[1].reset();
+		}
+	}
+};// struct MixerGroup
+
+
+
+//*****************************************************************************
+
+
+struct MixerTrack {
+	// Constants
+	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float minHPFCutoffFreq = 20.0f;
+	static constexpr float maxLPFCutoffFreq = 20000.0f;
+	
+	// need to save, no reset
+	// none
+	
+	// need to save, with reset
+	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]
 	float gainAdjust;// this is a gain here (not dB)
 	private:
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
@@ -207,7 +373,7 @@ struct MixerTrack {
 	// no need to save, with reset
 	bool stereo;// pan coefficients use this, so set up first
 	simd::float_4 panCoeffs;// L, R, RinL, LinR
-	float slowGain;// gain that we don't want to computer each sample (gainAdjust
+	float slowGain;// gain that we don't want to computer each sample (gainAdjust * fader)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	VuMeterAll vu[2];// use post[]
 
@@ -248,6 +414,15 @@ struct MixerTrack {
 	}
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
+	void incGroup() {
+		if (group == 4) group = 0;
+		else group++;		
+	}
+	void decGroup() {
+		if (group == 0) group = 4;
+		else group--;		
+	}
+
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
 		trackNum = _trackNum;
@@ -271,7 +446,7 @@ struct MixerTrack {
 	
 	
 	void onReset() {
-		group = -1;
+		group = 0;
 		gainAdjust = 1.0f;
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
@@ -467,8 +642,8 @@ struct MixerTrack {
 			post[1] = sigs[1] + sigs[3];
 				
 			// Add to mix
-			mix[0] += post[0];
-			mix[1] += post[1];
+			mix[group * 2 + 0] += post[0];
+			mix[group * 2 + 1] += post[1];
 		}
 		
 		// VUs

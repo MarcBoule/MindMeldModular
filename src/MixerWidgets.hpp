@@ -338,14 +338,13 @@ struct TrackDisplay : LedDisplayTextField {
 	
 	// don't want background so implement adapted version here
 	void draw(const DrawArgs &args) override {
-		// override and do not call LedDisplayTextField.draw() since draw ourselves
 		if (cursor > 4) {
 			text.resize(4);
 			cursor = 4;
 			selection = 4;
 		}
 		
-		// the code below is from LedDisplayTextField.draw()
+		// the code below is LedDisplayTextField.draw() without the background rect
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		if (font->handle >= 0) {
 			bndSetFont(font->handle);
@@ -416,69 +415,40 @@ struct TrackDisplay : LedDisplayTextField {
 };
 
 
-struct GroupSelectDisplay : LedDisplayTextField {
+struct GroupSelectDisplay : LedDisplayChoice {
 	MixerTrack *srcTrack = NULL;
 
 	GroupSelectDisplay() {
 		box.size = Vec(18, 16);
-		textOffset = Vec(2.6f, -2.2f);
+		textOffset = math::Vec(6.6f, 11.7f);
+		bgColor.a = 0.0f;
 		text = "-";
 	};
 	
-	// don't want background so implement adapted version here
+	void onButton(const event::Button &e) override {};
 	void draw(const DrawArgs &args) override {
-		// override and do not call LedDisplayTextField.draw() since draw ourselves
-		if (cursor > 1) {
-			text.resize(1);
-			cursor = 1;
-			selection = 1;
+		if (srcTrack) {
+			int grp = srcTrack->group;
+			text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
+			text[1] = 0;
 		}
-		
-		// the code below is from LedDisplayTextField.draw()
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			bndSetFont(font->handle);
+		LedDisplayChoice::draw(args);
+	};
 
-			NVGcolor highlightColor = color;
-			highlightColor.a = 0.5;
-			int begin = std::min(cursor, selection);
-			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
-				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
-				-1, color, 12, text.c_str(), highlightColor, begin, end);
-
-			bndSetFont(APP->window->uiFont->handle);
+	void onHoverKey(const event::HoverKey &e) override {
+		if (e.action == GLFW_PRESS) {
+			if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
+				srcTrack->group = e.key - GLFW_KEY_0;
+			}
+			else if (e.key >= GLFW_KEY_KP_1 && e.key <= GLFW_KEY_KP_4) {
+				srcTrack->group = e.key - GLFW_KEY_KP_0;
+			}
+			else if ((e.mods & RACK_MOD_MASK) == 0){
+				srcTrack->group = 0;
+			}
 		}
-		nvgResetScissor(args.vg);
 	}
 	
-	// convert anything that is not a number from 1 to 4 into -
-	void onSelectText(const event::SelectText &e) override {
-		if (e.codepoint < 128) {
-			char letter = (char) e.codepoint;
-			if (text[0] < '1' || text[0] > '4') {
-				letter = 0x2D;// hyphen
-			}
-			std::string newText(1, letter);
-			insertText(newText);
-		}
-		e.consume(this);	
-		
-		if (text.length() > 1) {
-			text = text.substr(0, 1);
-		}
-	}
-
-	void onChange(const event::Change &e) override {
-		if (text[0] >= '1' && text[0] <= '4') {
-			srcTrack->group = text[0] - 0x30 - 1;
-		}
-		else {
-			srcTrack->group = -1;
-		}
-		INFO("Wrote group %i", srcTrack->group);
-		LedDisplayTextField::onChange(e);
-	};
 };
 
 #endif

@@ -34,6 +34,8 @@ struct MixMasterJr : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
+	Trigger groupIncTriggers[16];
+	Trigger groupDecTriggers[16];
 
 		
 	MixMasterJr() {
@@ -175,6 +177,14 @@ struct MixMasterJr : Module {
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
+			// Group inc/dec
+			if (groupIncTriggers[trackToProcess].process(params[GRP_INC_PARAMS + trackToProcess].getValue())) {
+				tracks[trackToProcess].incGroup();
+			}
+			if (groupDecTriggers[trackToProcess].process(params[GRP_DEC_PARAMS + trackToProcess].getValue())) {
+				tracks[trackToProcess].decGroup();
+			}
+			
 			// Tracks
 			gInfo.updateSoloBit(trackToProcess);
 			tracks[trackToProcess].updateSlowValues();
@@ -187,7 +197,7 @@ struct MixMasterJr : Module {
 		
 		
 		//********** Outputs and lights **********
-		float mix[2] = {};
+		float mix[10] = {0.0f};// room for main and groups
 		
 		// Tracks
 		for (int i = 0; i < 16; i++) {
@@ -291,7 +301,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				trackDisplays[i]->srcTrack = &(module->tracks[i]);
 			}
 			// HPF lights
-			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_HPF_LIGHTS + i));	
 			// LPF lights
 			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(11.43 + 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_LPF_LIGHTS + i));	
 			// Left inputs
@@ -322,7 +332,6 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Group inc
 			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group select displays
-			// Labels
 			addChild(groupSelectDisplays[i] = createWidgetCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 122.6 + 0.5))));
 			if (module) {
 				groupSelectDisplays[i]->srcTrack = &(module->tracks[i]);
@@ -384,11 +393,6 @@ struct MixMasterJrWidget : ModuleWidget {
 				for (int trk = 0; trk < 16; trk++) {
 					// track displays
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
-					
-					// group select displays
-					char group[2] = {(char)(moduleM->tracks[trk].group + '1'), 0};
-					if (group[0] < '1') group[0] = '-';
-					groupSelectDisplays[trk]->text = std::string(group);
 				}
 				moduleM->resetTrackLabelRequest = -1;// all done pulling
 			}
