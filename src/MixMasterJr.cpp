@@ -27,6 +27,7 @@ struct MixMasterJr : Module {
 	GlobalInfo gInfo;
 	MixerTrack tracks[16];
 	MixerGroup groups[4];
+	MixerMaster master;
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
@@ -80,8 +81,8 @@ struct MixMasterJr : Module {
 			snprintf(strBuf, 32, "Group #%i solo", i + 1);
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		float maxMFader = std::pow(GlobalInfo::masterFaderMaxLinearGain, 1.0f / GlobalInfo::masterFaderScalingExponent);
-		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * GlobalInfo::masterFaderScalingExponent);
+		float maxMFader = std::pow(MixerMaster::masterFaderMaxLinearGain, 1.0f / MixerMaster::masterFaderScalingExponent);
+		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * MixerMaster::masterFaderScalingExponent);
 		// Mute
 		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
 		// Dim
@@ -98,6 +99,7 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]));
 		}
+		master.construct(&gInfo, &params[0]);
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -113,6 +115,7 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 4; i++) {
 			groups[i].onReset();
 		}
+		master.onReset();
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -125,6 +128,7 @@ struct MixMasterJr : Module {
 			for (int i = 0; i < 4; i++) {
 				groups[i].resetNonJson();
 			}
+			master.resetNonJson();
 		}
 		vu[0].reset();
 		vu[1].reset();
@@ -197,13 +201,16 @@ struct MixMasterJr : Module {
 			
 			// Tracks
 			gInfo.updateSoloBit(trackToProcess);
-			tracks[trackToProcess].updateSlowValues();
-			if ( (trackToProcess & 0x3) == 0) {
+			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
+			// Groups
+			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
+				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
 				groups[trackToProcess >> 2].updateSlowValues();
 			}
-			
 			// Master
-			gInfo.updateMasterGain();
+			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
+				master.updateSlowValues();
+			}
 			
 		}// userInputs refresh
 		
@@ -220,7 +227,9 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
 		}
-
+		// Master
+		master.process(mix);
+		
 		// Set master outputs
 		vu[0].process(args.sampleTime, mix[0]);
 		vu[1].process(args.sampleTime, mix[1]);
@@ -230,7 +239,7 @@ struct MixMasterJr : Module {
 		// Direct outs
 		SetDirectTrackOuts(0);// P1-8
 		SetDirectTrackOuts(8);// P9-16
-		SetDirectGroupOuts();// PGrp TODO optimize this to use mix instead of pre, since all pre are available in mix
+		SetDirectGroupOuts(mix);// PGrp
 				
 		// lights
 		if (refresh.processLights()) {
@@ -263,7 +272,7 @@ struct MixMasterJr : Module {
 		}
 	}
 	
-	void SetDirectGroupOuts() {
+	void SetDirectGroupOuts(float *mix) {
 		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
 			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
 			if (gInfo.directOutsMode == 1) {// post-fader
@@ -275,8 +284,8 @@ struct MixMasterJr : Module {
 			else// pre-fader
 			{
 				for (unsigned int i = 0; i < 4; i++) {
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].pre[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].pre[1], 2 * i + 1);
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(mix[2 * i + 2], 2 * i);
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(mix[2 * i + 3], 2 * i + 1);
 				}
 			}
 		}
@@ -366,9 +375,9 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Solos
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group dec
-			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group inc
-			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group select displays
 			addChild(groupSelectDisplays[i] = createWidgetCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 122.6 + 0.5))));
 			if (module) {

@@ -167,6 +167,7 @@ struct DynMonoButton : DynamicSVGSwitch {
 	}
 };
 
+
 struct DynGroupMinusButton : DynamicSVGSwitch {
 	DynGroupMinusButton() {
 		momentary = true;

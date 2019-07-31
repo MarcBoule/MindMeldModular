@@ -16,7 +16,7 @@
 
 // VU meters
 // --------------------
-static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(30, 254, 75)};// peak (darker), rms (lighter)
+static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(75, 222, 76)};// peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
 static const NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
@@ -167,8 +167,8 @@ struct VuMeterMaster : VuMeterBase {
 		barX = mm2px(1.6);
 		barY = mm2px(60.0);
 		box.size = Vec(barX * 2 + gapX, barY);
-		faderMaxLinearGain = GlobalInfo::masterFaderMaxLinearGain;
-		faderScalingExponent = GlobalInfo::masterFaderScalingExponent;
+		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
+		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
 		zeroDbVoltage = 10.0f;// V
 		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
