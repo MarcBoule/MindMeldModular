@@ -186,17 +186,12 @@ struct MixerMaster {
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
-	Param *paFade;
-	Param *paMute;
-	Param *paDim;
-	Param *paMono;
+	Param *params;
+
 
 	void construct(GlobalInfo *_gInfo, Param *_params) {
 		gInfo = _gInfo;
-		paFade = &_params[MAIN_FADER_PARAM];
-		paMute = &_params[MAIN_MUTE_PARAM];
-		paDim = &_params[MAIN_DIM_PARAM];
-		paMono = &_params[MAIN_MONO_PARAM];
+		params = _params;
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
@@ -216,8 +211,8 @@ struct MixerMaster {
 	//  * calc slowGain
 	void updateSlowValues() {
 		// slowGain
-		slowGain = std::pow(paFade->getValue(), masterFaderScalingExponent);
-		if (paDim->getValue() > 0.5f) {
+		slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+		if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
 			slowGain *= 0.1;// -20 dB dim
 		}
 	}
@@ -226,15 +221,12 @@ struct MixerMaster {
 	// Contract: 
 	//  * calc mix[] and vu[] vectors
 	void process(float *mix) {// takes mix[0..1] and redeposits post in same place, since don't need pre
-		if (mix[0] == 0.0f && mix[1] == 0.0f) {
-			vu[0].reset();
-			vu[1].reset();
-			return;
-		}
+		// no optimization of mix[0..1] == {0, 0}, since it could be a zero crossing of a mono source!
 		
 		// Calc master gains
 		simd::float_4 gains = simd::float_4::zero();
-		if (!(paMute->getValue() > 0.5f)) {
+		// Mute test
+		if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
 			// fader
 			float gain = slowGain;
 			
@@ -244,7 +236,7 @@ struct MixerMaster {
 			// }
 									
 			// Create gains vectors and handle mono
-			if (paMono->getValue() > 0.5f) {
+			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
 				gains = simd::float_4(gain * 0.5f);
 			}
 			else {
@@ -256,7 +248,8 @@ struct MixerMaster {
 		if (movemask(gains == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gains = gainSlewers.process(gInfo->sampleTime, gains);
 		}
-				
+		
+		// Test for all gains equal to 0
 		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
 			mix[0] = 0.0f;	
 			mix[1] = 0.0f;
@@ -316,20 +309,19 @@ struct MixerGroup {
 	Param *paMute;
 	Param *paSolo;
 	Param *paPan;
-	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
-	float post[2];// post-group monitor outputs (don't need any pre, since those are in mix and not affected here)
+	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+	float post[2];// post-group monitor outputs (don't need pre-group variable, since those are already in mix[] and they are not affected here)
 
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
+	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName) {
 		groupNum = _groupNum;
 		gInfo = _gInfo;
-		//ids = "id" + std::to_string(groupNum) + "_";
 		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
 		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
 		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
 		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
 		paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
-		trackName = _trackName;
+		groupName = _groupName;
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
@@ -358,7 +350,8 @@ struct MixerGroup {
 		
 		panCoeffs[3] = 0.0f;
 		panCoeffs[2] = 0.0f;
-		// implicitly stereo
+		
+		// implicitly stereo for groups
 		if (gInfo->panLawStereo == 0) {
 			// Stereo balance (+3dB), same as mono equal power
 			panCoeffs[1] = std::sin(pan * M_PI_2) * M_SQRT2;
@@ -383,17 +376,13 @@ struct MixerGroup {
 	void process(float *mix) {// give the full mix[10] vector, proper offset will be computed in here
 		post[0] = mix[groupNum * 2 + 2];
 		post[1] = mix[groupNum * 2 + 3];
-		if (post[0] == 0.0f && post[1] == 0.0f) {
-			vu[0].reset();
-			vu[1].reset();
-			return;
-		}
+
+		// no optimization of post[0..1] == {0, 0}, since it could be a zero crossing of a mono source!
 		
 		// Calc group gains
 		simd::float_4 gains = simd::float_4::zero();
-		// solo (TODO!!!!) and mute
-		// For solo: do a multi solo of all the tracks that are assigned to the group?
-		if ( !(/*(gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) ||*/ (paMute->getValue() > 0.5f)) ) {
+		// Mute test (solo done only in tracks)
+		if (paMute->getValue() < 0.5f) {
 			// fader
 			float gain = slowGain;
 			
@@ -412,6 +401,7 @@ struct MixerGroup {
 			gains = gainSlewers.process(gInfo->sampleTime, gains);
 		}
 		
+		// Test for all gains equal to 0
 		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
 			post[0] = 0.0f;	
 			post[1] = 0.0f;
@@ -516,6 +506,17 @@ struct MixerTrack {
 	void decGroup() {
 		if (group == 0) group = 4;
 		else group--;		
+	}
+	
+	bool calcSoloEnable() {// returns true when the check for solo means this track should play 
+		// returns true when all solos off or (at least one solo is on and (this solo is on, or the group that we are tied to has its solo on, if group))
+		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
+			return true;
+		}
+		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {
+			return true;
+		}
+		return false;
 	}
 
 
@@ -680,8 +681,8 @@ struct MixerTrack {
 		
 		// Calc track gains
 		simd::float_4 gains = simd::float_4::zero();
-		// solo and mute
-		if ( !((gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f)) ) {
+		// Mute and Solo test
+		if (calcSoloEnable() && paMute->getValue() < 0.5f) {
 			// fader
 			float gain = slowGain;
 			
@@ -700,6 +701,7 @@ struct MixerTrack {
 			gains = gainSlewers.process(gInfo->sampleTime, gains);
 		}
 		
+		// Test for all gains equal to 0
 		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
 			post[0] = 0.0f;	
 			post[1] = 0.0f;

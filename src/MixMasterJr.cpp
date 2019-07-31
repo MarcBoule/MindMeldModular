@@ -188,6 +188,9 @@ struct MixMasterJr : Module {
 	}
 
 	void process(const ProcessArgs &args) override {
+		
+		//********** Inputs **********
+		
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
@@ -216,7 +219,8 @@ struct MixMasterJr : Module {
 		
 		
 		
-		//********** Outputs and lights **********
+		//********** Outputs **********
+
 		float mix[10] = {0.0f};// room for main and groups
 		
 		// Tracks
@@ -240,6 +244,9 @@ struct MixMasterJr : Module {
 		SetDirectTrackOuts(0);// P1-8
 		SetDirectTrackOuts(8);// P9-16
 		SetDirectGroupOuts(mix);// PGrp
+				
+
+		//********** Lights **********
 				
 		// lights
 		if (refresh.processLights()) {
@@ -298,6 +305,7 @@ struct MixMasterJr : Module {
 
 struct MixMasterJrWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[16];
+	GroupDisplay* groupDisplays[4];
 	GroupSelectDisplay* groupSelectDisplays[16];
 
 
@@ -391,7 +399,10 @@ struct MixMasterJrWidget : ModuleWidget {
 			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12 + 0.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));			
 
 			// Labels
-			// addChild(trackDisplays[16 + i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7 + 0.8))));
+			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7 + 0.8))));
+			if (module) {
+				groupDisplays[i]->srcGroup = &(module->groups[i]);
+			}
 			
 			// Volume inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 30.7 + 0.8)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
@@ -443,9 +454,13 @@ struct MixMasterJrWidget : ModuleWidget {
 		if (moduleM) {
 			// Track labels (pull from module)
 			if (moduleM->resetTrackLabelRequest >= 0) {// pull request from module
+				// track displays
 				for (int trk = 0; trk < 16; trk++) {
-					// track displays
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
+				}
+				// group displays
+				for (int grp = 0; grp < 4; grp++) {
+					groupDisplays[grp]->text = std::string(&(moduleM->trackLabels[(16 + grp) * 4]), 4);
 				}
 				moduleM->resetTrackLabelRequest = -1;// all done pulling
 			}
