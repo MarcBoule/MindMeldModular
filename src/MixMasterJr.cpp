@@ -26,6 +26,7 @@ struct MixMasterJr : Module {
 	char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	GlobalInfo gInfo;
 	MixerTrack tracks[16];
+	MixerGroup groups[4];
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
@@ -94,6 +95,9 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
 		}
+		for (int i = 0; i < 4; i++) {
+			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]));
+		}
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -106,6 +110,9 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].onReset();
 		}
+		for (int i = 0; i < 4; i++) {
+			groups[i].onReset();
+		}
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -114,6 +121,9 @@ struct MixMasterJr : Module {
 			gInfo.resetNonJson();
 			for (int i = 0; i < 16; i++) {
 				tracks[i].resetNonJson();
+			}
+			for (int i = 0; i < 4; i++) {
+				groups[i].resetNonJson();
 			}
 		}
 		vu[0].reset();
@@ -188,6 +198,9 @@ struct MixMasterJr : Module {
 			// Tracks
 			gInfo.updateSoloBit(trackToProcess);
 			tracks[trackToProcess].updateSlowValues();
+			if ( (trackToProcess & 0x3) == 0) {
+				groups[trackToProcess >> 2].updateSlowValues();
+			}
 			
 			// Master
 			gInfo.updateMasterGain();
@@ -203,6 +216,10 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].process(mix);
 		}
+		// Groups
+		for (int i = 0; i < 4; i++) {
+			groups[i].process(mix);
+		}
 
 		// Set master outputs
 		vu[0].process(args.sampleTime, mix[0]);
@@ -213,6 +230,7 @@ struct MixMasterJr : Module {
 		// Direct outs
 		SetDirectTrackOuts(0);// P1-8
 		SetDirectTrackOuts(8);// P9-16
+		SetDirectGroupOuts();// PGrp TODO optimize this to use mix instead of pre, since all pre are available in mix
 				
 		// lights
 		if (refresh.processLights()) {
@@ -244,6 +262,26 @@ struct MixMasterJr : Module {
 			}
 		}
 	}
+	
+	void SetDirectGroupOuts() {
+		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
+			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
+			if (gInfo.directOutsMode == 1) {// post-fader
+				for (unsigned int i = 0; i < 4; i++) {
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].post[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].post[1], 2 * i + 1);
+				}
+			}
+			else// pre-fader
+			{
+				for (unsigned int i = 0; i < 4; i++) {
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].pre[0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].pre[1], 2 * i + 1);
+				}
+			}
+		}
+	}
+
 
 };
 
@@ -355,6 +393,12 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4 + 0.8)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			// VU meters
+			if (module) {
+				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 80.4 + 0.8)));
+				newVU->srcLevels = &(module->groups[i].vu[0]);
+				addChild(newVU);
+			}
 
 			// Mutes
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109 + 0.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));

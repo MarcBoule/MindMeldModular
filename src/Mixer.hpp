@@ -189,8 +189,6 @@ struct MixerGroup {
 	// Constants
 	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float minHPFCutoffFreq = 20.0f;
-	static constexpr float maxLPFCutoffFreq = 20000.0f;
 	
 	// need to save, no reset
 	// none
@@ -283,16 +281,16 @@ struct MixerGroup {
 	
 	// Contract: 
 	//  * calc pre[], post[] and vu[] vectors
-	//  * add post[] to mix[] when post is non-zero
+	//  * add post[] to mix[0..1] when post is non-zero
 	void process(float *mix) {// give the full mix[10] vector, proper offset will be computed in here
 		pre[0] = mix[groupNum * 2 + 2];
 		pre[1] = mix[groupNum * 2 + 3];
 		
 		// Calc track gains
 		simd::float_4 gains = simd::float_4::zero();
-		// solo and mute
-		// TODO!!!!!!!!!!!!!!!!!
-		if ( !((gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) || (paMute->getValue() > 0.5f)) ) {
+		// solo (TODO!!!!) and mute
+		// For solo: do a multi solo of all the tracks that are assigned to the group?
+		if ( !(/*(gInfo->soloBitMask != 0ul && paSolo->getValue() < 0.5f) ||*/ (paMute->getValue() > 0.5f)) ) {
 			// fader
 			float gain = slowGain;
 			
@@ -469,7 +467,7 @@ struct MixerTrack {
 		stereo = inR->isConnected();
 		
 		// calc panCoeffs
-		if (gInfo->params[MAIN_MONO_PARAM].getValue() > 0.5f) {// if master is in mono mode	
+		if (group != 0 && gInfo->params[MAIN_MONO_PARAM].getValue() > 0.5f) {// if master is in mono mode and not going through group	
 			panCoeffs = simd::float_4(0.5f);
 		}
 		else {	

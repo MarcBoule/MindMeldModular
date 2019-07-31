@@ -24,7 +24,6 @@ static const NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
 
 struct VuMeterBase : OpaqueWidget {
 	static constexpr float epsilon = 0.001f;// don't show VUs below 1mV
-
 	
 	// instantiator must setup:
 	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
@@ -156,8 +155,8 @@ struct VuMeterTrack : VuMeterBase {//
 		box.size = Vec(barX * 2 + gapX, barY);
 		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
 		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
-		zeroDbVoltage = 5.0f;
-		prepareYellowAndRedThresholds(-6.0f, 0.0f);// in dB
+		zeroDbVoltage = 5.0f;// V
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
 };
 
@@ -170,8 +169,8 @@ struct VuMeterMaster : VuMeterBase {
 		box.size = Vec(barX * 2 + gapX, barY);
 		faderMaxLinearGain = GlobalInfo::masterFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::masterFaderScalingExponent;
-		zeroDbVoltage = 10.0f;
-		prepareYellowAndRedThresholds(-6.0f, 0.0f);// in dB
+		zeroDbVoltage = 10.0f;// V
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
 };
 
@@ -443,7 +442,12 @@ struct GroupSelectDisplay : LedDisplayChoice {
 			else if (e.key >= GLFW_KEY_KP_1 && e.key <= GLFW_KEY_KP_4) {
 				srcTrack->group = e.key - GLFW_KEY_KP_0;
 			}
-			else if ((e.mods & RACK_MOD_MASK) == 0){
+			else if ( ((e.mods & RACK_MOD_MASK) == 0) && (
+					(e.key >= GLFW_KEY_A && e.key <= GLFW_KEY_Z) ||
+					e.key == GLFW_KEY_SPACE || e.key == GLFW_KEY_MINUS || 
+					e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0 || 
+					(e.key >= GLFW_KEY_5 && e.key <= GLFW_KEY_9) || 
+					(e.key >= GLFW_KEY_KP_5 && e.key <= GLFW_KEY_KP_9) ) ){
 				srcTrack->group = 0;
 			}
 		}
