@@ -326,10 +326,9 @@ struct LPFCutoffSlider : ui::Slider {
 // Track display editable label with menu
 // --------------------
 
-struct TrackDisplay : LedDisplayTextField {
-	MixerTrack *srcTrack = NULL;
+struct GroupAndTrackDisplayBase : LedDisplayTextField {
 
-	TrackDisplay() {
+	GroupAndTrackDisplayBase() {
 		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
 		text = "-00-";
@@ -377,7 +376,11 @@ struct TrackDisplay : LedDisplayTextField {
 			text = text.substr(0, 4);
 		}
 	}
+}; 
 
+
+struct TrackDisplay : GroupAndTrackDisplayBase {
+	MixerTrack *srcTrack = NULL;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -418,57 +421,8 @@ struct TrackDisplay : LedDisplayTextField {
 // Group display editable label without menu
 // --------------------
 
-struct GroupDisplay : LedDisplayTextField {
+struct GroupDisplay : GroupAndTrackDisplayBase {
 	MixerGroup *srcGroup = NULL;
-
-	GroupDisplay() {
-		box.size = Vec(38, 16);
-		textOffset = Vec(2.6f, -2.2f);
-		text = "-00-";
-	};
-	
-	// don't want background so implement adapted version here
-	void draw(const DrawArgs &args) override {
-		if (cursor > 4) {
-			text.resize(4);
-			cursor = 4;
-			selection = 4;
-		}
-		
-		// the code below is LedDisplayTextField.draw() without the background rect
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			bndSetFont(font->handle);
-
-			NVGcolor highlightColor = color;
-			highlightColor.a = 0.5;
-			int begin = std::min(cursor, selection);
-			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
-				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
-				-1, color, 12, text.c_str(), highlightColor, begin, end);
-
-			bndSetFont(APP->window->uiFont->handle);
-		}
-		nvgResetScissor(args.vg);
-	}
-	
-	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
-	void onSelectText(const event::SelectText &e) override {
-		if (e.codepoint < 128) {
-			char letter = (char) e.codepoint;
-			if (letter == 0x20) {// space
-				letter = 0x2D;// hyphen
-			}
-			std::string newText(1, letter);
-			insertText(newText);
-		}
-		e.consume(this);	
-		
-		if (text.length() > 4) {
-			text = text.substr(0, 4);
-		}
-	}
 
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
