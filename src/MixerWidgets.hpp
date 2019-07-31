@@ -20,7 +20,6 @@
 static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(75, 222, 76)};// peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
-static const NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
 
 
 struct VuMeterBase : OpaqueWidget {
@@ -54,17 +53,9 @@ struct VuMeterBase : OpaqueWidget {
 	}
 	
 	
-	void draw(const DrawArgs &args) override {
-		// PEAK
-		drawVu(args, srcLevels[0].getPeak(), 0, 0);
-		drawVu(args, srcLevels[1].getPeak(), barX + gapX, 0);
-
-		// RMS
-		drawVu(args, srcLevels[0].getRms(), 0, 1);
-		drawVu(args, srcLevels[1].getRms(), barX + gapX, 1);
-		
-		// PEAK_HOLD
-		nvgBeginPath(args.vg);
+	// Contract: 
+	//  * calc peakHold[]
+	void processPeakHold() {
 		long newTime = time(0);
 		if ( (newTime != oldTime) && ((newTime & 0x1) == 0) ) {
 			oldTime = newTime;
@@ -76,24 +67,161 @@ struct VuMeterBase : OpaqueWidget {
 				peakHold[i] = srcLevels[i].getPeak();
 			}
 		}
+	}
+
+	
+	void draw(const DrawArgs &args) override {
+		// PEAK
+		drawVu(args, srcLevels[0].getPeak(), 0, 0);
+		drawVu(args, srcLevels[1].getPeak(), barX + gapX, 0);
+
+		// RMS
+		drawVu(args, srcLevels[0].getRms(), 0, 1);
+		drawVu(args, srcLevels[1].getRms(), barX + gapX, 1);
+		
+		// PEAK_HOLD
+		processPeakHold();
 		drawPeakHold(args, peakHold[0], 0);
 		drawPeakHold(args, peakHold[1], barX + gapX);
-		nvgFillColor(args.vg, PEAK_HOLD);
-		nvgFill(args.vg);
 				
 		Widget::draw(args);
 	}
 	
 	// used for RMS or PEAK
-	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) {
+	virtual void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) {};
+
+	virtual void drawPeakHold(const DrawArgs &args, float holdValue, float posX) {};
+};
+
+// 2.8mm x 42mm VU for tracks and groups
+// --------------------
+
+struct VuMeterTrack : VuMeterBase {//
+	VuMeterTrack() {
+		gapX = mm2px(0.4);
+		barX = mm2px(1.2);
+		barY = mm2px(42.0);
+		box.size = Vec(barX * 2 + gapX, barY);
+		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
+		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
+		zeroDbVoltage = 5.0f;// V
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
+	}
+
+	// used for RMS or PEAK
+	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override {
 		if (vuValue >= epsilon) {
 
-			
 			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
 			
+			if (vuHeight > redThreshold) {
+				// Yellow-Red gradient
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - redThreshold);
+				nvgFillPaint(args.vg, gradTop);
+				nvgFill(args.vg);
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFill(args.vg);			
+			}
+			else {
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFill(args.vg);
+			}
+
+		}
+	}
+	
+	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override {
+		if (holdValue >= epsilon) {
+			float vuHeight = holdValue / (faderMaxLinearGain * zeroDbVoltage);
+			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
+			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
+			vuHeight *= barY;
+			
+			if (vuHeight > redThreshold) {
+				// Yellow-Red gradient
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold, VU_RED[1], VU_YELLOW[1]);
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgFillPaint(args.vg, gradTop);
+				nvgFill(args.vg);	
+			}
+			else {
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgFillColor(args.vg, VU_GREEN[1]);
+				nvgFill(args.vg);
+			}
+		}		
+	}
+};
+
+
+
+// 3.8mm x 60mm VU for master
+// --------------------
+
+struct VuMeterMaster : VuMeterBase {
+	VuMeterMaster() {
+		gapX = mm2px(0.6);
+		barX = mm2px(1.6);
+		barY = mm2px(60.0);
+		box.size = Vec(barX * 2 + gapX, barY);
+		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
+		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
+		zeroDbVoltage = 10.0f;// V
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
+	}
+	
+	// used for RMS or PEAK
+	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override {
+		if (vuValue >= epsilon) {
+			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
+			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
+			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
+			vuHeight *= barY;
+			
+			float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
+			if (vuHeight > redThreshold || peakHoldVal > 10.0f) {
+				// Full red
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				nvgFillColor(args.vg, VU_RED[colorIndex]);
+				nvgFill(args.vg);
+			}
+			else if (vuHeight > yellowThreshold) {
+				// Yellow-Red gradient
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
+				nvgFillPaint(args.vg, gradTop);
+				nvgFill(args.vg);
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFill(args.vg);			
+			}
+			else {
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFill(args.vg);
+			}
+
+/*
 			if (vuHeight > redThreshold) {
 				// Red
 				nvgBeginPath(args.vg);
@@ -128,51 +256,26 @@ struct VuMeterBase : OpaqueWidget {
 				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
 				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 				nvgFill(args.vg);
-			}
-
+			}*/
 		}
-	}
+	}	
 	
-	
-	
-	// PEAK_HOLD
-	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) {
+	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override {
+		NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
+
 		if (holdValue >= epsilon) {
 			float vuHeight = holdValue / (faderMaxLinearGain * zeroDbVoltage);
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
+			
+			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+			nvgFillColor(args.vg, PEAK_HOLD);
+			nvgFill(args.vg);
 		}
 	}
-};
-
-// 2.8mm x 42mm
-struct VuMeterTrack : VuMeterBase {//
-	VuMeterTrack() {
-		gapX = mm2px(0.4);
-		barX = mm2px(1.2);
-		barY = mm2px(42.0);
-		box.size = Vec(barX * 2 + gapX, barY);
-		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
-		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
-		zeroDbVoltage = 5.0f;// V
-		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
-	}
-};
-
-// 3.8mm x 60mm
-struct VuMeterMaster : VuMeterBase {
-	VuMeterMaster() {
-		gapX = mm2px(0.6);
-		barX = mm2px(1.6);
-		barY = mm2px(60.0);
-		box.size = Vec(barX * 2 + gapX, barY);
-		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
-		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
-		zeroDbVoltage = 10.0f;// V
-		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
-	}
+	
 };
 
 
@@ -180,7 +283,7 @@ struct VuMeterMaster : VuMeterBase {
 // Track context menu
 // --------------------
 
-// Gain adjust
+// Gain adjust menu item
 
 struct GainAdjustQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
@@ -221,7 +324,7 @@ struct GainAdjustSlider : ui::Slider {
 };
 
 
-// HPF filter cutoff
+// HPF filter cutoff menu item
 
 struct HPFCutoffQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
@@ -271,7 +374,7 @@ struct HPFCutoffSlider : ui::Slider {
 
 
 
-// LPF filter cutoff
+// LPF filter cutoff menu item
 
 struct LPFCutoffQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
@@ -323,7 +426,7 @@ struct LPFCutoffSlider : ui::Slider {
 
 
 
-// Track display editable label with menu
+// Track and group displays base struct
 // --------------------
 
 struct GroupAndTrackDisplayBase : LedDisplayTextField {
@@ -379,6 +482,9 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 }; 
 
 
+// Track display editable label with menu
+// --------------------
+
 struct TrackDisplay : GroupAndTrackDisplayBase {
 	MixerTrack *srcTrack = NULL;
 
@@ -415,7 +521,6 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 		LedDisplayTextField::onChange(e);
 	};
 };
-
 
 
 // Group display editable label without menu
