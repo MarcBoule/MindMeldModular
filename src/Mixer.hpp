@@ -202,7 +202,7 @@ struct MixerMaster {
 	void construct(GlobalInfo *_gInfo, Param *_params) {
 		gInfo = _gInfo;
 		params = _params;
-		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers.setRiseFall(simd::float_4(0.300f), simd::float_4(0.300f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
@@ -294,8 +294,8 @@ struct MixerMaster {
 
 struct MixerGroup {
 	// Constants
-	static constexpr float trackFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float groupFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float groupFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	
 	// need to save, no reset
 	// none
@@ -376,7 +376,7 @@ struct MixerGroup {
 		}
 
 		// slowGain
-		slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+		slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
 	}
 	
 	
@@ -509,15 +509,6 @@ struct MixerTrack {
 	}
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
-	void incGroup() {
-		if (group == 4) group = 0;
-		else group++;		
-	}
-	void decGroup() {
-		if (group == 0) group = 4;
-		else group--;		
-	}
-	
 	bool calcSoloEnable() {// returns true when the check for solo means this track should play 
 		// returns true when all solos off or (at least one solo is on and (this solo is on, or the group that we are tied to has its solo on, if group))
 		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {

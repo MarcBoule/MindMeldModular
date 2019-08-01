@@ -65,13 +65,14 @@ struct MixMasterJr : Module {
 			configParam(GRP_INC_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
 		// Group
+		float maxGFader = std::pow(MixerGroup::groupFaderMaxLinearGain, 1.0f / MixerGroup::groupFaderScalingExponent);
 		for (int i = 0; i < 4; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Group #%i pan", i + 1);
 			configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
-			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerTrack::trackFaderScalingExponent);
+			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxGFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerGroup::groupFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Group #%i mute", i + 1);
 			configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
