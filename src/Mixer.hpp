@@ -78,6 +78,7 @@ struct GlobalInfo {
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader
 	bool nightMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
+	int vuColor;// 0 is green, 1 is blue
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -97,6 +98,7 @@ struct GlobalInfo {
 		panLawStereo = 0;
 		directOutsMode = 1;// post should be default
 		nightMode = false;
+		vuColor = 0;
 		resetNonJson();
 	}
 	
@@ -137,6 +139,9 @@ struct GlobalInfo {
 		
 		// nightMode
 		json_object_set_new(rootJ, "nightMode", json_boolean(nightMode));
+
+		// vuColor
+		json_object_set_new(rootJ, "vuColor", json_integer(vuColor));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -160,6 +165,11 @@ struct GlobalInfo {
 		if (nightModeJ)
 			nightMode = json_is_true(nightModeJ);
 
+		// vuColor
+		json_t *vuColorJ = json_object_get(rootJ, "vuColor");
+		if (vuColorJ)
+			vuColor = json_integer_value(vuColorJ);
+		
 		// extern must call resetNonJson()
 	}
 };// struct GlobalInfo
@@ -622,8 +632,7 @@ struct MixerTrack {
 		
 	}
 	
-	
-	
+		
 	void dataToJson(json_t *rootJ) {
 		// group
 		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));

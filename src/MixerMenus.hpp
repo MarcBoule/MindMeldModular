@@ -115,5 +115,183 @@ struct NightModeItem : MenuItem {
 	}
 };
 
+struct VuColorItem : MenuItem {
+	GlobalInfo *gInfo;
+
+	struct VuColorItemSubItem : MenuItem {
+		GlobalInfo *gInfo;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			gInfo->vuColor = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		VuColorItemSubItem *col0Item = createMenuItem<VuColorItemSubItem>("Green (default)", CHECKMARK(gInfo->vuColor == 0));
+		col0Item->gInfo = gInfo;
+		menu->addChild(col0Item);
+
+		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Blue", CHECKMARK(gInfo->vuColor == 1));
+		col1Item->gInfo = gInfo;
+		col1Item->setVal = 1;
+		menu->addChild(col1Item);
+
+		VuColorItemSubItem *col2Item = createMenuItem<VuColorItemSubItem>("Purple", CHECKMARK(gInfo->vuColor == 2));
+		col2Item->gInfo = gInfo;
+		col2Item->setVal = 2;
+		menu->addChild(col2Item);
+
+		return menu;
+	}
+};
+
+
+
+// Track context menu
+// --------------------
+
+// Gain adjust menu item
+
+struct GainAdjustQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	float gainInDB = 0.0f;
+	  
+	GainAdjustQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		gainInDB = math::clamp(value, getMinValue(), getMaxValue());
+		srcTrack->gainAdjust = std::pow(10.0f, gainInDB / 20.0f);
+	}
+	float getValue() override {
+		gainInDB = 20.0f * std::log10(srcTrack->gainAdjust);
+		return gainInDB;
+	}
+	float getMinValue() override {return -20.0f;}
+	float getMaxValue() override {return 20.0f;}
+	float getDefaultValue() override {return 0.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valGain = getDisplayValue();
+		valGain =  std::round(valGain * 100.0f);
+		return string::f("%g", math::normalizeZero(valGain / 100.0f));
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Gain adjust";}
+	std::string getUnit() override {return " dB";}
+};
+
+struct GainAdjustSlider : ui::Slider {
+	GainAdjustSlider(MixerTrack *srcTrack) {
+		quantity = new GainAdjustQuantity(srcTrack);
+	}
+	~GainAdjustSlider() {
+		delete quantity;
+	}
+};
+
+
+// HPF filter cutoff menu item
+
+struct HPFCutoffQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	
+	HPFCutoffQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		srcTrack->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
+	}
+	float getValue() override {
+		return srcTrack->getHPFCutoffFreq();
+	}
+	float getMinValue() override {return 13.0f;}
+	float getMaxValue() override {return 350.0f;}
+	float getDefaultValue() override {return 13.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut >= MixerTrack::minHPFCutoffFreq) {
+			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
+		}
+		else {
+			return "OFF";
+		}
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "HPF Cutoff";}
+	std::string getUnit() override {
+		if (getDisplayValue() >= MixerTrack::minHPFCutoffFreq) {
+			return " Hz";
+		}
+		else {
+			return "";
+		}
+	}
+};
+
+struct HPFCutoffSlider : ui::Slider {
+	HPFCutoffSlider(MixerTrack *srcTrack) {
+		quantity = new HPFCutoffQuantity(srcTrack);
+	}
+	~HPFCutoffSlider() {
+		delete quantity;
+	}
+};
+
+
+
+// LPF filter cutoff menu item
+
+struct LPFCutoffQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	
+	LPFCutoffQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		srcTrack->setLPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
+	}
+	float getValue() override {
+		return srcTrack->getLPFCutoffFreq();
+	}
+	float getMinValue() override {return 3000.0f;}
+	float getMaxValue() override {return 21000.0f;}
+	float getDefaultValue() override {return 20010.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut <= MixerTrack::maxLPFCutoffFreq) {
+			valCut =  std::round(valCut / 100.0f);
+			return string::f("%g", math::normalizeZero(valCut / 10.0f));
+		}
+		else {
+			return "OFF";
+		}
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "LPF Cutoff";}
+	std::string getUnit() override {
+		if (getDisplayValue() <= MixerTrack::maxLPFCutoffFreq) {
+			return " kHz";
+		}
+		else {
+			return "";
+		}
+	}
+};
+
+struct LPFCutoffSlider : ui::Slider {
+	LPFCutoffSlider(MixerTrack *srcTrack) {
+		quantity = new LPFCutoffQuantity(srcTrack);
+	}
+	~LPFCutoffSlider() {
+		delete quantity;
+	}
+};
+
+
 
 #endif

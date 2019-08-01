@@ -10,23 +10,43 @@
 
 
 #include "Mixer.hpp"
+#include "MixerMenus.hpp"
 #include <time.h>
 
 
 // VU meters
 // --------------------
 
-static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(75, 222, 76)};// peak (darker), rms (lighter)
+
+static const NVGcolor VU_GREEN_TOP[3][2] =  {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
+										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // blue: peak (darker), rms (lighter)
+										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
+static const NVGcolor VU_GREEN_BOT[3][2] =  {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
+										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // blue: peak (darker), rms (lighter)
+										{nvgRGB(50, 70, 130), 	nvgRGB(97, 107, 235)}};// purple: peak (darker), rms (lighter)
+
+
+// static const NVGcolor VU_GREEN_TOP[2] =  {nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)};// peak (darker), rms (lighter)
+// static const NVGcolor VU_GREEN_BOT[2] =  {nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)};// peak (darker), rms (lighter)
+// static const NVGcolor VU_BLUE_TOP[2] =  {nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)};// peak (darker), rms (lighter)
+// static const NVGcolor VU_BLUE_BOT[2] =  {nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)};// peak (darker), rms (lighter)
+// static const NVGcolor VU_PURPLE_TOP[2] =  {nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)};// peak (darker), rms (lighter)
+// static const NVGcolor VU_PURPLE_BOT[2] =  {nvgRGB(50, 70, 130), 	nvgRGB(97, 107, 235)};// peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
 
+static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
+static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
+
 
 struct VuMeterBase : OpaqueWidget {
-	static constexpr float epsilon = 0.001f;// don't show VUs below 1mV
+	static constexpr float epsilon = 0.0001f;// don't show VUs below 0.1mV
+	static constexpr float peakHoldThick = 1.0f;// in px
 	
 	// instantiator must setup:
 	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	int *colorTheme;
 	
 	// derived class must setup:
 	float gapX;// in px
@@ -98,8 +118,6 @@ struct VuMeterBase : OpaqueWidget {
 // --------------------
 
 struct VuMeterTrack : VuMeterBase {//
-	static constexpr float separatorY = 0.4f;// in px; this is actually equal to half the separator space in px
-
 	VuMeterTrack() {
 		gapX = mm2px(0.4);
 		barX = mm2px(1.2);
@@ -120,24 +138,27 @@ struct VuMeterTrack : VuMeterBase {//
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
 			
+			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][colorIndex], VU_GREEN_BOT[*colorTheme][colorIndex]);
 			if (vuHeight > redThreshold) {
 				// Yellow-Red gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - redThreshold - separatorY);
+				nvgRect(args.vg, posX, barY - vuHeight - sepYtrack, barX, vuHeight - redThreshold);
 				nvgFillPaint(args.vg, gradTop);
 				nvgFill(args.vg);
 				// Green
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - redThreshold + separatorY, barX, redThreshold - separatorY);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
+				//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFillPaint(args.vg, gradGreen);
 				nvgFill(args.vg);			
 			}
 			else {
 				// Green
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight + separatorY, barX, vuHeight - separatorY);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+				nvgFillPaint(args.vg, gradGreen);
 				nvgFill(args.vg);
 			}
 
@@ -153,17 +174,19 @@ struct VuMeterTrack : VuMeterBase {//
 			
 			if (vuHeight > redThreshold) {
 				// Yellow-Red gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold, VU_RED[1], VU_YELLOW[1]);
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[1], VU_YELLOW[1]);
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgRect(args.vg, posX, barY - vuHeight - sepYtrack - peakHoldThick, barX, peakHoldThick);
 				nvgFillPaint(args.vg, gradTop);
 				nvgFill(args.vg);	
 			}
 			else {
 				// Green
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][1], VU_GREEN_BOT[*colorTheme][1]);
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
-				nvgFillColor(args.vg, VU_GREEN[1]);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, peakHoldThick);
+				nvgFillPaint(args.vg, gradGreen);
+				//nvgFillColor(args.vg, VU_GREEN[1]);
 				nvgFill(args.vg);
 			}
 		}		
@@ -199,29 +222,40 @@ struct VuMeterMaster : VuMeterBase {
 			if (vuHeight > redThreshold || peakHoldVal > 10.0f) {
 				// Full red
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				if (vuHeight > redThreshold) {
+					nvgRect(args.vg, posX, barY - vuHeight - sepYmaster, barX, vuHeight - redThreshold);
+					nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
+				}
+				else {
+					nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				}
 				nvgFillColor(args.vg, VU_RED[colorIndex]);
 				nvgFill(args.vg);
 			}
-			else if (vuHeight > yellowThreshold) {
-				// Yellow-Orange gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[colorIndex], VU_YELLOW[colorIndex]);
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
-				nvgFillPaint(args.vg, gradTop);
-				nvgFill(args.vg);
-				// Green
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFill(args.vg);			
-			}
 			else {
-				// Green
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFill(args.vg);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][colorIndex], VU_GREEN_BOT[*colorTheme][colorIndex]);
+				if (vuHeight > yellowThreshold) {
+					// Yellow-Orange gradient
+					NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[colorIndex], VU_YELLOW[colorIndex]);
+					nvgBeginPath(args.vg);
+					nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
+					nvgFillPaint(args.vg, gradTop);
+					nvgFill(args.vg);
+					// Green
+					nvgBeginPath(args.vg);
+					nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
+					//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+					nvgFillPaint(args.vg, gradGreen);
+					nvgFill(args.vg);			
+				}
+				else {
+					// Green
+					nvgBeginPath(args.vg);
+					nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+					//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
+					nvgFillPaint(args.vg, gradGreen);
+					nvgFill(args.vg);
+				}
 			}
 		}
 	}	
@@ -237,7 +271,7 @@ struct VuMeterMaster : VuMeterBase {
 			if (vuHeight > redThreshold || peakHoldVal > 10.0f) {
 				// Full red
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgRect(args.vg, posX, barY - vuHeight - sepYmaster - peakHoldThick, barX, peakHoldThick);
 				nvgFillColor(args.vg, VU_RED[1]);
 				nvgFill(args.vg);
 			} else if (vuHeight > yellowThreshold) {
@@ -250,161 +284,17 @@ struct VuMeterMaster : VuMeterBase {
 			}
 			else {
 				// Green
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][1], VU_GREEN_BOT[*colorTheme][1]);
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
-				nvgFillColor(args.vg, VU_GREEN[1]);
+				//nvgFillColor(args.vg, VU_GREEN[1]);
+				nvgFillPaint(args.vg, gradGreen);
 				nvgFill(args.vg);
 			}
 		}
 	}
 	
 };
-
-
-
-// Track context menu
-// --------------------
-
-// Gain adjust menu item
-
-struct GainAdjustQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
-	float gainInDB = 0.0f;
-	  
-	GainAdjustQuantity(MixerTrack *_srcTrack) {
-		srcTrack = _srcTrack;
-	}
-	void setValue(float value) override {
-		gainInDB = math::clamp(value, getMinValue(), getMaxValue());
-		srcTrack->gainAdjust = std::pow(10.0f, gainInDB / 20.0f);
-	}
-	float getValue() override {
-		gainInDB = 20.0f * std::log10(srcTrack->gainAdjust);
-		return gainInDB;
-	}
-	float getMinValue() override {return -20.0f;}
-	float getMaxValue() override {return 20.0f;}
-	float getDefaultValue() override {return 0.0f;}
-	float getDisplayValue() override {return getValue();}
-	std::string getDisplayValueString() override {
-		float valGain = getDisplayValue();
-		valGain =  std::round(valGain * 100.0f);
-		return string::f("%g", math::normalizeZero(valGain / 100.0f));
-	}
-	void setDisplayValue(float displayValue) override {setValue(displayValue);}
-	std::string getLabel() override {return "Gain adjust";}
-	std::string getUnit() override {return " dB";}
-};
-
-struct GainAdjustSlider : ui::Slider {
-	GainAdjustSlider(MixerTrack *srcTrack) {
-		quantity = new GainAdjustQuantity(srcTrack);
-	}
-	~GainAdjustSlider() {
-		delete quantity;
-	}
-};
-
-
-// HPF filter cutoff menu item
-
-struct HPFCutoffQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
-	
-	HPFCutoffQuantity(MixerTrack *_srcTrack) {
-		srcTrack = _srcTrack;
-	}
-	void setValue(float value) override {
-		srcTrack->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
-	}
-	float getValue() override {
-		return srcTrack->getHPFCutoffFreq();
-	}
-	float getMinValue() override {return 13.0f;}
-	float getMaxValue() override {return 350.0f;}
-	float getDefaultValue() override {return 13.0f;}
-	float getDisplayValue() override {return getValue();}
-	std::string getDisplayValueString() override {
-		float valCut = getDisplayValue();
-		if (valCut >= MixerTrack::minHPFCutoffFreq) {
-			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
-		}
-		else {
-			return "OFF";
-		}
-	}
-	void setDisplayValue(float displayValue) override {setValue(displayValue);}
-	std::string getLabel() override {return "HPF Cutoff";}
-	std::string getUnit() override {
-		if (getDisplayValue() >= MixerTrack::minHPFCutoffFreq) {
-			return " Hz";
-		}
-		else {
-			return "";
-		}
-	}
-};
-
-struct HPFCutoffSlider : ui::Slider {
-	HPFCutoffSlider(MixerTrack *srcTrack) {
-		quantity = new HPFCutoffQuantity(srcTrack);
-	}
-	~HPFCutoffSlider() {
-		delete quantity;
-	}
-};
-
-
-
-// LPF filter cutoff menu item
-
-struct LPFCutoffQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
-	
-	LPFCutoffQuantity(MixerTrack *_srcTrack) {
-		srcTrack = _srcTrack;
-	}
-	void setValue(float value) override {
-		srcTrack->setLPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
-	}
-	float getValue() override {
-		return srcTrack->getLPFCutoffFreq();
-	}
-	float getMinValue() override {return 3000.0f;}
-	float getMaxValue() override {return 21000.0f;}
-	float getDefaultValue() override {return 20010.0f;}
-	float getDisplayValue() override {return getValue();}
-	std::string getDisplayValueString() override {
-		float valCut = getDisplayValue();
-		if (valCut <= MixerTrack::maxLPFCutoffFreq) {
-			valCut =  std::round(valCut / 100.0f);
-			return string::f("%g", math::normalizeZero(valCut / 10.0f));
-		}
-		else {
-			return "OFF";
-		}
-	}
-	void setDisplayValue(float displayValue) override {setValue(displayValue);}
-	std::string getLabel() override {return "LPF Cutoff";}
-	std::string getUnit() override {
-		if (getDisplayValue() <= MixerTrack::maxLPFCutoffFreq) {
-			return " kHz";
-		}
-		else {
-			return "";
-		}
-	}
-};
-
-struct LPFCutoffSlider : ui::Slider {
-	LPFCutoffSlider(MixerTrack *srcTrack) {
-		quantity = new LPFCutoffQuantity(srcTrack);
-	}
-	~LPFCutoffSlider() {
-		delete quantity;
-	}
-};
-
 
 
 
@@ -562,7 +452,42 @@ struct GroupSelectDisplay : LedDisplayChoice {
 			}
 		}
 	}
+};
+
+
+// Buttons that have their own Tigger mechanism built in and don't need to be polled by the dsp engine, 
+//   they will do thier own processing in here and update their source automatically
+// --------------------
+
+struct DynGroupMinusButtonNotify : DynGroupMinusButton {
+	Trigger buttonTrigger;
+	int *srcGroup = NULL;
 	
+	void onChange(const event::Change &e) override {// called after value has changed
+		DynGroupMinusButton::onChange(e);
+		if (paramQuantity && srcGroup) {
+			if (buttonTrigger.process(paramQuantity->getValue())) {
+				if ((*srcGroup) == 0) (*srcGroup) = 4;
+				else (*srcGroup)--;		
+			}
+		}		
+	}
+};
+
+
+struct DynGroupPlusButtonNotify : DynGroupPlusButton {
+	Trigger buttonTrigger;
+	int *srcGroup = NULL;
+	
+	void onChange(const event::Change &e) override {// called after value has changed
+		DynGroupPlusButton::onChange(e);
+		if (paramQuantity && srcGroup) {
+			if (buttonTrigger.process(paramQuantity->getValue())) {
+				if ((*srcGroup) == 4) (*srcGroup) = 0;
+				else (*srcGroup)++;	
+			}
+		}		
+	}
 };
 
 #endif

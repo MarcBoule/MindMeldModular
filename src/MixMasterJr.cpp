@@ -36,8 +36,6 @@ struct MixMasterJr : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
-	Trigger groupIncTriggers[16];
-	Trigger groupDecTriggers[16];
 
 		
 	MixMasterJr() {
@@ -194,14 +192,6 @@ struct MixMasterJr : Module {
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
-			// Group inc/dec
-			if (groupIncTriggers[trackToProcess].process(params[GRP_INC_PARAMS + trackToProcess].getValue())) {
-				tracks[trackToProcess].incGroup();
-			}
-			if (groupDecTriggers[trackToProcess].process(params[GRP_DEC_PARAMS + trackToProcess].getValue())) {
-				tracks[trackToProcess].decGroup();
-			}
-			
 			// Tracks
 			gInfo.updateSoloBit(trackToProcess);
 			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
@@ -245,10 +235,10 @@ struct MixMasterJr : Module {
 		SetDirectTrackOuts(8);// P9-16
 		SetDirectGroupOuts(mix);// PGrp
 				
+				
 
 		//********** Lights **********
 				
-		// lights
 		if (refresh.processLights()) {
 			for (int i = 0; i < 16; i++) {
 				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= MixerTrack::minHPFCutoffFreq ? 1.0f : 0.0f);
@@ -298,7 +288,6 @@ struct MixMasterJr : Module {
 		}
 	}
 
-
 };
 
 
@@ -337,6 +326,10 @@ struct MixMasterJrWidget : ModuleWidget {
 		NightModeItem *nightItem = createMenuItem<NightModeItem>("Cloaked mode", CHECKMARK(module->gInfo.nightMode));
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
+		
+		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+		vuColItem->gInfo = &(module->gInfo);
+		menu->addChild(vuColItem);
 	}
 
 	// Module's widget
@@ -376,6 +369,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			if (module) {
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
+				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
 			}
 			// Mutes
@@ -383,9 +377,17 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Solos
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group dec
-			addParam(createDynamicParamCentered<DynGroupMinusButton>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynGroupMinusButtonNotify *newGrpMinusButton;
+			addParam(newGrpMinusButton = createDynamicParamCentered<DynGroupMinusButtonNotify>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newGrpMinusButton->srcGroup = &(module->tracks[i].group);
+			}
 			// Group inc
-			addParam(createDynamicParamCentered<DynGroupPlusButton>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynGroupPlusButtonNotify *newGrpPlusButton;
+			addParam(newGrpPlusButton = createDynamicParamCentered<DynGroupPlusButtonNotify>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newGrpPlusButton->srcGroup = &(module->tracks[i].group);
+			}
 			// Group select displays
 			addChild(groupSelectDisplays[i] = createWidgetCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 122.6 + 0.5))));
 			if (module) {
@@ -417,6 +419,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			if (module) {
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->groups[i].vu[0]);
+				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
 			}
 
@@ -436,6 +439,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		if (module) {
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(272.3, 69.5 + 0.8)));
 			newVU->srcLevels = &(module->vu[0]);
+			newVU->colorTheme = &(module->gInfo.vuColor);
 			addChild(newVU);
 		}
 		
