@@ -13,12 +13,12 @@
 #include <time.h>
 
 
-
 // VU meters
 // --------------------
 
 static const NVGcolor VU_GREEN[2] =  {nvgRGB(45, 133, 52), 	nvgRGB(75, 222, 76)};// peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
+static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
 
 
@@ -71,6 +71,8 @@ struct VuMeterBase : OpaqueWidget {
 
 	
 	void draw(const DrawArgs &args) override {
+		processPeakHold();
+
 		// PEAK
 		drawVu(args, srcLevels[0].getPeak(), 0, 0);
 		drawVu(args, srcLevels[1].getPeak(), barX + gapX, 0);
@@ -80,7 +82,6 @@ struct VuMeterBase : OpaqueWidget {
 		drawVu(args, srcLevels[1].getRms(), barX + gapX, 1);
 		
 		// PEAK_HOLD
-		processPeakHold();
 		drawPeakHold(args, peakHold[0], 0);
 		drawPeakHold(args, peakHold[1], barX + gapX);
 				
@@ -97,6 +98,8 @@ struct VuMeterBase : OpaqueWidget {
 // --------------------
 
 struct VuMeterTrack : VuMeterBase {//
+	static constexpr float separatorY = 0.4f;// in px; this is actually equal to half the separator space in px
+
 	VuMeterTrack() {
 		gapX = mm2px(0.4);
 		barX = mm2px(1.2);
@@ -121,19 +124,19 @@ struct VuMeterTrack : VuMeterBase {//
 				// Yellow-Red gradient
 				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - redThreshold);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - redThreshold - separatorY);
 				nvgFillPaint(args.vg, gradTop);
 				nvgFill(args.vg);
 				// Green
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
+				nvgRect(args.vg, posX, barY - redThreshold + separatorY, barX, redThreshold - separatorY);
 				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 				nvgFill(args.vg);			
 			}
 			else {
 				// Green
 				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
+				nvgRect(args.vg, posX, barY - vuHeight + separatorY, barX, vuHeight - separatorY);
 				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 				nvgFill(args.vg);
 			}
@@ -201,8 +204,8 @@ struct VuMeterMaster : VuMeterBase {
 				nvgFill(args.vg);
 			}
 			else if (vuHeight > yellowThreshold) {
-				// Yellow-Red gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
+				// Yellow-Orange gradient
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[colorIndex], VU_YELLOW[colorIndex]);
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
 				nvgFillPaint(args.vg, gradTop);
@@ -220,59 +223,38 @@ struct VuMeterMaster : VuMeterBase {
 				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 				nvgFill(args.vg);
 			}
-
-/*
-			if (vuHeight > redThreshold) {
-				// Red
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - redThreshold);
-				nvgFillColor(args.vg, VU_RED[colorIndex]);
-				nvgFill(args.vg);
-				// Yellow
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold - yellowThreshold);
-				nvgFillColor(args.vg, VU_YELLOW[colorIndex]);
-				nvgFill(args.vg);			
-				// Green
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFill(args.vg);			
-			}
-			else if (vuHeight > yellowThreshold) {
-				// Yellow
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
-				nvgFillColor(args.vg, VU_YELLOW[colorIndex]);
-				nvgFill(args.vg);			
-				// Green
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFill(args.vg);			
-			}
-			else {
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-				nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFill(args.vg);
-			}*/
 		}
 	}	
 	
 	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override {
-		NVGcolor PEAK_HOLD = nvgRGB(220, 240, 220);
-
 		if (holdValue >= epsilon) {
 			float vuHeight = holdValue / (faderMaxLinearGain * zeroDbVoltage);
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
 			
-			nvgBeginPath(args.vg);
-			nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
-			nvgFillColor(args.vg, PEAK_HOLD);
-			nvgFill(args.vg);
+			float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
+			if (vuHeight > redThreshold || peakHoldVal > 10.0f) {
+				// Full red
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgFillColor(args.vg, VU_RED[1]);
+				nvgFill(args.vg);
+			} else if (vuHeight > yellowThreshold) {
+				// Yellow-Orange gradient
+				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[1], VU_YELLOW[1]);
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgFillPaint(args.vg, gradTop);
+				nvgFill(args.vg);	
+			}
+			else {
+				// Green
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
+				nvgFillColor(args.vg, VU_GREEN[1]);
+				nvgFill(args.vg);
+			}
 		}
 	}
 	
