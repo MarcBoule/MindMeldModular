@@ -202,7 +202,7 @@ struct MixerMaster {
 	void construct(GlobalInfo *_gInfo, Param *_params) {
 		gInfo = _gInfo;
 		params = _params;
-		gainSlewers.setRiseFall(simd::float_4(0.300f), simd::float_4(0.300f)); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
