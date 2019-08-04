@@ -184,7 +184,11 @@ struct MixMasterJr : Module {
 
 	void onSampleRateChange() override {
 		gInfo.sampleTime = APP->engine->getSampleTime();
+		for (int trk = 0; trk < 16; trk++) {
+			tracks[trk].onSampleRateChange();
+		}
 	}
+	
 
 	void process(const ProcessArgs &args) override {
 		

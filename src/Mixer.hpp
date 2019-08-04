@@ -101,30 +101,9 @@ struct GlobalInfo {
 		vuColor = 0;
 		resetNonJson();
 	}
-	
 	void resetNonJson() {
 		updateSoloBitMask();
 		sampleTime = APP->engine->getSampleTime();
-	}
-	
-	void updateSoloBitMask() {
-		unsigned long newSoloBitMask = 0ul;// separate variable so no glitch generated
-		for (unsigned long i = 0; i < (16 + 4); i++) {
-			if (paSolo[i].getValue() > 0.5) {
-				newSoloBitMask |= (1 << i);
-			}
-		}
-		soloBitMask = newSoloBitMask;
-	}
-	void updateSoloBit(unsigned int trkOrGrp) {
-		if (paSolo[trkOrGrp].getValue() > 0.5f) 
-			soloBitMask |= (1 << trkOrGrp);
-		else
-			soloBitMask &= ~(1 << trkOrGrp);
-	}
-	
-	void onRandomize(bool editingSequence) {
-		
 	}
 	
 	void dataToJson(json_t *rootJ) {
@@ -172,6 +151,24 @@ struct GlobalInfo {
 		
 		// extern must call resetNonJson()
 	}
+	
+	
+	void updateSoloBitMask() {
+		unsigned long newSoloBitMask = 0ul;// separate variable so no glitch generated
+		for (unsigned long i = 0; i < (16 + 4); i++) {
+			if (paSolo[i].getValue() > 0.5) {
+				newSoloBitMask |= (1 << i);
+			}
+		}
+		soloBitMask = newSoloBitMask;
+	}
+	void updateSoloBit(unsigned int trkOrGrp) {
+		if (paSolo[trkOrGrp].getValue() > 0.5f) 
+			soloBitMask |= (1 << trkOrGrp);
+		else
+			soloBitMask &= ~(1 << trkOrGrp);
+	}
+		
 };// struct GlobalInfo
 
 
@@ -492,35 +489,6 @@ struct MixerTrack {
 	Biquad lpFilter[2];// 12db/oct
 
 
-	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
-		hpfCutoffFreq = fc;
-		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].setCutoff(fc);
-			hpFilter[i].setFc(fc);
-		}
-	}
-	float getHPFCutoffFreq() {return hpfCutoffFreq;}
-	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
-		lpfCutoffFreq = fc;
-		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		lpFilter[0].setFc(fc);
-		lpFilter[1].setFc(fc);
-	}
-	float getLPFCutoffFreq() {return lpfCutoffFreq;}
-
-	bool calcSoloEnable() {// returns true when the check for solo means this track should play 
-		// returns true when all solos off or (at least one solo is on and (this solo is on, or the group that we are tied to has its solo on, if group))
-		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
-			return true;
-		}
-		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {
-			return true;
-		}
-		return false;
-	}
-
-
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
 		trackNum = _trackNum;
 		gInfo = _gInfo;
@@ -556,6 +524,42 @@ struct MixerTrack {
 		vu[1].reset();
 	}
 	
+	
+	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
+		hpfCutoffFreq = fc;
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		for (int i = 0; i < 2; i++) {
+			hpPreFilter[i].setCutoff(fc);
+			hpFilter[i].setFc(fc);
+		}
+	}
+	float getHPFCutoffFreq() {return hpfCutoffFreq;}
+	
+	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
+		lpfCutoffFreq = fc;
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		lpFilter[0].setFc(fc);
+		lpFilter[1].setFc(fc);
+	}
+	float getLPFCutoffFreq() {return lpfCutoffFreq;}
+
+	bool calcSoloEnable() {// returns true when the check for solo means this track should play 
+		// returns true when all solos off or (at least one solo is on and (this solo is on, or the group that we are tied to has its solo on, if group))
+		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
+			return true;
+		}
+		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {
+			return true;
+		}
+		return false;
+	}
+
+
+	void onSampleRateChange() {
+		setHPFCutoffFreq(hpfCutoffFreq);
+		setLPFCutoffFreq(lpfCutoffFreq);
+	}
+
 	
 	// Contract: 
 	//  * calc stereo
@@ -619,11 +623,6 @@ struct MixerTrack {
 	}
 	
 	
-	void onRandomize(bool editingSequence) {
-		
-	}
-	
-		
 	void dataToJson(json_t *rootJ) {
 		// group
 		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
