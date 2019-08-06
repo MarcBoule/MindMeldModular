@@ -184,12 +184,14 @@ struct MixerMaster {
 	// none
 	
 	// need to save, with reset
-	// none
+	bool dcBlock;
+	float voltageLimiter;
 
 	// no need to save, with reset
 	float slowGain;// gain that we don't want to computer each sample (gainAdjust * fader)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	VuMeterAll vu[2];// use mix[0..1]
+	OnePoleFilter dcBlocker[2];// 6dB/oct
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
@@ -204,6 +206,8 @@ struct MixerMaster {
 	
 	
 	void onReset() {
+		dcBlock = true;
+		voltageLimiter = 10.0f;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -211,9 +215,23 @@ struct MixerMaster {
 		gainSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
+		setupDcBlocker();
 	}
 	
 	
+	void setupDcBlocker() {
+		float dcCutoffFreq = 10.0f;// Hz
+		dcCutoffFreq *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		dcBlocker[0].setCutoff(dcCutoffFreq);
+		dcBlocker[1].setCutoff(dcCutoffFreq);
+	}
+	
+	
+	void onSampleRateChange() {
+		setupDcBlocker();
+	}
+
+
 	// Contract: 
 	//  * calc slowGain
 	void updateSlowValues() {
@@ -222,6 +240,29 @@ struct MixerMaster {
 		if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
 			slowGain *= 0.1;// -20 dB dim
 		}
+	}
+	
+	
+	void dataToJson(json_t *rootJ) {
+		// dcBlock
+		json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
+
+		// voltageLimiter
+		json_object_set_new(rootJ, "voltageLimiter", json_real(voltageLimiter));
+	}
+	
+	void dataFromJson(json_t *rootJ) {
+		// dcBlock
+		json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
+		if (dcBlockJ)
+			dcBlock = json_is_true(dcBlockJ);
+		
+		// voltageLimiter
+		json_t *voltageLimiterJ = json_object_get(rootJ, "voltageLimiter");
+		if (voltageLimiterJ)
+			voltageLimiter = json_number_value(voltageLimiterJ);
+
+		// extern must call resetNonJson()
 	}
 	
 	
@@ -267,8 +308,8 @@ struct MixerMaster {
 			sigs = sigs * gains;
 			
 			// Add to mix
-			mix[0] = clamp(sigs[0] + sigs[2], -20.0f, 20.0f);
-			mix[1] = clamp(sigs[1] + sigs[3], -20.0f, 20.0f);
+			mix[0] = sigs[0] + sigs[2];
+			mix[1] = sigs[1] + sigs[3];
 		}
 		
 		// VUs
@@ -280,6 +321,17 @@ struct MixerMaster {
 			vu[0].reset();
 			vu[1].reset();
 		}
+		
+		
+		// DC blocker (post VU)
+		if (dcBlock) {
+			mix[0] = dcBlocker[0].processHP(mix[0]);
+			mix[1] = dcBlocker[1].processHP(mix[1]);
+		}
+		
+		// Voltage limiter (post VU, so that we can see true range)
+		mix[0] = clamp(mix[0], -voltageLimiter, voltageLimiter);
+		mix[1] = clamp(mix[1], -voltageLimiter, voltageLimiter);
 	}
 };// struct MixerMaster
 
@@ -468,6 +520,9 @@ struct MixerTrack {
 	float slowGain;// gain that we don't want to computer each sample (gainAdjust * fader)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	VuMeterAll vu[2];// use post[]
+	OnePoleFilter hpPreFilter[2];// 6dB/oct
+	Biquad hpFilter[2];// 12dB/oct
+	Biquad lpFilter[2];// 12db/oct
 
 	// no need to save, no reset
 	int trackNum;
@@ -484,9 +539,6 @@ struct MixerTrack {
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float pre[2];// for pre-track (aka fader+pan) monitor outputs
 	float post[2];// post-track monitor outputs
-	OnePoleFilter hpPreFilter[2];// 6dB/oct
-	Biquad hpFilter[2];// 12dB/oct
-	Biquad lpFilter[2];// 12db/oct
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {

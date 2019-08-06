@@ -31,7 +31,6 @@ struct MixMasterJr : Module {
 	
 	// No need to save, with reset
 	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
-	VuMeterAll vu[2];
 
 
 	// No need to save, no reset
@@ -129,8 +128,6 @@ struct MixMasterJr : Module {
 			}
 			master.resetNonJson();
 		}
-		vu[0].reset();
-		vu[1].reset();
 	}
 
 
@@ -154,7 +151,9 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].dataToJson(rootJ);
 		}
-
+		// master
+		master.dataToJson(rootJ);
+		
 		return rootJ;
 	}
 
@@ -177,7 +176,9 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].dataFromJson(rootJ);
 		}
-
+		// master
+		master.dataFromJson(rootJ);
+		
 		resetNonJson(true);
 	}
 
@@ -187,6 +188,7 @@ struct MixMasterJr : Module {
 		for (int trk = 0; trk < 16; trk++) {
 			tracks[trk].onSampleRateChange();
 		}
+		master.onSampleRateChange();
 	}
 	
 
@@ -230,8 +232,6 @@ struct MixMasterJr : Module {
 		master.process(mix);
 		
 		// Set master outputs
-		vu[0].process(args.sampleTime, mix[0]);
-		vu[1].process(args.sampleTime, mix[1]);
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
@@ -434,27 +434,34 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3 + 0.8)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 		}
 		
-		// Main outputs
+		// Master outputs
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 12 + 0.8)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(273.8, 21 + 0.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
-		// Main fader
+		// Master label
+		MasterDisplay *mastLabel;
+		addChild(mastLabel = createWidgetCentered<MasterDisplay>(mm2px(Vec(273.8, 128.5 - 97.2))));
+		if (module) {
+			mastLabel->srcMaster = &(module->master);
+		}
+		
+		// Master fader
 		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5 + 0.8)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
 		// VU meter
 		if (module) {
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(272.3, 69.5 + 0.8)));
-			newVU->srcLevels = &(module->vu[0]);
+			newVU->srcLevels = &(module->master.vu[0]);
 			newVU->colorTheme = &(module->gInfo.vuColor);
 			addChild(newVU);
 		}
 		
-		// Main mute
+		// Master mute
 		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(272.3, 109.0 + 0.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		
-		// Main dim
+		// Master dim
 		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(266.9, 115.3 + 0.8)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
 		
-		// Main mono
+		// Master mono
 		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(277.7, 115.3 + 0.8)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
 	}
 	

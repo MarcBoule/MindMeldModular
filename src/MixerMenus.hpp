@@ -294,4 +294,45 @@ struct LPFCutoffSlider : ui::Slider {
 
 
 
+// Master context menu
+// --------------------
+
+// dcBlocker
+struct DcBlockItem : MenuItem {
+	MixerMaster *srcMaster;
+	void onAction(const event::Action &e) override {
+		srcMaster->dcBlock = !srcMaster->dcBlock;
+	}
+};
+		
+		
+// voltageLimiter
+struct VoltLimitItem : MenuItem {
+	MixerMaster *srcMaster;
+
+	struct VoltLimitSubItem : MenuItem {
+		MixerMaster *srcMaster;
+		float setVal = 10.0f;
+		void onAction(const event::Action &e) override {
+			srcMaster->voltageLimiter = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		VoltLimitSubItem *lim0Item = createMenuItem<VoltLimitSubItem>("±10 V (default)", CHECKMARK(srcMaster->voltageLimiter < 11.0f));
+		lim0Item->srcMaster = srcMaster;
+		menu->addChild(lim0Item);
+
+		VoltLimitSubItem *lim1Item = createMenuItem<VoltLimitSubItem>("±20 V", CHECKMARK(srcMaster->voltageLimiter >= 11.0f));
+		lim1Item->srcMaster = srcMaster;
+		lim1Item->setVal = 20.0f;
+		menu->addChild(lim1Item);
+
+		return menu;
+	}
+};
+
+
 #endif

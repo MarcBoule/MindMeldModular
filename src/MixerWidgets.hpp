@@ -24,14 +24,6 @@ static const NVGcolor VU_GREEN_TOP[3][2] =  {{nvgRGB(110, 130, 70), 	nvgRGB(178,
 static const NVGcolor VU_GREEN_BOT[3][2] =  {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // blue: peak (darker), rms (lighter)
 										{nvgRGB(50, 70, 130), 	nvgRGB(97, 107, 235)}};// purple: peak (darker), rms (lighter)
-
-
-// static const NVGcolor VU_GREEN_TOP[2] =  {nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)};// peak (darker), rms (lighter)
-// static const NVGcolor VU_GREEN_BOT[2] =  {nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)};// peak (darker), rms (lighter)
-// static const NVGcolor VU_BLUE_TOP[2] =  {nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)};// peak (darker), rms (lighter)
-// static const NVGcolor VU_BLUE_BOT[2] =  {nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)};// peak (darker), rms (lighter)
-// static const NVGcolor VU_PURPLE_TOP[2] =  {nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)};// peak (darker), rms (lighter)
-// static const NVGcolor VU_PURPLE_BOT[2] =  {nvgRGB(50, 70, 130), 	nvgRGB(97, 107, 235)};// peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
@@ -364,9 +356,9 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			MenuLabel *lowcutLabel = new MenuLabel();
-			lowcutLabel->text = "Track settings: ";
-			menu->addChild(lowcutLabel);
+			MenuLabel *trkSetLabel = new MenuLabel();
+			trkSetLabel->text = "Track settings: ";
+			menu->addChild(trkSetLabel);
 			
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
 			trackGainAdjustSlider->box.size.x = 200.0f;
@@ -424,7 +416,7 @@ struct GroupSelectDisplay : LedDisplayChoice {
 		text = "-";
 	};
 	
-	void onButton(const event::Button &e) override {};
+	//void onButton(const event::Button &e) override {};
 	void draw(const DrawArgs &args) override {
 		if (srcTrack) {
 			int grp = srcTrack->group;
@@ -489,5 +481,42 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 		}		
 	}
 };
+
+
+// Master invisible widget with menu
+// --------------------
+
+struct MasterDisplay : OpaqueWidget {
+	MixerMaster *srcMaster;
+	
+	MasterDisplay() {
+		box.size = mm2px(math::Vec(15.4, 5.1));
+	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *mastSetLabel = new MenuLabel();
+			mastSetLabel->text = "Main out settings (post VUs): ";
+			menu->addChild(mastSetLabel);
+			
+			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
+			dcItem->srcMaster = srcMaster;
+			menu->addChild(dcItem);
+			
+			VoltLimitItem *vLimitItem = createMenuItem<VoltLimitItem>("Voltage limiter", RIGHT_ARROW);
+			vLimitItem->srcMaster = srcMaster;
+			menu->addChild(vLimitItem);
+				
+			e.consume(this);
+			return;
+		}
+		OpaqueWidget::onButton(e);		
+	}
+};
+
+	
+	
 
 #endif
