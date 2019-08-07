@@ -290,6 +290,41 @@ struct VuMeterMaster : VuMeterBase {
 
 
 
+// Master invisible widget with menu
+// --------------------
+
+struct MasterDisplay : OpaqueWidget {
+	MixerMaster *srcMaster;
+	
+	MasterDisplay() {
+		box.size = mm2px(math::Vec(15.4, 5.1));
+	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *mastSetLabel = new MenuLabel();
+			mastSetLabel->text = "Main out settings (post VUs): ";
+			menu->addChild(mastSetLabel);
+			
+			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
+			dcItem->srcMaster = srcMaster;
+			menu->addChild(dcItem);
+			
+			VoltLimitItem *vLimitItem = createMenuItem<VoltLimitItem>("Voltage limiter", RIGHT_ARROW);
+			vLimitItem->srcMaster = srcMaster;
+			menu->addChild(vLimitItem);
+				
+			e.consume(this);
+			return;
+		}
+		OpaqueWidget::onButton(e);		
+	}
+};
+
+	
+
 // Track and group displays base struct
 // --------------------
 
@@ -400,6 +435,10 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 		}
 		LedDisplayTextField::onChange(e);
 	};
+	
+	void onButton(const event::Button &e) override {
+		e.consume(this);
+	}
 };
 
 
@@ -483,40 +522,7 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 };
 
 
-// Master invisible widget with menu
-// --------------------
 
-struct MasterDisplay : OpaqueWidget {
-	MixerMaster *srcMaster;
-	
-	MasterDisplay() {
-		box.size = mm2px(math::Vec(15.4, 5.1));
-	}
-	
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
-			ui::Menu *menu = createMenu();
-
-			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Main out settings (post VUs): ";
-			menu->addChild(mastSetLabel);
-			
-			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
-			dcItem->srcMaster = srcMaster;
-			menu->addChild(dcItem);
-			
-			VoltLimitItem *vLimitItem = createMenuItem<VoltLimitItem>("Voltage limiter", RIGHT_ARROW);
-			vLimitItem->srcMaster = srcMaster;
-			menu->addChild(vLimitItem);
-				
-			e.consume(this);
-			return;
-		}
-		OpaqueWidget::onButton(e);		
-	}
-};
-
-	
 	
 
 #endif

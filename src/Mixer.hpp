@@ -307,7 +307,7 @@ struct MixerMaster {
 			simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
 			sigs = sigs * gains;
 			
-			// Add to mix
+			// Set mix
 			mix[0] = sigs[0] + sigs[2];
 			mix[1] = sigs[1] + sigs[3];
 		}
