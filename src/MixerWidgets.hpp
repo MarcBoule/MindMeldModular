@@ -407,6 +407,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
 			e.consume(this);
 			return;
 		}
@@ -528,9 +532,9 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 
 struct DynamicSVGSwitchDual : SvgSwitch {
 	int* mode = NULL;
-    int* type = NULL;// 0 = mute, 1 = fade
+    float* type = NULL;// mute when < minFadeRate, fade when >= minFadeRate
     int oldMode = -1;
-    int oldType = -1;
+    float oldType = -1.0f;
 	std::vector<std::shared_ptr<Svg>> framesAll;
 	std::vector<std::string> frameAltNames;
 	
@@ -555,8 +559,9 @@ void DynamicSVGSwitchDual::step() {
 			}
 			frameAltNames.clear();
 		}
-		frames[0]=framesAll[(*mode) * 4 + (*type) * 2 + 0];
-		frames[1]=framesAll[(*mode) * 4 + (*type) * 2 + 1];
+		int typeOffset = (*type < MixerTrack::minFadeRate ? 0 : 2);
+		frames[0]=framesAll[(*mode) * 4 + typeOffset + 0];
+		frames[1]=framesAll[(*mode) * 4 + typeOffset + 1];
         oldMode = *mode;
         oldType = *type;
 		onChange(*(new event::Change()));// required because of the way SVGSwitch changes images, we only change the frames above.

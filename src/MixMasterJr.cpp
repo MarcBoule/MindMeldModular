@@ -312,9 +312,9 @@ struct MixMasterJrWidget : ModuleWidget {
 
 		menu->addChild(new MenuLabel());// empty line
 		
-		MenuLabel *settingsLabel = new MenuLabel();
-		settingsLabel->text = "Settings";
-		menu->addChild(settingsLabel);
+		MenuLabel *settingsALabel = new MenuLabel();
+		settingsALabel->text = "Settings (audio)";
+		menu->addChild(settingsALabel);
 		
 		DirectOutsItem *directOutsItem = createMenuItem<DirectOutsItem>("Direct outs", RIGHT_ARROW);
 		directOutsItem->gInfo = &(module->gInfo);
@@ -327,6 +327,12 @@ struct MixMasterJrWidget : ModuleWidget {
 		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 		panLawStereoItem->gInfo = &(module->gInfo);
 		menu->addChild(panLawStereoItem);
+		
+		menu->addChild(new MenuLabel());// empty line
+		
+		MenuLabel *settingsVLabel = new MenuLabel();
+		settingsVLabel->text = "Settings (visual)";
+		menu->addChild(settingsVLabel);
 		
 		NightModeItem *nightItem = createMenuItem<NightModeItem>("Cloaked mode", CHECKMARK(module->gInfo.nightMode));
 		nightItem->gInfo = &(module->gInfo);
@@ -381,7 +387,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			DynMuteFadeButton* newMuteFade;
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				newMuteFade->type = &(module->tracks[i].fade);
+				newMuteFade->type = &(module->tracks[i].fadeRate);
 			}
 			// Solos
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));

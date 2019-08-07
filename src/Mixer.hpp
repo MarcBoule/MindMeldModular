@@ -439,9 +439,9 @@ struct MixerGroup {
 		
 		// Calc group gains
 		simd::float_4 gains = simd::float_4::zero();
-		// Mute test (solo done only in tracks)
+		// Mute test (group solos done in tracks)
 		if (paMute->getValue() < 0.5f) {
-			// fader
+			// slow gain
 			float gain = slowGain;
 			
 			// vol CV input
@@ -501,6 +501,7 @@ struct MixerTrack {
 	static constexpr float trackFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float minHPFCutoffFreq = 20.0f;
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
+	static constexpr float minFadeRate = 0.1f;
 	
 	// need to save, no reset
 	// none
@@ -508,7 +509,7 @@ struct MixerTrack {
 	// need to save, with reset
 	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]
 	float gainAdjust;// this is a gain here (not dB)
-	int fade; // 0 = mute, 1 = fade
+	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	private:
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
@@ -523,6 +524,7 @@ struct MixerTrack {
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
+	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
 	int trackNum;
@@ -565,7 +567,7 @@ struct MixerTrack {
 	void onReset() {
 		group = 0;
 		gainAdjust = 1.0f;
-		fade = 0;
+		fadeRate = 0.0f;
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		resetNonJson();
@@ -575,6 +577,7 @@ struct MixerTrack {
 		gainSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
+		fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 	}
 	
 	
@@ -618,6 +621,7 @@ struct MixerTrack {
 	//  * calc stereo
 	//  * calc panCoeffs
 	//  * calc slowGain
+	//  * calc fadeGain
 	void updateSlowValues() {
 		// calc stereo
 		stereo = inR->isConnected();
@@ -667,11 +671,47 @@ struct MixerTrack {
 				panCoeffs[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 			}
 		}
-		
-		// slowGain
-		slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-		if (gainAdjust != 1.0f) {
-			slowGain *= gainAdjust;
+
+		// fadeGain and slowGain	
+		slowGain = 0.0f;
+		if (!calcSoloEnable()) {
+			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+		}
+		else {
+			if (fadeRate >= minFadeRate) {// if we are in fade mode
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
+				float deltaY = std::pow( std::pow(fadeGain, 1.0f / trackFaderScalingExponent) + deltaX  , trackFaderScalingExponent) - fadeGain;
+				float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+				if (fadeGain < (newTarget - deltaY)) {
+					fadeGain += deltaY;
+				}
+				else if (fadeGain > (newTarget + deltaY)) {
+					fadeGain -= deltaY;
+				}
+				else {
+					fadeGain = newTarget;
+				}	
+				
+				if (fadeGain != 0.0f) {
+					slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+					if (gainAdjust != 1.0f) {
+						slowGain *= gainAdjust;
+					}
+				
+					if (fadeGain != 1.0f) {
+						slowGain *= fadeGain;
+					}
+				}
+			}
+			else {// we are in mute mode
+				fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+				if (paMute->getValue() < 0.5f) {// if not muted
+					slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+					if (gainAdjust != 1.0f) {
+						slowGain *= gainAdjust;
+					}
+				}
+			}
 		}
 	}
 	
@@ -683,8 +723,8 @@ struct MixerTrack {
 		// gainAdjust
 		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 		
-		// fade
-		json_object_set_new(rootJ, (ids + "fade").c_str(), json_integer(fade));
+		// fadeRate
+		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
 
 		// hpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
@@ -704,10 +744,10 @@ struct MixerTrack {
 		if (gainAdjustJ)
 			gainAdjust = json_number_value(gainAdjustJ);
 		
-		// fade
-		json_t *fadeJ = json_object_get(rootJ, (ids + "fade").c_str());
-		if (fadeJ)
-			fade = json_integer_value(fadeJ);
+		// fadeRate
+		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
+		if (fadeRateJ)
+			fadeRate = json_number_value(fadeRateJ);
 		
 		// hpfCutoffFreq
 		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
@@ -741,11 +781,10 @@ struct MixerTrack {
 		
 		// Calc track gains
 		simd::float_4 gains = simd::float_4::zero();
-		// Mute and Solo test
-		if (calcSoloEnable() && paMute->getValue() < 0.5f) {
-			// fader
+		if (slowGain != 0.0f) {
+			// slow gain
 			float gain = slowGain;
-			
+						
 			// vol CV input
 			if (inVol->isConnected()) {
 				gain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);

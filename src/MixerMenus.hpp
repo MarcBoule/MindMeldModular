@@ -192,6 +192,53 @@ struct GainAdjustSlider : ui::Slider {
 	}
 };
 
+// Fade-rate menu item
+
+struct FadeRateQuantity : Quantity {
+	MixerTrack *srcTrack = NULL;
+	  
+	FadeRateQuantity(MixerTrack *_srcTrack) {
+		srcTrack = _srcTrack;
+	}
+	void setValue(float value) override {
+		srcTrack->fadeRate = math::clamp(value, getMinValue(), getMaxValue());
+	}
+	float getValue() override {
+		return srcTrack->fadeRate;
+	}
+	float getMinValue() override {return 0.0f;}
+	float getMaxValue() override {return 10.0f;}
+	float getDefaultValue() override {return 0.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut >= MixerTrack::minFadeRate) {
+			return string::f("%.1f", valCut);
+		}
+		else {
+			return "OFF";
+		}
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Fade";}
+	std::string getUnit() override {
+		if (getDisplayValue() >= MixerTrack::minFadeRate) {
+			return " s";
+		}
+		else {
+			return "";
+		}
+	}};
+
+struct FadeRateSlider : ui::Slider {
+	FadeRateSlider(MixerTrack *srcTrack) {
+		quantity = new FadeRateQuantity(srcTrack);
+	}
+	~FadeRateSlider() {
+		delete quantity;
+	}
+};
+
 
 // HPF filter cutoff menu item
 
