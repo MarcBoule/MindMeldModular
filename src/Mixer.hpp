@@ -521,8 +521,8 @@ struct MixerTrack {
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	VuMeterAll vu[2];// use post[]
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
-	Biquad hpFilter[2];// 12dB/oct
-	Biquad lpFilter[2];// 12db/oct
+	dsp::BiquadFilter hpFilter[2];// 12dB/oct
+	dsp::BiquadFilter lpFilter[2];// 12db/oct
 
 	// no need to save, no reset
 	int trackNum;
@@ -556,8 +556,8 @@ struct MixerTrack {
 		trackName = _trackName;
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
-			hpFilter[i].setBiquad(BQ_TYPE_HIGHPASS, 0.1, 1.0, 0.0);// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
-			lpFilter[i].setBiquad(BQ_TYPE_LOWPASS, 0.4, 0.707, 0.0);
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, 1.0, 0.0);// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
+			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
 		}
 	}
 	
@@ -582,7 +582,7 @@ struct MixerTrack {
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].setCutoff(fc);
-			hpFilter[i].setFc(fc);
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, 1.0, 0.0);
 		}
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
@@ -590,8 +590,8 @@ struct MixerTrack {
 	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
 		lpfCutoffFreq = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		lpFilter[0].setFc(fc);
-		lpFilter[1].setFc(fc);
+		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
+		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
 	}
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
