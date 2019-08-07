@@ -378,7 +378,11 @@ struct MixMasterJrWidget : ModuleWidget {
 				addChild(newVU);
 			}
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynMuteFadeButton* newMuteFade;
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newMuteFade->type = &(module->tracks[i].fade);
+			}
 			// Solos
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			// Group dec

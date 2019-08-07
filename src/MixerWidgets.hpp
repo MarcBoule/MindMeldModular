@@ -523,6 +523,60 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 
 
 
+// switch with dual display types (for Mute/Fade buttons)
+// --------------------
+
+struct DynamicSVGSwitchDual : SvgSwitch {
+	int* mode = NULL;
+    int* type = NULL;// 0 = mute, 1 = fade
+    int oldMode = -1;
+    int oldType = -1;
+	std::vector<std::shared_ptr<Svg>> framesAll;
+	std::vector<std::string> frameAltNames;
+	
+	void addFrameAll(std::shared_ptr<Svg> svg);
+    void addFrameAlt(std::string filename) {frameAltNames.push_back(filename);}
+	void step() override;
+};
+
+void DynamicSVGSwitchDual::addFrameAll(std::shared_ptr<Svg> svg) {
+    framesAll.push_back(svg);
+	if (framesAll.size() == 2) {
+		addFrame(framesAll[0]);
+		addFrame(framesAll[1]);
+	}
+}
+
+void DynamicSVGSwitchDual::step() {
+    if( mode != NULL && type != NULL && ((*mode != oldMode) || (*type != oldType)) ) {
+		if (!frameAltNames.empty()) {
+			for (std::string strName : frameAltNames) {
+				framesAll.push_back(APP->window->loadSvg(strName));
+			}
+			frameAltNames.clear();
+		}
+		frames[0]=framesAll[(*mode) * 4 + (*type) * 2 + 0];
+		frames[1]=framesAll[(*mode) * 4 + (*type) * 2 + 1];
+        oldMode = *mode;
+        oldType = *type;
+		onChange(*(new event::Change()));// required because of the way SVGSwitch changes images, we only change the frames above.
+		fb->dirty = true;// dirty is not sufficient when changing via frames assignments above (i.e. onChange() is required)
+    }
+	SvgSwitch::step();
+}
+
+struct DynMuteFadeButton : DynamicSVGSwitchDual {
+	DynMuteFadeButton() {
+		momentary = false;
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-on.svg")));
+		addFrameAlt(asset::plugin(pluginInstance, "res/comp/fade-off.svg"));
+		addFrameAlt(asset::plugin(pluginInstance, "res/comp/fade-on.svg"));
+		shadow->opacity = 0.0;
+	}
+};
+
+
 	
 
 #endif

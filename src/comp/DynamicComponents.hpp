@@ -124,6 +124,7 @@ struct DynamicSVGSlider : SvgSlider {
 
 
 struct DynMuteButton : DynamicSVGSwitch {
+	
 	DynMuteButton() {
 		momentary = false;
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));

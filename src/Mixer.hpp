@@ -10,7 +10,6 @@
 
 
 #include "MindMeldModular.hpp"
-#include "dsp/Biquad.hpp"
 #include "dsp/OnePole.hpp"
 #include "dsp/VuMeterAll.hpp"
 #include <pmmintrin.h>
@@ -509,6 +508,7 @@ struct MixerTrack {
 	// need to save, with reset
 	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]
 	float gainAdjust;// this is a gain here (not dB)
+	int fade; // 0 = mute, 1 = fade
 	private:
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
@@ -565,6 +565,7 @@ struct MixerTrack {
 	void onReset() {
 		group = 0;
 		gainAdjust = 1.0f;
+		fade = 0;
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		resetNonJson();
@@ -682,6 +683,9 @@ struct MixerTrack {
 		// gainAdjust
 		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 		
+		// fade
+		json_object_set_new(rootJ, (ids + "fade").c_str(), json_integer(fade));
+
 		// hpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
 		
@@ -699,6 +703,11 @@ struct MixerTrack {
 		json_t *gainAdjustJ = json_object_get(rootJ, (ids + "gainAdjust").c_str());
 		if (gainAdjustJ)
 			gainAdjust = json_number_value(gainAdjustJ);
+		
+		// fade
+		json_t *fadeJ = json_object_get(rootJ, (ids + "fade").c_str());
+		if (fadeJ)
+			fade = json_integer_value(fadeJ);
 		
 		// hpfCutoffFreq
 		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
