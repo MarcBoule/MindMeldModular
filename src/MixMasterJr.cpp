@@ -376,13 +376,21 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 80.4 + 0.8)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
-			// VU meters
 			if (module) {
+				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
 				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
+				// Fade pointers
+				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 4.3 + 12.7 * i, 80.4 + 0.8)));
+				// newFP->srcLevels = &(module->tracks[i].vu[0]);
+				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
+				addChild(newFP);
+				
 			}
+			
+			
 			// Mutes
 			DynMuteFadeButton* newMuteFade;
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));

@@ -679,18 +679,20 @@ struct MixerTrack {
 		}
 		else {
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
-				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
-				float deltaY = std::pow( std::pow(fadeGain, 1.0f / trackFaderScalingExponent) + deltaX  , trackFaderScalingExponent) - fadeGain;
 				float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
-				if (fadeGain < (newTarget - deltaY)) {
-					fadeGain += deltaY;
+				if (fadeGain != newTarget) {
+					float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
+					float deltaY = std::pow( std::pow(fadeGain, 1.0f / trackFaderScalingExponent) + deltaX  , trackFaderScalingExponent) - fadeGain;
+					if (fadeGain < (newTarget - deltaY)) {
+						fadeGain += deltaY;
+					}
+					else if (fadeGain > (newTarget + deltaY)) {
+						fadeGain -= deltaY;
+					}
+					else {
+						fadeGain = newTarget;
+					}	
 				}
-				else if (fadeGain > (newTarget + deltaY)) {
-					fadeGain -= deltaY;
-				}
-				else {
-					fadeGain = newTarget;
-				}	
 				
 				if (fadeGain != 0.0f) {
 					slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);

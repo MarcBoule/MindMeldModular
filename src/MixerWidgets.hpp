@@ -289,6 +289,47 @@ struct VuMeterMaster : VuMeterBase {
 };
 
 
+// Fade pointer
+// --------------------
+
+static const float prtHeight = 3.4f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
+static const NVGcolor POINTER_FILL = nvgRGB(255, 106, 31);
+
+struct FadePointerBase : OpaqueWidget {
+	ParamQuantity *srcParamQty;// to know where the fader is
+	float *srcFadeGain;// to know where to position the pointer
+
+	void draw(const DrawArgs &args) override {
+		if (*srcFadeGain >= 1.0f) {
+			return;
+		}
+		float vertPos = box.size.y * (1.0f - *srcFadeGain);// in px
+		
+		nvgBeginPath(args.vg);
+		nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
+		nvgLineTo(args.vg, box.size.x, vertPos);
+		nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
+		nvgClosePath(args.vg);
+		nvgFillColor(args.vg, POINTER_FILL);
+		nvgFill(args.vg);
+		nvgStrokeColor(args.vg, SCHEME_BLACK);
+		nvgStrokeWidth(args.vg, mm2px(0.11f));
+		nvgStroke(args.vg);
+	}	
+};
+
+
+struct FadePointerTrack : FadePointerBase {
+	FadePointerTrack() {
+		box.size = mm2px(math::Vec(2.8, 42));
+	}
+};
+struct FadePointerMaster : FadePointerBase {
+	FadePointerMaster() {
+		box.size = mm2px(math::Vec(2.8, 60));
+	}
+};
+
 
 // Master invisible widget with menu
 // --------------------
