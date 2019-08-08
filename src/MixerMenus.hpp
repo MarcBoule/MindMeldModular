@@ -152,6 +152,24 @@ struct VuColorItem : MenuItem {
 // Track context menu
 // --------------------
 
+// copy track settings
+struct TrackSettingsCopyItem : MenuItem {
+	MixerTrack *srcTrack = NULL;
+	void onAction(const event::Action &e) override {
+		srcTrack->copyTrackSettings();
+	}
+};
+
+// paste track settings
+struct TrackSettingsPasteItem : MenuItem {
+	MixerTrack *srcTrack = NULL;
+	void onAction(const event::Action &e) override {
+		srcTrack->pasteTrackSettings();
+	}
+};
+
+
+
 // Gain adjust menu item
 
 struct GainAdjustQuantity : Quantity {
@@ -343,7 +361,7 @@ struct LPFCutoffSlider : ui::Slider {
 
 
 
-// Master context menu
+// Master right-click menu
 // --------------------
 
 // dcBlocker

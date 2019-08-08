@@ -82,6 +82,27 @@ inline float calcFadeGain(float fadeGain, float target, float delta) {
 // managed by Mixer, not by tracks (tracks read only)
 struct GlobalInfo {
 	
+	struct TrackSettingsCpBuffer {
+		float gainAdjust;
+		float fadeRate;
+		float hpfCutoffFreq;
+		float lpfCutoffFreq;
+		
+		void reset() {
+			gainAdjust = 1.0f;
+			fadeRate = 0.0f;
+			hpfCutoffFreq = 13.0f;
+			lpfCutoffFreq = 20010.0f;	
+		}
+		
+		void set(float _gainAdjust, float _fadeRate, float _hpfCutoffFreq, float _lpfCutoffFreq) {
+			gainAdjust = _gainAdjust;
+			fadeRate = _fadeRate;
+			hpfCutoffFreq = _hpfCutoffFreq;
+			lpfCutoffFreq = _lpfCutoffFreq;				
+		}
+	};
+	
 	// constants
 	// none
 	
@@ -98,6 +119,7 @@ struct GlobalInfo {
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
 	float sampleTime;
+	TrackSettingsCpBuffer trackSettingsCpBuffer;
 
 	// no need to save, no reset
 	Param *paSolo;
@@ -119,6 +141,7 @@ struct GlobalInfo {
 	void resetNonJson() {
 		updateSoloBitMask();
 		sampleTime = APP->engine->getSampleTime();
+		trackSettingsCpBuffer.reset();
 	}
 	
 	void dataToJson(json_t *rootJ) {
@@ -804,6 +827,17 @@ struct MixerTrack {
 				}
 			}
 		}
+	}
+	
+	
+	void copyTrackSettings() {
+		gInfo->trackSettingsCpBuffer.set(gainAdjust, fadeRate, hpfCutoffFreq, lpfCutoffFreq);
+	}
+	void pasteTrackSettings() {
+		gainAdjust = gInfo->trackSettingsCpBuffer.gainAdjust;
+		fadeRate = gInfo->trackSettingsCpBuffer.fadeRate;
+		setHPFCutoffFreq(gInfo->trackSettingsCpBuffer.hpfCutoffFreq);
+		setLPFCutoffFreq(gInfo->trackSettingsCpBuffer.lpfCutoffFreq);
 	}
 	
 	

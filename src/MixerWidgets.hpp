@@ -490,6 +490,16 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
+			menu->addChild(new MenuLabel());// empty line
+
+			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track settings", "");
+			cpyItem->srcTrack = srcTrack;
+			menu->addChild(cpyItem);
+			
+			TrackSettingsPasteItem *pstItem = createMenuItem<TrackSettingsPasteItem>("Paste track settings", "");
+			pstItem->srcTrack = srcTrack;
+			menu->addChild(pstItem);
+			
 			e.consume(this);
 			return;
 		}
