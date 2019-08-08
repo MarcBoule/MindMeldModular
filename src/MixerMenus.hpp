@@ -195,16 +195,18 @@ struct GainAdjustSlider : ui::Slider {
 // Fade-rate menu item
 
 struct FadeRateQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
+	float *srcFadeRate = NULL;
+	float minFadeRate;
 	  
-	FadeRateQuantity(MixerTrack *_srcTrack) {
-		srcTrack = _srcTrack;
+	FadeRateQuantity(float *_srcFadeRate, float _minFadeRate) {
+		srcFadeRate = _srcFadeRate;
+		minFadeRate = _minFadeRate;
 	}
 	void setValue(float value) override {
-		srcTrack->fadeRate = math::clamp(value, getMinValue(), getMaxValue());
+		*srcFadeRate = math::clamp(value, getMinValue(), getMaxValue());
 	}
 	float getValue() override {
-		return srcTrack->fadeRate;
+		return *srcFadeRate;
 	}
 	float getMinValue() override {return 0.0f;}
 	float getMaxValue() override {return 10.0f;}
@@ -212,7 +214,7 @@ struct FadeRateQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut >= MixerTrack::minFadeRate) {
+		if (valCut >= minFadeRate) {
 			return string::f("%.1f", valCut);
 		}
 		else {
@@ -222,7 +224,7 @@ struct FadeRateQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "Fade";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= MixerTrack::minFadeRate) {
+		if (getDisplayValue() >= minFadeRate) {
 			return " s";
 		}
 		else {
@@ -231,8 +233,8 @@ struct FadeRateQuantity : Quantity {
 	}};
 
 struct FadeRateSlider : ui::Slider {
-	FadeRateSlider(MixerTrack *srcTrack) {
-		quantity = new FadeRateQuantity(srcTrack);
+	FadeRateSlider(float *_srcFadeRate, float _minFadeRate) {
+		quantity = new FadeRateQuantity(_srcFadeRate, _minFadeRate);
 	}
 	~FadeRateSlider() {
 		delete quantity;

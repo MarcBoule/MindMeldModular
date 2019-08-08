@@ -344,22 +344,24 @@ struct MixerGroup {
 	// Constants
 	static constexpr float groupFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float groupFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float minFadeRate = 0.1f;
 	
 	// need to save, no reset
 	// none
 	
 	// need to save, with reset
-	// none
+	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 
 	// no need to save, with reset
 	simd::float_4 panCoeffs;// L, R, RinL, LinR
-	float slowGain;// gain that we don't want to computer each sample (gainAdjust * fader)
+	float slowGain;// gain that we don't want to computer each sample (fader)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	VuMeterAll vu[2];// use post[]
+	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
 	int groupNum;// 0 to 3
-	//std::string ids;
+	std::string ids;
 	GlobalInfo *gInfo;
 	Input *inVol;
 	Input *inPan;
@@ -372,6 +374,7 @@ struct MixerGroup {
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName) {
 		groupNum = _groupNum;
+		ids = "id_g" + std::to_string(groupNum) + "_";
 		gInfo = _gInfo;
 		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
 		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
@@ -385,6 +388,7 @@ struct MixerGroup {
 	
 	
 	void onReset() {
+		fadeRate = 0.0f;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -392,12 +396,14 @@ struct MixerGroup {
 		gainSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
+		fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 	}
 	
 	
 	// Contract: 
 	//  * calc panCoeffs
 	//  * calc slowGain
+	//  * calc fadeGain
 	void updateSlowValues() {
 		// calc panCoeffs
 		float pan = paPan->getValue();
@@ -423,11 +429,57 @@ struct MixerGroup {
 			panCoeffs[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 		}
 
-		// slowGain
-		slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
+		// fadeGain and slowGain	
+		slowGain = 0.0f;
+		if (fadeRate >= minFadeRate) {// if we are in fade mode
+			float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			if (fadeGain != newTarget) {
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
+				float deltaY = std::pow( std::pow(fadeGain, 1.0f / groupFaderScalingExponent) + deltaX  , groupFaderScalingExponent) - fadeGain;
+				if (fadeGain < (newTarget - deltaY)) {
+					fadeGain += deltaY;
+				}
+				else if (fadeGain > (newTarget + deltaY)) {
+					fadeGain -= deltaY;
+				}
+				else {
+					fadeGain = newTarget;
+				}	
+			}
+			
+			if (fadeGain != 0.0f) {
+				slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
+				if (fadeGain != 1.0f) {
+					slowGain *= fadeGain;
+				}
+			}
+		}
+		else {// we are in mute mode
+			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			if (paMute->getValue() < 0.5f) {// if not muted
+				slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
+			}
+		}
+			
+
 	}
 	
+
+	void dataToJson(json_t *rootJ) {
+		// fadeRate
+		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
+	}
 	
+	void dataFromJson(json_t *rootJ) {
+		// fadeRate
+		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
+		if (fadeRateJ)
+			fadeRate = json_number_value(fadeRateJ);
+		
+		// extern must call resetNonJson()
+	}
+	
+
 	// Contract: 
 	//  * calc post[] and vu[] vectors
 	//  * add post[] to mix[0..1] when post is non-zero
@@ -440,7 +492,7 @@ struct MixerGroup {
 		// Calc group gains
 		simd::float_4 gains = simd::float_4::zero();
 		// Mute test (group solos done in tracks)
-		if (paMute->getValue() < 0.5f) {
+		if (slowGain != 0.0f) {
 			// slow gain
 			float gain = slowGain;
 			
@@ -545,8 +597,8 @@ struct MixerTrack {
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
 		trackNum = _trackNum;
+		ids = "id_t" + std::to_string(trackNum) + "_";
 		gInfo = _gInfo;
-		ids = "id" + std::to_string(trackNum) + "_";
 		inL = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 0];
 		inR = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 1];
 		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
@@ -821,7 +873,6 @@ struct MixerTrack {
 				post[0] = lpFilter[0].process(post[0]);
 				post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
 			}
-
 
 			// Apply gains
 			simd::float_4 sigs(post[0], post[1], post[1], post[0]);

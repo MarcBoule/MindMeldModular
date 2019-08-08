@@ -342,6 +342,14 @@ struct FadePointerTrack : FadePointerBase {
 		prepareMaxFader();
 	}
 };
+struct FadePointerGroup : FadePointerBase {
+	FadePointerGroup() {
+		box.size = mm2px(math::Vec(2.8, 42));
+		faderMaxLinearGain = MixerGroup::groupFaderMaxLinearGain;
+		faderScalingExponent = MixerGroup::groupFaderScalingExponent;
+		prepareMaxFader();
+	}
+};
 struct FadePointerMaster : FadePointerBase {
 	FadePointerMaster() {
 		box.size = mm2px(math::Vec(2.8, 60));
@@ -469,7 +477,7 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcTrack->fadeRate), MixerTrack::minFadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
@@ -488,12 +496,29 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 };
 
 
-// Group display editable label without menu
+// Group display editable label with menu
 // --------------------
 
 struct GroupDisplay : GroupAndTrackDisplayBase {
 	MixerGroup *srcGroup = NULL;
 
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *trkSetLabel = new MenuLabel();
+			trkSetLabel->text = "Group settings: ";
+			menu->addChild(trkSetLabel);
+			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
+			e.consume(this);
+			return;
+		}
+		LedDisplayTextField::onButton(e);
+	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
@@ -501,10 +526,6 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 		}
 		LedDisplayTextField::onChange(e);
 	};
-	
-	void onButton(const event::Button &e) override {
-		e.consume(this);
-	}
 };
 
 

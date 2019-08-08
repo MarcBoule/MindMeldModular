@@ -151,6 +151,10 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].dataToJson(rootJ);
 		}
+		// groups
+		for (int i = 0; i < 4; i++) {
+			groups[i].dataToJson(rootJ);
+		}
 		// master
 		master.dataToJson(rootJ);
 		
@@ -175,6 +179,10 @@ struct MixMasterJr : Module {
 		// tracks
 		for (int i = 0; i < 16; i++) {
 			tracks[i].dataFromJson(rootJ);
+		}
+		// groups
+		for (int i = 0; i < 16; i++) {
+			groups[i].dataFromJson(rootJ);
 		}
 		// master
 		master.dataFromJson(rootJ);
@@ -383,7 +391,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 4.3 + 12.7 * i, 80.4 + 0.8)));
+				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 4.0 + 12.7 * i, 80.4 + 0.8)));
 				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				addChild(newFP);				
@@ -437,16 +445,25 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			// Faders
 			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 80.4 + 0.8)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
-			// VU meters
 			if (module) {
+				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->groups[i].vu[0]);
 				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
+				// Fade pointers
+				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 4.0 + 12.7 * i, 80.4 + 0.8)));
+				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
+				newFP->srcFadeGain = &(module->groups[i].fadeGain);
+				addChild(newFP);				
 			}
 
 			// Mutes
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(217.17 + 12.7 * i, 109 + 0.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynMuteFadeButton* newMuteFade;
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(217.17 + 12.7 * i, 109 + 0.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newMuteFade->type = &(module->groups[i].fadeRate);
+			}
 			// Solos
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3 + 0.8)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 		}
