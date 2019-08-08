@@ -17,7 +17,7 @@
 // VU meters
 // --------------------
 
-
+// Colors
 static const NVGcolor VU_GREEN_TOP[3][2] =  {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // blue: peak (darker), rms (lighter)
 										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
@@ -31,7 +31,7 @@ static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)}
 static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
 static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
 
-
+// Base struct
 struct VuMeterBase : OpaqueWidget {
 	static constexpr float epsilon = 0.0001f;// don't show VUs below 0.1mV
 	static constexpr float peakHoldThick = 1.0f;// in px
@@ -44,7 +44,7 @@ struct VuMeterBase : OpaqueWidget {
 	float gapX;// in px
 	float barX;// in px
 	float barY;// in px
-	// box.size // inherited, no need to declare
+	// box.size // inherited from OpaqueWidget, no need to declare
 	float faderMaxLinearGain;
 	float faderScalingExponent;
 	float zeroDbVoltage;
@@ -296,15 +296,30 @@ static const float prtHeight = 3.4f  * SVG_DPI / MM_PER_IN;// height of pointer,
 static const NVGcolor POINTER_FILL = nvgRGB(255, 106, 31);
 
 struct FadePointerBase : OpaqueWidget {
-	ParamQuantity *srcParamQty;// to know where the fader is
+	// instantiator must setup:
+	Param *srcParam;// to know where the fader is
 	float *srcFadeGain;// to know where to position the pointer
+
+	// derived class must setup:
+	// box.size // inherited from OpaqueWidget, no need to declare
+	float faderMaxLinearGain;
+	float faderScalingExponent;
+	
+	// local 
+	float maxTFader;
+
+	
+	void prepareMaxFader() {
+		maxTFader = std::pow(faderMaxLinearGain, 1.0f / faderScalingExponent);
+	}
+
 
 	void draw(const DrawArgs &args) override {
 		if (*srcFadeGain >= 1.0f) {
 			return;
 		}
-		float vertPos = box.size.y * (1.0f - *srcFadeGain);// in px
-		
+		float fadePosNormalized = srcParam->getValue() / maxTFader;
+		float vertPos = box.size.y - box.size.y * std::pow((*srcFadeGain), 1.0f / faderScalingExponent) * fadePosNormalized ;// in px
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
 		nvgLineTo(args.vg, box.size.x, vertPos);
@@ -322,11 +337,17 @@ struct FadePointerBase : OpaqueWidget {
 struct FadePointerTrack : FadePointerBase {
 	FadePointerTrack() {
 		box.size = mm2px(math::Vec(2.8, 42));
+		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
+		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
+		prepareMaxFader();
 	}
 };
 struct FadePointerMaster : FadePointerBase {
 	FadePointerMaster() {
 		box.size = mm2px(math::Vec(2.8, 60));
+		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
+		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
+		prepareMaxFader();
 	}
 };
 

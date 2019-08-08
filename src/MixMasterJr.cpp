@@ -384,10 +384,9 @@ struct MixMasterJrWidget : ModuleWidget {
 				addChild(newVU);
 				// Fade pointers
 				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 4.3 + 12.7 * i, 80.4 + 0.8)));
-				// newFP->srcLevels = &(module->tracks[i].vu[0]);
+				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
-				addChild(newFP);
-				
+				addChild(newFP);				
 			}
 			
 			
