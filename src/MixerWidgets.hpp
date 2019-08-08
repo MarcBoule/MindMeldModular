@@ -299,11 +299,13 @@ struct FadePointerBase : OpaqueWidget {
 	// instantiator must setup:
 	Param *srcParam;// to know where the fader is
 	float *srcFadeGain;// to know where to position the pointer
+	float *srcFadeRate;// mute when < minFadeRate, fade when >= minFadeRate
 
 	// derived class must setup:
 	// box.size // inherited from OpaqueWidget, no need to declare
 	float faderMaxLinearGain;
 	float faderScalingExponent;
+	float minFadeRate;
 	
 	// local 
 	float maxTFader;
@@ -315,7 +317,7 @@ struct FadePointerBase : OpaqueWidget {
 
 
 	void draw(const DrawArgs &args) override {
-		if (*srcFadeGain >= 1.0f) {
+		if (*srcFadeRate < minFadeRate || *srcFadeGain >= 1.0f) {
 			return;
 		}
 		float fadePosNormalized = srcParam->getValue() / maxTFader;
@@ -339,6 +341,7 @@ struct FadePointerTrack : FadePointerBase {
 		box.size = mm2px(math::Vec(2.8, 42));
 		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
 		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
+		minFadeRate = MixerTrack::minFadeRate;
 		prepareMaxFader();
 	}
 };
@@ -347,6 +350,7 @@ struct FadePointerGroup : FadePointerBase {
 		box.size = mm2px(math::Vec(2.8, 42));
 		faderMaxLinearGain = MixerGroup::groupFaderMaxLinearGain;
 		faderScalingExponent = MixerGroup::groupFaderScalingExponent;
+		minFadeRate = MixerGroup::minFadeRate;
 		prepareMaxFader();
 	}
 };
@@ -355,6 +359,7 @@ struct FadePointerMaster : FadePointerBase {
 		box.size = mm2px(math::Vec(2.8, 60));
 		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
 		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
+		minFadeRate = MixerMaster::minFadeRate;
 		prepareMaxFader();
 	}
 };
@@ -375,8 +380,12 @@ struct MasterDisplay : OpaqueWidget {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Main out settings (post VUs): ";
+			mastSetLabel->text = "Master settings: ";
 			menu->addChild(mastSetLabel);
+			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate), MixerMaster::minFadeRate);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
 			
 			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
 			dcItem->srcMaster = srcMaster;
@@ -386,10 +395,6 @@ struct MasterDisplay : OpaqueWidget {
 			vLimitItem->srcMaster = srcMaster;
 			menu->addChild(vLimitItem);
 				
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate), MixerMaster::minFadeRate);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
-			
 			e.consume(this);
 			return;
 		}
@@ -469,6 +474,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			trkSetLabel->text = "Track settings: ";
 			menu->addChild(trkSetLabel);
 			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcTrack->fadeRate), MixerTrack::minFadeRate);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
@@ -480,10 +489,6 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			LPFCutoffSlider *trackLPFAdjustSlider = new LPFCutoffSlider(srcTrack);
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
-			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcTrack->fadeRate), MixerTrack::minFadeRate);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
 			
 			e.consume(this);
 			return;

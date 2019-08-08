@@ -394,6 +394,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 2.95 + 12.7 * i, 80.4 + 0.8)));
 				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
+				newFP->srcFadeRate = &(module->tracks[i].fadeRate);
 				addChild(newFP);				
 			}
 			
@@ -455,6 +456,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 2.95 + 12.7 * i, 80.4 + 0.8)));
 				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
+				newFP->srcFadeRate = &(module->groups[i].fadeRate);
 				addChild(newFP);				
 			}
 
@@ -491,6 +493,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(272.3 - 3.4, 69.5 + 0.8)));
 			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
 			newFP->srcFadeGain = &(module->master.fadeGain);
+			newFP->srcFadeRate = &(module->master.fadeRate);
 			addChild(newFP);				
 		}
 		
