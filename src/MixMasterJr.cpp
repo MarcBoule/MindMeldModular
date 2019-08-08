@@ -391,7 +391,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 4.0 + 12.7 * i, 80.4 + 0.8)));
+				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 2.95 + 12.7 * i, 80.4 + 0.8)));
 				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				addChild(newFP);				
@@ -452,7 +452,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				newVU->colorTheme = &(module->gInfo.vuColor);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 4.0 + 12.7 * i, 80.4 + 0.8)));
+				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 2.95 + 12.7 * i, 80.4 + 0.8)));
 				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				addChild(newFP);				
@@ -481,16 +481,25 @@ struct MixMasterJrWidget : ModuleWidget {
 		
 		// Master fader
 		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65, 69.5 + 0.8)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
-		// VU meter
 		if (module) {
+			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(272.3, 69.5 + 0.8)));
 			newVU->srcLevels = &(module->master.vu[0]);
 			newVU->colorTheme = &(module->gInfo.vuColor);
 			addChild(newVU);
+			// Fade pointer
+			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(272.3 - 3.4, 69.5 + 0.8)));
+			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
+			newFP->srcFadeGain = &(module->master.fadeGain);
+			addChild(newFP);				
 		}
 		
 		// Master mute
-		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(272.3, 109.0 + 0.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		DynMuteFadeButton* newMuteFade;
+		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(272.3, 109.0 + 0.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		if (module) {
+			newMuteFade->type = &(module->master.fadeRate);
+		}
 		
 		// Master dim
 		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(266.9, 115.3 + 0.8)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));

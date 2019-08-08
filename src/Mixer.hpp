@@ -62,6 +62,22 @@ enum LightIds {
 
 //*****************************************************************************
 
+// Utility functions
+
+inline float calcFadeGain(float fadeGain, float target, float delta) {
+	if (fadeGain < (target - delta)) {
+		return fadeGain + delta;
+	}
+	if (fadeGain > (target + delta)) {
+		return fadeGain - delta;
+	}
+	return target;
+}
+
+
+
+//*****************************************************************************
+
 
 // managed by Mixer, not by tracks (tracks read only)
 struct GlobalInfo {
@@ -178,6 +194,7 @@ struct MixerMaster {
 	// Constants
 	static constexpr float masterFaderScalingExponent = 3.0f; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
+	static constexpr float minFadeRate = 0.1f;
 	
 	// need to save, no reset
 	// none
@@ -185,12 +202,14 @@ struct MixerMaster {
 	// need to save, with reset
 	bool dcBlock;
 	float voltageLimiter;
+	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 
 	// no need to save, with reset
 	float slowGain;// gain that we don't want to computer each sample (gainAdjust * fader)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	VuMeterAll vu[2];// use mix[0..1]
 	OnePoleFilter dcBlocker[2];// 6dB/oct
+	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
@@ -207,6 +226,7 @@ struct MixerMaster {
 	void onReset() {
 		dcBlock = true;
 		voltageLimiter = 10.0f;
+		fadeRate = 0.0f;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -215,6 +235,7 @@ struct MixerMaster {
 		vu[0].reset();
 		vu[1].reset();
 		setupDcBlocker();
+		fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 	}
 	
 	
@@ -233,12 +254,37 @@ struct MixerMaster {
 
 	// Contract: 
 	//  * calc slowGain
+	//  * calc fadeGain
 	void updateSlowValues() {
-		// slowGain
-		slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
-		if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-			slowGain *= 0.1;// -20 dB dim
+		// fadeGain and slowGain	
+		slowGain = 0.0f;
+		if (fadeRate >= minFadeRate) {// if we are in fade mode
+			float newTarget = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			if (fadeGain != newTarget) {
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
+				float deltaY = std::pow( std::pow(fadeGain, 1.0f / masterFaderScalingExponent) + deltaX  , masterFaderScalingExponent) - fadeGain;
+				fadeGain = calcFadeGain(fadeGain, newTarget, deltaY);
+			}
+			
+			if (fadeGain != 0.0f) {
+				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+					slowGain *= 0.1;// -20 dB dim
+				}
+				if (fadeGain != 1.0f) {
+					slowGain *= fadeGain;
+				}
+			}
 		}
+		else {// we are in mute mode
+			fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {// if not muted
+				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+					slowGain *= 0.1;// -20 dB dim
+				}
+			}
+		}		
 	}
 	
 	
@@ -248,7 +294,11 @@ struct MixerMaster {
 
 		// voltageLimiter
 		json_object_set_new(rootJ, "voltageLimiter", json_real(voltageLimiter));
+		
+		// fadeRate
+		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
 	}
+
 	
 	void dataFromJson(json_t *rootJ) {
 		// dcBlock
@@ -261,6 +311,11 @@ struct MixerMaster {
 		if (voltageLimiterJ)
 			voltageLimiter = json_number_value(voltageLimiterJ);
 
+		// fadeRate
+		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
+		if (fadeRateJ)
+			fadeRate = json_number_value(fadeRateJ);
+		
 		// extern must call resetNonJson()
 	}
 	
@@ -273,7 +328,7 @@ struct MixerMaster {
 		// Calc master gains
 		simd::float_4 gains = simd::float_4::zero();
 		// Mute test
-		if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
+		if (slowGain != 0.0f) {
 			// fader
 			float gain = slowGain;
 			
@@ -436,15 +491,7 @@ struct MixerGroup {
 			if (fadeGain != newTarget) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
 				float deltaY = std::pow( std::pow(fadeGain, 1.0f / groupFaderScalingExponent) + deltaX  , groupFaderScalingExponent) - fadeGain;
-				if (fadeGain < (newTarget - deltaY)) {
-					fadeGain += deltaY;
-				}
-				else if (fadeGain > (newTarget + deltaY)) {
-					fadeGain -= deltaY;
-				}
-				else {
-					fadeGain = newTarget;
-				}	
+				fadeGain = calcFadeGain(fadeGain, newTarget, deltaY);
 			}
 			
 			if (fadeGain != 0.0f) {
@@ -460,8 +507,6 @@ struct MixerGroup {
 				slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
 			}
 		}
-			
-
 	}
 	
 
@@ -735,15 +780,7 @@ struct MixerTrack {
 				if (fadeGain != newTarget) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
 					float deltaY = std::pow( std::pow(fadeGain, 1.0f / trackFaderScalingExponent) + deltaX  , trackFaderScalingExponent) - fadeGain;
-					if (fadeGain < (newTarget - deltaY)) {
-						fadeGain += deltaY;
-					}
-					else if (fadeGain > (newTarget + deltaY)) {
-						fadeGain -= deltaY;
-					}
-					else {
-						fadeGain = newTarget;
-					}	
+					fadeGain = calcFadeGain(fadeGain, newTarget, deltaY);
 				}
 				
 				if (fadeGain != 0.0f) {

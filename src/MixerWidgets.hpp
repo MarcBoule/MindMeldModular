@@ -386,6 +386,10 @@ struct MasterDisplay : OpaqueWidget {
 			vLimitItem->srcMaster = srcMaster;
 			menu->addChild(vLimitItem);
 				
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate), MixerMaster::minFadeRate);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
 			e.consume(this);
 			return;
 		}
