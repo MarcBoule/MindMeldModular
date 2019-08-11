@@ -464,6 +464,7 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 // --------------------
 
 struct TrackDisplay : GroupAndTrackDisplayBase {
+	MixerTrack *srcTracks = NULL;
 	MixerTrack *srcTrack = NULL;
 
 	void onButton(const event::Button &e) override {
@@ -473,10 +474,6 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			MenuLabel *trkSetLabel = new MenuLabel();
 			trkSetLabel->text = "Track settings: ";
 			menu->addChild(trkSetLabel);
-			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcTrack->fadeRate), MixerTrack::minFadeRate);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
 			
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
 			trackGainAdjustSlider->box.size.x = 200.0f;
@@ -490,6 +487,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcTrack->fadeRate), MixerTrack::minFadeRate);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
 			menu->addChild(new MenuLabel());// empty line
 
 			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track settings", "");
@@ -499,6 +500,11 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			TrackSettingsPasteItem *pstItem = createMenuItem<TrackSettingsPasteItem>("Paste track settings", "");
 			pstItem->srcTrack = srcTrack;
 			menu->addChild(pstItem);
+			
+			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
+			reodrerItem->srcTracks = srcTracks;
+			reodrerItem->srcTrack = srcTrack;
+			menu->addChild(reodrerItem);
 			
 			e.consume(this);
 			return;

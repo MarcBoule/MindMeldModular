@@ -365,6 +365,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.2 + 0.5))));
 			if (module) {
+				trackDisplays[i]->srcTracks = &(module->tracks[0]);
 				trackDisplays[i]->srcTrack = &(module->tracks[i]);
 			}
 			// HPF lights

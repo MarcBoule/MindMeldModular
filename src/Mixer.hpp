@@ -62,7 +62,7 @@ enum LightIds {
 
 //*****************************************************************************
 
-// Utility functions
+// Utility
 
 inline float calcFadeGain(float fadeGain, float target, float delta) {
 	if (fadeGain < (target - delta)) {
@@ -75,33 +75,63 @@ inline float calcFadeGain(float fadeGain, float target, float delta) {
 }
 
 
+struct TrackSettingsCpBuffer {
+	// first level of copy paste (copy copy-paste of track settings)
+	float gainAdjust;
+	float fadeRate;
+	float hpfCutoffFreq;
+	float lpfCutoffFreq;
+
+	// second level of copy paste (for track re-ordering)
+	int group;
+	float paFade;
+	float paMute;
+	float paSolo;
+	float paPan;
+	char trackName[4];// track names are not null terminated in MixerTracks
+	
+	void reset() {
+		// first level
+		gainAdjust = 1.0f;
+		fadeRate = 0.0f;
+		hpfCutoffFreq = 13.0f;
+		lpfCutoffFreq = 20010.0f;	
+		
+		// second level
+		group = 0;
+		paFade = 1.0f;
+		paMute = 0.0f;
+		paSolo = 0.0f;
+		paPan = 0.5f;
+		trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
+	}
+	
+	void set(float _gainAdjust, float _fadeRate, float _hpfCutoffFreq, float _lpfCutoffFreq) {
+		gainAdjust = _gainAdjust;
+		fadeRate = _fadeRate;
+		hpfCutoffFreq = _hpfCutoffFreq;
+		lpfCutoffFreq = _lpfCutoffFreq;				
+	}
+	
+	void set2(int _group, float _paFade, float _paMute, float _paSolo, float _paPan, char *_trackName) {
+		group = _group;
+		paFade = _paFade;
+		paMute = _paMute;
+		paSolo = _paSolo;
+		paPan = _paPan;
+		for (int chr = 0; chr < 4; chr++) {
+			trackName[chr] = _trackName[chr];
+		}
+	}
+};
+
 
 //*****************************************************************************
 
 
+
 // managed by Mixer, not by tracks (tracks read only)
 struct GlobalInfo {
-	
-	struct TrackSettingsCpBuffer {
-		float gainAdjust;
-		float fadeRate;
-		float hpfCutoffFreq;
-		float lpfCutoffFreq;
-		
-		void reset() {
-			gainAdjust = 1.0f;
-			fadeRate = 0.0f;
-			hpfCutoffFreq = 13.0f;
-			lpfCutoffFreq = 20010.0f;	
-		}
-		
-		void set(float _gainAdjust, float _fadeRate, float _hpfCutoffFreq, float _lpfCutoffFreq) {
-			gainAdjust = _gainAdjust;
-			fadeRate = _fadeRate;
-			hpfCutoffFreq = _hpfCutoffFreq;
-			lpfCutoffFreq = _lpfCutoffFreq;				
-		}
-	};
 	
 	// constants
 	// none

@@ -168,6 +168,46 @@ struct TrackSettingsPasteItem : MenuItem {
 	}
 };
 
+// track reordering
+struct TrackReorderItem : MenuItem {
+	MixerTrack *srcTracks = NULL;
+	MixerTrack *srcTrack = NULL;
+	
+	struct TrackReorderSubItem : MenuItem {
+		MixerTrack *srcTracks = NULL;
+		MixerTrack *srcTrack = NULL;
+
+		void onAction(const event::Action &e) override {
+			TrackSettingsCpBuffer buffer1;
+			TrackSettingsCpBuffer buffer2;
+			
+			// perform re-ordering using the two buffers above
+		}
+	};
+	
+	
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		char buf[5] = "-00-";
+
+		for (int trk = 0; trk < 16; trk++) {
+			for (int chr = 0; chr < 4; chr++) {
+				buf[chr] = srcTracks[trk].trackName[chr];
+			}
+			buf[4] = 0;
+
+			bool onSource = (&srcTracks[trk]) == srcTrack;
+			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(buf, CHECKMARK(onSource));
+			reo0Item->srcTracks = srcTracks;
+			reo0Item->srcTrack = srcTrack;
+			reo0Item->disabled = onSource;
+			menu->addChild(reo0Item);
+		}
+
+		return menu;
+	}		
+};
+
 
 
 // Gain adjust menu item
