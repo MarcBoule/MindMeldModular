@@ -10,12 +10,6 @@
 #include "MixerWidgets.hpp"
 #include "MixerMenus.hpp"
 
-//#define _TIME_DRAWING
-#ifdef _TIME_DRAWING
-#include "util/DrawTimer.h"
-static DrawTimer drawTimer("MixMasterJr");
-#endif
-
 
 struct MixMasterJr : Module {
 	// Expander
@@ -537,19 +531,6 @@ struct MixMasterJrWidget : ModuleWidget {
 		}
 		Widget::step();
 	}
-	
-#ifdef _TIME_DRAWING
-    
-	// Slade: avg = 71.970501, stddev = 16.551967 (us) Quota frac=0.431823
-    void draw(const DrawArgs &args) override
-    {
-        DrawLocker l(drawTimer);
-		drawTimer.start();
-        ModuleWidget::draw(args);
-		drawTimer.stop();
-		
-    }
-#endif
 };
 
 Model *modelMixMasterJr = createModel<MixMasterJr, MixMasterJrWidget>("MixMaster-Jr");
