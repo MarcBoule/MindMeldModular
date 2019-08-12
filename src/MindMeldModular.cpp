@@ -7,6 +7,10 @@
 
 #include "MindMeldModular.hpp"
 
+#include "util/SqTime.h"
+#ifdef _USE_WINDOWS_PERFTIME
+    double SqTime::frequency = 0;
+#endif
 
 Plugin *pluginInstance;
 

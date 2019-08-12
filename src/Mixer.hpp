@@ -12,7 +12,6 @@
 #include "MindMeldModular.hpp"
 #include "dsp/OnePole.hpp"
 #include "dsp/VuMeterAll.hpp"
-#include <pmmintrin.h>
 
 
 enum ParamIds {
@@ -104,24 +103,6 @@ struct TrackSettingsCpBuffer {
 		paSolo = 0.0f;
 		paPan = 0.5f;
 		trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
-	}
-	
-	void set(float _gainAdjust, float _fadeRate, float _hpfCutoffFreq, float _lpfCutoffFreq) {
-		gainAdjust = _gainAdjust;
-		fadeRate = _fadeRate;
-		hpfCutoffFreq = _hpfCutoffFreq;
-		lpfCutoffFreq = _lpfCutoffFreq;				
-	}
-	
-	void set2(int _group, float _paFade, float _paMute, float _paSolo, float _paPan, char *_trackName) {
-		group = _group;
-		paFade = _paFade;
-		paMute = _paMute;
-		paSolo = _paSolo;
-		paPan = _paPan;
-		for (int chr = 0; chr < 4; chr++) {
-			trackName[chr] = _trackName[chr];
-		}
 	}
 };
 
@@ -731,6 +712,46 @@ struct MixerTrack {
 	}
 	
 	
+	// level 1 read and write
+	void write(TrackSettingsCpBuffer *dest) {
+		dest->gainAdjust = gainAdjust;
+		dest->fadeRate = fadeRate;
+		dest->hpfCutoffFreq = hpfCutoffFreq;
+		dest->lpfCutoffFreq = lpfCutoffFreq;				
+	}
+	void read(TrackSettingsCpBuffer *src) {
+		gainAdjust = src->gainAdjust;
+		fadeRate = src->fadeRate;
+		hpfCutoffFreq = src->hpfCutoffFreq;
+		lpfCutoffFreq = src->lpfCutoffFreq;				
+	}
+	
+	// level 2 read and write
+	void write2(TrackSettingsCpBuffer *dest) {
+		write(dest);
+		dest->group = group;
+		dest->paFade = paFade->getValue();
+		dest->paMute = paMute->getValue();
+		dest->paSolo = paSolo->getValue();
+		dest->paPan = paPan->getValue();
+		for (int chr = 0; chr < 4; chr++) {
+			dest->trackName[chr] = trackName[chr];
+		}
+	}
+	void read2(TrackSettingsCpBuffer *src) {
+		read(src);
+		group = src->group;
+		paFade->setValue(src->paFade);
+		paMute->setValue(src->paMute);
+		paSolo->setValue(src->paSolo);
+		paPan->setValue(src->paPan);
+		for (int chr = 0; chr < 4; chr++) {
+			trackName[chr] = src->trackName[chr];
+		}
+	}
+	
+	
+	
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
@@ -859,18 +880,7 @@ struct MixerTrack {
 		}
 	}
 	
-	
-	void copyTrackSettings() {
-		gInfo->trackSettingsCpBuffer.set(gainAdjust, fadeRate, hpfCutoffFreq, lpfCutoffFreq);
-	}
-	void pasteTrackSettings() {
-		gainAdjust = gInfo->trackSettingsCpBuffer.gainAdjust;
-		fadeRate = gInfo->trackSettingsCpBuffer.fadeRate;
-		setHPFCutoffFreq(gInfo->trackSettingsCpBuffer.hpfCutoffFreq);
-		setLPFCutoffFreq(gInfo->trackSettingsCpBuffer.lpfCutoffFreq);
-	}
-	
-	
+		
 	void dataToJson(json_t *rootJ) {
 		// group
 		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));

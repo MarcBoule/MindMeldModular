@@ -156,7 +156,8 @@ struct VuColorItem : MenuItem {
 struct TrackSettingsCopyItem : MenuItem {
 	MixerTrack *srcTrack = NULL;
 	void onAction(const event::Action &e) override {
-		srcTrack->copyTrackSettings();
+		srcTrack->write(&(srcTrack->gInfo->trackSettingsCpBuffer));
+		// srcTrack->copyTrackSettings();
 	}
 };
 
@@ -164,24 +165,42 @@ struct TrackSettingsCopyItem : MenuItem {
 struct TrackSettingsPasteItem : MenuItem {
 	MixerTrack *srcTrack = NULL;
 	void onAction(const event::Action &e) override {
-		srcTrack->pasteTrackSettings();
+		srcTrack->read(&(srcTrack->gInfo->trackSettingsCpBuffer));
+		// srcTrack->pasteTrackSettings();
 	}
 };
 
 // track reordering
 struct TrackReorderItem : MenuItem {
-	MixerTrack *srcTracks = NULL;
-	MixerTrack *srcTrack = NULL;
+	MixerTrack *tracks = NULL;
+	int trackNumSrc;	
+	int *resetTrackLabelRequestPtr;
 	
 	struct TrackReorderSubItem : MenuItem {
-		MixerTrack *srcTracks = NULL;
-		MixerTrack *srcTrack = NULL;
+		MixerTrack *tracks = NULL;
+		int trackNumSrc;	
+		int trackNumDest;
+		int *resetTrackLabelRequestPtr;
 
 		void onAction(const event::Action &e) override {
 			TrackSettingsCpBuffer buffer1;
 			TrackSettingsCpBuffer buffer2;
 			
-			// perform re-ordering using the two buffers above
+			tracks[trackNumSrc].write2(&buffer2);
+			if (trackNumDest < trackNumSrc) {
+				for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
+					tracks[trk].write2(&buffer1);
+					tracks[trk + 1].read2(&buffer1);
+				}
+			}
+			else {// must automatically be bigger (equal is impossible)
+				for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
+					tracks[trk + 1].write2(&buffer1);
+					tracks[trk].read2(&buffer1);
+				}
+			}
+			tracks[trackNumDest].read2(&buffer2);
+			*resetTrackLabelRequestPtr = 1;
 		}
 	};
 	
@@ -192,14 +211,16 @@ struct TrackReorderItem : MenuItem {
 
 		for (int trk = 0; trk < 16; trk++) {
 			for (int chr = 0; chr < 4; chr++) {
-				buf[chr] = srcTracks[trk].trackName[chr];
+				buf[chr] = tracks[trk].trackName[chr];
 			}
 			buf[4] = 0;
 
-			bool onSource = (&srcTracks[trk]) == srcTrack;
+			bool onSource = (trk == trackNumSrc);
 			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(buf, CHECKMARK(onSource));
-			reo0Item->srcTracks = srcTracks;
-			reo0Item->srcTrack = srcTrack;
+			reo0Item->tracks = tracks;
+			reo0Item->trackNumSrc = trackNumSrc;
+			reo0Item->trackNumDest = trk;
+			reo0Item->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
 			reo0Item->disabled = onSource;
 			menu->addChild(reo0Item);
 		}

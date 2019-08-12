@@ -464,12 +464,14 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 // --------------------
 
 struct TrackDisplay : GroupAndTrackDisplayBase {
-	MixerTrack *srcTracks = NULL;
-	MixerTrack *srcTrack = NULL;
+	MixerTrack *tracks = NULL;
+	int trackNumSrc;
+	int *resetTrackLabelRequestPtr;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
+			MixerTrack *srcTrack = &(tracks[trackNumSrc]);
 
 			MenuLabel *trkSetLabel = new MenuLabel();
 			trkSetLabel->text = "Track settings: ";
@@ -502,8 +504,9 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			menu->addChild(pstItem);
 			
 			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
-			reodrerItem->srcTracks = srcTracks;
-			reodrerItem->srcTrack = srcTrack;
+			reodrerItem->tracks = tracks;
+			reodrerItem->trackNumSrc = trackNumSrc;
+			reodrerItem->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
 			menu->addChild(reodrerItem);
 			
 			e.consume(this);
@@ -512,9 +515,9 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 		LedDisplayTextField::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(srcTrack->trackName))) = 0x20202020;
+		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			srcTrack->trackName[i] = text[i];
+			tracks[trackNumSrc].trackName[i] = text[i];
 		}
 		LedDisplayTextField::onChange(e);
 	};
