@@ -181,7 +181,7 @@ struct MixMasterJr : Module {
 			tracks[i].dataFromJson(rootJ);
 		}
 		// groups
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 4; i++) {
 			groups[i].dataFromJson(rootJ);
 		}
 		// master
