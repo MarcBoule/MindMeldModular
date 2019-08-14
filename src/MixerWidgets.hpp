@@ -129,7 +129,7 @@ struct VuMeterTrack : VuMeterBase {//
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
-			
+
 			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][colorIndex], VU_GREEN_BOT[*colorTheme][colorIndex]);
 			if (vuHeight > redThreshold) {
 				// Yellow-Red gradient
