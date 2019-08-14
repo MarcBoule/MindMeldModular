@@ -266,15 +266,14 @@ struct MixMasterJr : Module {
 		int outi = base >> 3;
 		if (outputs[DIRECT_OUTPUTS + outi].isConnected()) {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
-			if (gInfo.directOutsMode == 1) {// post-fader
-				for (unsigned int i = 0; i < 8; i++) {
+
+			for (unsigned int i = 0; i < 8; i++) {
+				if (gInfo.directOutsMode == 1 || (gInfo.directOutsMode == 2 && tracks[base + i].directOutsMode == 1) ) {// post-fader
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].post[0], 2 * i);
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].post[1], 2 * i + 1);
 				}
-			}
-			else// pre-fader
-			{
-				for (unsigned int i = 0; i < 8; i++) {
+				else// pre-fader
+				{
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].pre[0], 2 * i);
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].pre[1], 2 * i + 1);
 				}
@@ -285,15 +284,14 @@ struct MixMasterJr : Module {
 	void SetDirectGroupOuts(float *mix) {
 		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
 			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
-			if (gInfo.directOutsMode == 1) {// post-fader
-				for (unsigned int i = 0; i < 4; i++) {
+
+			for (unsigned int i = 0; i < 4; i++) {
+				if (gInfo.directOutsMode == 1 || (gInfo.directOutsMode == 2 && groups[i].directOutsMode == 1) ) {// post-fader
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].post[0], 2 * i);
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].post[1], 2 * i + 1);
 				}
-			}
-			else// pre-fader
-			{
-				for (unsigned int i = 0; i < 4; i++) {
+				else// pre-fader
+				{
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(mix[2 * i + 2], 2 * i);
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(mix[2 * i + 3], 2 * i + 1);
 				}

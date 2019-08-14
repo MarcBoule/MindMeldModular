@@ -493,6 +493,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
+			DirectOutsTrackItem<MixerTrack> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerTrack>>("Direct outs", RIGHT_ARROW);
+			dirTrkItem->srcTrkGrp = srcTrack;
+			menu->addChild(dirTrkItem);
+
 			menu->addChild(new MenuLabel());// empty line
 
 			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track settings", "");
@@ -542,6 +546,10 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
+			DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
+			dirTrkItem->srcTrkGrp = srcGroup;
+			menu->addChild(dirTrkItem);
+
 			e.consume(this);
 			return;
 		}

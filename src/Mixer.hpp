@@ -80,6 +80,7 @@ struct TrackSettingsCpBuffer {
 	float fadeRate;
 	float hpfCutoffFreq;
 	float lpfCutoffFreq;
+	int directOutsMode;
 
 	// second level of copy paste (for track re-ordering)
 	int group;
@@ -95,6 +96,7 @@ struct TrackSettingsCpBuffer {
 		fadeRate = 0.0f;
 		hpfCutoffFreq = 13.0f;
 		lpfCutoffFreq = 20010.0f;	
+		directOutsMode = 1;
 		
 		// second level
 		group = 0;
@@ -123,7 +125,7 @@ struct GlobalInfo {
 	// need to save, with reset
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
-	int directOutsMode;// 0 is pre-fader, 1 is post-fader
+	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	bool nightMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue
 
@@ -444,6 +446,7 @@ struct MixerGroup {
 	
 	// need to save, with reset
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
 
 	// no need to save, with reset
 	private:
@@ -483,6 +486,7 @@ struct MixerGroup {
 	
 	void onReset() {
 		fadeRate = 0.0f;
+		directOutsMode = 1;// post should be default
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -573,6 +577,9 @@ struct MixerGroup {
 	void dataToJson(json_t *rootJ) {
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
+		
+		// directOutsMode
+		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -580,6 +587,11 @@ struct MixerGroup {
 		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
+		
+		// directOutsMode
+		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
+		if (directOutsModeJ)
+			directOutsMode = json_integer_value(directOutsModeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -655,6 +667,7 @@ struct MixerTrack {
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
+	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
 
 	// no need to save, with reset
 	private:
@@ -712,6 +725,7 @@ struct MixerTrack {
 		fadeRate = 0.0f;
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
+		directOutsMode = 1;// post should be default
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -728,13 +742,15 @@ struct MixerTrack {
 		dest->gainAdjust = gainAdjust;
 		dest->fadeRate = fadeRate;
 		dest->hpfCutoffFreq = hpfCutoffFreq;
-		dest->lpfCutoffFreq = lpfCutoffFreq;				
+		dest->lpfCutoffFreq = lpfCutoffFreq;	
+		dest->directOutsMode = directOutsMode;
 	}
 	void read(TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
 		fadeRate = src->fadeRate;
 		hpfCutoffFreq = src->hpfCutoffFreq;
-		lpfCutoffFreq = src->lpfCutoffFreq;				
+		lpfCutoffFreq = src->lpfCutoffFreq;	
+		directOutsMode = src->directOutsMode;
 	}
 	
 	// level 2 read and write
@@ -930,6 +946,9 @@ struct MixerTrack {
 		
 		// lpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
+		
+		// directOutsMode
+		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -957,6 +976,11 @@ struct MixerTrack {
 		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
 		if (lpfCutoffFreqJ)
 			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
+		
+		// directOutsMode
+		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
+		if (directOutsModeJ)
+			directOutsMode = json_integer_value(directOutsModeJ);
 		
 		// extern must call resetNonJson()
 	}

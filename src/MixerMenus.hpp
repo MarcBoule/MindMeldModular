@@ -95,14 +95,19 @@ struct DirectOutsItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		DirectOutsSubItem *law0Item = createMenuItem<DirectOutsSubItem>("Pre-fader", CHECKMARK(gInfo->directOutsMode == 0));
-		law0Item->gInfo = gInfo;
-		menu->addChild(law0Item);
+		DirectOutsSubItem *pre0Item = createMenuItem<DirectOutsSubItem>("Pre-fader", CHECKMARK(gInfo->directOutsMode == 0));
+		pre0Item->gInfo = gInfo;
+		menu->addChild(pre0Item);
 
-		DirectOutsSubItem *law1Item = createMenuItem<DirectOutsSubItem>("Post-fader", CHECKMARK(gInfo->directOutsMode == 1));
-		law1Item->gInfo = gInfo;
-		law1Item->setVal = 1;
-		menu->addChild(law1Item);
+		DirectOutsSubItem *pre1Item = createMenuItem<DirectOutsSubItem>("Post-fader", CHECKMARK(gInfo->directOutsMode == 1));
+		pre1Item->gInfo = gInfo;
+		pre1Item->setVal = 1;
+		menu->addChild(pre1Item);
+
+		DirectOutsSubItem *pre2Item = createMenuItem<DirectOutsSubItem>("Set per-track/group", CHECKMARK(gInfo->directOutsMode == 2));
+		pre2Item->gInfo = gInfo;
+		pre2Item->setVal = 2;
+		menu->addChild(pre2Item);
 
 		return menu;
 	}
@@ -152,85 +157,6 @@ struct VuColorItem : MenuItem {
 // Track context menu
 // --------------------
 
-// copy track settings
-struct TrackSettingsCopyItem : MenuItem {
-	MixerTrack *srcTrack = NULL;
-	void onAction(const event::Action &e) override {
-		srcTrack->write(&(srcTrack->gInfo->trackSettingsCpBuffer));
-		// srcTrack->copyTrackSettings();
-	}
-};
-
-// paste track settings
-struct TrackSettingsPasteItem : MenuItem {
-	MixerTrack *srcTrack = NULL;
-	void onAction(const event::Action &e) override {
-		srcTrack->read(&(srcTrack->gInfo->trackSettingsCpBuffer));
-		// srcTrack->pasteTrackSettings();
-	}
-};
-
-// track reordering
-struct TrackReorderItem : MenuItem {
-	MixerTrack *tracks = NULL;
-	int trackNumSrc;	
-	int *resetTrackLabelRequestPtr;
-	
-	struct TrackReorderSubItem : MenuItem {
-		MixerTrack *tracks = NULL;
-		int trackNumSrc;	
-		int trackNumDest;
-		int *resetTrackLabelRequestPtr;
-
-		void onAction(const event::Action &e) override {
-			TrackSettingsCpBuffer buffer1;
-			TrackSettingsCpBuffer buffer2;
-			
-			tracks[trackNumSrc].write2(&buffer2);
-			if (trackNumDest < trackNumSrc) {
-				for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
-					tracks[trk].write2(&buffer1);
-					tracks[trk + 1].read2(&buffer1);
-				}
-			}
-			else {// must automatically be bigger (equal is impossible)
-				for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
-					tracks[trk + 1].write2(&buffer1);
-					tracks[trk].read2(&buffer1);
-				}
-			}
-			tracks[trackNumDest].read2(&buffer2);
-			*resetTrackLabelRequestPtr = 1;
-		}
-	};
-	
-	
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-		char buf[5] = "-00-";
-
-		for (int trk = 0; trk < 16; trk++) {
-			for (int chr = 0; chr < 4; chr++) {
-				buf[chr] = tracks[trk].trackName[chr];
-			}
-			buf[4] = 0;
-
-			bool onSource = (trk == trackNumSrc);
-			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(buf, CHECKMARK(onSource));
-			reo0Item->tracks = tracks;
-			reo0Item->trackNumSrc = trackNumSrc;
-			reo0Item->trackNumDest = trk;
-			reo0Item->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
-			reo0Item->disabled = onSource;
-			menu->addChild(reo0Item);
-		}
-
-		return menu;
-	}		
-};
-
-
-
 // Gain adjust menu item
 
 struct GainAdjustQuantity : Quantity {
@@ -271,54 +197,6 @@ struct GainAdjustSlider : ui::Slider {
 	}
 };
 
-// Fade-rate menu item
-
-struct FadeRateQuantity : Quantity {
-	float *srcFadeRate = NULL;
-	float minFadeRate;
-	  
-	FadeRateQuantity(float *_srcFadeRate, float _minFadeRate) {
-		srcFadeRate = _srcFadeRate;
-		minFadeRate = _minFadeRate;
-	}
-	void setValue(float value) override {
-		*srcFadeRate = math::clamp(value, getMinValue(), getMaxValue());
-	}
-	float getValue() override {
-		return *srcFadeRate;
-	}
-	float getMinValue() override {return 0.0f;}
-	float getMaxValue() override {return 10.0f;}
-	float getDefaultValue() override {return 0.0f;}
-	float getDisplayValue() override {return getValue();}
-	std::string getDisplayValueString() override {
-		float valCut = getDisplayValue();
-		if (valCut >= minFadeRate) {
-			return string::f("%.1f", valCut);
-		}
-		else {
-			return "OFF";
-		}
-	}
-	void setDisplayValue(float displayValue) override {setValue(displayValue);}
-	std::string getLabel() override {return "Fade";}
-	std::string getUnit() override {
-		if (getDisplayValue() >= minFadeRate) {
-			return " s";
-		}
-		else {
-			return "";
-		}
-	}};
-
-struct FadeRateSlider : ui::Slider {
-	FadeRateSlider(float *_srcFadeRate, float _minFadeRate) {
-		quantity = new FadeRateQuantity(_srcFadeRate, _minFadeRate);
-	}
-	~FadeRateSlider() {
-		delete quantity;
-	}
-};
 
 
 // HPF filter cutoff menu item
@@ -421,6 +299,170 @@ struct LPFCutoffSlider : ui::Slider {
 };
 
 
+
+// Fade-rate menu item
+
+struct FadeRateQuantity : Quantity {
+	float *srcFadeRate = NULL;
+	float minFadeRate;
+	  
+	FadeRateQuantity(float *_srcFadeRate, float _minFadeRate) {
+		srcFadeRate = _srcFadeRate;
+		minFadeRate = _minFadeRate;
+	}
+	void setValue(float value) override {
+		*srcFadeRate = math::clamp(value, getMinValue(), getMaxValue());
+	}
+	float getValue() override {
+		return *srcFadeRate;
+	}
+	float getMinValue() override {return 0.0f;}
+	float getMaxValue() override {return 10.0f;}
+	float getDefaultValue() override {return 0.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut >= minFadeRate) {
+			return string::f("%.1f", valCut);
+		}
+		else {
+			return "OFF";
+		}
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Fade";}
+	std::string getUnit() override {
+		if (getDisplayValue() >= minFadeRate) {
+			return " s";
+		}
+		else {
+			return "";
+		}
+	}};
+
+struct FadeRateSlider : ui::Slider {
+	FadeRateSlider(float *_srcFadeRate, float _minFadeRate) {
+		quantity = new FadeRateQuantity(_srcFadeRate, _minFadeRate);
+	}
+	~FadeRateSlider() {
+		delete quantity;
+	}
+};
+
+
+
+// Direct outs pre/post menu item
+
+template <typename TrackOrGroup>
+struct DirectOutsTrackItem : MenuItem {
+	TrackOrGroup *srcTrkGrp = NULL;
+
+	struct DirectOutsTrackSubItem : MenuItem {
+		TrackOrGroup *srcTrkGrp = NULL;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			srcTrkGrp->directOutsMode = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		bool globalControl = (srcTrkGrp->gInfo->directOutsMode != 2);
+
+		bool checkmark0 = (globalControl ? srcTrkGrp->gInfo->directOutsMode == 0 : srcTrkGrp->directOutsMode == 0);
+		DirectOutsTrackSubItem *pre0Item = createMenuItem<DirectOutsTrackSubItem>("Pre-fader", CHECKMARK(checkmark0));
+		pre0Item->srcTrkGrp = srcTrkGrp;
+		pre0Item->disabled = globalControl;
+		menu->addChild(pre0Item);
+
+		bool checkmark1 = (globalControl ? srcTrkGrp->gInfo->directOutsMode == 1 : srcTrkGrp->directOutsMode == 1);
+		DirectOutsTrackSubItem *pre1Item = createMenuItem<DirectOutsTrackSubItem>("Post-fader", CHECKMARK(checkmark1));
+		pre1Item->srcTrkGrp = srcTrkGrp;
+		pre1Item->setVal = 1;
+		pre1Item->disabled = globalControl;
+		menu->addChild(pre1Item);
+
+		return menu;
+	}
+};
+
+
+// copy track settings
+struct TrackSettingsCopyItem : MenuItem {
+	MixerTrack *srcTrack = NULL;
+	void onAction(const event::Action &e) override {
+		srcTrack->write(&(srcTrack->gInfo->trackSettingsCpBuffer));
+		// srcTrack->copyTrackSettings();
+	}
+};
+
+// paste track settings
+struct TrackSettingsPasteItem : MenuItem {
+	MixerTrack *srcTrack = NULL;
+	void onAction(const event::Action &e) override {
+		srcTrack->read(&(srcTrack->gInfo->trackSettingsCpBuffer));
+		// srcTrack->pasteTrackSettings();
+	}
+};
+
+// track reordering
+struct TrackReorderItem : MenuItem {
+	MixerTrack *tracks = NULL;
+	int trackNumSrc;	
+	int *resetTrackLabelRequestPtr;
+	
+	struct TrackReorderSubItem : MenuItem {
+		MixerTrack *tracks = NULL;
+		int trackNumSrc;	
+		int trackNumDest;
+		int *resetTrackLabelRequestPtr;
+
+		void onAction(const event::Action &e) override {
+			TrackSettingsCpBuffer buffer1;
+			TrackSettingsCpBuffer buffer2;
+			
+			tracks[trackNumSrc].write2(&buffer2);
+			if (trackNumDest < trackNumSrc) {
+				for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
+					tracks[trk].write2(&buffer1);
+					tracks[trk + 1].read2(&buffer1);
+				}
+			}
+			else {// must automatically be bigger (equal is impossible)
+				for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
+					tracks[trk + 1].write2(&buffer1);
+					tracks[trk].read2(&buffer1);
+				}
+			}
+			tracks[trackNumDest].read2(&buffer2);
+			*resetTrackLabelRequestPtr = 1;
+		}
+	};
+	
+	
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		char buf[5] = "-00-";
+
+		for (int trk = 0; trk < 16; trk++) {
+			for (int chr = 0; chr < 4; chr++) {
+				buf[chr] = tracks[trk].trackName[chr];
+			}
+			buf[4] = 0;
+
+			bool onSource = (trk == trackNumSrc);
+			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(buf, CHECKMARK(onSource));
+			reo0Item->tracks = tracks;
+			reo0Item->trackNumSrc = trackNumSrc;
+			reo0Item->trackNumDest = trk;
+			reo0Item->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
+			reo0Item->disabled = onSource;
+			menu->addChild(reo0Item);
+		}
+
+		return menu;
+	}		
+};
 
 // Master right-click menu
 // --------------------
