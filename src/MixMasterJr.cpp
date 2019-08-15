@@ -346,7 +346,8 @@ struct MixMasterJrWidget : ModuleWidget {
 		menu->addChild(nightItem);
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-		vuColItem->gInfo = &(module->gInfo);
+		vuColItem->srcColor = &(module->gInfo.vuColor);
+		vuColItem->isGlobal = true;
 		menu->addChild(vuColItem);
 	}
 
@@ -390,7 +391,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
-				newVU->colorTheme = &(module->gInfo.vuColor);
+				newVU->colorThemeGlobal = &(module->gInfo.vuColor);
 				addChild(newVU);
 				// Fade pointers
 				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 2.95 + 12.7 * i, 80.4 + 0.8)));
@@ -452,7 +453,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 80.4 + 0.8)));
 				newVU->srcLevels = &(module->groups[i].vu[0]);
-				newVU->colorTheme = &(module->gInfo.vuColor);
+				newVU->colorThemeGlobal = &(module->gInfo.vuColor);
 				addChild(newVU);
 				// Fade pointers
 				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 2.95 + 12.7 * i, 80.4 + 0.8)));
@@ -489,7 +490,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(272.3, 69.5 + 0.8)));
 			newVU->srcLevels = &(module->master.vu[0]);
-			newVU->colorTheme = &(module->gInfo.vuColor);
+			newVU->colorThemeGlobal = &(module->gInfo.vuColor);
 			addChild(newVU);
 			// Fade pointer
 			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(272.3 - 3.4, 69.5 + 0.8)));

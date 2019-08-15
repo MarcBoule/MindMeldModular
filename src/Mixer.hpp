@@ -81,6 +81,7 @@ struct TrackSettingsCpBuffer {
 	float hpfCutoffFreq;
 	float lpfCutoffFreq;
 	int directOutsMode;
+	int vuColorTheme;
 
 	// second level of copy paste (for track re-ordering)
 	int group;
@@ -127,7 +128,7 @@ struct GlobalInfo {
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	bool nightMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
-	int vuColor;// 0 is green, 1 is blue
+	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -239,14 +240,14 @@ struct MixerMaster {
 	bool dcBlock;
 	float voltageLimiter;
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-
+	VuMeterAll vu[2];// use mix[0..1]
+	
 	// no need to save, with reset
 	private:
 	simd::float_4 gainMatrix;// L, R, RinL, LinR
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	public:
-	VuMeterAll vu[2];// use mix[0..1]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
@@ -265,6 +266,7 @@ struct MixerMaster {
 		dcBlock = true;
 		voltageLimiter = 10.0f;
 		fadeRate = 0.0f;
+		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -357,6 +359,9 @@ struct MixerMaster {
 		
 		// fadeRate
 		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
+		
+		// vuColorTheme
+		json_object_set_new(rootJ, "vuColorTheme", json_integer(vu[0].vuColorTheme));
 	}
 
 	
@@ -375,6 +380,11 @@ struct MixerMaster {
 		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
+		
+		// vuColorTheme
+		json_t *vuColorThemeJ = json_object_get(rootJ, "vuColorTheme");
+		if (vuColorThemeJ)
+			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -447,13 +457,13 @@ struct MixerGroup {
 	// need to save, with reset
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
+	VuMeterAll vu[2];// use post[]
 
 	// no need to save, with reset
 	private:
 	simd::float_4 gainMatrix;// L, R, RinL, LinR
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	public:
-	VuMeterAll vu[2];// use post[]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
@@ -487,6 +497,7 @@ struct MixerGroup {
 	void onReset() {
 		fadeRate = 0.0f;
 		directOutsMode = 1;// post should be default
+		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -580,6 +591,9 @@ struct MixerGroup {
 		
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
+		
+		// vuColorTheme
+		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu[0].vuColorTheme));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -592,6 +606,11 @@ struct MixerGroup {
 		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// vuColorTheme
+		json_t *vuColorThemeJ = json_object_get(rootJ, (ids + "vuColorTheme").c_str());
+		if (vuColorThemeJ)
+			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -668,6 +687,7 @@ struct MixerTrack {
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
+	VuMeterAll vu[2];// use post[]
 
 	// no need to save, with reset
 	private:
@@ -678,7 +698,6 @@ struct MixerTrack {
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
 	public:
-	VuMeterAll vu[2];// use post[]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
@@ -726,6 +745,7 @@ struct MixerTrack {
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		directOutsMode = 1;// post should be default
+		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -744,6 +764,7 @@ struct MixerTrack {
 		dest->hpfCutoffFreq = hpfCutoffFreq;
 		dest->lpfCutoffFreq = lpfCutoffFreq;	
 		dest->directOutsMode = directOutsMode;
+		dest->vuColorTheme = vu[0].vuColorTheme;
 	}
 	void read(TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
@@ -751,6 +772,7 @@ struct MixerTrack {
 		hpfCutoffFreq = src->hpfCutoffFreq;
 		lpfCutoffFreq = src->lpfCutoffFreq;	
 		directOutsMode = src->directOutsMode;
+		vu[0].vuColorTheme = src->vuColorTheme;
 	}
 	
 	// level 2 read and write
@@ -949,6 +971,9 @@ struct MixerTrack {
 		
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
+		
+		// vuColorTheme
+		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu[0].vuColorTheme));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -981,6 +1006,11 @@ struct MixerTrack {
 		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// vuColorTheme
+		json_t *vuColorThemeJ = json_object_get(rootJ, (ids + "vuColorTheme").c_str());
+		if (vuColorThemeJ)
+			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// extern must call resetNonJson()
 	}

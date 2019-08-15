@@ -121,32 +121,40 @@ struct NightModeItem : MenuItem {
 };
 
 struct VuColorItem : MenuItem {
-	GlobalInfo *gInfo;
+	int *srcColor;
+	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
 
 	struct VuColorItemSubItem : MenuItem {
-		GlobalInfo *gInfo;
+		int *srcColor;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
-			gInfo->vuColor = setVal;
+			*srcColor = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		VuColorItemSubItem *col0Item = createMenuItem<VuColorItemSubItem>("Green (default)", CHECKMARK(gInfo->vuColor == 0));
-		col0Item->gInfo = gInfo;
+		VuColorItemSubItem *col0Item = createMenuItem<VuColorItemSubItem>("Green (default)", CHECKMARK(*srcColor == 0));
+		col0Item->srcColor = srcColor;
 		menu->addChild(col0Item);
 
-		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Blue", CHECKMARK(gInfo->vuColor == 1));
-		col1Item->gInfo = gInfo;
+		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Blue", CHECKMARK(*srcColor == 1));
+		col1Item->srcColor = srcColor;
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
 
-		VuColorItemSubItem *col2Item = createMenuItem<VuColorItemSubItem>("Purple", CHECKMARK(gInfo->vuColor == 2));
-		col2Item->gInfo = gInfo;
+		VuColorItemSubItem *col2Item = createMenuItem<VuColorItemSubItem>("Purple", CHECKMARK(*srcColor == 2));
+		col2Item->srcColor = srcColor;
 		col2Item->setVal = 2;
 		menu->addChild(col2Item);
+	
+		if (isGlobal) {
+			VuColorItemSubItem *col3Item = createMenuItem<VuColorItemSubItem>("Set individually", CHECKMARK(*srcColor == 3));
+			col3Item->srcColor = srcColor;
+			col3Item->setVal = 3;
+			menu->addChild(col3Item);
+		}
 
 		return menu;
 	}

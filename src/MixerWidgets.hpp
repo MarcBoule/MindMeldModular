@@ -18,10 +18,13 @@
 // --------------------
 
 // Colors
-static const NVGcolor VU_GREEN_TOP[3][2] =  {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
+static const int numThemes = 3;
+static const NVGcolor VU_GREEN_TOP[numThemes][2] =  
+									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // blue: peak (darker), rms (lighter)
 										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_GREEN_BOT[3][2] =  {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
+static const NVGcolor VU_GREEN_BOT[numThemes][2] =  
+									   {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // blue: peak (darker), rms (lighter)
 										{nvgRGB(50, 70, 130), 	nvgRGB(97, 107, 235)}};// purple: peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
@@ -38,7 +41,7 @@ struct VuMeterBase : OpaqueWidget {
 	
 	// instantiator must setup:
 	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
-	int *colorTheme;
+	int *colorThemeGlobal;
 	
 	// derived class must setup:
 	float gapX;// in px
@@ -54,6 +57,7 @@ struct VuMeterBase : OpaqueWidget {
 	long oldTime = -1;
 	float yellowThreshold;// in px, before vertical inversion
 	float redThreshold;// in px, before vertical inversion
+	int colorTheme;
 	
 	
 	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb) {
@@ -84,7 +88,9 @@ struct VuMeterBase : OpaqueWidget {
 	
 	void draw(const DrawArgs &args) override {
 		processPeakHold();
-
+		
+		colorTheme = (*colorThemeGlobal >= numThemes) ? srcLevels[0].vuColorTheme : *colorThemeGlobal;
+		
 		// PEAK
 		drawVu(args, srcLevels[0].getPeak(), 0, 0);
 		drawVu(args, srcLevels[1].getPeak(), barX + gapX, 0);
@@ -130,7 +136,7 @@ struct VuMeterTrack : VuMeterBase {//
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
 
-			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][colorIndex], VU_GREEN_BOT[*colorTheme][colorIndex]);
+			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[colorTheme][colorIndex], VU_GREEN_BOT[colorTheme][colorIndex]);
 			if (vuHeight > redThreshold) {
 				// Yellow-Red gradient
 				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
@@ -174,7 +180,7 @@ struct VuMeterTrack : VuMeterBase {//
 			}
 			else {
 				// Green
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][1], VU_GREEN_BOT[*colorTheme][1]);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[colorTheme][1], VU_GREEN_BOT[colorTheme][1]);
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, peakHoldThick);
 				nvgFillPaint(args.vg, gradGreen);
@@ -225,7 +231,7 @@ struct VuMeterMaster : VuMeterBase {
 				nvgFill(args.vg);
 			}
 			else {
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][colorIndex], VU_GREEN_BOT[*colorTheme][colorIndex]);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[colorTheme][colorIndex], VU_GREEN_BOT[colorTheme][colorIndex]);
 				if (vuHeight > yellowThreshold) {
 					// Yellow-Orange gradient
 					NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[colorIndex], VU_YELLOW[colorIndex]);
@@ -276,7 +282,7 @@ struct VuMeterMaster : VuMeterBase {
 			}
 			else {
 				// Green
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[*colorTheme][1], VU_GREEN_BOT[*colorTheme][1]);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[colorTheme][1], VU_GREEN_BOT[colorTheme][1]);
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
 				//nvgFillColor(args.vg, VU_GREEN[1]);
@@ -395,6 +401,13 @@ struct MasterDisplay : OpaqueWidget {
 			vLimitItem->srcMaster = srcMaster;
 			menu->addChild(vLimitItem);
 				
+			if (srcMaster->gInfo->vuColor >= numThemes) {	
+				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+				vuColItem->srcColor = &(srcMaster->vu[0].vuColorTheme);
+				vuColItem->isGlobal = false;
+				menu->addChild(vuColItem);
+			}
+			
 			e.consume(this);
 			return;
 		}
@@ -498,6 +511,13 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			dirTrkItem->srcTrkGrp = srcTrack;
 			menu->addChild(dirTrkItem);
 
+			if (tracks[trackNumSrc].gInfo->vuColor >= numThemes) {	
+				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+				vuColItem->srcColor = &(tracks[trackNumSrc].vu[0].vuColorTheme);
+				vuColItem->isGlobal = false;
+				menu->addChild(vuColItem);
+			}
+			
 			menu->addChild(new MenuLabel());// empty line
 
 			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track settings", "");
@@ -552,6 +572,13 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			dirTrkItem->srcTrkGrp = srcGroup;
 			menu->addChild(dirTrkItem);
 
+			if (srcGroup->gInfo->vuColor >= numThemes) {	
+				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+				vuColItem->srcColor = &(srcGroup->vu[0].vuColorTheme);
+				vuColItem->isGlobal = false;
+				menu->addChild(vuColItem);
+			}
+			
 			e.consume(this);
 			return;
 		}
