@@ -410,32 +410,65 @@ struct TrackReorderItem : MenuItem {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;	
 	int *resetTrackLabelRequestPtr;
-	
+	PortWidget **inputWidgets;
+
 	struct TrackReorderSubItem : MenuItem {
 		MixerTrack *tracks = NULL;
 		int trackNumSrc;	
 		int trackNumDest;
 		int *resetTrackLabelRequestPtr;
+		PortWidget **inputWidgets;
+		
+		std::list<CableWidget*> cwClr[4];
+		
+		void transferTrackInputs(int srcTrk, int destTrk) {
+			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+				std::list<CableWidget*> cwRip = APP->scene->rack->getCablesOnPort(inputWidgets[srcTrk + i * 16]);
+				if (!cwRip.empty()) {
+					cwRip.front()->setInput(inputWidgets[destTrk + i * 16]);// only front() needed since inputs have at most one cable
+				}
+			}
+		}
+		void clearTrackInputs(int trk) {
+			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+				cwClr[i] = APP->scene->rack->getCablesOnPort(inputWidgets[trk + i * 16]);
+				if (!cwClr[i].empty()) {
+					cwClr[i].front()->setInput(NULL);// only front() needed since inputs have at most one cable
+				}
+			}
+		}
+		void reconnectTrackInputs(int trk) {
+			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+				if (!cwClr[i].empty()) {
+					cwClr[i].front()->setInput(inputWidgets[trk + i * 16]);// only front() needed since inputs have at most one cable
+				}
+			}
+		}
 
 		void onAction(const event::Action &e) override {
 			TrackSettingsCpBuffer buffer1;
 			TrackSettingsCpBuffer buffer2;
 			
 			tracks[trackNumSrc].write2(&buffer2);
+			clearTrackInputs(trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
 			if (trackNumDest < trackNumSrc) {
 				for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
 					tracks[trk].write2(&buffer1);
 					tracks[trk + 1].read2(&buffer1);
+					transferTrackInputs(trk, trk + 1);
 				}
 			}
 			else {// must automatically be bigger (equal is impossible)
 				for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
 					tracks[trk + 1].write2(&buffer1);
 					tracks[trk].read2(&buffer1);
+					transferTrackInputs(trk + 1, trk);
 				}
 			}
 			tracks[trackNumDest].read2(&buffer2);
-			*resetTrackLabelRequestPtr = 1;
+			reconnectTrackInputs(trackNumDest);
+			
+			*resetTrackLabelRequestPtr = 1;			
 		}
 	};
 	
@@ -456,6 +489,7 @@ struct TrackReorderItem : MenuItem {
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
 			reo0Item->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
+			reo0Item->inputWidgets = inputWidgets;
 			reo0Item->disabled = onSource;
 			menu->addChild(reo0Item);
 		}

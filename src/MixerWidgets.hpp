@@ -467,6 +467,7 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;
 	int *resetTrackLabelRequestPtr;
+	PortWidget **inputWidgets;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -511,6 +512,7 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
 			reodrerItem->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
+			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
 			
 			e.consume(this);

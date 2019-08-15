@@ -307,6 +307,7 @@ struct MixMasterJrWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[16];
 	GroupDisplay* groupDisplays[4];
 	GroupSelectDisplay* groupSelectDisplays[16];
+	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 
 
 	// Module's context menu
@@ -366,19 +367,20 @@ struct MixMasterJrWidget : ModuleWidget {
 				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->resetTrackLabelRequestPtr = &(module->resetTrackLabelRequest);
+				trackDisplays[i]->inputWidgets = inputWidgets;
 			}
 			// HPF lights
 			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_HPF_LIGHTS + i));	
 			// LPF lights
 			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(11.43 + 4.17 + 12.7 * i, 7.8 + 0.5)), module, TRACK_LPF_LIGHTS + i));	
 			// Left inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12 + 0.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12 + 0.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21 + 0.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(inputWidgets[i + 16] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21 + 0.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 30.7 + 0.8)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 30.7 + 0.8)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 39.7 + 0.8)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 39.7 + 0.8)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
 			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51 + 0.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
