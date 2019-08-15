@@ -427,28 +427,32 @@ struct TrackReorderItem : MenuItem {
 		int *resetTrackLabelRequestPtr;
 		PortWidget **inputWidgets;
 		
-		std::list<CableWidget*> cwClr[4];
+		CableWidget* cwClr[4];
 		
 		void transferTrackInputs(int srcTrk, int destTrk) {
+			// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				std::list<CableWidget*> cwRip = APP->scene->rack->getCablesOnPort(inputWidgets[srcTrk + i * 16]);
-				if (!cwRip.empty()) {
-					cwRip.front()->setInput(inputWidgets[destTrk + i * 16]);// only front() needed since inputs have at most one cable
+				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
+				if (cwRip != NULL) {
+					APP->scene->rack->removeCable(cwRip);
+					cwRip->setInput(inputWidgets[destTrk + i * 16]);
+					APP->scene->rack->addCable(cwRip);
 				}
 			}
 		}
 		void clearTrackInputs(int trk) {
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				cwClr[i] = APP->scene->rack->getCablesOnPort(inputWidgets[trk + i * 16]);
-				if (!cwClr[i].empty()) {
-					cwClr[i].front()->setInput(NULL);// only front() needed since inputs have at most one cable
+				cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
+				if (cwClr[i] != NULL) {
+					APP->scene->rack->removeCable(cwClr[i]);
 				}
 			}
 		}
 		void reconnectTrackInputs(int trk) {
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				if (!cwClr[i].empty()) {
-					cwClr[i].front()->setInput(inputWidgets[trk + i * 16]);// only front() needed since inputs have at most one cable
+				if (cwClr[i] != NULL) {
+					cwClr[i]->setInput(inputWidgets[trk + i * 16]);
+					APP->scene->rack->addCable(cwClr[i]);
 				}
 			}
 		}
