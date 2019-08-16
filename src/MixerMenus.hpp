@@ -139,21 +139,31 @@ struct VuColorItem : MenuItem {
 		col0Item->srcColor = srcColor;
 		menu->addChild(col0Item);
 
-		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Blue", CHECKMARK(*srcColor == 1));
+		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Teal", CHECKMARK(*srcColor == 1));
 		col1Item->srcColor = srcColor;
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
 
-		VuColorItemSubItem *col2Item = createMenuItem<VuColorItemSubItem>("Purple", CHECKMARK(*srcColor == 2));
+		VuColorItemSubItem *col2Item = createMenuItem<VuColorItemSubItem>("Light blue", CHECKMARK(*srcColor == 2));
 		col2Item->srcColor = srcColor;
 		col2Item->setVal = 2;
 		menu->addChild(col2Item);
+
+		VuColorItemSubItem *col3Item = createMenuItem<VuColorItemSubItem>("Mid blue", CHECKMARK(*srcColor == 3));
+		col3Item->srcColor = srcColor;
+		col3Item->setVal = 3;
+		menu->addChild(col3Item);
+
+		VuColorItemSubItem *col4Item = createMenuItem<VuColorItemSubItem>("Purple", CHECKMARK(*srcColor == 4));
+		col4Item->srcColor = srcColor;
+		col4Item->setVal = 4;
+		menu->addChild(col4Item);
 	
 		if (isGlobal) {
-			VuColorItemSubItem *col3Item = createMenuItem<VuColorItemSubItem>("Set individually", CHECKMARK(*srcColor == 3));
-			col3Item->srcColor = srcColor;
-			col3Item->setVal = 3;
-			menu->addChild(col3Item);
+			VuColorItemSubItem *colIItem = createMenuItem<VuColorItemSubItem>("Set individually", CHECKMARK(*srcColor == 5));
+			colIItem->srcColor = srcColor;
+			colIItem->setVal = 5;
+			menu->addChild(colIItem);
 		}
 
 		return menu;

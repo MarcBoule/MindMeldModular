@@ -18,15 +18,19 @@
 // --------------------
 
 // Colors
-static const int numThemes = 3;
+static const int numThemes = 5;
 static const NVGcolor VU_GREEN_TOP[numThemes][2] =  
 									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
-										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // blue: peak (darker), rms (lighter)
+										{nvgRGB(68, 164, 122), 	nvgRGB(102, 245, 182)}, // teal: peak (darker), rms (lighter)
+										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // light blue: peak (darker), rms (lighter)
+										{nvgRGB(68, 125, 164), 	nvgRGB(102, 180, 245)}, // mid blue: peak (darker), rms (lighter)
 										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
 static const NVGcolor VU_GREEN_BOT[numThemes][2] =  
 									   {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
-										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // blue: peak (darker), rms (lighter)
-										{nvgRGB(50, 70, 130), 	nvgRGB(97, 107, 235)}};// purple: peak (darker), rms (lighter)
+										{nvgRGB(68, 164, 156), 	nvgRGB(102, 245, 232)}, // teal: peak (darker), rms (lighter)
+										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // light blue: peak (darker), rms (lighter)
+										{nvgRGB(68,  92, 164), 	nvgRGB(102, 130, 245)}, // mid blue: peak (darker), rms (lighter)
+										{nvgRGB(50,  70, 130), 	nvgRGB(97, 107, 235)}};// purple: peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
