@@ -63,12 +63,25 @@ enum LightIds {
 
 // Utility
 
-inline float updateFadeGain(float fadeGain, float target, float delta) {
-	if (fadeGain < (target - delta)) {
-		return fadeGain + delta;
+// inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
+	// float newFadeGain = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent);
+	// float deltaY = newFadeGain - fadeGain;
+	// if (newFadeGain < target) {
+		// return newFadeGain;
+	// }
+	// if (2.0f * fadeGain - newFadeGain > target)) {
+		// return 2.0f * fadeGain - newFadeGain;
+	// }
+	// return target;
+// }
+
+inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
+	float deltaY = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent) - fadeGain;
+	if (fadeGain < (target - deltaY)) {
+		return fadeGain + deltaY;
 	}
-	if (fadeGain > (target + delta)) {
-		return fadeGain - delta;
+	if (fadeGain > (target + deltaY)) {
+		return fadeGain - deltaY;
 	}
 	return target;
 }
@@ -90,6 +103,7 @@ struct TrackSettingsCpBuffer {
 	float paSolo;
 	float paPan;
 	char trackName[4];// track names are not null terminated in MixerTracks
+	float fadeGain;
 	
 	void reset() {
 		// first level
@@ -106,6 +120,7 @@ struct TrackSettingsCpBuffer {
 		paSolo = 0.0f;
 		paPan = 0.5f;
 		trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
+		fadeGain = 1.0f;
 	}
 };
 
@@ -303,14 +318,13 @@ struct MixerMaster {
 			float newTarget = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			if (fadeGain != newTarget) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
-				float deltaY = std::pow( std::pow(fadeGain, 1.0f / masterFaderScalingExponent) + deltaX  , masterFaderScalingExponent) - fadeGain;
-				fadeGain = updateFadeGain(fadeGain, newTarget, deltaY);
+				fadeGain = updateFadeGain(fadeGain, newTarget, deltaX, masterFaderScalingExponent);
 			}
 			
 			if (fadeGain != 0.0f) {
 				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= 0.1;// -20 dB dim
+					slowGain *= 0.1f;// -20 dB dim
 				}
 				if (fadeGain != 1.0f) {
 					slowGain *= fadeGain;
@@ -322,7 +336,7 @@ struct MixerMaster {
 			if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {// if not muted
 				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= 0.1;// -20 dB dim
+					slowGain *= 0.1f;// -20 dB dim
 				}
 			}
 		}		
@@ -520,8 +534,7 @@ struct MixerGroup {
 			float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			if (fadeGain != newTarget) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
-				float deltaY = std::pow( std::pow(fadeGain, 1.0f / groupFaderScalingExponent) + deltaX  , groupFaderScalingExponent) - fadeGain;
-				fadeGain = updateFadeGain(fadeGain, newTarget, deltaY);
+				fadeGain = updateFadeGain(fadeGain, newTarget, deltaX, groupFaderScalingExponent);
 			}
 			
 			if (fadeGain != 0.0f) {
@@ -786,6 +799,7 @@ struct MixerTrack {
 		for (int chr = 0; chr < 4; chr++) {
 			dest->trackName[chr] = trackName[chr];
 		}
+		dest->fadeGain = fadeGain;
 	}
 	void read2(TrackSettingsCpBuffer *src) {
 		read(src);
@@ -797,6 +811,7 @@ struct MixerTrack {
 		for (int chr = 0; chr < 4; chr++) {
 			trackName[chr] = src->trackName[chr];
 		}
+		fadeGain = src->fadeGain;
 	}
 	
 	
@@ -862,8 +877,7 @@ struct MixerTrack {
 				float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 				if (fadeGain != newTarget) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
-					float deltaY = std::pow( std::pow(fadeGain, 1.0f / trackFaderScalingExponent) + deltaX  , trackFaderScalingExponent) - fadeGain;
-					fadeGain = updateFadeGain(fadeGain, newTarget, deltaY);
+					fadeGain = updateFadeGain(fadeGain, newTarget, deltaX, trackFaderScalingExponent);
 				}
 				
 				if (fadeGain != 0.0f) {
