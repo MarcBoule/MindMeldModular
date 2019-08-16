@@ -507,11 +507,13 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			DirectOutsTrackItem<MixerTrack> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerTrack>>("Direct outs", RIGHT_ARROW);
-			dirTrkItem->srcTrkGrp = srcTrack;
-			menu->addChild(dirTrkItem);
+			if (srcTrack->gInfo->directOutsMode >= 2) {
+				DirectOutsTrackItem<MixerTrack> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerTrack>>("Direct outs", RIGHT_ARROW);
+				dirTrkItem->srcTrkGrp = srcTrack;
+				menu->addChild(dirTrkItem);
+			}
 
-			if (tracks[trackNumSrc].gInfo->vuColor >= numThemes) {	
+			if (srcTrack->gInfo->vuColor >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(tracks[trackNumSrc].vu[0].vuColorTheme);
 				vuColItem->isGlobal = false;
@@ -568,9 +570,11 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
-			dirTrkItem->srcTrkGrp = srcGroup;
-			menu->addChild(dirTrkItem);
+			if (srcGroup->gInfo->directOutsMode >= 2) {
+				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
+				dirTrkItem->srcTrkGrp = srcGroup;
+				menu->addChild(dirTrkItem);
+			}
 
 			if (srcGroup->gInfo->vuColor >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);

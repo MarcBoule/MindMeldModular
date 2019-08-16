@@ -375,19 +375,14 @@ struct DirectOutsTrackItem : MenuItem {
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		bool globalControl = (srcTrkGrp->gInfo->directOutsMode != 2);
 
-		bool checkmark0 = (globalControl ? srcTrkGrp->gInfo->directOutsMode == 0 : srcTrkGrp->directOutsMode == 0);
-		DirectOutsTrackSubItem *pre0Item = createMenuItem<DirectOutsTrackSubItem>("Pre-fader", CHECKMARK(checkmark0));
+		DirectOutsTrackSubItem *pre0Item = createMenuItem<DirectOutsTrackSubItem>("Pre-fader", CHECKMARK(srcTrkGrp->directOutsMode == 0));
 		pre0Item->srcTrkGrp = srcTrkGrp;
-		pre0Item->disabled = globalControl;
 		menu->addChild(pre0Item);
 
-		bool checkmark1 = (globalControl ? srcTrkGrp->gInfo->directOutsMode == 1 : srcTrkGrp->directOutsMode == 1);
-		DirectOutsTrackSubItem *pre1Item = createMenuItem<DirectOutsTrackSubItem>("Post-fader", CHECKMARK(checkmark1));
+		DirectOutsTrackSubItem *pre1Item = createMenuItem<DirectOutsTrackSubItem>("Post-fader", CHECKMARK(srcTrkGrp->directOutsMode == 1));
 		pre1Item->srcTrkGrp = srcTrkGrp;
 		pre1Item->setVal = 1;
-		pre1Item->disabled = globalControl;
 		menu->addChild(pre1Item);
 
 		return menu;

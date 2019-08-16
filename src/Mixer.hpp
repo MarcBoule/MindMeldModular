@@ -78,8 +78,8 @@ struct TrackSettingsCpBuffer {
 	// first level of copy paste (copy copy-paste of track settings)
 	float gainAdjust;
 	float fadeRate;
-	float hpfCutoffFreq;
-	float lpfCutoffFreq;
+	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
+	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	int directOutsMode;
 	int vuColorTheme;
 
@@ -95,8 +95,8 @@ struct TrackSettingsCpBuffer {
 		// first level
 		gainAdjust = 1.0f;
 		fadeRate = 0.0f;
-		hpfCutoffFreq = 13.0f;
-		lpfCutoffFreq = 20010.0f;	
+		hpfCutoffFreq = 13.0f;// !! user must call filters' setCutoffs manually when copy pasting these
+		lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		directOutsMode = 1;
 		
 		// second level
@@ -769,8 +769,8 @@ struct MixerTrack {
 	void read(TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
 		fadeRate = src->fadeRate;
-		hpfCutoffFreq = src->hpfCutoffFreq;
-		lpfCutoffFreq = src->lpfCutoffFreq;	
+		setHPFCutoffFreq(src->hpfCutoffFreq);
+		setLPFCutoffFreq(src->lpfCutoffFreq);	
 		directOutsMode = src->directOutsMode;
 		vu[0].vuColorTheme = src->vuColorTheme;
 	}
