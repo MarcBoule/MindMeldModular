@@ -325,7 +325,7 @@ struct FadeRateQuantity : Quantity {
 		return *srcFadeRate;
 	}
 	float getMinValue() override {return 0.0f;}
-	float getMaxValue() override {return 10.0f;}
+	float getMaxValue() override {return 30.0f;}
 	float getDefaultValue() override {return 0.0f;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
@@ -482,16 +482,10 @@ struct TrackReorderItem : MenuItem {
 	
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		char buf[5] = "-00-";
 
 		for (int trk = 0; trk < 16; trk++) {
-			for (int chr = 0; chr < 4; chr++) {
-				buf[chr] = tracks[trk].trackName[chr];
-			}
-			buf[4] = 0;
-
 			bool onSource = (trk == trackNumSrc);
-			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(buf, CHECKMARK(onSource));
+			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
 			reo0Item->tracks = tracks;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;

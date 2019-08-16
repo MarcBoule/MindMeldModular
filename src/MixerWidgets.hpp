@@ -488,7 +488,7 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			MixerTrack *srcTrack = &(tracks[trackNumSrc]);
 
 			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Track settings: ";
+			trkSetLabel->text = "Track settings: " + std::string(srcTrack->trackName, 4);
 			menu->addChild(trkSetLabel);
 			
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
@@ -522,6 +522,17 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			
 			menu->addChild(new MenuLabel());// empty line
 
+			MenuLabel *settingsALabel = new MenuLabel();
+			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
+			menu->addChild(settingsALabel);
+
+			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
+			reodrerItem->tracks = tracks;
+			reodrerItem->trackNumSrc = trackNumSrc;
+			reodrerItem->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
+			reodrerItem->inputWidgets = inputWidgets;
+			menu->addChild(reodrerItem);
+			
 			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track settings", "");
 			cpyItem->srcTrack = srcTrack;
 			menu->addChild(cpyItem);
@@ -529,13 +540,6 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			TrackSettingsPasteItem *pstItem = createMenuItem<TrackSettingsPasteItem>("Paste track settings", "");
 			pstItem->srcTrack = srcTrack;
 			menu->addChild(pstItem);
-			
-			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
-			reodrerItem->tracks = tracks;
-			reodrerItem->trackNumSrc = trackNumSrc;
-			reodrerItem->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
-			reodrerItem->inputWidgets = inputWidgets;
-			menu->addChild(reodrerItem);
 			
 			e.consume(this);
 			return;
@@ -563,7 +567,7 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Group settings: ";
+			trkSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
 			menu->addChild(trkSetLabel);
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
