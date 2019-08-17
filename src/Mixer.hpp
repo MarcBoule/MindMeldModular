@@ -151,7 +151,7 @@ struct GlobalInfo {
 	TrackSettingsCpBuffer trackSettingsCpBuffer;
 
 	// no need to save, no reset
-	Param *paSolo;
+	Param *paSolo;// all 20 solos are here
 	
 	
 	void construct(Param *_params) {
@@ -230,7 +230,7 @@ struct GlobalInfo {
 		soloBitMask = newSoloBitMask;
 	}
 	void updateSoloBit(unsigned int trkOrGrp) {
-		if (paSolo[trkOrGrp].getValue() > 0.5f) 
+		if (paSolo[trkOrGrp].getValue() > 0.5f)
 			soloBitMask |= (1 << trkOrGrp);
 		else
 			soloBitMask &= ~(1 << trkOrGrp);
@@ -687,6 +687,7 @@ struct MixerTrack {
 	static constexpr float minHPFCutoffFreq = 20.0f;
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
 	static constexpr float minFadeRate = 0.1f;
+	static constexpr float hpfBiquadQ = 1.0f;// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
 	
 	// need to save, no reset
 	// none
@@ -745,7 +746,7 @@ struct MixerTrack {
 		trackName = _trackName;
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, 1.0, 0.0);// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
 		}
 	}
@@ -821,7 +822,7 @@ struct MixerTrack {
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].setCutoff(fc);
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, 1.0, 0.0);
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, hpfBiquadQ, 0.0);
 		}
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
@@ -835,7 +836,6 @@ struct MixerTrack {
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 	bool calcSoloEnable() {// returns true when the check for solo means this track should play 
-		// returns true when all solos off or (at least one solo is on and (this solo is on, or the group that we are tied to has its solo on, if group))
 		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
 			return true;
 		}
