@@ -414,13 +414,13 @@ struct MixMasterJrWidget : ModuleWidget {
 			DynGroupMinusButtonNotify *newGrpMinusButton;
 			addParam(newGrpMinusButton = createDynamicParamCentered<DynGroupMinusButtonNotify>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				newGrpMinusButton->srcGroup = &(module->tracks[i].group);
+				newGrpMinusButton->srcTrack = &(module->tracks[i]);
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
 			addParam(newGrpPlusButton = createDynamicParamCentered<DynGroupPlusButtonNotify>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 122.6 + 0.5)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				newGrpPlusButton->srcGroup = &(module->tracks[i].group);
+				newGrpPlusButton->srcTrack = &(module->tracks[i]);
 			}
 			// Group select displays
 			addChild(groupSelectDisplays[i] = createWidgetCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 122.6 + 0.5))));

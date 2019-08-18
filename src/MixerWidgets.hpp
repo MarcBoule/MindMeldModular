@@ -622,7 +622,7 @@ struct GroupSelectDisplay : LedDisplayChoice {
 	//void onButton(const event::Button &e) override {};
 	void draw(const DrawArgs &args) override {
 		if (srcTrack) {
-			int grp = srcTrack->group;
+			int grp = srcTrack->getGroup();
 			text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
 			text[1] = 0;
 		}
@@ -632,10 +632,10 @@ struct GroupSelectDisplay : LedDisplayChoice {
 	void onHoverKey(const event::HoverKey &e) override {
 		if (e.action == GLFW_PRESS) {
 			if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
-				srcTrack->group = e.key - GLFW_KEY_0;
+				srcTrack->setGroup(e.key - GLFW_KEY_0);
 			}
 			else if (e.key >= GLFW_KEY_KP_1 && e.key <= GLFW_KEY_KP_4) {
-				srcTrack->group = e.key - GLFW_KEY_KP_0;
+				srcTrack->setGroup(e.key - GLFW_KEY_KP_0);
 			}
 			else if ( ((e.mods & RACK_MOD_MASK) == 0) && (
 					(e.key >= GLFW_KEY_A && e.key <= GLFW_KEY_Z) ||
@@ -643,7 +643,7 @@ struct GroupSelectDisplay : LedDisplayChoice {
 					e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0 || 
 					(e.key >= GLFW_KEY_5 && e.key <= GLFW_KEY_9) || 
 					(e.key >= GLFW_KEY_KP_5 && e.key <= GLFW_KEY_KP_9) ) ){
-				srcTrack->group = 0;
+				srcTrack->setGroup(0);
 			}
 		}
 	}
@@ -656,14 +656,16 @@ struct GroupSelectDisplay : LedDisplayChoice {
 
 struct DynGroupMinusButtonNotify : DynGroupMinusButton {
 	Trigger buttonTrigger;
-	int *srcGroup = NULL;
+	MixerTrack *srcTrack;
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupMinusButton::onChange(e);
-		if (paramQuantity && srcGroup) {
+		if (paramQuantity) {
 			if (buttonTrigger.process(paramQuantity->getValue())) {
-				if ((*srcGroup) == 0) (*srcGroup) = 4;
-				else (*srcGroup)--;		
+				int group = srcTrack->getGroup();
+				if (group == 0) group = 4;
+				else group--;
+				srcTrack->setGroup(group);
 			}
 		}		
 	}
@@ -672,14 +674,16 @@ struct DynGroupMinusButtonNotify : DynGroupMinusButton {
 
 struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 	Trigger buttonTrigger;
-	int *srcGroup = NULL;
+	MixerTrack *srcTrack;
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupPlusButton::onChange(e);
-		if (paramQuantity && srcGroup) {
+		if (paramQuantity) {
 			if (buttonTrigger.process(paramQuantity->getValue())) {
-				if ((*srcGroup) == 4) (*srcGroup) = 0;
-				else (*srcGroup)++;	
+				int group = srcTrack->getGroup();
+				if (group == 4) group = 0;
+				else group++;	
+				srcTrack->setGroup(group);
 			}
 		}		
 	}

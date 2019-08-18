@@ -144,6 +144,7 @@ struct GlobalInfo {
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	bool nightMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
+	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -165,6 +166,9 @@ struct GlobalInfo {
 		directOutsMode = 1;// post should be default
 		nightMode = false;
 		vuColor = 0;
+		for (int i = 0; i < 4; i++) {
+			groupUsage[i] = 0;
+		}
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -188,6 +192,8 @@ struct GlobalInfo {
 
 		// vuColor
 		json_object_set_new(rootJ, "vuColor", json_integer(vuColor));
+		
+		// groupUsage does not need to be saved here, it is computed indirectly in MixerTrack::dataFromJson();
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -215,6 +221,8 @@ struct GlobalInfo {
 		json_t *vuColorJ = json_object_get(rootJ, "vuColor");
 		if (vuColorJ)
 			vuColor = json_integer_value(vuColorJ);
+		
+		// groupUsage does not need to be loaded here, it is computed indirectly in MixerTrack::dataFromJson();
 		
 		// extern must call resetNonJson()
 	}
@@ -693,10 +701,10 @@ struct MixerTrack {
 	// none
 	
 	// need to save, with reset
-	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]
 	float gainAdjust;// this is a gain here (not dB)
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	private:
+	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
@@ -753,9 +761,9 @@ struct MixerTrack {
 	
 	
 	void onReset() {
-		group = 0;
 		gainAdjust = 1.0f;
 		fadeRate = 0.0f;
+		group = 0;// no need to use setter since it is reset in GlobalInfo::onReset()
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		directOutsMode = 1;// post should be default
@@ -804,7 +812,7 @@ struct MixerTrack {
 	}
 	void read2(TrackSettingsCpBuffer *src) {
 		read(src);
-		group = src->group;
+		setGroup(src->group);
 		paFade->setValue(src->paFade);
 		paMute->setValue(src->paMute);
 		paSolo->setValue(src->paSolo);
@@ -816,6 +824,18 @@ struct MixerTrack {
 	}
 	
 	
+	void setGroup(int _group) {
+		if (group > 0) {
+			gInfo->groupUsage[group - 1] &= ~(1 << trackNum);// clear groupUsage for this track in the old group
+		}
+		if (_group > 0) {
+			gInfo->groupUsage[_group - 1] |= (1 << trackNum);// set groupUsage for this track in the new group
+		}
+		group = _group;
+	}
+	int getGroup() {
+		return group;
+	}
 	
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
@@ -839,8 +859,10 @@ struct MixerTrack {
 		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
 			return true;
 		}
-		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {
-			return true;
+		// here solo is off for this track and there is at least one track or group that has their solo on.
+		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {// if going through soloed group  
+			// check all solos of all tracks mapped to group, and return true if all those solos are off
+			return (gInfo->groupUsage[group - 1] & gInfo->soloBitMask) == 0;
 		}
 		return false;
 	}
@@ -968,14 +990,14 @@ struct MixerTrack {
 	
 		
 	void dataToJson(json_t *rootJ) {
-		// group
-		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
-
 		// gainAdjust
 		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 		
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
+
+		// group
+		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
 
 		// hpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
@@ -991,11 +1013,6 @@ struct MixerTrack {
 	}
 	
 	void dataFromJson(json_t *rootJ) {
-		// group
-		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
-		if (groupJ)
-			group = json_integer_value(groupJ);
-		
 		// gainAdjust
 		json_t *gainAdjustJ = json_object_get(rootJ, (ids + "gainAdjust").c_str());
 		if (gainAdjustJ)
@@ -1005,6 +1022,11 @@ struct MixerTrack {
 		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
+		
+		// group
+		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
+		if (groupJ)
+			setGroup(json_integer_value(groupJ));
 		
 		// hpfCutoffFreq
 		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
