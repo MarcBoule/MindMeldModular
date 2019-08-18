@@ -35,6 +35,7 @@ struct MixMasterJr : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
+	int panelThemeWithAuxPresent = 0;
 
 		
 	MixMasterJr() {
@@ -201,6 +202,8 @@ struct MixMasterJr : Module {
 	
 
 	void process(const ProcessArgs &args) override {
+		
+		panelThemeWithAuxPresent = -1;//(rightExpander.module && rightExpander.module->model == modelAuxExpander) ? panelTheme : -1;
 		
 		//********** Inputs **********
 		
@@ -432,8 +435,12 @@ struct MixMasterJrWidget : ModuleWidget {
 		// Monitor outputs and groups
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12 + 0.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));			
-
+			if (i == 3) {
+				addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12 + 0.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelThemeWithAuxPresent : NULL));
+			}
+			else {
+				addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 12 + 0.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+			}
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 22.7 + 0.8))));
 			if (module) {
