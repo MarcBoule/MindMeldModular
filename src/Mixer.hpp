@@ -63,6 +63,19 @@ enum LightIds {
 
 // Utility
 
+// Original
+// inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
+	// float deltaY = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent) - fadeGain;
+	// if (fadeGain < (target - deltaY)) {
+		// return fadeGain + deltaY;
+	// }
+	// if (fadeGain > (target + deltaY)) {
+		// return fadeGain - deltaY;
+	// }
+	// return target;
+// }
+
+// Refactored original
 // inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
 	// float newFadeGain = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent);
 	// float deltaY = newFadeGain - fadeGain;
@@ -75,16 +88,20 @@ enum LightIds {
 	// return target;
 // }
 
+// New better approach
 inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
-	float deltaY = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent) - fadeGain;
-	if (fadeGain < (target - deltaY)) {
-		return fadeGain + deltaY;
+	if (target < fadeGain) 
+		deltaX *= -1.0f;
+	fadeGain = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX, faderScalingExponent);
+	if (fadeGain > target && deltaX > 0.0f) {
+		return target;
 	}
-	if (fadeGain > (target + deltaY)) {
-		return fadeGain - deltaY;
+	if (fadeGain < target && deltaX < 0.0f) {
+		return target;
 	}
-	return target;
+	return fadeGain;
 }
+
 
 
 struct TrackSettingsCpBuffer {
