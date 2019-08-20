@@ -412,7 +412,9 @@ struct MixMasterJrWidget : ModuleWidget {
 				newMuteFade->type = &(module->tracks[i].fadeRate);
 			}
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSoloButtonMutex *newSoloButton;
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(11.43 + 12.7 * i, 115.3 + 0.8)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
 			// Group dec
 			DynGroupMinusButtonNotify *newGrpMinusButton;
 			addParam(newGrpMinusButton = createDynamicParamCentered<DynGroupMinusButtonNotify>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 122.6 + 0.5)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -477,7 +479,9 @@ struct MixMasterJrWidget : ModuleWidget {
 				newMuteFade->type = &(module->groups[i].fadeRate);
 			}
 			// Solos
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(217.17 + 12.7 * i, 115.3 + 0.8)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSoloButtonMutex* newSoloButton;
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(217.17 + 12.7 * i, 115.3 + 0.8)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
 		}
 		
 		// Master outputs

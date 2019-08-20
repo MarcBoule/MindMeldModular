@@ -702,6 +702,26 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 };
 
 
+// Special solo button with mutex feature (ctrl-click)
+
+struct DynSoloButtonMutex : DynSoloButton {
+	Param *soloParams;// 19 params in here must be cleared when mutex solo performed (ctrl-click)
+
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS && 
+						((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
+			for (int i = 0; i < 16 + 4; i++) {
+				if (paramQuantity->paramId != TRACK_SOLO_PARAMS + i) {
+					soloParams[i].setValue(0.0f);
+				}
+			}
+			e.consume(this);
+			return;
+		}
+		DynSoloButton::onButton(e);		
+	}
+};
+
 
 // switch with dual display types (for Mute/Fade buttons)
 // --------------------
