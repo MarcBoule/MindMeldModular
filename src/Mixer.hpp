@@ -63,67 +63,20 @@ enum LightIds {
 
 // Utility
 
-// Original
-// inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
-	// float deltaY = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent) - fadeGain;
-	// if (fadeGain < (target - deltaY)) {
-		// return fadeGain + deltaY;
-	// }
-	// if (fadeGain > (target + deltaY)) {
-		// return fadeGain - deltaY;
-	// }
-	// return target;
-// }
-
-// Refactored original
-// inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
-	// float newFadeGain = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX  , faderScalingExponent);
-	// float deltaY = newFadeGain - fadeGain;
-	// if (newFadeGain < target) {
-		// return newFadeGain;
-	// }
-	// if (2.0f * fadeGain - newFadeGain > target)) {
-		// return 2.0f * fadeGain - newFadeGain;
-	// }
-	// return target;
-// }
-
-// New better approach
-inline float updateFadeGain(float fadeGain, float target, float deltaX, float faderScalingExponent) {
-	if (target < fadeGain) 
-		deltaX *= -1.0f;
-	fadeGain = std::pow( std::pow(fadeGain, 1.0f / faderScalingExponent) + deltaX, faderScalingExponent);
-	if (fadeGain > target && deltaX > 0.0f) {
-		return target;
+inline float updateFadeGain(float fadeGain, float target, float delta) {
+	if (target < fadeGain) {
+		fadeGain -= delta;
+		if (fadeGain < target) {
+			return target;
+		}
 	}
-	if (fadeGain < target && deltaX < 0.0f) {
-		return target;
+	else {
+		fadeGain += delta;
+		if (fadeGain > target) {
+			return target;
+		}
 	}
 	return fadeGain;
-}
-
-// Test2
-
-here : 
-fadeGainX method now works, cube root saved in pointer widget, and pow saved in here and fadegain
-was moved into fader cube.
-TODO apply this to groups and tracks, which are currently incorrect, but before, 
-try to optimized away fadeGainX, probably no longer needed to split in two
-
-
-inline float updateFadeGain2(float *fadeGainX, float targetX, float deltaX, float faderScalingExponent) {
-	if (targetX < *fadeGainX) 
-		deltaX *= -1.0f;
-	*fadeGainX += deltaX;
-	if (*fadeGainX > targetX && deltaX > 0.0f) {
-		*fadeGainX = targetX;
-		return targetX;
-	}
-	if (*fadeGainX < targetX && deltaX < 0.0f) {
-		*fadeGainX = targetX;
-		return targetX;
-	}
-	return std::pow( *fadeGainX, 1.0f);//faderScalingExponent);
 }
 
 
@@ -312,7 +265,6 @@ struct MixerMaster {
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float fadeGainX; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
@@ -339,7 +291,7 @@ struct MixerMaster {
 		setupDcBlocker();
 		vu[0].reset();
 		vu[1].reset();
-		fadeGainX = fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+		fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 	}
 	
 	
@@ -364,24 +316,25 @@ struct MixerMaster {
 		// prepare local slowGain
 		float slowGain = 0.0f;
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
-			float newTargetX = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
-			if (fadeGainX != newTargetX) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
-				fadeGain = updateFadeGain2(&fadeGainX, newTargetX, deltaX, masterFaderScalingExponent);
+			float newTarget = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			if (fadeGain != newTarget) {
+				float delta = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
+				fadeGain = updateFadeGain(fadeGain, newTarget, delta);
 			}
 			
 			if (fadeGain != 0.0f) {
-				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue()      * fadeGain         , masterFaderScalingExponent);
+				slowGain = params[MAIN_FADER_PARAM].getValue();
+				if (fadeGain != 1.0f) {
+					slowGain *= fadeGain;
+				}
+				slowGain = std::pow(slowGain, masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
 					slowGain *= 0.1f;// -20 dB dim
 				}
-				// if (fadeGain != 1.0f) {
-					// slowGain *= fadeGain;
-				// }
 			}
 		}
 		else {// we are in mute mode
-			fadeGainX = fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {// if not muted
 				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
@@ -580,17 +533,17 @@ struct MixerGroup {
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			if (fadeGain != newTarget) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
-				fadeGain = updateFadeGain(fadeGain, newTarget, deltaX, groupFaderScalingExponent);
+				float delta = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
+				fadeGain = updateFadeGain(fadeGain, newTarget, delta);
 			}
 			
 			if (fadeGain != 0.0f) {
 				slowGain = paFade->getValue();
-				if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
-					slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
-				}
 				if (fadeGain != 1.0f) {
 					slowGain *= fadeGain;
+				}
+				if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
+					slowGain = std::pow(slowGain, groupFaderScalingExponent);
 				}
 			}
 		}
@@ -936,19 +889,20 @@ struct MixerTrack {
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 				if (fadeGain != newTarget) {
-					float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
-					fadeGain = updateFadeGain(fadeGain, newTarget, deltaX, trackFaderScalingExponent);
+					float delta = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
+					fadeGain = updateFadeGain(fadeGain, newTarget, delta);
 				}
 				
 				if (fadeGain != 0.0f) {
-					slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
+					slowGain = paFade->getValue();
+					if (fadeGain != 1.0f) {
+						slowGain *= fadeGain;
+					}
+					slowGain = std::pow(slowGain, trackFaderScalingExponent);
 					if (gainAdjust != 1.0f) {
 						slowGain *= gainAdjust;
 					}
 				
-					if (fadeGain != 1.0f) {
-						slowGain *= fadeGain;
-					}
 				}
 			}
 			else {// we are in mute mode
