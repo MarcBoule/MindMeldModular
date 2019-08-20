@@ -102,6 +102,29 @@ inline float updateFadeGain(float fadeGain, float target, float deltaX, float fa
 	return fadeGain;
 }
 
+// Test2
+
+here : 
+fadeGainX method now works, cube root saved in pointer widget, and pow saved in here and fadegain
+was moved into fader cube.
+TODO apply this to groups and tracks, which are currently incorrect, but before, 
+try to optimized away fadeGainX, probably no longer needed to split in two
+
+
+inline float updateFadeGain2(float *fadeGainX, float targetX, float deltaX, float faderScalingExponent) {
+	if (targetX < *fadeGainX) 
+		deltaX *= -1.0f;
+	*fadeGainX += deltaX;
+	if (*fadeGainX > targetX && deltaX > 0.0f) {
+		*fadeGainX = targetX;
+		return targetX;
+	}
+	if (*fadeGainX < targetX && deltaX < 0.0f) {
+		*fadeGainX = targetX;
+		return targetX;
+	}
+	return std::pow( *fadeGainX, 1.0f);//faderScalingExponent);
+}
 
 
 struct TrackSettingsCpBuffer {
@@ -289,6 +312,7 @@ struct MixerMaster {
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float fadeGainX; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
@@ -315,7 +339,7 @@ struct MixerMaster {
 		setupDcBlocker();
 		vu[0].reset();
 		vu[1].reset();
-		fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+		fadeGainX = fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 	}
 	
 	
@@ -340,24 +364,24 @@ struct MixerMaster {
 		// prepare local slowGain
 		float slowGain = 0.0f;
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
-			float newTarget = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
-			if (fadeGain != newTarget) {
+			float newTargetX = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			if (fadeGainX != newTargetX) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
-				fadeGain = updateFadeGain(fadeGain, newTarget, deltaX, masterFaderScalingExponent);
+				fadeGain = updateFadeGain2(&fadeGainX, newTargetX, deltaX, masterFaderScalingExponent);
 			}
 			
 			if (fadeGain != 0.0f) {
-				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
+				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue()      * fadeGain         , masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
 					slowGain *= 0.1f;// -20 dB dim
 				}
-				if (fadeGain != 1.0f) {
-					slowGain *= fadeGain;
-				}
+				// if (fadeGain != 1.0f) {
+					// slowGain *= fadeGain;
+				// }
 			}
 		}
 		else {// we are in mute mode
-			fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			fadeGainX = fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {// if not muted
 				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
@@ -383,8 +407,6 @@ struct MixerMaster {
 				gainMatrix[0] = gainMatrix[1] = slowGain;
 				gainMatrix[2] = gainMatrix[3] = 0.0f;
 			}
-	
-			gainMatrix *= slowGain;
 		}		
 	}
 	
@@ -593,8 +615,8 @@ struct MixerGroup {
 			}
 			
 			if (pan == 0.5f) {
-					gainMatrix[1] = 1.0f;
-					gainMatrix[0] = 1.0f;
+					gainMatrix[1] = slowGain;
+					gainMatrix[0] = slowGain;
 					gainMatrix[3] = 0.0f;
 					gainMatrix[2] = 0.0f;
 			}
@@ -616,9 +638,8 @@ struct MixerGroup {
 					gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
 					gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 				}
+				gainMatrix *= slowGain;
 			}
-			
-			gainMatrix *= slowGain;
 		}	
 	}
 	
@@ -958,8 +979,8 @@ struct MixerTrack {
 			gainMatrix[2] = 0.0f;
 			
 			if (pan == 0.5f) {
-				gainMatrix[1] = 1.0f;
-				gainMatrix[0] = 1.0f;
+				gainMatrix[1] = slowGain;
+				gainMatrix[0] = slowGain;
 			}
 			else {
 				pan = clamp(pan, 0.0f, 1.0f);		
@@ -999,9 +1020,8 @@ struct MixerTrack {
 						gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 					}
 				}
+				gainMatrix *= slowGain;
 			}
-			
-			gainMatrix *= slowGain;
 		}
 	}
 	

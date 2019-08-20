@@ -331,7 +331,7 @@ struct FadePointerBase : OpaqueWidget {
 			return;
 		}
 		float fadePosNormalized = srcParam->getValue() / maxTFader;
-		float vertPos = box.size.y - box.size.y * std::pow((*srcFadeGain), 1.0f / faderScalingExponent) * fadePosNormalized ;// in px
+		float vertPos = box.size.y - box.size.y * std::pow((*srcFadeGain), 1.0f/* / faderScalingExponent*/) * fadePosNormalized ;// in px
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
 		nvgLineTo(args.vg, box.size.x, vertPos);
