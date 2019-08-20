@@ -63,7 +63,18 @@ enum LightIds {
 
 // Utility
 
-inline float updateFadeGain(float fadeGain, float target, float delta) {
+
+inline float updateFadeGain(float fadeGain, float target, float timeStep, float shape) {
+	float delta = timeStep;// linear
+	if (shape > 0.0f) {
+		float expDelta = 4.2f * fadeGain * timeStep;// 4.2 hand tuned to take same time as linear fade when exp at 100%
+		delta = crossfade(delta, expDelta, shape * 0.9f);// never go to 1.0f, since will stay stuck at 0 when exp!
+	}
+	else if (shape < 0.0f) {
+		float logDelta = 4.2f * (1.0f - fadeGain) * timeStep;// 4.2 hand tuned to take same time as linear fade when log at 100%
+		delta = crossfade(delta, logDelta, shape * -0.9f);// never go to 1.0f, since will stay stuck at 1 when log!
+	}
+	
 	if (target < fadeGain) {
 		fadeGain -= delta;
 		if (fadeGain < target) {
@@ -84,6 +95,7 @@ struct TrackSettingsCpBuffer {
 	// first level of copy paste (copy copy-paste of track settings)
 	float gainAdjust;
 	float fadeRate;
+	float fadeProfile;
 	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	int directOutsMode;
@@ -102,6 +114,7 @@ struct TrackSettingsCpBuffer {
 		// first level
 		gainAdjust = 1.0f;
 		fadeRate = 0.0f;
+		fadeProfile = 0.0f;
 		hpfCutoffFreq = 13.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		directOutsMode = 1;
@@ -256,6 +269,7 @@ struct MixerMaster {
 	bool dcBlock;
 	float voltageLimiter;
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float fadeProfile; // exp when +100, lin when 0, log when -100
 	VuMeterAll vu[2];// use mix[0..1]
 	
 	// no need to save, with reset
@@ -282,6 +296,7 @@ struct MixerMaster {
 		dcBlock = true;
 		voltageLimiter = 10.0f;
 		fadeRate = 0.0f;
+		fadeProfile = 0.0f;
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
@@ -319,7 +334,7 @@ struct MixerMaster {
 			float newTarget = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			if (fadeGain != newTarget) {
 				float delta = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
-				fadeGain = updateFadeGain(fadeGain, newTarget, delta);
+				fadeGain = updateFadeGain(fadeGain, newTarget, delta, fadeProfile);
 			}
 			
 			if (fadeGain != 0.0f) {
@@ -374,6 +389,9 @@ struct MixerMaster {
 		// fadeRate
 		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
 		
+		// fadeProfile
+		json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
+		
 		// vuColorTheme
 		json_object_set_new(rootJ, "vuColorTheme", json_integer(vu[0].vuColorTheme));
 	}
@@ -394,6 +412,11 @@ struct MixerMaster {
 		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
+		
+		// fadeProfile
+		json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
+		if (fadeProfileJ)
+			fadeProfile = json_number_value(fadeProfileJ);
 		
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, "vuColorTheme");
@@ -470,6 +493,7 @@ struct MixerGroup {
 	
 	// need to save, with reset
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
 	VuMeterAll vu[2];// use post[]
 
@@ -510,6 +534,7 @@ struct MixerGroup {
 	
 	void onReset() {
 		fadeRate = 0.0f;
+		fadeProfile = 0.0f;
 		directOutsMode = 1;// post should be default
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
@@ -534,7 +559,7 @@ struct MixerGroup {
 			float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			if (fadeGain != newTarget) {
 				float delta = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
-				fadeGain = updateFadeGain(fadeGain, newTarget, delta);
+				fadeGain = updateFadeGain(fadeGain, newTarget, delta, fadeProfile);
 			}
 			
 			if (fadeGain != 0.0f) {
@@ -601,6 +626,9 @@ struct MixerGroup {
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
 		
+		// fadeProfile
+		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
+		
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 		
@@ -614,6 +642,11 @@ struct MixerGroup {
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
 		
+		// fadeProfile
+		json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
+		if (fadeProfileJ)
+			fadeProfile = json_number_value(fadeProfileJ);
+
 		// directOutsMode
 		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
 		if (directOutsModeJ)
@@ -694,6 +727,7 @@ struct MixerTrack {
 	// need to save, with reset
 	float gainAdjust;// this is a gain here (not dB)
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float fadeProfile; // exp when +100, lin when 0, log when -100
 	private:
 	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
@@ -754,6 +788,7 @@ struct MixerTrack {
 	void onReset() {
 		gainAdjust = 1.0f;
 		fadeRate = 0.0f;
+		fadeProfile = 0.0f;
 		group = 0;// no need to use setter since it is reset in GlobalInfo::onReset()
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
@@ -774,6 +809,7 @@ struct MixerTrack {
 	void write(TrackSettingsCpBuffer *dest) {
 		dest->gainAdjust = gainAdjust;
 		dest->fadeRate = fadeRate;
+		dest->fadeProfile = fadeProfile;
 		dest->hpfCutoffFreq = hpfCutoffFreq;
 		dest->lpfCutoffFreq = lpfCutoffFreq;	
 		dest->directOutsMode = directOutsMode;
@@ -782,6 +818,7 @@ struct MixerTrack {
 	void read(TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
 		fadeRate = src->fadeRate;
+		fadeProfile = src->fadeProfile;
 		setHPFCutoffFreq(src->hpfCutoffFreq);
 		setLPFCutoffFreq(src->lpfCutoffFreq);	
 		directOutsMode = src->directOutsMode;
@@ -890,7 +927,7 @@ struct MixerTrack {
 				float newTarget = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 				if (fadeGain != newTarget) {
 					float delta = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
-					fadeGain = updateFadeGain(fadeGain, newTarget, delta);
+					fadeGain = updateFadeGain(fadeGain, newTarget, delta, fadeProfile);
 				}
 				
 				if (fadeGain != 0.0f) {
@@ -987,6 +1024,9 @@ struct MixerTrack {
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
 
+		// fadeProfile
+		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
+		
 		// group
 		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
 
@@ -1014,6 +1054,11 @@ struct MixerTrack {
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
 		
+		// fadeProfile
+		json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
+		if (fadeProfileJ)
+			fadeProfile = json_number_value(fadeProfileJ);
+
 		// group
 		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
 		if (groupJ)

@@ -397,6 +397,10 @@ struct MasterDisplay : OpaqueWidget {
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcMaster->fadeProfile));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
+			
 			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
 			dcItem->srcMaster = srcMaster;
 			menu->addChild(dcItem);
@@ -511,6 +515,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcTrack->fadeProfile));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
+			
 			if (srcTrack->gInfo->directOutsMode >= 2) {
 				DirectOutsTrackItem<MixerTrack> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerTrack>>("Direct outs", RIGHT_ARROW);
 				dirTrkItem->srcTrkGrp = srcTrack;
@@ -577,6 +585,10 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
+			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
 			
 			if (srcGroup->gInfo->directOutsMode >= 2) {
 				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);

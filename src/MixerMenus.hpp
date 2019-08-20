@@ -369,6 +369,59 @@ struct FadeRateSlider : ui::Slider {
 
 
 
+// Fade-profile menu item
+
+struct FadeProfileQuantity : Quantity {
+	float *srcFadeProfile = NULL;
+	  
+	FadeProfileQuantity(float *_srcFadeProfile) {
+		srcFadeProfile = _srcFadeProfile;
+	}
+	void setValue(float value) override {
+		*srcFadeProfile = math::clamp(value, getMinValue(), getMaxValue());
+	}
+	float getValue() override {
+		return *srcFadeProfile;
+	}
+	float getMinValue() override {return -1.0f;}
+	float getMaxValue() override {return 1.0f;}
+	float getDefaultValue() override {return 0.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valProf = getDisplayValue();
+		if (valProf >= 0.005f) {
+			return string::f("Exp %i", (int)std::round(valProf * 100.0f));
+		}
+		else if (valProf <= -0.005f) {
+			return string::f("Log %i", (int)std::round(valProf * -100.0f));
+		}
+		else {
+			return "Linear";
+		}
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Fade";}
+	std::string getUnit() override {
+		float valProf = getDisplayValue();
+		if (valProf >= 0.005f || valProf <= -0.005f) {
+			return "%";
+		}
+		else {
+			return "";
+		}
+	}};
+
+struct FadeProfileSlider : ui::Slider {
+	FadeProfileSlider(float *_srcProfileRate) {
+		quantity = new FadeProfileQuantity(_srcProfileRate);
+	}
+	~FadeProfileSlider() {
+		delete quantity;
+	}
+};
+
+
+
 // Direct outs pre/post menu item
 
 template <typename TrackOrGroup>
