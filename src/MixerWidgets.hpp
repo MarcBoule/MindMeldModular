@@ -705,12 +705,13 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 // Special solo button with mutex feature (ctrl-click)
 
 struct DynSoloButtonMutex : DynSoloButton {
-	Param *soloParams;// 19 params in here must be cleared when mutex solo performed (ctrl-click)
+	Param *soloParams;// 19 (or 15) params in here must be cleared when mutex solo performed on a group (track)
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS && 
 						((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
-			for (int i = 0; i < 16 + 4; i++) {
+			int end = 16 + ((paramQuantity->paramId - TRACK_SOLO_PARAMS < 16) ? 0 : 4);
+			for (int i = 0; i < end; i++) {
 				if (paramQuantity->paramId != TRACK_SOLO_PARAMS + i) {
 					soloParams[i].setValue(0.0f);
 				}
