@@ -139,7 +139,7 @@ struct VuColorItem : MenuItem {
 		col0Item->srcColor = srcColor;
 		menu->addChild(col0Item);
 
-		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Teal", CHECKMARK(*srcColor == 1));
+		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Aqua", CHECKMARK(*srcColor == 1));
 		col1Item->srcColor = srcColor;
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
@@ -149,7 +149,7 @@ struct VuColorItem : MenuItem {
 		col2Item->setVal = 2;
 		menu->addChild(col2Item);
 
-		VuColorItemSubItem *col3Item = createMenuItem<VuColorItemSubItem>("Mid blue", CHECKMARK(*srcColor == 3));
+		VuColorItemSubItem *col3Item = createMenuItem<VuColorItemSubItem>("Blue", CHECKMARK(*srcColor == 3));
 		col3Item->srcColor = srcColor;
 		col3Item->setVal = 3;
 		menu->addChild(col3Item);
@@ -626,8 +626,8 @@ struct DimGainQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valGain = getDisplayValue();
-		valGain =  std::round(valGain * 100.0f);
-		return string::f("%g", math::normalizeZero(valGain / 100.0f));
+		valGain =  std::round(valGain);
+		return string::f("%g", math::normalizeZero(valGain));
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "Dim gain";}

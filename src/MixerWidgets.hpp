@@ -19,18 +19,18 @@
 
 // Colors
 static const int numThemes = 5;
-static const NVGcolor VU_GREEN_TOP[numThemes][2] =  
+static const NVGcolor VU_THEMES_TOP[numThemes][2] =  
 									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(68, 164, 122), 	nvgRGB(102, 245, 182)}, // teal: peak (darker), rms (lighter)
 										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // light blue: peak (darker), rms (lighter)
-										{nvgRGB(68, 125, 164), 	nvgRGB(102, 180, 245)}, // mid blue: peak (darker), rms (lighter)
+										{nvgRGB(68, 125, 164), 	nvgRGB(102, 180, 245)}, // blue: peak (darker), rms (lighter)
 										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_GREEN_BOT[numThemes][2] =  
+static const NVGcolor VU_THEMES_BOT[numThemes][2] =  
 									   {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(68, 164, 156), 	nvgRGB(102, 245, 232)}, // teal: peak (darker), rms (lighter)
 										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // light blue: peak (darker), rms (lighter)
-										{nvgRGB(68,  92, 164), 	nvgRGB(102, 130, 245)}, // mid blue: peak (darker), rms (lighter)
-										{nvgRGB(50,  70, 130), 	nvgRGB(97, 107, 235)}};// purple: peak (darker), rms (lighter)
+										{nvgRGB(68,  92, 164), 	nvgRGB(102, 130, 245)}, // blue: peak (darker), rms (lighter)
+										{nvgRGB(85,  70, 130), 	nvgRGB(135, 107, 235)}};// purple: peak (darker), rms (lighter)
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
@@ -140,7 +140,7 @@ struct VuMeterTrack : VuMeterBase {//
 			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 			vuHeight *= barY;
 
-			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[colorTheme][colorIndex], VU_GREEN_BOT[colorTheme][colorIndex]);
+			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_THEMES_TOP[colorTheme][colorIndex], VU_THEMES_BOT[colorTheme][colorIndex]);
 			if (vuHeight > redThreshold) {
 				// Yellow-Red gradient
 				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
@@ -184,7 +184,7 @@ struct VuMeterTrack : VuMeterBase {//
 			}
 			else {
 				// Green
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_GREEN_TOP[colorTheme][1], VU_GREEN_BOT[colorTheme][1]);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_THEMES_TOP[colorTheme][1], VU_THEMES_BOT[colorTheme][1]);
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, peakHoldThick);
 				nvgFillPaint(args.vg, gradGreen);
@@ -235,7 +235,7 @@ struct VuMeterMaster : VuMeterBase {
 				nvgFill(args.vg);
 			}
 			else {
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[colorTheme][colorIndex], VU_GREEN_BOT[colorTheme][colorIndex]);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_THEMES_TOP[colorTheme][colorIndex], VU_THEMES_BOT[colorTheme][colorIndex]);
 				if (vuHeight > yellowThreshold) {
 					// Yellow-Orange gradient
 					NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[colorIndex], VU_YELLOW[colorIndex]);
@@ -286,7 +286,7 @@ struct VuMeterMaster : VuMeterBase {
 			}
 			else {
 				// Green
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_GREEN_TOP[colorTheme][1], VU_GREEN_BOT[colorTheme][1]);
+				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_THEMES_TOP[colorTheme][1], VU_THEMES_BOT[colorTheme][1]);
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
 				//nvgFillColor(args.vg, VU_GREEN[1]);
