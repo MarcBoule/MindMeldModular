@@ -113,10 +113,10 @@ struct DirectOutsItem : MenuItem {
 	}
 };
 
-struct NightModeItem : MenuItem {
+struct CloakedModeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {
-		gInfo->nightMode = !gInfo->nightMode;
+		gInfo->cloakedMode = !gInfo->cloakedMode;
 	}
 };
 
@@ -599,6 +599,47 @@ struct VoltLimitItem : MenuItem {
 		menu->addChild(lim1Item);
 
 		return menu;
+	}
+};
+
+
+// dim gain menu item
+
+struct DimGainQuantity : Quantity {
+	MixerMaster *srcMaster = NULL;
+	float gainInDB = 0.0f;
+	  
+	DimGainQuantity(MixerMaster *_srcMaster) {
+		srcMaster = _srcMaster;
+	}
+	void setValue(float value) override {
+		gainInDB = math::clamp(value, getMinValue(), getMaxValue());
+		srcMaster->dimGain = std::pow(10.0f, gainInDB / 20.0f);
+	}
+	float getValue() override {
+		gainInDB = 20.0f * std::log10(srcMaster->dimGain);
+		return gainInDB;
+	}
+	float getMinValue() override {return -30.0f;}
+	float getMaxValue() override {return 0.0f;}
+	float getDefaultValue() override {return -20.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valGain = getDisplayValue();
+		valGain =  std::round(valGain * 100.0f);
+		return string::f("%g", math::normalizeZero(valGain / 100.0f));
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Dim gain";}
+	std::string getUnit() override {return " dB";}
+};
+
+struct DimGainSlider : ui::Slider {
+	DimGainSlider(MixerMaster *srcMaster) {
+		quantity = new DimGainQuantity(srcMaster);
+	}
+	~DimGainSlider() {
+		delete quantity;
 	}
 };
 

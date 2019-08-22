@@ -344,7 +344,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		settingsVLabel->text = "Settings (visual)";
 		menu->addChild(settingsVLabel);
 		
-		NightModeItem *nightItem = createMenuItem<NightModeItem>("Cloaked mode", CHECKMARK(module->gInfo.nightMode));
+		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.cloakedMode));
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
 		

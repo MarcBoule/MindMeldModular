@@ -401,6 +401,10 @@ struct MasterDisplay : OpaqueWidget {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
+			DimGainSlider *dimSliderItem = new DimGainSlider(srcMaster);
+			dimSliderItem->box.size.x = 200.0f;
+			menu->addChild(dimSliderItem);
+			
 			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
 			dcItem->srcMaster = srcMaster;
 			menu->addChild(dcItem);

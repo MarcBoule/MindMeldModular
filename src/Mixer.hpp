@@ -148,7 +148,7 @@ struct GlobalInfo {
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
-	bool nightMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
+	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 
@@ -170,7 +170,7 @@ struct GlobalInfo {
 		panLawMono = 1;
 		panLawStereo = 0;
 		directOutsMode = 1;// post should be default
-		nightMode = false;
+		cloakedMode = false;
 		vuColor = 0;
 		for (int i = 0; i < 4; i++) {
 			groupUsage[i] = 0;
@@ -193,8 +193,8 @@ struct GlobalInfo {
 		// directOutsMode
 		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
 		
-		// nightMode
-		json_object_set_new(rootJ, "nightMode", json_boolean(nightMode));
+		// cloakedMode
+		json_object_set_new(rootJ, "cloakedMode", json_boolean(cloakedMode));
 
 		// vuColor
 		json_object_set_new(rootJ, "vuColor", json_integer(vuColor));
@@ -218,10 +218,10 @@ struct GlobalInfo {
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
 		
-		// nightMode
-		json_t *nightModeJ = json_object_get(rootJ, "nightMode");
-		if (nightModeJ)
-			nightMode = json_is_true(nightModeJ);
+		// cloakedMode
+		json_t *cloakedModeJ = json_object_get(rootJ, "cloakedMode");
+		if (cloakedModeJ)
+			cloakedMode = json_is_true(cloakedModeJ);
 
 		// vuColor
 		json_t *vuColorJ = json_object_get(rootJ, "vuColor");
@@ -271,6 +271,7 @@ struct MixerMaster {
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	VuMeterAll vu[2];// use mix[0..1]
+	float dimGain;
 	
 	// no need to save, with reset
 	private:
@@ -298,6 +299,7 @@ struct MixerMaster {
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
+		dimGain = 0.1f;// 0.1 = -20 dB
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -344,7 +346,7 @@ struct MixerMaster {
 				}
 				slowGain = std::pow(slowGain, masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= 0.1f;// -20 dB dim
+					slowGain *= dimGain;
 				}
 			}
 		}
@@ -394,6 +396,9 @@ struct MixerMaster {
 		
 		// vuColorTheme
 		json_object_set_new(rootJ, "vuColorTheme", json_integer(vu[0].vuColorTheme));
+		
+		// dimGain
+		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
 	}
 
 	
@@ -413,15 +418,15 @@ struct MixerMaster {
 		if (fadeRateJ)
 			fadeRate = json_number_value(fadeRateJ);
 		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-		
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, "vuColorTheme");
 		if (vuColorThemeJ)
 			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
+		
+		// dimGain
+		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
+		if (dimGainJ)
+			dimGain = json_number_value(dimGainJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -453,16 +458,9 @@ struct MixerMaster {
 			mix[1] = sigs[1] + sigs[3];
 		}
 		
-		// VUs
-		if (!gInfo->nightMode) {
-			vu[0].process(gInfo->sampleTime, mix[0]);
-			vu[1].process(gInfo->sampleTime, mix[1]);
-		}
-		else {
-			vu[0].reset();
-			vu[1].reset();
-		}
-		
+		// VUs (no cloaked mode here)
+		vu[0].process(gInfo->sampleTime, mix[0]);
+		vu[1].process(gInfo->sampleTime, mix[1]);		
 		
 		// DC blocker (post VU)
 		if (dcBlock) {
@@ -696,7 +694,7 @@ struct MixerGroup {
 		}
 		
 		// VUs
-		if (!gInfo->nightMode) {
+		if (!gInfo->cloakedMode) {
 			vu[0].process(gInfo->sampleTime, post[0]);
 			vu[1].process(gInfo->sampleTime, post[1]);
 		}
@@ -1144,7 +1142,7 @@ struct MixerTrack {
 		}
 		
 		// VUs
-		if (!gInfo->nightMode) {
+		if (!gInfo->cloakedMode) {
 			vu[0].process(gInfo->sampleTime, post[0]);
 			vu[1].process(gInfo->sampleTime, post[1]);
 		}
