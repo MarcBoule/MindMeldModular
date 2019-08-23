@@ -170,6 +170,12 @@ struct VuColorItem : MenuItem {
 	}
 };
 
+struct SymetricalFadeItem : MenuItem {
+	GlobalInfo *gInfo;
+	void onAction(const event::Action &e) override {
+		gInfo->symetricalFade = !gInfo->symetricalFade;
+	}
+};
 
 
 // Track context menu
@@ -232,7 +238,7 @@ struct HPFCutoffQuantity : Quantity {
 		return srcTrack->getHPFCutoffFreq();
 	}
 	float getMinValue() override {return 13.0f;}
-	float getMaxValue() override {return 350.0f;}
+	float getMaxValue() override {return 1000.0f;}
 	float getDefaultValue() override {return 13.0f;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
@@ -281,7 +287,7 @@ struct LPFCutoffQuantity : Quantity {
 	float getValue() override {
 		return srcTrack->getLPFCutoffFreq();
 	}
-	float getMinValue() override {return 3000.0f;}
+	float getMinValue() override {return 1000.0f;}
 	float getMaxValue() override {return 21000.0f;}
 	float getDefaultValue() override {return 20010.0f;}
 	float getDisplayValue() override {return getValue();}

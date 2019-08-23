@@ -338,6 +338,10 @@ struct MixMasterJrWidget : ModuleWidget {
 		panLawStereoItem->gInfo = &(module->gInfo);
 		menu->addChild(panLawStereoItem);
 		
+		SymetricalFadeItem *symItem = createMenuItem<SymetricalFadeItem>("Symetrical fade", CHECKMARK(module->gInfo.symetricalFade));
+		symItem->gInfo = &(module->gInfo);
+		menu->addChild(symItem);
+		
 		menu->addChild(new MenuLabel());// empty line
 		
 		MenuLabel *settingsVLabel = new MenuLabel();

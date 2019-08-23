@@ -63,8 +63,13 @@ enum LightIds {
 
 // Utility
 
-inline float updateFadeGain(float *fadeGainX, float targetX, float timeStepX, float shape) {
+inline float updateFadeGain(float *fadeGainX, float targetX, float timeStepX, float shape, bool symetricalFade) {
 	static const float expCoeff = 4.0f;
+	
+	if (!symetricalFade && (targetX < *fadeGainX)) {
+		shape *= -1.0f;
+	}
+		
 	float fadeGainY = *fadeGainX;// linear
 	if (shape > 0.0f) {	
 		float expY = (std::exp(expCoeff * *fadeGainX) - 1.0f)/(std::exp(expCoeff) - 1.0f);
@@ -156,6 +161,7 @@ struct GlobalInfo {
 	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
+	bool symetricalFade;
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -180,6 +186,7 @@ struct GlobalInfo {
 		for (int i = 0; i < 4; i++) {
 			groupUsage[i] = 0;
 		}
+		symetricalFade = false;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -205,6 +212,9 @@ struct GlobalInfo {
 		json_object_set_new(rootJ, "vuColor", json_integer(vuColor));
 		
 		// groupUsage does not need to be saved here, it is computed indirectly in MixerTrack::dataFromJson();
+		
+		// symetricalFade
+		json_object_set_new(rootJ, "symetricalFade", json_boolean(symetricalFade));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -234,6 +244,11 @@ struct GlobalInfo {
 			vuColor = json_integer_value(vuColorJ);
 		
 		// groupUsage does not need to be loaded here, it is computed indirectly in MixerTrack::dataFromJson();
+		
+		// symetricalFade
+		json_t *symetricalFadeJ = json_object_get(rootJ, "symetricalFade");
+		if (symetricalFadeJ)
+			symetricalFade = json_is_true(symetricalFadeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -343,7 +358,7 @@ struct MixerMaster {
 			float newTargetX = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			if (fadeGainX != newTargetX) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
-				fadeGain = updateFadeGain(&fadeGainX, newTargetX, deltaX, fadeProfile);
+				fadeGain = updateFadeGain(&fadeGainX, newTargetX, deltaX, fadeProfile, gInfo->symetricalFade);
 			}
 			
 			if (fadeGain != 0.0f) {
@@ -572,7 +587,7 @@ struct MixerGroup {
 			float newTargetX = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			if (fadeGainX != newTargetX) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
-				fadeGain = updateFadeGain(&fadeGainX, newTargetX, deltaX, fadeProfile);
+				fadeGain = updateFadeGain(&fadeGainX, newTargetX, deltaX, fadeProfile, gInfo->symetricalFade);
 			}
 			
 			if (fadeGain != 0.0f) {
@@ -947,7 +962,7 @@ struct MixerTrack {
 				float newTargetX = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 				if (fadeGainX != newTargetX) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
-					fadeGain = updateFadeGain(&fadeGainX, newTargetX, deltaX, fadeProfile);
+					fadeGain = updateFadeGain(&fadeGainX, newTargetX, deltaX, fadeProfile, gInfo->symetricalFade);
 				}
 				
 				if (fadeGain != 0.0f) {
