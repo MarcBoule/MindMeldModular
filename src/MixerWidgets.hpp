@@ -529,9 +529,16 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 				menu->addChild(dirTrkItem);
 			}
 
+			if (srcTrack->gInfo->panLawStereo >= 2) {
+				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
+				panLawStereoItem->panLawStereoSrc = &(srcTrack->panLawStereo);
+				panLawStereoItem->isGlobal = false;
+				menu->addChild(panLawStereoItem);
+			}
+
 			if (srcTrack->gInfo->vuColor >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(tracks[trackNumSrc].vu[0].vuColorTheme);
+				vuColItem->srcColor = &(srcTrack->vu[0].vuColorTheme);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -598,6 +605,13 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
 				dirTrkItem->srcTrkGrp = srcGroup;
 				menu->addChild(dirTrkItem);
+			}
+
+			if (srcGroup->gInfo->panLawStereo >= 2) {
+				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
+				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
+				panLawStereoItem->isGlobal = false;
+				menu->addChild(panLawStereoItem);
 			}
 
 			if (srcGroup->gInfo->vuColor >= numThemes) {	

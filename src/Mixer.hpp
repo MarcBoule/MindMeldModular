@@ -107,6 +107,7 @@ struct TrackSettingsCpBuffer {
 	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	int directOutsMode;
+	int panLawStereo;
 	int vuColorTheme;
 
 	// second level of copy paste (for track re-ordering)
@@ -127,6 +128,7 @@ struct TrackSettingsCpBuffer {
 		hpfCutoffFreq = 13.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		directOutsMode = 1;
+		panLawStereo = 0;
 		
 		// second level
 		group = 0;
@@ -156,7 +158,7 @@ struct GlobalInfo {
 	
 	// need to save, with reset
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
-	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power)
+	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
@@ -520,7 +522,8 @@ struct MixerGroup {
 	// need to save, with reset
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
-	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
+	int directOutsMode;// when per track
+	int panLawStereo;// when per track
 	VuMeterAll vu[2];// use post[]
 
 	// no need to save, with reset
@@ -563,6 +566,7 @@ struct MixerGroup {
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		directOutsMode = 1;// post should be default
+		panLawStereo = 0;
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
@@ -631,7 +635,8 @@ struct MixerGroup {
 				pan = clamp(pan, 0.0f, 1.0f);
 				
 				// implicitly stereo for groups
-				if (gInfo->panLawStereo == 0) {
+				bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
+				if (stereoBalance) {
 					// Stereo balance (+3dB), same as mono equal power
 					gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
 					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
@@ -661,6 +666,9 @@ struct MixerGroup {
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 		
+		// panLawStereo
+		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
+
 		// vuColorTheme
 		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu[0].vuColorTheme));
 	}
@@ -680,6 +688,11 @@ struct MixerGroup {
 		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// panLawStereo
+		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
+		if (panLawStereoJ)
+			panLawStereo = json_integer_value(panLawStereoJ);
 		
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, (ids + "vuColorTheme").c_str());
@@ -762,7 +775,8 @@ struct MixerTrack {
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
-	int directOutsMode;// 0 is pre-fader, 1 is post-fader; (when per-track choice)
+	int directOutsMode;// when per track
+	int panLawStereo;// when per track
 	VuMeterAll vu[2];// use post[]
 
 	// no need to save, with reset
@@ -823,6 +837,7 @@ struct MixerTrack {
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		directOutsMode = 1;// post should be default
+		panLawStereo = 0;
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
@@ -844,6 +859,7 @@ struct MixerTrack {
 		dest->hpfCutoffFreq = hpfCutoffFreq;
 		dest->lpfCutoffFreq = lpfCutoffFreq;	
 		dest->directOutsMode = directOutsMode;
+		dest->panLawStereo = panLawStereo;
 		dest->vuColorTheme = vu[0].vuColorTheme;
 	}
 	void read(TrackSettingsCpBuffer *src) {
@@ -853,6 +869,7 @@ struct MixerTrack {
 		setHPFCutoffFreq(src->hpfCutoffFreq);
 		setLPFCutoffFreq(src->lpfCutoffFreq);	
 		directOutsMode = src->directOutsMode;
+		panLawStereo = src->panLawStereo;
 		vu[0].vuColorTheme = src->vuColorTheme;
 	}
 	
@@ -1034,7 +1051,8 @@ struct MixerTrack {
 					}
 				}
 				else {// stereo
-					if (gInfo->panLawStereo == 0) {
+					bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
+					if (stereoBalance) {
 						// Stereo balance (+3dB), same as mono equal power
 						gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
 						gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
@@ -1075,6 +1093,9 @@ struct MixerTrack {
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 		
+		// panLawStereo
+		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
+
 		// vuColorTheme
 		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu[0].vuColorTheme));
 	}
@@ -1114,6 +1135,11 @@ struct MixerTrack {
 		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// panLawStereo
+		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
+		if (panLawStereoJ)
+			panLawStereo = json_integer_value(panLawStereoJ);
 		
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, (ids + "vuColorTheme").c_str());

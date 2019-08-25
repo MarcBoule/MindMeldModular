@@ -335,7 +335,8 @@ struct MixMasterJrWidget : ModuleWidget {
 		menu->addChild(panLawMonoItem);
 		
 		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-		panLawStereoItem->gInfo = &(module->gInfo);
+		panLawStereoItem->panLawStereoSrc = &(module->gInfo.panLawStereo);
+		panLawStereoItem->isGlobal = true;
 		menu->addChild(panLawStereoItem);
 		
 		SymetricalFadeItem *symItem = createMenuItem<SymetricalFadeItem>("Symetrical fade", CHECKMARK(module->gInfo.symetricalFade));

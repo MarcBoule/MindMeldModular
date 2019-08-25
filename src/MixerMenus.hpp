@@ -54,28 +54,36 @@ struct PanLawMonoItem : MenuItem {
 
 
 struct PanLawStereoItem : MenuItem {
-	GlobalInfo *gInfo;
+	int *panLawStereoSrc;
+	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
 
 	struct PanLawStereoSubItem : MenuItem {
-		GlobalInfo *gInfo;
+		int *panLawStereoSrc;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
-			gInfo->panLawStereo = setVal;
+			*panLawStereoSrc = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		PanLawStereoSubItem *law0Item = createMenuItem<PanLawStereoSubItem>("Stereo balance (default)", CHECKMARK(gInfo->panLawStereo == 0));
-		law0Item->gInfo = gInfo;
+		PanLawStereoSubItem *law0Item = createMenuItem<PanLawStereoSubItem>("Stereo balance (default)", CHECKMARK(*panLawStereoSrc == 0));
+		law0Item->panLawStereoSrc = panLawStereoSrc;
 		menu->addChild(law0Item);
 
-		PanLawStereoSubItem *law1Item = createMenuItem<PanLawStereoSubItem>("True panning", CHECKMARK(gInfo->panLawStereo == 1));
-		law1Item->gInfo = gInfo;
+		PanLawStereoSubItem *law1Item = createMenuItem<PanLawStereoSubItem>("True panning", CHECKMARK(*panLawStereoSrc == 1));
+		law1Item->panLawStereoSrc = panLawStereoSrc;
 		law1Item->setVal = 1;
 		menu->addChild(law1Item);
 
+		if (isGlobal) {
+			PanLawStereoSubItem *law2Item = createMenuItem<PanLawStereoSubItem>("Per track", CHECKMARK(*panLawStereoSrc == 2));
+			law2Item->panLawStereoSrc = panLawStereoSrc;
+			law2Item->setVal = 2;
+			menu->addChild(law2Item);
+		}
+			
 		return menu;
 	}
 };
@@ -104,7 +112,7 @@ struct DirectOutsItem : MenuItem {
 		pre1Item->setVal = 1;
 		menu->addChild(pre1Item);
 
-		DirectOutsSubItem *pre2Item = createMenuItem<DirectOutsSubItem>("Set per-track/group", CHECKMARK(gInfo->directOutsMode == 2));
+		DirectOutsSubItem *pre2Item = createMenuItem<DirectOutsSubItem>("Set per-track", CHECKMARK(gInfo->directOutsMode == 2));
 		pre2Item->gInfo = gInfo;
 		pre2Item->setVal = 2;
 		menu->addChild(pre2Item);
@@ -160,7 +168,7 @@ struct VuColorItem : MenuItem {
 		menu->addChild(col4Item);
 	
 		if (isGlobal) {
-			VuColorItemSubItem *colIItem = createMenuItem<VuColorItemSubItem>("Set individually", CHECKMARK(*srcColor == 5));
+			VuColorItemSubItem *colIItem = createMenuItem<VuColorItemSubItem>("Set per track", CHECKMARK(*srcColor == 5));
 			colIItem->srcColor = srcColor;
 			colIItem->setVal = 5;
 			menu->addChild(colIItem);
