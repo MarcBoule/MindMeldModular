@@ -66,35 +66,34 @@ enum LightIds {
 inline float updateFadeGain(float *fadeGainX, float targetX, float timeStepX, float shape, bool symetricalFade) {
 	static const float expCoeff = 4.0f;
 	
-	if (!symetricalFade && (targetX < *fadeGainX)) {
-		shape *= -1.0f;
-	}
-		
-	float fadeGainY = *fadeGainX;// linear
-	if (shape > 0.0f) {	
-		float expY = (std::exp(expCoeff * *fadeGainX) - 1.0f)/(std::exp(expCoeff) - 1.0f);
-		fadeGainY = crossfade(fadeGainY, expY, shape);
-	}
-	else if (shape < 0.0f) {
-		float logY = std::log(*fadeGainX * (std::exp(expCoeff) - 1.0f) + 1.0f) / expCoeff;
-		fadeGainY = crossfade(fadeGainY, logY, -1.0f * shape);		
-	}
-	
 	if (targetX < *fadeGainX) {
 		*fadeGainX -= timeStepX;
 		if (*fadeGainX < targetX) {
 			*fadeGainX = targetX;
-			fadeGainY = 0.0f;
 		}
 	}
-	if (targetX > *fadeGainX) {
+	else if (targetX > *fadeGainX) {
 		*fadeGainX += timeStepX;
 		if (*fadeGainX > targetX) {
 			*fadeGainX = targetX;
-			fadeGainY = 1.0f;
 		}
 	}
-
+	
+	float fadeGainY = *fadeGainX;// linear
+	if (*fadeGainX != targetX) {
+		if (!symetricalFade && (targetX < *fadeGainX)) {
+			shape *= -1.0f;
+		}
+			
+		if (shape > 0.0f) {	
+			float expY = (std::exp(expCoeff * *fadeGainX) - 1.0f)/(std::exp(expCoeff) - 1.0f);
+			fadeGainY = crossfade(fadeGainY, expY, shape);
+		}
+		else if (shape < 0.0f) {
+			float logY = std::log(*fadeGainX * (std::exp(expCoeff) - 1.0f) + 1.0f) / expCoeff;
+			fadeGainY = crossfade(fadeGainY, logY, -1.0f * shape);		
+		}
+	}
 	return fadeGainY;
 }
 
