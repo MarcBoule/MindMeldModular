@@ -328,7 +328,7 @@ struct MixerMaster {
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	VuMeterAll vu[2];// use mix[0..1]
-	float dimGain;
+	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	
 	// no need to save, with reset
 	private:
@@ -338,6 +338,7 @@ struct MixerMaster {
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
+	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
@@ -368,6 +369,7 @@ struct MixerMaster {
 		vu[1].reset();
 		fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		updateDimGainIntegerDB();
 	}
 	
 	
@@ -376,6 +378,11 @@ struct MixerMaster {
 		dcCutoffFreq *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		dcBlocker[0].setCutoff(dcCutoffFreq);
 		dcBlocker[1].setCutoff(dcCutoffFreq);
+	}
+	
+	void updateDimGainIntegerDB() {
+		float integerDB = std::round(20.0f * std::log10(dimGain));
+		dimGainIntegerDB = std::pow(10.0f, integerDB / 20.0f);
 	}
 	
 	
@@ -405,7 +412,7 @@ struct MixerMaster {
 				}
 				slowGain = std::pow(slowGain, masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= dimGain;
+					slowGain *= dimGainIntegerDB;
 				}
 			}
 		}
@@ -415,7 +422,7 @@ struct MixerMaster {
 			if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {// if not muted
 				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
 				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= dimGain;
+					slowGain *= dimGainIntegerDB;
 				}
 			}
 		}		

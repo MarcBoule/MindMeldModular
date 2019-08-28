@@ -193,18 +193,16 @@ struct SymmetricalFadeItem : MenuItem {
 
 struct GainAdjustQuantity : Quantity {
 	MixerTrack *srcTrack = NULL;
-	float gainInDB = 0.0f;
 	  
 	GainAdjustQuantity(MixerTrack *_srcTrack) {
 		srcTrack = _srcTrack;
 	}
 	void setValue(float value) override {
-		gainInDB = math::clamp(value, getMinValue(), getMaxValue());
+		float gainInDB = math::clamp(value, getMinValue(), getMaxValue());
 		srcTrack->gainAdjust = std::pow(10.0f, gainInDB / 20.0f);
 	}
 	float getValue() override {
-		gainInDB = 20.0f * std::log10(srcTrack->gainAdjust);
-		return gainInDB;
+		return 20.0f * std::log10(srcTrack->gainAdjust);
 	}
 	float getMinValue() override {return -20.0f;}
 	float getMaxValue() override {return 20.0f;}
@@ -621,21 +619,20 @@ struct VoltLimitItem : MenuItem {
 
 struct DimGainQuantity : Quantity {
 	MixerMaster *srcMaster = NULL;
-	float gainInDB = 0.0f;
 	  
 	DimGainQuantity(MixerMaster *_srcMaster) {
 		srcMaster = _srcMaster;
 	}
 	void setValue(float value) override {
-		gainInDB = math::clamp(value, getMinValue(), getMaxValue());
+		float gainInDB = math::clamp(value, getMinValue(), getMaxValue());
 		srcMaster->dimGain = std::pow(10.0f, gainInDB / 20.0f);
+		srcMaster->updateDimGainIntegerDB();
 	}
 	float getValue() override {
-		gainInDB = 20.0f * std::log10(srcMaster->dimGain);
-		return gainInDB;
+		return 20.0f * std::log10(srcMaster->dimGain);
 	}
 	float getMinValue() override {return -30.0f;}
-	float getMaxValue() override {return 0.0f;}
+	float getMaxValue() override {return -1.0f;}
 	float getDefaultValue() override {return -20.0f;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
