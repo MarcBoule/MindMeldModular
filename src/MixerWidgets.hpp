@@ -724,18 +724,53 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 
 struct DynSoloButtonMutex : DynSoloButton {
 	Param *soloParams;// 19 (or 15) params in here must be cleared when mutex solo performed on a group (track)
+	unsigned long soloMutexUnclickMemory;// for ctrl-unclick. Invalid when soloMutexUnclickMemory == -1
+	int soloMutexUnclickMemorySize;// -1 when nothing stored
 
 	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS && 
-						((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
-			int end = 16 + ((paramQuantity->paramId - TRACK_SOLO_PARAMS < 16) ? 0 : 4);
-			for (int i = 0; i < end; i++) {
-				if (paramQuantity->paramId != TRACK_SOLO_PARAMS + i) {
-					soloParams[i].setValue(0.0f);
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			if (((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
+				int soloParamId = paramQuantity->paramId - TRACK_SOLO_PARAMS;
+				bool isTrack = (soloParamId < 16);
+				int end = 16 + (isTrack ? 0 : 4);
+				bool turningOnSolo = soloParams[soloParamId].getValue() < 0.5f;
+				
+				
+				if (turningOnSolo) {// ctrl turning on solo
+					// memorize solo states in case ctrl-unclick happens
+					soloMutexUnclickMemorySize = end;
+					soloMutexUnclickMemory = 0;
+					for (int i = 0; i < end; i++) {
+						if (soloParams[i].getValue() > 0.5f) {
+							soloMutexUnclickMemory |= (1 << i);
+						}
+					}
+					
+					// clear 19 (or 15) solos 
+					for (int i = 0; i < end; i++) {
+						if (soloParamId != i) {
+							soloParams[i].setValue(0.0f);
+						}
+					}
+					
 				}
+				else {// ctrl turning off solo
+					// reinstate 19 (or 15) solos 
+					if (soloMutexUnclickMemorySize >= 0) {
+						for (int i = 0; i < soloMutexUnclickMemorySize; i++) {
+							if (soloParamId != i) {
+								soloParams[i].setValue((soloMutexUnclickMemory & (1 << i)) != 0 ? 1.0f : 0.0f);
+							}
+						}
+						soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
+					}
+				}
+				e.consume(this);
+				return;
 			}
-			e.consume(this);
-			return;
+			else {
+				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
+			}
 		}
 		DynSoloButton::onButton(e);		
 	}
