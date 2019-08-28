@@ -178,10 +178,10 @@ struct VuColorItem : MenuItem {
 	}
 };
 
-struct SymetricalFadeItem : MenuItem {
+struct SymmetricalFadeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {
-		gInfo->symetricalFade = !gInfo->symetricalFade;
+		gInfo->symmetricalFade = !gInfo->symmetricalFade;
 	}
 };
 

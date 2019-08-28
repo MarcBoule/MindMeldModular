@@ -786,6 +786,9 @@ void DynamicSVGSwitchDual::step() {
 }
 
 struct DynMuteFadeButton : DynamicSVGSwitchDual {
+	float *fadeGainXPrt;
+	GlobalInfo *gInfo;
+	
 	DynMuteFadeButton() {
 		momentary = false;
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));
@@ -794,6 +797,18 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 		addFrameAlt(asset::plugin(pluginInstance, "res/comp/fade-on.svg"));
 		shadow->opacity = 0.0;
 	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			if (!gInfo->symmetricalFade) {
+				*fadeGainXPrt = 0.0f;
+			}
+			e.consume(this);
+			return;
+		}
+		DynamicSVGSwitchDual::onButton(e);		
+	}
+
 };
 
 

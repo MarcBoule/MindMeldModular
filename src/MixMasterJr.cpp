@@ -339,7 +339,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		panLawStereoItem->isGlobal = true;
 		menu->addChild(panLawStereoItem);
 		
-		SymetricalFadeItem *symItem = createMenuItem<SymetricalFadeItem>("Symetrical fade", CHECKMARK(module->gInfo.symetricalFade));
+		SymmetricalFadeItem *symItem = createMenuItem<SymmetricalFadeItem>("Symmetrical fade", CHECKMARK(module->gInfo.symmetricalFade));
 		symItem->gInfo = &(module->gInfo);
 		menu->addChild(symItem);
 		
@@ -415,6 +415,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(11.43 + 12.7 * i, 109 + 0.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = &(module->tracks[i].fadeRate);
+				newMuteFade->fadeGainXPrt = &(module->tracks[i].fadeGainX);
+				newMuteFade->gInfo = &(module->gInfo);
 			}
 			// Solos
 			DynSoloButtonMutex *newSoloButton;
@@ -482,6 +484,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(217.17 + 12.7 * i, 109 + 0.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = &(module->groups[i].fadeRate);
+				newMuteFade->fadeGainXPrt = &(module->groups[i].fadeGainX);
+				newMuteFade->gInfo = &(module->gInfo);
 			}
 			// Solos
 			DynSoloButtonMutex* newSoloButton;
@@ -521,6 +525,8 @@ struct MixMasterJrWidget : ModuleWidget {
 		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(272.3, 109.0 + 0.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
+			newMuteFade->fadeGainXPrt = &(module->master.fadeGainX);
+			newMuteFade->gInfo = &(module->gInfo);
 		}
 		
 		// Master dim
