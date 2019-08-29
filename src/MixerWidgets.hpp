@@ -433,6 +433,7 @@ struct MasterDisplay : OpaqueWidget {
 // --------------------
 
 struct GroupAndTrackDisplayBase : LedDisplayTextField {
+	bool doubleClick = false;
 
 	GroupAndTrackDisplayBase() {
 		box.size = Vec(38, 16);
@@ -484,10 +485,19 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 	}
 	
 	void onDoubleClick(const event::DoubleClick& e) override {
-		cursor = 0;
-		selection = 3;
-		// selectAll();
+		doubleClick = true;
 	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_RELEASE) {
+			if (doubleClick) {
+				doubleClick = false;
+				selectAll();
+			}
+		}
+		LedDisplayTextField::onButton(e);
+	}
+
 }; 
 
 
@@ -573,14 +583,14 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			e.consume(this);
 			return;
 		}
-		LedDisplayTextField::onButton(e);
+		GroupAndTrackDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			tracks[trackNumSrc].trackName[i] = text[i];
 		}
-		LedDisplayTextField::onChange(e);
+		GroupAndTrackDisplayBase::onChange(e);
 	};
 };
 
@@ -630,14 +640,14 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			e.consume(this);
 			return;
 		}
-		LedDisplayTextField::onButton(e);
+		GroupAndTrackDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			srcGroup->groupName[i] = text[i];
 		}
-		LedDisplayTextField::onChange(e);
+		GroupAndTrackDisplayBase::onChange(e);
 	};
 };
 
