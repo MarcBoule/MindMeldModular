@@ -482,6 +482,12 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 			text = text.substr(0, 4);
 		}
 	}
+	
+	void onDoubleClick(const event::DoubleClick& e) override {
+		cursor = 0;
+		selection = 3;
+		// selectAll();
+	}
 }; 
 
 
