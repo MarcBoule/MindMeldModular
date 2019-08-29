@@ -208,6 +208,7 @@ struct GlobalInfo {
 
 	// no need to save, no reset
 	Param *paSolo;// all 20 solos are here
+	int movingFader;
 	
 	
 	void construct(Param *_params) {

@@ -852,15 +852,23 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 struct DynSmallFaderWithLink : DynSmallFader {
 	GlobalInfo *gInfo;
 	Param *faderParams = NULL;
+	float lastValue = -1.0f;
 	
 	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS &&
-				((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT)) {
-			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-			gInfo->linkBitMask ^= (1 << faderIndex);
-			e.consume(this);
-			return;
+		int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
+				gInfo->linkBitMask ^= (1 << faderIndex);
+				e.consume(this);
+				return;
+			}
+			else if ((APP->window->getMods() & RACK_MOD_MASK) == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
+				gInfo->linkBitMask = 0;
+				e.consume(this);
+				return;
+			}
 		}
+		gInfo->movingFader = faderIndex;
 		DynSmallFader::onButton(e);		
 	}
 
@@ -879,7 +887,7 @@ struct DynSmallFaderWithLink : DynSmallFader {
 				nvgLineTo(args.vg, box.size.x, ypos);
 				nvgClosePath(args.vg);
 				nvgStrokeColor(args.vg, SCHEME_RED);
-				nvgStrokeWidth(args.vg, mm2px(0.3f));
+				nvgStrokeWidth(args.vg, mm2px(0.4f));
 				nvgStroke(args.vg);
 			}
 		}
@@ -887,18 +895,28 @@ struct DynSmallFaderWithLink : DynSmallFader {
 		
 	void onChange(const event::Change& e) override {
 		DynSmallFader::onChange(e);
-		if (faderParams) {
+		if (gInfo->linkBitMask && faderParams && lastValue != -1.0f) {
 			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-			if ((gInfo->linkBitMask & (1 << faderIndex)) != 0) {
-				for (int i = 0; i < 20; i++) {
-					bool isLinked = (gInfo->linkBitMask & (1 << i)) != 0;
-					if (isLinked && i != faderIndex) {
-						faderParams[TRACK_FADER_PARAMS + i].setValue(paramQuantity->getValue());
+			if (faderIndex == gInfo->movingFader) {
+				bool thisFaderIsLinked = ((gInfo->linkBitMask & (1 << faderIndex)) != 0);
+				if (thisFaderIsLinked) {
+					float delta = paramQuantity->getValue() - lastValue;
+					for (int i = 0; i < 20; i++) {
+						bool otherFaderIsLinked = ((gInfo->linkBitMask & (1 << i)) != 0);
+						if (otherFaderIsLinked && i != faderIndex) {
+							// direct link method
+							// faderParams[TRACK_FADER_PARAMS + i].setValue(paramQuantity->getValue());
+							
+							// relative link method
+							float newValue = faderParams[TRACK_FADER_PARAMS + i].getValue() + delta;
+							newValue = clamp(newValue, paramQuantity->getMinValue(), paramQuantity->getMaxValue());
+							faderParams[TRACK_FADER_PARAMS + i].setValue(newValue);
+						}
 					}
-					
 				}
 			}
 		}
+		lastValue = paramQuantity->getValue();
 	}
 
 };
