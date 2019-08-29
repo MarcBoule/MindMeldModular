@@ -394,8 +394,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Faders
-			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(15.1 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSmallFaderWithLink *newFader;
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(15.1 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
+				newFader->gInfo = &(module->gInfo);
+				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
@@ -464,8 +467,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(217.17 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			// Faders
-			addParam(createDynamicParamCentered<DynSmallFader>(mm2px(Vec(220.84 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			DynSmallFaderWithLink *newFader;
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(220.84 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 			if (module) {
+				newFader->gInfo = &(module->gInfo);
+				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu[0]);

@@ -219,10 +219,9 @@ struct DynSmallSnapKnob : DynSmallKnob {
 	}
 };
 
-
 struct DynSmallFader : DynamicSVGSlider {
 	DynSmallFader() {
-		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the swg's width as needed (when scaling not 100% between inkscape and Rack)
+		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
 		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel-bg.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel.svg")));
 		maxHandlePos = Vec(0, 0);
@@ -236,7 +235,7 @@ struct DynSmallFader : DynamicSVGSlider {
 
 struct DynBigFader : DynamicSVGSlider {
 	DynBigFader() {
-		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the swg's width as needed (when scaling not 100% between inkscape and Rack)
+		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
 		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-master-bg.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-master.svg")));
 		maxHandlePos = Vec(0, 0);

@@ -78,7 +78,7 @@ struct PanLawStereoItem : MenuItem {
 		menu->addChild(law1Item);
 
 		if (isGlobal) {
-			PanLawStereoSubItem *law2Item = createMenuItem<PanLawStereoSubItem>("Per track", CHECKMARK(*panLawStereoSrc == 2));
+			PanLawStereoSubItem *law2Item = createMenuItem<PanLawStereoSubItem>("Set per track", CHECKMARK(*panLawStereoSrc == 2));
 			law2Item->panLawStereoSrc = panLawStereoSrc;
 			law2Item->setVal = 2;
 			menu->addChild(law2Item);

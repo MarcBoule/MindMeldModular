@@ -16,7 +16,7 @@
 
 enum ParamIds {
 	ENUMS(TRACK_FADER_PARAMS, 16),
-	ENUMS(GROUP_FADER_PARAMS, 4),
+	ENUMS(GROUP_FADER_PARAMS, 4),// must follow TRACK_FADER_PARAMS since code assumes contiguous
 	ENUMS(TRACK_PAN_PARAMS, 16),
 	ENUMS(GROUP_PAN_PARAMS, 4),
 	ENUMS(TRACK_MUTE_PARAMS, 16),
@@ -199,6 +199,7 @@ struct GlobalInfo {
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
+	unsigned long linkBitMask;
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -224,6 +225,7 @@ struct GlobalInfo {
 			groupUsage[i] = 0;
 		}
 		symmetricalFade = false;
+		linkBitMask = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -252,6 +254,9 @@ struct GlobalInfo {
 		
 		// symmetricalFade
 		json_object_set_new(rootJ, "symmetricalFade", json_boolean(symmetricalFade));
+		
+		// linkBitMask
+		json_object_set_new(rootJ, "linkBitMask", json_integer(linkBitMask));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -286,6 +291,11 @@ struct GlobalInfo {
 		json_t *symmetricalFadeJ = json_object_get(rootJ, "symmetricalFade");
 		if (symmetricalFadeJ)
 			symmetricalFade = json_is_true(symmetricalFadeJ);
+
+		// linkBitMask
+		json_t *linkBitMaskJ = json_object_get(rootJ, "linkBitMask");
+		if (linkBitMaskJ)
+			linkBitMask = json_integer_value(linkBitMaskJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -353,7 +363,7 @@ struct MixerMaster {
 	
 	
 	void onReset() {
-		dcBlock = true;
+		dcBlock = false;
 		voltageLimiter = 10.0f;
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;

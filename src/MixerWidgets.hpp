@@ -846,7 +846,63 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 
 };
 
+// linked faders
+// --------------------
 
+struct DynSmallFaderWithLink : DynSmallFader {
+	GlobalInfo *gInfo;
+	Param *faderParams = NULL;
 	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS &&
+				((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT)) {
+			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
+			gInfo->linkBitMask ^= (1 << faderIndex);
+			e.consume(this);
+			return;
+		}
+		DynSmallFader::onButton(e);		
+	}
+
+	void draw(const DrawArgs &args) override {
+		DynSmallFader::draw(args);
+		if (paramQuantity) {
+			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
+			bool isLinked = (gInfo->linkBitMask & (1 << faderIndex)) != 0;
+			if (isLinked) {
+				float v = paramQuantity->getScaledValue();
+				float offsetY = handle->box.size.y / 2.0f;
+				float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
+				
+				nvgBeginPath(args.vg);
+				nvgMoveTo(args.vg, 0, ypos);
+				nvgLineTo(args.vg, box.size.x, ypos);
+				nvgClosePath(args.vg);
+				nvgStrokeColor(args.vg, SCHEME_RED);
+				nvgStrokeWidth(args.vg, mm2px(0.3f));
+				nvgStroke(args.vg);
+			}
+		}
+	}
+		
+	void onChange(const event::Change& e) override {
+		DynSmallFader::onChange(e);
+		if (faderParams) {
+			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
+			if ((gInfo->linkBitMask & (1 << faderIndex)) != 0) {
+				for (int i = 0; i < 20; i++) {
+					bool isLinked = (gInfo->linkBitMask & (1 << i)) != 0;
+					if (isLinked && i != faderIndex) {
+						faderParams[TRACK_FADER_PARAMS + i].setValue(paramQuantity->getValue());
+					}
+					
+				}
+			}
+		}
+	}
+
+};
+
+
 
 #endif
