@@ -562,11 +562,11 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
 			
-			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track settings", "");
+			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track menu settings", "");
 			cpyItem->srcTrack = srcTrack;
 			menu->addChild(cpyItem);
 			
-			TrackSettingsPasteItem *pstItem = createMenuItem<TrackSettingsPasteItem>("Paste track settings", "");
+			TrackSettingsPasteItem *pstItem = createMenuItem<TrackSettingsPasteItem>("Paste track menu settings", "");
 			pstItem->srcTrack = srcTrack;
 			menu->addChild(pstItem);
 			

@@ -660,8 +660,9 @@ struct MixerGroup {
 		else {// we are in mute mode
 			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-			if (paMute->getValue() < 0.5f) {// if not muted
-				slowGain = std::pow(paFade->getValue(), groupFaderScalingExponent);
+			if (fadeGain != 0.0f) {// if not muted
+				slowGain = paFade->getValue();
+				slowGain = std::pow(slowGain, groupFaderScalingExponent);
 			}
 		}
 		if (inVol->isConnected()) {
@@ -1006,56 +1007,41 @@ struct MixerTrack {
 
 	
 	// Contract: 
-	//  * calc stereo if L connected
 	//  * calc fadeGain
+	//  * calc stereo if L connected
 	//  * calc gainMatrix if L connected
 	void updateSlowValues() {
-		if (!inL->isConnected()) {
-			// stereo and gainMatrix will only be read in process(), which aborts also when no input, so no need to calc here
+		// calc fadeGain 
+		if (fadeRate >= minFadeRate) {// if we are in fade mode
+			float target = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			if (fadeGain != target) {
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
+				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
+			}
+		}
+		else {// we are in mute mode
 			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		}
+
+		if (!inL->isConnected()) {
+			// stereo and gainMatrix will only be read in process(), which aborts also when no input, so no need to calc here
 			return;
 		}
 		
 		// calc stereo
 		stereo = inR->isConnected();
 
-		// calc fadeGain 
 		// prepare local slowGain
 		float slowGain = 0.0f;
-		if (!calcSoloEnable()) {
-			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
-			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		}
-		else {
-			if (fadeRate >= minFadeRate) {// if we are in fade mode
-				float target = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
-				if (fadeGain != target) {
-					float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-				}
-				
-				if (fadeGain != 0.0f) {
-					slowGain = paFade->getValue();
-					if (fadeGain != 1.0f) {
-						slowGain *= fadeGain;
-					}
-					slowGain = std::pow(slowGain, trackFaderScalingExponent);
-					if (gainAdjust != 1.0f) {
-						slowGain *= gainAdjust;
-					}
-				
-				}
+		if (calcSoloEnable() && fadeGain != 0.0f) {// check solo and mute/fade	
+			slowGain = paFade->getValue();
+			if (fadeGain != 1.0f) {// when in mute mode this test is trivial since fadeGain can only be 1.0 in here
+				slowGain *= fadeGain;
 			}
-			else {// we are in mute mode
-				fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-				if (paMute->getValue() < 0.5f) {// if not muted
-					slowGain = std::pow(paFade->getValue(), trackFaderScalingExponent);
-					if (gainAdjust != 1.0f) {
-						slowGain *= gainAdjust;
-					}
-				}
+			slowGain = std::pow(slowGain, trackFaderScalingExponent);
+			if (gainAdjust != 1.0f) {
+				slowGain *= gainAdjust;
 			}
 		}
 		if (inVol->isConnected()) {
