@@ -354,6 +354,9 @@ struct MixerMaster {
 	// no need to save, no reset
 	GlobalInfo *gInfo;
 	Param *params;
+	float target = -1.0f;
+
+	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
 	void construct(GlobalInfo *_gInfo, Param *_params) {
@@ -378,7 +381,7 @@ struct MixerMaster {
 		setupDcBlocker();
 		vu[0].reset();
 		vu[1].reset();
-		fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		updateDimGainIntegerDB();
 	}
@@ -408,14 +411,18 @@ struct MixerMaster {
 	void updateSlowValues() {
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
-			float target = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			float newTarget = calcFadeGain();
+			if (!gInfo->symmetricalFade && newTarget != target) {
+				fadeGainX = 0.0f;
+			}
+			target = newTarget;
 			if (fadeGain != target) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
 		else {// we are in mute mode
-			fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
+			fadeGain = calcFadeGain();
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}	
 
@@ -582,6 +589,10 @@ struct MixerGroup {
 	Param *paPan;
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float post[2];// post-group monitor outputs (don't need pre-group variable, since those are already in mix[] and they are not affected here)
+	float target = -1.0f;
+
+	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName) {
 		groupNum = _groupNum;
@@ -611,7 +622,7 @@ struct MixerGroup {
 		gainSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
-		fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 	}
 	
@@ -622,14 +633,18 @@ struct MixerGroup {
 	void updateSlowValues() {
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
-			float target = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			float newTarget = calcFadeGain();
+			if (!gInfo->symmetricalFade && newTarget != target) {
+				fadeGainX = 0.0f;
+			}
+			target = newTarget;
 			if (fadeGain != target) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
 		else {// we are in mute mode
-			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			fadeGain = calcFadeGain();
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
@@ -811,6 +826,7 @@ struct MixerTrack {
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
+	float target = -1.0f;
 
 	// no need to save, no reset
 	int trackNum;
@@ -827,6 +843,8 @@ struct MixerTrack {
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float pre[2];// for pre-track (aka fader+pan) monitor outputs
 	float post[2];// post-track monitor outputs
+
+	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
@@ -867,7 +885,7 @@ struct MixerTrack {
 		gainSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
-		fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 	}
 	
@@ -980,14 +998,18 @@ struct MixerTrack {
 	void updateSlowValues() {
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
-			float target = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			float newTarget = calcFadeGain();
+			if (!gInfo->symmetricalFade && newTarget != target) {
+				fadeGainX = 0.0f;
+			}
+			target = newTarget;
 			if (fadeGain != target) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (number of tracks in this case)
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
 		else {// we are in mute mode
-			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
+			fadeGain = calcFadeGain();
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 

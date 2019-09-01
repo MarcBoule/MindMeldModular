@@ -418,8 +418,6 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(11.43 + 12.7 * i, 109.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = &(module->tracks[i].fadeRate);
-				newMuteFade->fadeGainXPrt = &(module->tracks[i].fadeGainX);
-				newMuteFade->gInfo = &(module->gInfo);
 			}
 			// Solos
 			DynSoloButtonMutex *newSoloButton;
@@ -490,8 +488,6 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(217.17 + 12.7 * i, 109.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = &(module->groups[i].fadeRate);
-				newMuteFade->fadeGainXPrt = &(module->groups[i].fadeGainX);
-				newMuteFade->gInfo = &(module->gInfo);
 			}
 			// Solos
 			DynSoloButtonMutex* newSoloButton;
@@ -531,8 +527,6 @@ struct MixMasterJrWidget : ModuleWidget {
 		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(272.3, 109.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
-			newMuteFade->fadeGainXPrt = &(module->master.fadeGainX);
-			newMuteFade->gInfo = &(module->gInfo);
 		}
 		
 		// Master dim
