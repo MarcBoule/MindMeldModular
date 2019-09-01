@@ -119,11 +119,9 @@ inline float updateFadeGain(float fadeGain, float target, float *fadeGainX, floa
 
 		if (target > fadeGain && target < newFadeGain) {
 			newFadeGain = target;
-			*fadeGainX = 0.0f;// not needed because of onButton() in mute buttons, but keep as safety
 		}
 		else if (target < fadeGain && target > newFadeGain) {
 			newFadeGain = target;
-			*fadeGainX = 0.0f;// not needed because of onButton() in mute buttons, but keep as safety
 		}
 		else {
 			*fadeGainX += timeStepX;

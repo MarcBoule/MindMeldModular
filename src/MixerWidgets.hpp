@@ -665,7 +665,6 @@ struct GroupSelectDisplay : LedDisplayChoice {
 		text = "-";
 	};
 	
-	//void onButton(const event::Button &e) override {};
 	void draw(const DrawArgs &args) override {
 		if (srcTrack) {
 			int grp = srcTrack->getGroup();
@@ -752,7 +751,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 				bool turningOnSolo = soloParams[soloParamId].getValue() < 0.5f;
 				
 				
-				if (turningOnSolo) {// ctrl turning on solo
+				if (turningOnSolo) {// ctrl turning on solo: memorize solo states and clear all other solos 
 					// memorize solo states in case ctrl-unclick happens
 					soloMutexUnclickMemorySize = end;
 					soloMutexUnclickMemory = 0;
@@ -770,7 +769,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 					}
 					
 				}
-				else {// ctrl turning off solo
+				else {// ctrl turning off solo: recall stored solo states
 					// reinstate 19 (or 15) solos 
 					if (soloMutexUnclickMemorySize >= 0) {
 						for (int i = 0; i < soloMutexUnclickMemorySize; i++) {
@@ -786,6 +785,15 @@ struct DynSoloButtonMutex : DynSoloButton {
 			}
 			else {
 				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
+				if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+					for (int i = 0; i < 20; i++) {
+						if (i != paramQuantity->paramId - TRACK_SOLO_PARAMS) {
+							soloParams[i].setValue(0.0f);
+						}
+					}
+					e.consume(this);
+					return;
+				}
 			}
 		}
 		DynSoloButton::onButton(e);		
