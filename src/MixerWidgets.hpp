@@ -707,7 +707,7 @@ struct DynGroupMinusButtonNotify : DynGroupMinusButton {
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupMinusButton::onChange(e);
 		if (paramQuantity) {
-			if (buttonTrigger.process(paramQuantity->getValue())) {
+			if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
 				int group = srcTrack->getGroup();
 				if (group == 0) group = 4;
 				else group--;
@@ -725,7 +725,7 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButton {
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupPlusButton::onChange(e);
 		if (paramQuantity) {
-			if (buttonTrigger.process(paramQuantity->getValue())) {
+			if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
 				int group = srcTrack->getGroup();
 				if (group == 4) group = 0;
 				else group++;	
