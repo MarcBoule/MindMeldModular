@@ -407,55 +407,38 @@ struct MixerMaster {
 	//  * calc gainMatrix
 	void updateSlowValues() {
 		// calc fadeGain 
-		// prepare local slowGain
-		float slowGain = 0.0f;
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float target = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			if (fadeGain != target) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 4.0f;// last value is sub refresh in master
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
-			
-			if (fadeGain != 0.0f) {
-				slowGain = params[MAIN_FADER_PARAM].getValue();
-				if (fadeGain != 1.0f) {
-					slowGain *= fadeGain;
-				}
-				slowGain = std::pow(slowGain, masterFaderScalingExponent);
-				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= dimGainIntegerDB;
-				}
-			}
 		}
 		else {// we are in mute mode
 			fadeGain = clamp(1.0f - params[MAIN_MUTE_PARAM].getValue(), 0.0f, 1.0f);
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-			if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {// if not muted
-				slowGain = std::pow(params[MAIN_FADER_PARAM].getValue(), masterFaderScalingExponent);
-				if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-					slowGain *= dimGainIntegerDB;
-				}
-			}
-		}		
-		// if (inVol->isConnected()) {
-			// gain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-		// }
-		
+		}	
 
 		// calc gainMatrix
-		if (slowGain == 0.0f) {
-			gainMatrix = simd::float_4::zero();
-		}
-		else {
-			// mono
-			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
+		gainMatrix = simd::float_4::zero();
+		float slowGain = 0.0f;
+		if (fadeGain != slowGain) {
+			slowGain = params[MAIN_FADER_PARAM].getValue() * fadeGain;
+			slowGain = std::pow(slowGain, masterFaderScalingExponent);
+			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+				slowGain *= dimGainIntegerDB;
+			}
+			// if (inVol->isConnected()) {
+				// slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
+			// }
+			
+			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {// mono button
 				gainMatrix = simd::float_4(slowGain * 0.5f);
 			}
 			else {
 				gainMatrix[0] = gainMatrix[1] = slowGain;
-				gainMatrix[2] = gainMatrix[3] = 0.0f;
 			}
-		}		
+		}
 	}
 	
 	
@@ -638,52 +621,38 @@ struct MixerGroup {
 	//  * calc gainMatrix
 	void updateSlowValues() {
 		// calc fadeGain 
-		// prepare local slowGain
-		float slowGain = 0.0f;
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float target = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			if (fadeGain != target) {
 				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask) * 16.0f;// last value is sub refresh in master (same as tracks in this case)
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
-			
-			if (fadeGain != 0.0f) {
-				slowGain = paFade->getValue();
-				if (fadeGain != 1.0f) {
-					slowGain *= fadeGain;
-				}
-				if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
-					slowGain = std::pow(slowGain, groupFaderScalingExponent);
-				}
-			}
 		}
 		else {// we are in mute mode
 			fadeGain = clamp(1.0f - paMute->getValue(), 0.0f, 1.0f);
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-			if (fadeGain != 0.0f) {// if not muted
-				slowGain = paFade->getValue();
-				slowGain = std::pow(slowGain, groupFaderScalingExponent);
-			}
-		}
-		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
 		}
 
 		// calc gainMatrix
-		if (slowGain == 0.0f) {
-			gainMatrix = simd::float_4::zero();
-		}
-		else {
+		gainMatrix = simd::float_4::zero();
+		float slowGain = 0.0f;
+		if (fadeGain != slowGain) {
+			slowGain = paFade->getValue() * fadeGain;
+			if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
+				slowGain = std::pow(slowGain, groupFaderScalingExponent);
+			}
+			if (inVol->isConnected()) {
+				slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
+			}
+
 			float pan = paPan->getValue();
 			if (inPan->isConnected()) {
 				pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
 			}
 			
 			if (pan == 0.5f) {
-					gainMatrix[1] = slowGain;
-					gainMatrix[0] = slowGain;
-					gainMatrix[3] = 0.0f;
-					gainMatrix[2] = 0.0f;
+				gainMatrix[1] = slowGain;
+				gainMatrix[0] = slowGain;
 			}
 			else {
 				pan = clamp(pan, 0.0f, 1.0f);
@@ -694,8 +663,6 @@ struct MixerGroup {
 					// Stereo balance (+3dB), same as mono equal power
 					gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
 					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-					gainMatrix[3] = 0.0f;
-					gainMatrix[2] = 0.0f;
 				}
 				else {
 					// True panning, equal power
@@ -1032,34 +999,21 @@ struct MixerTrack {
 		// calc stereo
 		stereo = inR->isConnected();
 
-		// prepare local slowGain
-		float slowGain = 0.0f;
-		if (calcSoloEnable() && fadeGain != 0.0f) {// check solo and mute/fade	
-			slowGain = paFade->getValue();
-			if (fadeGain != 1.0f) {// when in mute mode this test is trivial since fadeGain can only be 1.0 in here
-				slowGain *= fadeGain;
-			}
-			slowGain = std::pow(slowGain, trackFaderScalingExponent);
-			if (gainAdjust != 1.0f) {
-				slowGain *= gainAdjust;
-			}
-		}
-		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() / 10.f, 0.f, 1.f);
-		}
-
 		// calc gainMatrix
-		if (slowGain == 0.0f) {
-			gainMatrix = simd::float_4::zero();
-		}
-		else {
+		gainMatrix = simd::float_4::zero();
+		float slowGain = 0.0f;
+		if (calcSoloEnable() && fadeGain != slowGain) {// check solo and mute/fade	
+			slowGain = paFade->getValue() * fadeGain;
+			slowGain = std::pow(slowGain, trackFaderScalingExponent);
+			slowGain *= gainAdjust;
+			if (inVol->isConnected()) {
+				slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
+			}
+
 			float pan = paPan->getValue();
 			if (inPan->isConnected()) {
 				pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
 			}
-			
-			gainMatrix[3] = 0.0f;
-			gainMatrix[2] = 0.0f;
 			
 			if (pan == 0.5f) {
 				gainMatrix[1] = slowGain;
