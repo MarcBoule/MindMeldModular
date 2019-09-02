@@ -539,6 +539,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
+			LinkFaderItem<MixerTrack> *linkFadItem = createMenuItem<LinkFaderItem<MixerTrack>>("Linked fader", CHECKMARK(srcTrack->isLinked()));
+			linkFadItem->srcTrkGrp = srcTrack;
+			menu->addChild(linkFadItem);
+			
 			if (srcTrack->gInfo->directOutsMode >= 2) {
 				DirectOutsTrackItem<MixerTrack> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerTrack>>("Direct outs", RIGHT_ARROW);
 				dirTrkItem->srcTrkGrp = srcTrack;
@@ -616,6 +620,10 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
+			
+			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Linked fader", CHECKMARK(srcGroup->isLinked()));
+			linkFadItem->srcTrkGrp = srcGroup;
+			menu->addChild(linkFadItem);
 			
 			if (srcGroup->gInfo->directOutsMode >= 2) {
 				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);

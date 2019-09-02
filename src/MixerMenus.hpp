@@ -465,12 +465,23 @@ struct DirectOutsTrackItem : MenuItem {
 };
 
 
+// linked fader menu item
+template <typename TrackOrGroup>
+struct LinkFaderItem : MenuItem {
+	TrackOrGroup *srcTrkGrp = NULL;
+	void onAction(const event::Action &e) override {
+		srcTrkGrp->toggleLinked();
+	}
+};
+
+
+
+
 // copy track settings
 struct TrackSettingsCopyItem : MenuItem {
 	MixerTrack *srcTrack = NULL;
 	void onAction(const event::Action &e) override {
 		srcTrack->write(&(srcTrack->gInfo->trackSettingsCpBuffer));
-		// srcTrack->copyTrackSettings();
 	}
 };
 
@@ -479,7 +490,6 @@ struct TrackSettingsPasteItem : MenuItem {
 	MixerTrack *srcTrack = NULL;
 	void onAction(const event::Action &e) override {
 		srcTrack->read(&(srcTrack->gInfo->trackSettingsCpBuffer));
-		// srcTrack->pasteTrackSettings();
 	}
 };
 

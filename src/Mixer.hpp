@@ -197,7 +197,7 @@ struct GlobalInfo {
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
-	unsigned long linkBitMask;
+	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -207,6 +207,9 @@ struct GlobalInfo {
 	// no need to save, no reset
 	Param *paSolo;// all 20 solos are here
 	int movingFader;
+	
+	inline bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
+	inline void toggleLinked(int index) {linkBitMask ^= (1 << index);}
 	
 	
 	void construct(Param *_params) {
@@ -590,6 +593,8 @@ struct MixerGroup {
 	float target = -1.0f;
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	inline bool isLinked() {return gInfo->isLinked(groupNum);}
+	inline void toggleLinked() {gInfo->toggleLinked(groupNum);}
 
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName) {
@@ -843,6 +848,8 @@ struct MixerTrack {
 	float post[2];// post-track monitor outputs
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	inline bool isLinked() {return gInfo->isLinked(trackNum);}
+	inline void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName) {
