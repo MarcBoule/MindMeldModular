@@ -1023,8 +1023,8 @@ struct MixerTrack {
 	// Contract: 
 	//  * calc fadeGain
 	//  * process linked
-	//  * calc stereo if L connected
-	//  * calc gainMatrix if L connected
+	//  * calc stereo
+	//  * calc gainMatrix
 	void updateSlowValues() {
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
@@ -1046,18 +1046,13 @@ struct MixerTrack {
 		// process linked
 		float slowGain = paFade->getValue();
 		gInfo->processLinked(trackNum, slowGain);
-		
-		if (!inL->isConnected()) {
-			// stereo and gainMatrix will only be read in process(), which aborts also when no input, so no need to calc here
-			return;
-		}
-		
+				
 		// calc stereo
 		stereo = inR->isConnected();
 
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
-		if (fadeGain == 0.0f || !calcSoloEnable()) {// check mute/fade and solo
+		if (fadeGain == 0.0f || !inL->isConnected() || !calcSoloEnable()) {// check mute/fade and solo
 			return;
 		}
 		slowGain *= fadeGain;
@@ -1073,7 +1068,8 @@ struct MixerTrack {
 		}
 		
 		if (pan == 0.5f) {
-			gainMatrix[1] = slowGain;
+			if (!stereo) gainMatrix[3] = slowGain;
+			else gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
 		}
 		else {
@@ -1081,23 +1077,23 @@ struct MixerTrack {
 			if (!stereo) {// mono
 				if (gInfo->panLawMono == 1) {
 					// Equal power panning law (+3dB boost)
-					gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+					gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
 					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
 				}
 				else if (gInfo->panLawMono == 0) {
 					// No compensation (+0dB boost)
-					gainMatrix[1] = std::min(1.0f, pan * 2.0f);
+					gainMatrix[3] = std::min(1.0f, pan * 2.0f);
 					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
 				}
 				else if (gInfo->panLawMono == 2) {
 					// Compromise (+4.5dB boost)
-					gainMatrix[1] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+					gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
 					gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
 				}
 				else {
 					// Linear panning law (+6dB boost)
-					gainMatrix[1] = pan * 2.0f;
-					gainMatrix[0] = 2.0f - gainMatrix[1];
+					gainMatrix[3] = pan * 2.0f;
+					gainMatrix[0] = 2.0f - gainMatrix[3];
 				}
 			}
 			else {// stereo
@@ -1208,6 +1204,7 @@ struct MixerTrack {
 			post[1] = pre[1] = 0.0f;
 			vu[0].reset();
 			vu[1].reset();
+			gainSlewers.reset();
 			return;
 		}
 				
