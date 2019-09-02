@@ -433,18 +433,23 @@ struct MasterDisplay : OpaqueWidget {
 // Track and group displays base struct
 // --------------------
 
+static const NVGcolor DISP_COLORS[3] = {nvgRGB(102, 183, 245), nvgRGB(97, 235, 107), nvgRGB(0xff, 0xd7, 0x14)};// blue, green, yellow
+
 struct GroupAndTrackDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;
+	GlobalInfo *gInfo = NULL;
 
 	GroupAndTrackDisplayBase() {
 		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
 		text = "-00-";
-		color = nvgRGB(40, 180, 240);// Andrew's default color is: nvgRGB(0xff, 0xd7, 0x14);
 	};
 	
 	// don't want background so implement adapted version here
 	void draw(const DrawArgs &args) override {
+		if (gInfo) {
+			color = DISP_COLORS[gInfo->dispColor];
+		}
 		if (cursor > 4) {
 			text.resize(4);
 			cursor = 4;
@@ -673,7 +678,6 @@ struct GroupSelectDisplay : LedDisplayChoice {
 		textOffset = math::Vec(6.6f, 11.7f);
 		bgColor.a = 0.0f;
 		text = "-";
-		color = nvgRGB(40, 180, 240);// Andrew's default color is: nvgRGB(0xff, 0xd7, 0x14);
 	};
 	
 	void draw(const DrawArgs &args) override {
@@ -681,6 +685,7 @@ struct GroupSelectDisplay : LedDisplayChoice {
 			int grp = srcTrack->getGroup();
 			text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
 			text[1] = 0;
+			color = DISP_COLORS[srcTrack->gInfo->dispColor];
 		}
 		LedDisplayChoice::draw(args);
 	};

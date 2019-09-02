@@ -132,7 +132,7 @@ struct VuColorItem : MenuItem {
 	int *srcColor;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
 
-	struct VuColorItemSubItem : MenuItem {
+	struct VuColorSubItem : MenuItem {
 		int *srcColor;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
@@ -143,36 +143,69 @@ struct VuColorItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		VuColorItemSubItem *col0Item = createMenuItem<VuColorItemSubItem>("Green (default)", CHECKMARK(*srcColor == 0));
+		VuColorSubItem *col0Item = createMenuItem<VuColorSubItem>("Green (default)", CHECKMARK(*srcColor == 0));
 		col0Item->srcColor = srcColor;
 		menu->addChild(col0Item);
 
-		VuColorItemSubItem *col1Item = createMenuItem<VuColorItemSubItem>("Aqua", CHECKMARK(*srcColor == 1));
+		VuColorSubItem *col1Item = createMenuItem<VuColorSubItem>("Aqua", CHECKMARK(*srcColor == 1));
 		col1Item->srcColor = srcColor;
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
 
-		VuColorItemSubItem *col2Item = createMenuItem<VuColorItemSubItem>("Light blue", CHECKMARK(*srcColor == 2));
+		VuColorSubItem *col2Item = createMenuItem<VuColorSubItem>("Light blue", CHECKMARK(*srcColor == 2));
 		col2Item->srcColor = srcColor;
 		col2Item->setVal = 2;
 		menu->addChild(col2Item);
 
-		VuColorItemSubItem *col3Item = createMenuItem<VuColorItemSubItem>("Blue", CHECKMARK(*srcColor == 3));
+		VuColorSubItem *col3Item = createMenuItem<VuColorSubItem>("Blue", CHECKMARK(*srcColor == 3));
 		col3Item->srcColor = srcColor;
 		col3Item->setVal = 3;
 		menu->addChild(col3Item);
 
-		VuColorItemSubItem *col4Item = createMenuItem<VuColorItemSubItem>("Purple", CHECKMARK(*srcColor == 4));
+		VuColorSubItem *col4Item = createMenuItem<VuColorSubItem>("Purple", CHECKMARK(*srcColor == 4));
 		col4Item->srcColor = srcColor;
 		col4Item->setVal = 4;
 		menu->addChild(col4Item);
 	
 		if (isGlobal) {
-			VuColorItemSubItem *colIItem = createMenuItem<VuColorItemSubItem>("Set per track", CHECKMARK(*srcColor == 5));
+			VuColorSubItem *colIItem = createMenuItem<VuColorSubItem>("Set per track", CHECKMARK(*srcColor == 5));
 			colIItem->srcColor = srcColor;
 			colIItem->setVal = 5;
 			menu->addChild(colIItem);
 		}
+
+		return menu;
+	}
+};
+
+
+struct DispColorItem : MenuItem {
+	int *srcColor;
+
+	struct DispColorSubItem : MenuItem {
+		int *srcColor;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			*srcColor = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		DispColorSubItem *col0Item = createMenuItem<DispColorSubItem>("Blue (default)", CHECKMARK(*srcColor == 0));
+		col0Item->srcColor = srcColor;
+		menu->addChild(col0Item);
+
+		DispColorSubItem *col1Item = createMenuItem<DispColorSubItem>("Green", CHECKMARK(*srcColor == 1));
+		col1Item->srcColor = srcColor;
+		col1Item->setVal = 1;
+		menu->addChild(col1Item);
+
+		DispColorSubItem *co21Item = createMenuItem<DispColorSubItem>("Yellow", CHECKMARK(*srcColor == 2));
+		co21Item->srcColor = srcColor;
+		co21Item->setVal = 2;
+		menu->addChild(co21Item);
 
 		return menu;
 	}

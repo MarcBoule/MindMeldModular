@@ -196,6 +196,7 @@ struct GlobalInfo {
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
+	int dispColor;// 0 is blue, 1 is green, 2 is yellow
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -246,6 +247,7 @@ struct GlobalInfo {
 		directOutsMode = 1;// post should be default
 		cloakedMode = false;
 		vuColor = 0;
+		dispColor = 0;
 		for (int i = 0; i < 4; i++) {
 			groupUsage[i] = 0;
 		}
@@ -274,6 +276,9 @@ struct GlobalInfo {
 
 		// vuColor
 		json_object_set_new(rootJ, "vuColor", json_integer(vuColor));
+		
+		// dispColor
+		json_object_set_new(rootJ, "dispColor", json_integer(dispColor));
 		
 		// groupUsage does not need to be saved here, it is computed indirectly in MixerTrack::dataFromJson();
 		
@@ -309,6 +314,11 @@ struct GlobalInfo {
 		json_t *vuColorJ = json_object_get(rootJ, "vuColor");
 		if (vuColorJ)
 			vuColor = json_integer_value(vuColorJ);
+		
+		// dispColor
+		json_t *dispColorJ = json_object_get(rootJ, "dispColor");
+		if (dispColorJ)
+			dispColor = json_integer_value(dispColorJ);
 		
 		// groupUsage does not need to be loaded here, it is computed indirectly in MixerTrack::dataFromJson();
 		

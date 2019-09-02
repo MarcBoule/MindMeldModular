@@ -352,10 +352,14 @@ struct MixMasterJrWidget : ModuleWidget {
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
 		
-		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
 		vuColItem->srcColor = &(module->gInfo.vuColor);
 		vuColItem->isGlobal = true;
 		menu->addChild(vuColItem);
+		
+		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+		dispColItem->srcColor = &(module->gInfo.dispColor);
+		menu->addChild(dispColItem);
 	}
 
 	// Module's widget
@@ -372,6 +376,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
+				trackDisplays[i]->gInfo = &(module->gInfo);
 				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->resetTrackLabelRequestPtr = &(module->resetTrackLabelRequest);
@@ -453,6 +458,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
+				groupDisplays[i]->gInfo = &(module->gInfo);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 			}
 			
