@@ -439,6 +439,7 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 		box.size = Vec(38, 16);
 		textOffset = Vec(2.6f, -2.2f);
 		text = "-00-";
+		color = nvgRGB(40, 180, 240);// Andrew's default color is: nvgRGB(0xff, 0xd7, 0x14);
 	};
 	
 	// don't want background so implement adapted version here
@@ -671,6 +672,7 @@ struct GroupSelectDisplay : LedDisplayChoice {
 		textOffset = math::Vec(6.6f, 11.7f);
 		bgColor.a = 0.0f;
 		text = "-";
+		color = nvgRGB(40, 180, 240);// Andrew's default color is: nvgRGB(0xff, 0xd7, 0x14);
 	};
 	
 	void draw(const DrawArgs &args) override {
