@@ -64,6 +64,11 @@ struct VuMeterBase : OpaqueWidget {
 	int colorTheme;
 	
 	
+	VuMeterBase() {
+		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
+		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
+	}
+	
 	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb) {
 		float maxLin = std::pow(faderMaxLinearGain, 1.0f / faderScalingExponent);
 		float yellowLin = std::pow(std::pow(10.0f, yellowMinDb / 20.0f), 1.0f / faderScalingExponent);
@@ -125,8 +130,6 @@ struct VuMeterTrack : VuMeterBase {//
 		barX = mm2px(1.2);
 		barY = mm2px(42.0);
 		box.size = Vec(barX * 2 + gapX, barY);
-		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
-		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
 		zeroDbVoltage = 5.0f;// V
 		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
@@ -206,8 +209,6 @@ struct VuMeterMaster : VuMeterBase {
 		barX = mm2px(1.6);
 		barY = mm2px(60.0);
 		box.size = Vec(barX * 2 + gapX, barY);
-		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
-		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
 		zeroDbVoltage = 10.0f;// V
 		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
@@ -349,8 +350,8 @@ struct FadePointerBase : OpaqueWidget {
 struct FadePointerTrack : FadePointerBase {
 	FadePointerTrack() {
 		box.size = mm2px(math::Vec(2.8, 42));
-		faderMaxLinearGain = MixerTrack::trackFaderMaxLinearGain;
-		faderScalingExponent = MixerTrack::trackFaderScalingExponent;
+		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
+		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
 		minFadeRate = MixerTrack::minFadeRate;
 		prepareMaxFader();
 	}
@@ -358,8 +359,8 @@ struct FadePointerTrack : FadePointerBase {
 struct FadePointerGroup : FadePointerBase {
 	FadePointerGroup() {
 		box.size = mm2px(math::Vec(2.8, 42));
-		faderMaxLinearGain = MixerGroup::groupFaderMaxLinearGain;
-		faderScalingExponent = MixerGroup::groupFaderScalingExponent;
+		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
+		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
 		minFadeRate = MixerGroup::minFadeRate;
 		prepareMaxFader();
 	}
@@ -877,7 +878,7 @@ struct DynSmallFaderWithLink : DynSmallFader {
 		int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
-				gInfo->linkBitMask ^= (1 << faderIndex);
+				gInfo->toggleLinked(faderIndex);
 				e.consume(this);
 				return;
 			}
@@ -887,7 +888,6 @@ struct DynSmallFaderWithLink : DynSmallFader {
 				return;
 			}
 		}
-		gInfo->movingFader = faderIndex;
 		DynSmallFader::onButton(e);		
 	}
 
@@ -895,8 +895,7 @@ struct DynSmallFaderWithLink : DynSmallFader {
 		DynSmallFader::draw(args);
 		if (paramQuantity) {
 			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-			bool isLinked = (gInfo->linkBitMask & (1 << faderIndex)) != 0;
-			if (isLinked) {
+			if (gInfo->isLinked(faderIndex)) {
 				float v = paramQuantity->getScaledValue();
 				float offsetY = handle->box.size.y / 2.0f;
 				float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
@@ -911,33 +910,6 @@ struct DynSmallFaderWithLink : DynSmallFader {
 			}
 		}
 	}
-		
-	void onChange(const event::Change& e) override {
-		DynSmallFader::onChange(e);
-		if (gInfo->linkBitMask && faderParams && lastValue != -1.0f) {
-			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-			if (faderIndex == gInfo->movingFader) {
-				bool thisFaderIsLinked = ((gInfo->linkBitMask & (1 << faderIndex)) != 0);
-				if (thisFaderIsLinked) {
-					float delta = paramQuantity->getValue() - lastValue;
-					for (int i = 0; i < 20; i++) {
-						bool otherFaderIsLinked = ((gInfo->linkBitMask & (1 << i)) != 0);
-						if (otherFaderIsLinked && i != faderIndex) {
-							// direct link method
-							// faderParams[TRACK_FADER_PARAMS + i].setValue(paramQuantity->getValue());
-							
-							// relative link method
-							float newValue = faderParams[TRACK_FADER_PARAMS + i].getValue() + delta;
-							newValue = clamp(newValue, paramQuantity->getMinValue(), paramQuantity->getMaxValue());
-							faderParams[TRACK_FADER_PARAMS + i].setValue(newValue);
-						}
-					}
-				}
-			}
-		}
-		lastValue = paramQuantity->getValue();
-	}
-
 };
 
 

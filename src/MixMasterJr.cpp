@@ -43,14 +43,14 @@ struct MixMasterJr : Module {
 		
 		char strBuf[32];
 		// Track
-		float maxTFader = std::pow(MixerTrack::trackFaderMaxLinearGain, 1.0f / MixerTrack::trackFaderScalingExponent);
+		float maxTGFader = std::pow(GlobalInfo::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalInfo::trkAndGrpFaderScalingExponent);
 		for (int i = 0; i < 16; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Track #%i pan", i + 1);
 			configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Track #%i level", i + 1);
-			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerTrack::trackFaderScalingExponent);
+			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Track #%i mute", i + 1);
 			configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
@@ -65,14 +65,13 @@ struct MixMasterJr : Module {
 			configParam(GRP_INC_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
 		// Group
-		float maxGFader = std::pow(MixerGroup::groupFaderMaxLinearGain, 1.0f / MixerGroup::groupFaderScalingExponent);
 		for (int i = 0; i < 4; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Group #%i pan", i + 1);
 			configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
-			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxGFader, 1.0f, strBuf, " dB", -10, 20.0f * MixerGroup::groupFaderScalingExponent);
+			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Group #%i mute", i + 1);
 			configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
