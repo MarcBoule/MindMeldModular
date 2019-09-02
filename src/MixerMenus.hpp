@@ -475,8 +475,6 @@ struct LinkFaderItem : MenuItem {
 };
 
 
-
-
 // copy track settings
 struct TrackSettingsCopyItem : MenuItem {
 	MixerTrack *srcTrack = NULL;
