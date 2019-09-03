@@ -395,7 +395,9 @@ struct MixerMaster {
 	// no need to save, with reset
 	private:
 	simd::float_4 gainMatrix;// L, R, RinL, LinR
+	float chainGains[2];// L, R
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;
+	dsp::SlewLimiter chainGainSlewers[2];
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
@@ -416,6 +418,8 @@ struct MixerMaster {
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		chainGainSlewers[0].setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
+		chainGainSlewers[1].setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
@@ -431,6 +435,8 @@ struct MixerMaster {
 	void resetNonJson() {
 		updateSlowValues();
 		gainSlewers.reset();
+		chainGainSlewers[0].reset();
+		chainGainSlewers[1].reset();
 		setupDcBlocker();
 		vu[0].reset();
 		vu[1].reset();
@@ -461,6 +467,7 @@ struct MixerMaster {
 	// Contract: 
 	//  * calc fadeGain
 	//  * calc gainMatrix
+	//  * calc chainGains
 	void updateSlowValues() {
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
@@ -485,13 +492,18 @@ struct MixerMaster {
 		if (fadeGain != slowGain) {
 			slowGain = params[MAIN_FADER_PARAM].getValue() * fadeGain;
 			slowGain = std::pow(slowGain, masterFaderScalingExponent);
+			
+			// Dim
 			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
 				slowGain *= dimGainIntegerDB;
 			}
+			
+			// Vol CV
 			// if (inVol->isConnected()) {
 				// slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
 			// }
 			
+			// Mono
 			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {// mono button
 				gainMatrix = simd::float_4(slowGain * 0.5f);
 			}
@@ -499,6 +511,10 @@ struct MixerMaster {
 				gainMatrix[0] = gainMatrix[1] = slowGain;
 			}
 		}
+		
+		// calc chainGains
+		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
+		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
 	}
 	
 	
@@ -563,6 +579,14 @@ struct MixerMaster {
 	void process(float *mix) {// takes mix[0..1] and redeposits post in same place, since don't need pre
 		// no optimization of mix[0..1] == {0, 0}, since it could be a zero crossing of a mono source!
 		
+		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
+		float gainsC[2] = {chainGains[0], chainGains[1]};
+		for (int i = 0; i < 2; i++) {
+			if (gainsC[i] != chainGainSlewers[i].out) {
+				gainsC[i] = chainGainSlewers[i].process(gInfo->sampleTime, gainsC[i]);
+			}
+		}
+		
 		// Calc master gain with slewer
 		simd::float_4 gains = gainMatrix;
 		if (movemask(gains == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
@@ -576,9 +600,13 @@ struct MixerMaster {
 		}
 		else {
 			// Chain inputs when pre master
-			if (inChain[0].isConnected() && gInfo->chainMode == 0) {
-				mix[0] += inChain[0].getVoltage();
-				mix[1] += inChain[1].getVoltage();
+			if (gInfo->chainMode == 0) {
+				if (gainsC[0] != 0.0f) {
+					mix[0] += inChain[0].getVoltage() * gainsC[0];
+				}
+				if (gainsC[1] != 0.0f) {
+					mix[1] += inChain[1].getVoltage() * gainsC[1];
+				}
 			}
 
 			// Apply gains
@@ -595,9 +623,13 @@ struct MixerMaster {
 		vu[1].process(gInfo->sampleTime, mix[1]);		
 				
 		// Chain inputs when post master
-		if (inChain[0].isConnected() && gInfo->chainMode == 1) {
-			mix[0] += inChain[0].getVoltage();
-			mix[1] += inChain[1].getVoltage();
+		if (gInfo->chainMode == 1) {
+			if (gainsC[0] != 0.0f) {
+				mix[0] += inChain[0].getVoltage() * gainsC[0];
+			}
+			if (gainsC[1] != 0.0f) {
+				mix[1] += inChain[1].getVoltage() * gainsC[1];
+			}
 		}
 		
 		// DC blocker (post VU)
@@ -655,8 +687,8 @@ struct MixerGroup {
 	float target = -1.0f;
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
-	inline bool isLinked() {return gInfo->isLinked(groupNum);}
-	inline void toggleLinked() {gInfo->toggleLinked(groupNum);}
+	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
+	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName) {
