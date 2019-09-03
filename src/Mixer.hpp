@@ -41,6 +41,7 @@ enum InputIds {
 	ENUMS(GROUP_VOL_INPUTS, 4),
 	ENUMS(TRACK_PAN_INPUTS, 16), 
 	ENUMS(GROUP_PAN_INPUTS, 4), 
+	ENUMS(CHAIN_INPUTS, 2),
 	NUM_INPUTS
 };
 
@@ -142,6 +143,7 @@ struct TrackSettingsCpBuffer {
 	int directOutsMode;
 	int panLawStereo;
 	int vuColorTheme;
+	bool linkedFader;
 
 	// second level of copy paste (for track re-ordering)
 	int group;
@@ -162,6 +164,8 @@ struct TrackSettingsCpBuffer {
 		lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		directOutsMode = 1;
 		panLawStereo = 0;
+		vuColorTheme = 0;
+		linkedFader = false;
 		
 		// second level
 		group = 0;
@@ -214,6 +218,9 @@ struct GlobalInfo {
 
 	
 	inline bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
+	inline void clearLinked(int index) {linkBitMask &= ~(1 << index);}
+	inline void setLinked(int index) {linkBitMask |= (1 << index);}
+	inline void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
 	inline void toggleLinked(int index) {linkBitMask ^= (1 << index);}
 	
 	inline void processLinked(int trgOrGrpNum, float slowGain) {
@@ -939,6 +946,7 @@ struct MixerTrack {
 		dest->directOutsMode = directOutsMode;
 		dest->panLawStereo = panLawStereo;
 		dest->vuColorTheme = vu[0].vuColorTheme;
+		dest->linkedFader = gInfo->isLinked(trackNum);
 	}
 	void read(TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
@@ -949,6 +957,7 @@ struct MixerTrack {
 		directOutsMode = src->directOutsMode;
 		panLawStereo = src->panLawStereo;
 		vu[0].vuColorTheme = src->vuColorTheme;
+		gInfo->setLinked(trackNum, src->linkedFader);
 	}
 	
 	// level 2 read and write
