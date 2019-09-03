@@ -198,9 +198,10 @@ struct GlobalInfo {
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
+	int chainMode;// 0 is pre-master, 1 is post-master
 	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
-	int dispColor;// 0 is blue, 1 is green, 2 is yellow
+	int dispColor;// 0 is yellow, 1 is blue, 2 is green
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -252,6 +253,7 @@ struct GlobalInfo {
 		panLawMono = 1;
 		panLawStereo = 0;
 		directOutsMode = 1;// post should be default
+		chainMode = 1;// post should be default
 		cloakedMode = false;
 		vuColor = 0;
 		dispColor = 0;
@@ -277,6 +279,9 @@ struct GlobalInfo {
 
 		// directOutsMode
 		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
+		
+		// chainMode
+		json_object_set_new(rootJ, "chainMode", json_integer(chainMode));
 		
 		// cloakedMode
 		json_object_set_new(rootJ, "cloakedMode", json_boolean(cloakedMode));
@@ -311,6 +316,11 @@ struct GlobalInfo {
 		json_t *directOutsModeJ = json_object_get(rootJ, "directOutsMode");
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// chainMode
+		json_t *chainModeJ = json_object_get(rootJ, "chainMode");
+		if (chainModeJ)
+			chainMode = json_integer_value(chainModeJ);
 		
 		// cloakedMode
 		json_t *cloakedModeJ = json_object_get(rootJ, "cloakedMode");
@@ -395,14 +405,16 @@ struct MixerMaster {
 	// no need to save, no reset
 	GlobalInfo *gInfo;
 	Param *params;
+	Input *inChain;
 	float target = -1.0f;
 
 	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
-	void construct(GlobalInfo *_gInfo, Param *_params) {
+	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
 		gInfo = _gInfo;
 		params = _params;
+		inChain = &_inputs[CHAIN_INPUTS];
 		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
@@ -563,6 +575,12 @@ struct MixerMaster {
 			mix[1] = 0.0f;
 		}
 		else {
+			// Chain inputs when pre master
+			if (inChain[0].isConnected() && gInfo->chainMode == 0) {
+				mix[0] += inChain[0].getVoltage();
+				mix[1] += inChain[1].getVoltage();
+			}
+
 			// Apply gains
 			simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
 			sigs = sigs * gains;
@@ -575,6 +593,12 @@ struct MixerMaster {
 		// VUs (no cloaked mode here)
 		vu[0].process(gInfo->sampleTime, mix[0]);
 		vu[1].process(gInfo->sampleTime, mix[1]);		
+				
+		// Chain inputs when post master
+		if (inChain[0].isConnected() && gInfo->chainMode == 1) {
+			mix[0] += inChain[0].getVoltage();
+			mix[1] += inChain[1].getVoltage();
+		}
 		
 		// DC blocker (post VU)
 		if (dcBlock) {

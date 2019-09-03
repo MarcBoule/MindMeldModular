@@ -97,7 +97,7 @@ struct MixMasterJr : Module {
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]));
 		}
-		master.construct(&gInfo, &params[0]);
+		master.construct(&gInfo, &params[0], &inputs[0]);
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -241,12 +241,6 @@ struct MixMasterJr : Module {
 		// Master
 		master.process(mix);
 		
-		// Chain inputs
-		if (inputs[CHAIN_INPUTS + 0].isConnected()) {
-			mix[0] += inputs[CHAIN_INPUTS + 0].getVoltage();
-			mix[1] += inputs[CHAIN_INPUTS + 1].getVoltage();
-		}
-		
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
@@ -334,6 +328,10 @@ struct MixMasterJrWidget : ModuleWidget {
 		DirectOutsItem *directOutsItem = createMenuItem<DirectOutsItem>("Direct outs", RIGHT_ARROW);
 		directOutsItem->gInfo = &(module->gInfo);
 		menu->addChild(directOutsItem);
+		
+		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
+		chainItem->gInfo = &(module->gInfo);
+		menu->addChild(chainItem);
 		
 		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
 		panLawMonoItem->gInfo = &(module->gInfo);
@@ -516,21 +514,21 @@ struct MixMasterJrWidget : ModuleWidget {
 		
 		// Master label
 		MasterDisplay *mastLabel;
-		addChild(mastLabel = createWidgetCentered<MasterDisplay>(mm2px(Vec(273.8 + 2.54, 128.5 - 97.2 + 0.2))));
+		addChild(mastLabel = createWidgetCentered<MasterDisplay>(mm2px(Vec(274.5, 128.5 - 97.2 + 0.2))));
 		if (module) {
 			mastLabel->srcMaster = &(module->master);
 		}
 		
 		// Master fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(277.65 + 2.54, 70.3)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(279.85, 70.3)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			// VU meter
-			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(272.3 + 2.54, 70.3)));
+			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(274.5, 70.3)));
 			newVU->srcLevels = &(module->master.vu[0]);
 			newVU->colorThemeGlobal = &(module->gInfo.vuColor);
 			addChild(newVU);
 			// Fade pointer
-			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(272.3 + 2.54 - 3.4, 70.3)));
+			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(274.5 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
 			newFP->srcFadeGain = &(module->master.fadeGain);
 			newFP->srcFadeRate = &(module->master.fadeRate);
@@ -539,16 +537,16 @@ struct MixMasterJrWidget : ModuleWidget {
 		
 		// Master mute
 		DynMuteFadeButton* newMuteFade;
-		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(272.3 + 2.54, 109.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(274.5, 109.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
 		}
 		
 		// Master dim
-		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(266.9 + 2.54, 116.1)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(269.1, 116.1)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
 		
 		// Master mono
-		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(277.7 + 2.54, 116.1)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(279.9, 116.1)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {

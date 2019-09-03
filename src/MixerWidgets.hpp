@@ -433,7 +433,7 @@ struct MasterDisplay : OpaqueWidget {
 // Track and group displays base struct
 // --------------------
 
-static const NVGcolor DISP_COLORS[3] = {nvgRGB(102, 183, 245), nvgRGB(97, 235, 107), nvgRGB(0xff, 0xd7, 0x14)};// blue, green, yellow
+static const NVGcolor DISP_COLORS[3] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107)};// yellow, blue, green
 
 struct GroupAndTrackDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;

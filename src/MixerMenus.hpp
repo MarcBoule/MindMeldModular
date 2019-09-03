@@ -121,6 +121,35 @@ struct DirectOutsItem : MenuItem {
 	}
 };
 
+
+
+struct ChainItem : MenuItem {
+	GlobalInfo *gInfo;
+
+	struct ChainSubItem : MenuItem {
+		GlobalInfo *gInfo;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			gInfo->chainMode = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		ChainSubItem *ch0Item = createMenuItem<ChainSubItem>("Pre-master", CHECKMARK(gInfo->chainMode == 0));
+		ch0Item->gInfo = gInfo;
+		menu->addChild(ch0Item);
+
+		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master", CHECKMARK(gInfo->chainMode == 1));
+		ch1Item->gInfo = gInfo;
+		ch1Item->setVal = 1;
+		menu->addChild(ch1Item);
+
+		return menu;
+	}
+};
+
 struct CloakedModeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {
@@ -193,16 +222,16 @@ struct DispColorItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		DispColorSubItem *col0Item = createMenuItem<DispColorSubItem>("Blue (default)", CHECKMARK(*srcColor == 0));
+		DispColorSubItem *col0Item = createMenuItem<DispColorSubItem>("Yellow (default)", CHECKMARK(*srcColor == 0));
 		col0Item->srcColor = srcColor;
 		menu->addChild(col0Item);
 
-		DispColorSubItem *col1Item = createMenuItem<DispColorSubItem>("Green", CHECKMARK(*srcColor == 1));
+		DispColorSubItem *col1Item = createMenuItem<DispColorSubItem>("Blue", CHECKMARK(*srcColor == 1));
 		col1Item->srcColor = srcColor;
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
 
-		DispColorSubItem *co21Item = createMenuItem<DispColorSubItem>("Yellow", CHECKMARK(*srcColor == 2));
+		DispColorSubItem *co21Item = createMenuItem<DispColorSubItem>("Green", CHECKMARK(*srcColor == 2));
 		co21Item->srcColor = srcColor;
 		co21Item->setVal = 2;
 		menu->addChild(co21Item);
