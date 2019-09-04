@@ -36,7 +36,7 @@ struct MixMasterJr : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	int panelThemeWithAuxPresent = 0;
-	std::string busId;
+	// std::string busId;
 
 		
 	MixMasterJr() {
@@ -103,13 +103,12 @@ struct MixMasterJr : Module {
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
 		
-		busId = messages->registerMember();
-		INFO("*** MixMasterJr registered with ID %s ***", busId.c_str());
+		// busId = messages->registerMember();
 	}
   
-	~MixMasterJr() {
-		messages->deregisterMember(busId);
-	}
+	// ~MixMasterJr() {
+		// messages->deregisterMember(busId);
+	// }
 
 	
 	void onReset() override {
@@ -230,13 +229,12 @@ struct MixMasterJr : Module {
 				master.updateSlowValues();
 			}
 			
-			// EQ Expander
-			Message<Payload> *message = messages->receive("1");	
-			if (message != NULL) {
-				//INFO("*** id %s is receiving message from id 1 ***", busId.c_str());
-				params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
-				delete message;
-			}
+			// EQ Expander message bus test
+			// Message<Payload> *message = messages->receive("1");	
+			// if (message != NULL) {
+				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
+				// delete message;
+			// }
 			
 		}// userInputs refresh
 		
