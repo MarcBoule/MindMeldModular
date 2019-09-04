@@ -36,6 +36,7 @@ struct MixMasterJr : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	int panelThemeWithAuxPresent = 0;
+	std::string busId;
 
 		
 	MixMasterJr() {
@@ -101,6 +102,13 @@ struct MixMasterJr : Module {
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
+		
+		busId = messages->registerMember();
+		INFO("*** MixMasterJr registered with ID %s ***", busId.c_str());
+	}
+  
+	~MixMasterJr() {
+		messages->deregisterMember(busId);
 	}
 
 	
@@ -220,6 +228,14 @@ struct MixMasterJr : Module {
 			// Master
 			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
 				master.updateSlowValues();
+			}
+			
+			// EQ Expander
+			Message<Payload> *message = messages->receive("1");	
+			if (message != NULL) {
+				//INFO("*** id %s is receiving message from id 1 ***", busId.c_str());
+				params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
+				delete message;
 			}
 			
 		}// userInputs refresh

@@ -18,6 +18,13 @@
 			"name": "MixMaster-Jr",
 			"description": "16-track stereo mixer with 4 aux effects, groups and EQ",
 			"tags": ["Mixer"]
+		},
+		{
+			"slug": "EQ-Expander",
+			"name": "EQ-Expander",
+			"description": "EQ Expander for MixMaster-Jr",
+			"tags": ["Expander"],
+			"disabled": true
 		}
 	]
 }

@@ -9,12 +9,14 @@
 
 
 Plugin *pluginInstance;
-
+MessageBus<Payload> *messages;
 
 void init(rack::Plugin *p) {
 	pluginInstance = p;
+	messages = new MessageBus<Payload>();
 
 	p->addModel(modelMixMasterJr);
+	p->addModel(modelEqExpander);
 }
 
 

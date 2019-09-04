@@ -12,6 +12,7 @@
 #include "rack.hpp"
 #include "comp/DynamicComponents.hpp"
 #include "comp/GenericComponents.hpp"
+#include "MessageBus.hpp"
 
 using namespace rack;
 
@@ -19,8 +20,16 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
+struct Payload {
+  float values[8];
+};
+
+extern MessageBus<Payload> *messages;
+
+
 // All modules that are part of pluginInstance go here
 extern Model *modelMixMasterJr;
+extern Model *modelEqExpander;
 
 
 
