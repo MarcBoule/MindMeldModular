@@ -231,10 +231,15 @@ struct DispColorItem : MenuItem {
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
 
-		DispColorSubItem *co21Item = createMenuItem<DispColorSubItem>("Green", CHECKMARK(*srcColor == 2));
-		co21Item->srcColor = srcColor;
-		co21Item->setVal = 2;
-		menu->addChild(co21Item);
+		DispColorSubItem *col2Item = createMenuItem<DispColorSubItem>("Green", CHECKMARK(*srcColor == 2));
+		col2Item->srcColor = srcColor;
+		col2Item->setVal = 2;
+		menu->addChild(col2Item);
+
+		DispColorSubItem *col3Item = createMenuItem<DispColorSubItem>("Light-gray", CHECKMARK(*srcColor == 3));
+		col3Item->srcColor = srcColor;
+		col3Item->setVal = 3;
+		menu->addChild(col3Item);
 
 		return menu;
 	}
@@ -537,23 +542,42 @@ struct LinkFaderItem : MenuItem {
 };
 
 
-// copy track settings
-struct TrackSettingsCopyItem : MenuItem {
-	MixerTrack *srcTrack = NULL;
-	void onAction(const event::Action &e) override {
-		srcTrack->write(&(srcTrack->gInfo->trackSettingsCpBuffer));
-	}
+// copy track menu settings to
+struct CopyTrackSettingsItem : MenuItem {
+	MixerTrack *tracks = NULL;
+	int trackNumSrc;	
+
+	struct CopyTrackSettingsSubItem : MenuItem {
+		MixerTrack *tracks = NULL;
+		int trackNumSrc;	
+		int trackNumDest;
+
+		void onAction(const event::Action &e) override {
+			TrackSettingsCpBuffer buffer;
+			tracks[trackNumSrc].write(&buffer);
+			tracks[trackNumDest].read(&buffer);
+		}
+	};
+	
+	
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		for (int trk = 0; trk < 16; trk++) {
+			bool onSource = (trk == trackNumSrc);
+			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
+			reo0Item->tracks = tracks;
+			reo0Item->trackNumSrc = trackNumSrc;
+			reo0Item->trackNumDest = trk;
+			reo0Item->disabled = onSource;
+			menu->addChild(reo0Item);
+		}
+
+		return menu;
+	}		
 };
 
-// paste track settings
-struct TrackSettingsPasteItem : MenuItem {
-	MixerTrack *srcTrack = NULL;
-	void onAction(const event::Action &e) override {
-		srcTrack->read(&(srcTrack->gInfo->trackSettingsCpBuffer));
-	}
-};
-
-// track reordering
+// move track to
 struct TrackReorderItem : MenuItem {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;	

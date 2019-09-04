@@ -433,7 +433,7 @@ struct MasterDisplay : OpaqueWidget {
 // Track and group displays base struct
 // --------------------
 
-static const NVGcolor DISP_COLORS[3] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107)};// yellow, blue, green
+static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
 
 struct GroupAndTrackDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;
@@ -583,13 +583,10 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
 			
-			TrackSettingsCopyItem *cpyItem = createMenuItem<TrackSettingsCopyItem>("Copy track menu settings", "");
-			cpyItem->srcTrack = srcTrack;
-			menu->addChild(cpyItem);
-			
-			TrackSettingsPasteItem *pstItem = createMenuItem<TrackSettingsPasteItem>("Paste track menu settings", "");
-			pstItem->srcTrack = srcTrack;
-			menu->addChild(pstItem);
+			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
+			copyItem->tracks = tracks;
+			copyItem->trackNumSrc = trackNumSrc;
+			menu->addChild(copyItem);
 			
 			e.consume(this);
 			return;

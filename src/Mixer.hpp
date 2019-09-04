@@ -201,7 +201,7 @@ struct GlobalInfo {
 	int chainMode;// 0 is pre-master, 1 is post-master
 	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
-	int dispColor;// 0 is yellow, 1 is blue, 2 is green
+	int dispColor;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -209,7 +209,6 @@ struct GlobalInfo {
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
 	float sampleTime;
-	TrackSettingsCpBuffer trackSettingsCpBuffer;
 
 	// no need to save, no reset
 	Param *paSolo;// all 20 solos are here (track and group)
@@ -267,7 +266,6 @@ struct GlobalInfo {
 	void resetNonJson() {
 		updateSoloBitMask();
 		sampleTime = APP->engine->getSampleTime();
-		trackSettingsCpBuffer.reset();
 	}
 	
 	void dataToJson(json_t *rootJ) {
