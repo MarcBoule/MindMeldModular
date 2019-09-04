@@ -99,6 +99,7 @@ void DynamicSVGKnob::step() {
 	SvgKnob::step();
 }
 
+/*
 void DynamicSVGKnob::draw(const DrawArgs &args) {
 	static const float a0 = 3.0f * M_PI / 2.0f;
 	
@@ -118,6 +119,7 @@ void DynamicSVGKnob::draw(const DrawArgs &args) {
 		}
 	}
 }
+*/
 
 
 

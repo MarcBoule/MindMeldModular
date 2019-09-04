@@ -918,5 +918,33 @@ struct DynSmallFaderWithLink : DynSmallFader {
 };
 
 
+// knob with color theme arc
+// --------------------
+
+struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
+	GlobalInfo *gInfo = NULL;
+	
+	void draw(const DrawArgs &args) override {
+		static const float a0 = 3.0f * M_PI / 2.0f;
+		
+		DynSmallKnobGrey::draw(args);
+		if (paramQuantity && gInfo) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			if (normalizedParam != 0.5f) {
+				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
+				Vec cVec = box.size.div(2.0f);
+				float r = box.size.x / 2.0f + 2.6f;// arc radius
+				int dir = a0 < a1 ? NVG_CW : NVG_CCW;
+				nvgBeginPath(args.vg);
+				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
+				nvgStrokeWidth(args.vg, 1.5f);// arc thickness
+				nvgStrokeColor(args.vg, DISP_COLORS[gInfo->dispColor]);// arc color, same as displays
+				nvgStroke(args.vg);
+			}
+		}
+	}
+};
+
+
 
 #endif

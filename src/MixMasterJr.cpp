@@ -399,7 +399,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Pan inputs
 			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 40.5)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(11.43 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSmallKnobGreyWithPanCol *panKnobTrack;
+			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(11.43 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				panKnobTrack->gInfo = &(module->gInfo);
+			}
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
@@ -471,7 +475,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Pan inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 40.5)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnob>(mm2px(Vec(217.17 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSmallKnobGreyWithPanCol *panKnobGroup;
+			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(217.17 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				panKnobGroup->gInfo = &(module->gInfo);
+			}
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;

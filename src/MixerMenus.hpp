@@ -112,7 +112,7 @@ struct DirectOutsItem : MenuItem {
 		pre1Item->setVal = 1;
 		menu->addChild(pre1Item);
 
-		DirectOutsSubItem *pre2Item = createMenuItem<DirectOutsSubItem>("Set per-track", CHECKMARK(gInfo->directOutsMode == 2));
+		DirectOutsSubItem *pre2Item = createMenuItem<DirectOutsSubItem>("Set per track", CHECKMARK(gInfo->directOutsMode == 2));
 		pre2Item->gInfo = gInfo;
 		pre2Item->setVal = 2;
 		menu->addChild(pre2Item);

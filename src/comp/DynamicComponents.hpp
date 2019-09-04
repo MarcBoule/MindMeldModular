@@ -112,7 +112,7 @@ struct DynamicSVGKnob : SvgKnob {
 	void addFrameAll(std::shared_ptr<Svg> svg);
     void addFrameAlt(std::string filename) {frameAltName = filename;}	
     void step() override;
-	void draw(const DrawArgs &args) override;
+	//void draw(const DrawArgs &args) override;
 };
 
 struct DynamicSVGSlider : SvgSlider {
@@ -204,20 +204,13 @@ struct DynKnob : DynamicSVGKnob {
 		shadow->opacity = 0.0;
 	}
 };
-struct DynSmallKnob : DynKnob {
-	DynSmallKnob() {
+struct DynSmallKnobGrey : DynKnob {
+	DynSmallKnobGrey() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-struct DynSmallKnobNoRandom : DynSmallKnob {
-	void randomize() override {}
-};
-struct DynSmallSnapKnob : DynSmallKnob {
-	DynSmallSnapKnob() {
-		snap = true;
-	}
-};
+
 
 struct DynSmallFader : DynamicSVGSlider {
 	DynSmallFader() {
