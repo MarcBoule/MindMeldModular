@@ -11,7 +11,7 @@
 #include "MixerMenus.hpp"
 
 
-struct MixMasterJr : Module {
+struct MixMaster : Module {
 	// Expander
 	// float rightMessages[2][5] = {};// messages from expander
 
@@ -39,7 +39,7 @@ struct MixMasterJr : Module {
 	// std::string busId;
 
 		
-	MixMasterJr() {
+	MixMaster() {
 		config(NUM_PARAMS_JR, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
 		char strBuf[32];
@@ -106,7 +106,7 @@ struct MixMasterJr : Module {
 		// busId = messages->registerMember();
 	}
   
-	// ~MixMasterJr() {
+	// ~MixMaster() {
 		// messages->deregisterMember(busId);
 	// }
 
@@ -319,7 +319,7 @@ struct MixMasterJr : Module {
 
 
 
-struct MixMasterJrWidget : ModuleWidget {
+struct MixMasterWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[16];
 	GroupDisplay* groupDisplays[4];
 	GroupSelectDisplay* groupSelectDisplays[16];
@@ -330,7 +330,7 @@ struct MixMasterJrWidget : ModuleWidget {
 	// --------------------
 
 	void appendContextMenu(Menu *menu) override {
-		MixMasterJr *module = dynamic_cast<MixMasterJr*>(this->module);
+		MixMaster *module = dynamic_cast<MixMaster*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuLabel());// empty line
@@ -383,11 +383,11 @@ struct MixMasterJrWidget : ModuleWidget {
 	// Module's widget
 	// --------------------
 
-	MixMasterJrWidget(MixMasterJr *module) {
+	MixMasterWidget(MixMaster *module) {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster-jr.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster.svg")));
 		
 		// Tracks
 		for (int i = 0; i < 16; i++) {
@@ -421,7 +421,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(15.1 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(11.43 + 3.67 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newFader->gInfo = &(module->gInfo);
 				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
@@ -497,7 +497,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(220.84 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(217.17 + 3.67 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 			if (module) {
 				newFader->gInfo = &(module->gInfo);
 				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
@@ -572,7 +572,7 @@ struct MixMasterJrWidget : ModuleWidget {
 	}
 	
 	void step() override {
-		MixMasterJr* moduleM = (MixMasterJr*)module;
+		MixMaster* moduleM = (MixMaster*)module;
 		if (moduleM) {
 			// Track labels (pull from module)
 			if (moduleM->resetTrackLabelRequest >= 0) {// pull request from module
@@ -591,4 +591,4 @@ struct MixMasterJrWidget : ModuleWidget {
 	}
 };
 
-Model *modelMixMasterJr = createModel<MixMasterJr, MixMasterJrWidget>("MixMaster-Jr");
+Model *modelMixMaster = createModel<MixMaster, MixMasterWidget>("MixMaster");

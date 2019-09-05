@@ -144,3 +144,12 @@ void DynamicSVGSlider::step() {
     }
 	SvgSlider::step();
 }
+
+void DynamicSVGSlider::setupSlider() {
+	maxHandlePos = Vec(0, 0);
+	minHandlePos = Vec(0, background->box.size.y - 0.01f);// 0.01f is epsilon so handle doesn't disappear at bottom
+	float offsetY = handle->box.size.y / 2.0f;
+	background->box.pos.y = offsetY;
+	box.size.y = background->box.size.y + offsetY * 2.0f;
+	background->visible = false;
+}

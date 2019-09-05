@@ -124,6 +124,7 @@ struct DynamicSVGSlider : SvgSlider {
 	void addFrameAll(std::shared_ptr<Svg> svg);
     void addFrameAlt(std::string filename) {frameAltName = filename;}	
     void step() override;
+	void setupSlider();
 };
 
 
@@ -210,6 +211,30 @@ struct DynSmallKnobGrey : DynKnob {
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
+struct DynSmallKnobRed : DynKnob {
+	DynSmallKnobRed() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-red.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+};
+struct DynSmallKnobOrange : DynKnob {
+	DynSmallKnobOrange() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-orange.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+};
+struct DynSmallKnobBlue : DynKnob {
+	DynSmallKnobBlue() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-blue.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+};
+struct DynSmallKnobPurple : DynKnob {
+	DynSmallKnobPurple() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-purple.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+};
 
 
 struct DynSmallFader : DynamicSVGSlider {
@@ -217,12 +242,16 @@ struct DynSmallFader : DynamicSVGSlider {
 		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
 		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel-bg.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel.svg")));
-		maxHandlePos = Vec(0, 0);
-		minHandlePos = Vec(0, background->box.size.y - 0.01f);// 0.01f is epsilon so handle doesn't disappear at bottom
-		float offsetY = handle->box.size.y / 2.0f;
-		background->box.pos.y = offsetY;
-		box.size.y = background->box.size.y + offsetY * 2.0f;
-		background->visible = false;
+		setupSlider();
+	}
+};
+
+struct DynSmallerFader : DynamicSVGSlider {
+	DynSmallerFader() {
+		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-aux-bg.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel.svg")));
+		setupSlider();
 	}
 };
 
@@ -231,12 +260,7 @@ struct DynBigFader : DynamicSVGSlider {
 		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
 		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-master-bg.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-master.svg")));
-		maxHandlePos = Vec(0, 0);
-		minHandlePos = Vec(0, background->box.size.y - 0.01f);// 0.01f is epsilon so handle doesn't disappear at bottom
-		float offsetY = handle->box.size.y / 2.0f;
-		background->box.pos.y = offsetY;
-		box.size.y = background->box.size.y + offsetY * 2.0f;
-		background->visible = false;
+		setupSlider();
 	}
 };
 

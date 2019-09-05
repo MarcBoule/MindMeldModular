@@ -28,7 +28,8 @@ extern MessageBus<Payload> *messages;
 
 
 // All modules that are part of pluginInstance go here
-extern Model *modelMixMasterJr;
+extern Model *modelMixMaster;
+extern Model *modelAuxExpander;
 extern Model *modelEqExpander;
 
 
