@@ -9,11 +9,11 @@
 
 
 Plugin *pluginInstance;
-MessageBus<Payload> *messages;
+// MessageBus<Payload> *messages;
 
 void init(rack::Plugin *p) {
 	pluginInstance = p;
-	messages = new MessageBus<Payload>();
+	// messages = new MessageBus<Payload>();
 
 	p->addModel(modelMixMaster);
 	p->addModel(modelAuxExpander);

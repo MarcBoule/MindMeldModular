@@ -54,8 +54,8 @@ struct AuxExpander : Module {
 	// none
 
 	// No need to save, no reset
-	RefreshCounter refresh;	
-
+	int motherPresent = 0;// can't be local to process() since widget must know in order to properly draw border
+	
 		
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -100,6 +100,7 @@ struct AuxExpander : Module {
 
 
 	void process(const ProcessArgs &args) override {
+		 motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster) ? 1 : 0;
 	}// process()
 };
 
@@ -112,6 +113,11 @@ struct AuxExpanderWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/auxspander.svg")));
+		removeBorder(panel);
+		DynamicPanelBorder *dynBorder = createDynamicWidget<DynamicPanelBorder>(Vec(0.0, 0.0), module ? &module->motherPresent : NULL);
+		dynBorder->box.size = panel->box.size;
+		addChild(dynBorder);
+		
 
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
@@ -145,10 +151,10 @@ struct AuxExpanderWidget : ModuleWidget {
 		}
 
 		// Global send knobs
-		addParam(createDynamicParamCentered<DynSmallKnobRed>(mm2px(Vec(6.35 + 12.7 * 0, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 0, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobOrange>(mm2px(Vec(6.35 + 12.7 * 1, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 1, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(6.35 + 12.7 * 2, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 2, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobPurple>(mm2px(Vec(6.35 + 12.7 * 3, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 3, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(6.35 + 12.7 * 0, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 0, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(6.35 + 12.7 * 1, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 1, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(6.35 + 12.7 * 2, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 2, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(6.35 + 12.7 * 3, 51.8)), module, AuxExpander::GLOBAL_SEND_PARAMS + 3, module ? &module->panelTheme : NULL));
 
 
 		// Right side (individual tracks)
@@ -157,13 +163,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 4.7, same X as below
 
 			// aux A send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobRed>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
 			// aux B send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobOrange>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
 			// aux C send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
 			// aux D send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
 			// mute for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 55.7)), module, AuxExpander::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			
@@ -172,13 +178,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 65.08, same X as below
 
 			// aux A send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobRed>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 0, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 0, module ? &module->panelTheme : NULL));			
 			// aux B send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobOrange>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 1, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 1, module ? &module->panelTheme : NULL));
 			// aux C send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 2, module ? &module->panelTheme : NULL));
 			// aux D send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 3, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 3, module ? &module->panelTheme : NULL));
 			// mute for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 116.1)), module, AuxExpander::TRACK_MUTE_PARAMS + i + 8, module ? &module->panelTheme : NULL));
 		}
@@ -189,13 +195,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 4.7, same X as below
 
 			// aux A send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobRed>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
 			// aux B send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobOrange>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
 			// aux C send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
 			// aux D send for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
 			// mute for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, AuxExpander::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			
@@ -204,13 +210,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 65.08, same X as below
 
 			// aux A send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobRed>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 0, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 0, module ? &module->panelTheme : NULL));			
 			// aux B send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobOrange>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 1, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 1, module ? &module->panelTheme : NULL));
 			// aux C send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 2, module ? &module->panelTheme : NULL));
 			// aux D send for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynSmallKnobBlue>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 3, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 3, module ? &module->panelTheme : NULL));
 			// mute for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, AuxExpander::GROUP_MUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));
 		}
@@ -228,7 +234,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 74.5)), true, module, AuxExpander::POLY_GRPS_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input extra
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 93.46)), true, module, AuxExpander::POLY_EXTRA_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 96.2)), true, module, AuxExpander::POLY_EXTRA_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 	}
 };

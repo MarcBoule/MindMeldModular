@@ -20,11 +20,11 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
-struct Payload {
-  float values[8];
-};
+// struct Payload {
+  // float values[8];
+// };
 
-extern MessageBus<Payload> *messages;
+// extern MessageBus<Payload> *messages;
 
 
 // All modules that are part of pluginInstance go here
@@ -117,6 +117,21 @@ struct HoldDetect {
 
 
 // General functions
+
+// Remove Rack's standard border in the given widget's children
+inline void removeBorder(Widget* widget) {
+	for (auto it = widget->children.begin(); it != widget->children.end(); ) {
+		PanelBorder *bwChild = dynamic_cast<PanelBorder*>(*it);
+		if (bwChild) {
+			it = widget->children.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+}
+
+
 
 
 

@@ -16,7 +16,7 @@
 		{
 			"slug": "MixMaster",
 			"name": "MixMaster",
-			"description": "16-track stereo mixer with 4 aux effects, groups and EQ",
+			"description": "16-track stereo mixer with 4 group busses",
 			"tags": ["Mixer"]
 		},
 		{

@@ -42,7 +42,7 @@ struct EqExpander : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
-	std::string busId;
+	// std::string busId;
 
 		
 	EqExpander() {
@@ -55,13 +55,13 @@ struct EqExpander : Module {
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
 
-		busId = messages->registerMember();
-		INFO("*** EQ-Expander registered with ID %s ***", busId.c_str());
+		// busId = messages->registerMember();
+		// INFO("*** EQ-Expander registered with ID %s ***", busId.c_str());
 	}
   
-	~EqExpander() {
-		messages->deregisterMember(busId);
-	}
+	// ~EqExpander() {
+		// messages->deregisterMember(busId);
+	// }
 	
 	void onReset() override {
 		resetNonJson(false);
@@ -97,17 +97,17 @@ struct EqExpander : Module {
 
 
 	void process(const ProcessArgs &args) override {
-		float testParamNew = params[TEST_PARAM].getValue();
-		if (testParamOld != testParamNew) {
-			testParamOld = testParamNew;
+		//float testParamNew = params[TEST_PARAM].getValue();
+		// if (testParamOld != testParamNew) {
+			// testParamOld = testParamNew;
 			//INFO("*** id %s is sending message ***", busId.c_str());
-			Payload payload;
-			payload.values[0] = params[TEST_PARAM].getValue();
-			Message<Payload> *message = new Message<Payload>();
-			message->value = payload;
+			// Payload payload;
+			// payload.values[0] = params[TEST_PARAM].getValue();
+			// Message<Payload> *message = new Message<Payload>();
+			// message->value = payload;
 
-			messages->send(busId, message);		
-		}
+			// messages->send(busId, message);		
+		// }
 		
 	}// process()
 };

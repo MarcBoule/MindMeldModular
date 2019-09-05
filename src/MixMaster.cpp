@@ -209,11 +209,13 @@ struct MixMaster : Module {
 
 	void process(const ProcessArgs &args) override {
 		
-		panelThemeWithAuxPresent = -1;//(rightExpander.module && rightExpander.module->model == modelAuxExpander) ? panelTheme : -1;
+		bool auxExpanxerPresent = (rightExpander.module && rightExpander.module->model == modelAuxExpander);
 		
 		//********** Inputs **********
 		
 		if (refresh.processInputs()) {
+			panelThemeWithAuxPresent = (auxExpanxerPresent ? panelTheme : -1);
+			
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
 			// Tracks
@@ -388,6 +390,11 @@ struct MixMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster.svg")));
+		removeBorder(panel);
+		DynamicPanelBorder *dynBorder = createDynamicWidget<DynamicPanelBorder>(Vec(0.0, 0.0), /*module ? &module->motherPresent :*/ NULL);
+		dynBorder->box.size = panel->box.size;
+		addChild(dynBorder);
+		
 		
 		// Tracks
 		for (int i = 0; i < 16; i++) {

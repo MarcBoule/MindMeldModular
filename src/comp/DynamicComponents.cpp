@@ -8,6 +8,27 @@
 #include "DynamicComponents.hpp"
 
 
+// Dynamic PanelBorder
+
+void DynamicPanelBorder::draw(const DrawArgs& args) {
+	if (mode != NULL && *mode == 0) {
+		NVGcolor borderColor = nvgRGBAf(0.5, 0.5, 0.5, 0.5);
+		nvgBeginPath(args.vg);
+		nvgRect(args.vg, 0.5, 0.5, box.size.x - 1.0, box.size.y - 1.0);
+		nvgStrokeColor(args.vg, borderColor);
+		nvgStrokeWidth(args.vg, 1.0);
+		nvgStroke(args.vg);
+	}
+}
+// void DynamicPanelBorder::step() {
+	// if (mode != NULL && *mode != oldMode) {
+        // oldMode = *mode;
+        // fb->dirty = true;
+    // }
+	// TransparentWidget::step();
+// }
+
+
 
 // Dynamic SVGPort
 

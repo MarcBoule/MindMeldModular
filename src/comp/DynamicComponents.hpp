@@ -29,6 +29,14 @@ TWidget* createDynamicWidget(Vec pos, int* mode) {
 	return dynWidget;
 }
 
+struct DynamicPanelBorder : widget::TransparentWidget {
+	int* mode = NULL;// bit 0 is flag to draw left side border, bit 1 is flag to draw right side border; top and bottom borders are always drawn
+    // int oldMode = -1;
+	void draw(const DrawArgs& args) override;
+    // void step() override;
+};
+
+
 
 
 // ******** Dynamic Ports ********
@@ -211,27 +219,27 @@ struct DynSmallKnobGrey : DynKnob {
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-struct DynSmallKnobRed : DynKnob {
-	DynSmallKnobRed() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-red.svg")));
+struct DynSmallKnobAuxA : DynKnob {
+	DynSmallKnobAuxA() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxA.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-struct DynSmallKnobOrange : DynKnob {
-	DynSmallKnobOrange() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-orange.svg")));
+struct DynSmallKnobAuxB : DynKnob {
+	DynSmallKnobAuxB() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxB.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-struct DynSmallKnobBlue : DynKnob {
-	DynSmallKnobBlue() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-blue.svg")));
+struct DynSmallKnobAuxC : DynKnob {
+	DynSmallKnobAuxC() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxC.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-struct DynSmallKnobPurple : DynKnob {
-	DynSmallKnobPurple() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-purple.svg")));
+struct DynSmallKnobAuxD : DynKnob {
+	DynSmallKnobAuxD() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxD.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
