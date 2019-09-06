@@ -119,19 +119,31 @@ struct HoldDetect {
 // General functions
 
 // Remove Rack's standard border in the given widget's children
-inline void removeBorder(Widget* widget) {
+// inline void removeBorder(Widget* widget) {
+	// for (auto it = widget->children.begin(); it != widget->children.end(); ) {
+		// PanelBorder *bwChild = dynamic_cast<PanelBorder*>(*it);
+		// if (bwChild) {
+			// it = widget->children.erase(it);
+		// }
+		// else {
+			// ++it;
+		// }
+	// }
+// }
+
+// Find a PanelBorder instance in the given widget's children
+inline PanelBorder* findBorder(Widget* widget) {
 	for (auto it = widget->children.begin(); it != widget->children.end(); ) {
 		PanelBorder *bwChild = dynamic_cast<PanelBorder*>(*it);
 		if (bwChild) {
-			it = widget->children.erase(it);
+			return bwChild;
 		}
 		else {
 			++it;
 		}
 	}
+	return NULL;
 }
-
-
 
 
 

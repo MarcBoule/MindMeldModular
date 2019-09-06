@@ -54,7 +54,7 @@ struct AuxExpander : Module {
 	// none
 
 	// No need to save, no reset
-	int motherPresent = 0;// can't be local to process() since widget must know in order to properly draw border
+	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	
 		
 	AuxExpander() {
@@ -100,27 +100,23 @@ struct AuxExpander : Module {
 
 
 	void process(const ProcessArgs &args) override {
-		 motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster) ? 1 : 0;
+		 motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster);
 	}// process()
 };
 
 
 
 struct AuxExpanderWidget : ModuleWidget {
+	PanelBorder* panelBorder;
+	bool oldMotherPresent = false;
 
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/auxspander.svg")));
-		removeBorder(panel);
-		PanelBorderNoLeft* border = createWidget<PanelBorderNoLeft>(Vec(0.0, 0.0));
-		border->box.size = panel->box.size;
-		panel->addChild(border);
-		// DynamicPanelBorder *dynBorder = createDynamicWidget<DynamicPanelBorder>(Vec(0.0, 0.0), module ? &module->motherPresent : NULL);
-		// dynBorder->box.size = panel->box.size;
-		// addChild(dynBorder);
-		
+		panelBorder = findBorder(panel);
+
 
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
@@ -240,6 +236,25 @@ struct AuxExpanderWidget : ModuleWidget {
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 96.2)), true, module, AuxExpander::POLY_EXTRA_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 	}
+	
+	void step() override {
+		if (module) {
+			if ( ((AuxExpander*)module)->motherPresent != oldMotherPresent ) {
+				oldMotherPresent = ((AuxExpander*)module)->motherPresent;
+				if (oldMotherPresent) {
+					panelBorder->box.pos.x = -3;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x;
+				}
+				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			}
+		}
+		Widget::step();
+	}
+	
 };
 
 Model *modelAuxExpander = createModel<AuxExpander, AuxExpanderWidget>("AuxExpander");

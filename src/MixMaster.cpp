@@ -36,6 +36,8 @@ struct MixMaster : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	int panelThemeWithAuxPresent = 0;
+	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
+	bool inExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	// std::string busId;
 
 		
@@ -209,12 +211,13 @@ struct MixMaster : Module {
 
 	void process(const ProcessArgs &args) override {
 		
-		bool auxExpanxerPresent = (rightExpander.module && rightExpander.module->model == modelAuxExpander);
+		auxExpanderPresent = (rightExpander.module && rightExpander.module->model == modelAuxExpander);
+		inExpanderPresent = false;//(leftExpander.module && leftExpander.module->model == modelInExpander);
 		
 		//********** Inputs **********
 		
 		if (refresh.processInputs()) {
-			panelThemeWithAuxPresent = (auxExpanxerPresent ? panelTheme : -1);
+			panelThemeWithAuxPresent = (auxExpanderPresent ? panelTheme : -1);
 			
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
@@ -326,6 +329,10 @@ struct MixMasterWidget : ModuleWidget {
 	GroupDisplay* groupDisplays[4];
 	GroupSelectDisplay* groupSelectDisplays[16];
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
+	PanelBorder* panelBorder;
+	bool oldAuxExpanderPresent = false;
+	bool oldInExpanderPresent = false;
+	
 
 
 	// Module's context menu
@@ -390,10 +397,7 @@ struct MixMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster.svg")));
-		removeBorder(panel);
-		DynamicPanelBorder *dynBorder = createDynamicWidget<DynamicPanelBorder>(Vec(0.0, 0.0), /*module ? &module->motherPresent :*/ NULL);
-		dynBorder->box.size = panel->box.size;
-		addChild(dynBorder);
+		panelBorder = findBorder(panel);		
 		
 		
 		// Tracks
@@ -593,7 +597,33 @@ struct MixMasterWidget : ModuleWidget {
 				}
 				moduleM->resetTrackLabelRequest = -1;// all done pulling
 			}
-		}
+			
+			// Borders
+			if ( moduleM->auxExpanderPresent != oldAuxExpanderPresent || moduleM->inExpanderPresent != oldInExpanderPresent  ) {
+				oldAuxExpanderPresent = moduleM->auxExpanderPresent;
+				oldInExpanderPresent = moduleM->inExpanderPresent;
+				
+				// TODO optimize this code!
+				if (oldAuxExpanderPresent && !oldInExpanderPresent) {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else if (!oldAuxExpanderPresent && oldInExpanderPresent) {
+					panelBorder->box.pos.x = -3;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else if (oldAuxExpanderPresent && oldInExpanderPresent) {
+					panelBorder->box.pos.x = -3;
+					panelBorder->box.size.x = box.size.x + 6;
+				}
+				else {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x;
+				}
+				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			}			
+		}			
+		
 		Widget::step();
 	}
 };
