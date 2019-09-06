@@ -114,9 +114,12 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/auxspander.svg")));
 		removeBorder(panel);
-		DynamicPanelBorder *dynBorder = createDynamicWidget<DynamicPanelBorder>(Vec(0.0, 0.0), module ? &module->motherPresent : NULL);
-		dynBorder->box.size = panel->box.size;
-		addChild(dynBorder);
+		PanelBorderNoLeft* border = createWidget<PanelBorderNoLeft>(Vec(0.0, 0.0));
+		border->box.size = panel->box.size;
+		panel->addChild(border);
+		// DynamicPanelBorder *dynBorder = createDynamicWidget<DynamicPanelBorder>(Vec(0.0, 0.0), module ? &module->motherPresent : NULL);
+		// dynBorder->box.size = panel->box.size;
+		// addChild(dynBorder);
 		
 
 		// Left side (globals)
@@ -222,19 +225,19 @@ struct AuxExpanderWidget : ModuleWidget {
 		}
 		
 		// CV inputs A-D
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 14)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 24.85)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 35.7)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 46.55)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 14)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 24.85)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 35.7)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 46.55)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
 		
 		// CV input M
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 57.2)), true, module, AuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 57.2)), true, module, AuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input grp A-D
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 74.5)), true, module, AuxExpander::POLY_GRPS_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 74.5)), true, module, AuxExpander::POLY_GRPS_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input extra
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(204.62, 96.2)), true, module, AuxExpander::POLY_EXTRA_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 96.2)), true, module, AuxExpander::POLY_EXTRA_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 	}
 };

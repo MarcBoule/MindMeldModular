@@ -20,13 +20,15 @@ void DynamicPanelBorder::draw(const DrawArgs& args) {
 		nvgStroke(args.vg);
 	}
 }
-// void DynamicPanelBorder::step() {
-	// if (mode != NULL && *mode != oldMode) {
-        // oldMode = *mode;
-        // fb->dirty = true;
-    // }
-	// TransparentWidget::step();
-// }
+void DynamicPanelBorder::step() {
+	if (mode != NULL && *mode != oldMode) {
+        oldMode = *mode;
+		SvgPanel *panelParent = dynamic_cast<SvgPanel*>(parent);
+		if (panelParent)
+			panelParent->dirty = true;
+    }
+	TransparentWidget::step();
+}
 
 
 
@@ -119,28 +121,6 @@ void DynamicSVGKnob::step() {
     }
 	SvgKnob::step();
 }
-
-/*
-void DynamicSVGKnob::draw(const DrawArgs &args) {
-	static const float a0 = 3.0f * M_PI / 2.0f;
-	
-	SvgKnob::draw(args);
-	if (paramQuantity) {
-		float normalizedParam = paramQuantity->getScaledValue();
-		if (normalizedParam != 0.5f) {
-			float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
-			Vec cVec = box.size.div(2.0f);
-			float r = box.size.x / 2.0f + 2.6f;// arc radius
-			int dir = a0 < a1 ? NVG_CW : NVG_CCW;
-			nvgBeginPath(args.vg);
-			nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-			nvgStrokeWidth(args.vg, 1.5f);// arc thickness
-			nvgStrokeColor(args.vg, nvgRGB(255, 245, 0));// arc color
-			nvgStroke(args.vg);
-		}
-	}
-}
-*/
 
 
 

@@ -31,9 +31,9 @@ TWidget* createDynamicWidget(Vec pos, int* mode) {
 
 struct DynamicPanelBorder : widget::TransparentWidget {
 	int* mode = NULL;// bit 0 is flag to draw left side border, bit 1 is flag to draw right side border; top and bottom borders are always drawn
-    // int oldMode = -1;
+    int oldMode = -1;
 	void draw(const DrawArgs& args) override;
-    // void step() override;
+    void step() override;
 };
 
 
@@ -76,7 +76,16 @@ struct DynPort : DynamicSVGPort {
 	DynPort() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/PJ301M.svg"));
-		addFrameUnused(asset::plugin(pluginInstance, "res/comp/jack-unused.svg"));
+		//addFrameUnused(asset::plugin(pluginInstance, "res/comp/jack-unused.svg"));
+		shadow->blurRadius = 1.0f;
+		shadow->opacity = 0.0f;// Turn off shadows
+	}
+};
+struct DynPortGold : DynamicSVGPort {
+	DynPortGold() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack-poly.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/PJ301M.svg"));
+		addFrameUnused(asset::plugin(pluginInstance, "res/comp/jack-poly-unused.svg"));
 		shadow->blurRadius = 1.0f;
 		shadow->opacity = 0.0f;// Turn off shadows
 	}
