@@ -30,7 +30,7 @@ struct MixMaster : Module {
 	MixerMaster master;
 	
 	// No need to save, with reset
-	int resetTrackLabelRequest;// -1 when nothing to do, 0 to 15 for incremental read in widget
+	int resetTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 
 
 	// No need to save, no reset
@@ -126,7 +126,7 @@ struct MixMaster : Module {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
-		resetTrackLabelRequest = 0;// setting to 0 will trigger 1, 2, 3 etc on each video frame afterwards
+		resetTrackLabelRequest = 1;
 		if (recurseNonJson) {
 			gInfo.resetNonJson();
 			for (int i = 0; i < 16; i++) {
@@ -272,13 +272,43 @@ struct MixMaster : Module {
 				
 
 		//********** Lights **********
-				
+		
+		bool slowExpander = false;		
 		if (refresh.processLights()) {
+			slowExpander = true;
 			for (int i = 0; i < 16; i++) {
 				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= MixerTrack::minHPFCutoffFreq ? 1.0f : 0.0f);
 				lights[TRACK_LPF_LIGHTS + i].setBrightness(tracks[i].getLPFCutoffFreq() <= MixerTrack::maxLPFCutoffFreq ? 1.0f : 0.0f);
 			}
 		}
+		
+		
+		//********** Expanders **********
+		
+		// To Aux-Expander
+		if (auxExpanderPresent) {
+			float *messageToExpander = (float*)(rightExpander.module->leftExpander.producerMessage);
+			
+			// Slow
+			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[20]);
+			if (slowExpander) {
+				*updateSlow = 1;
+				memcpy(&messageToExpander[0], trackLabels, 4 * 20);
+				int32_t tmp = panelTheme;
+				memcpy(&messageToExpander[21], &tmp, 4);
+				tmp = gInfo.dispColor;
+				memcpy(&messageToExpander[22], &tmp, 4);
+			}
+			else {
+				*updateSlow = 0;
+			}
+			
+			// Fast
+			// none for now
+			
+			rightExpander.module->leftExpander.messageFlipRequested = true;
+		}
+
 		
 	}// process()
 	
@@ -586,7 +616,7 @@ struct MixMasterWidget : ModuleWidget {
 		MixMaster* moduleM = (MixMaster*)module;
 		if (moduleM) {
 			// Track labels (pull from module)
-			if (moduleM->resetTrackLabelRequest >= 0) {// pull request from module
+			if (moduleM->resetTrackLabelRequest >= 1) {// pull request from module
 				// track displays
 				for (int trk = 0; trk < 16; trk++) {
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
@@ -595,7 +625,7 @@ struct MixMasterWidget : ModuleWidget {
 				for (int grp = 0; grp < 4; grp++) {
 					groupDisplays[grp]->text = std::string(&(moduleM->trackLabels[(16 + grp) * 4]), 4);
 				}
-				moduleM->resetTrackLabelRequest = -1;// all done pulling
+				moduleM->resetTrackLabelRequest = 0;// all done pulling
 			}
 			
 			// Borders

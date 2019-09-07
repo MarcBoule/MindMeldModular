@@ -430,18 +430,45 @@ struct MasterDisplay : OpaqueWidget {
 
 	
 
-// Track and group displays base struct
+// --------------------
+// Displays 
 // --------------------
 
 static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
+static const Vec DISP_SIZE = Vec(38, 16);
+static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
+
+
+// Non-Editable track and group
+// --------------------
+
+struct TrackAndGroupLabel : LedDisplayChoice {
+	int* dispColor;
+	
+	TrackAndGroupLabel() {
+		box.size = DISP_SIZE;
+		textOffset = DISP_OFFSET;
+		text = "-00-";
+	};
+	
+	void draw(const DrawArgs &args) override {
+		if (dispColor) {
+			color = DISP_COLORS[*dispColor];
+		}	
+		LedDisplayChoice::draw(args);
+	}
+};
+
+// Editable track and group displays base struct
+// --------------------
 
 struct GroupAndTrackDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;
 	GlobalInfo *gInfo = NULL;
 
 	GroupAndTrackDisplayBase() {
-		box.size = Vec(38, 16);
-		textOffset = Vec(2.6f, -2.2f);
+		box.size = DISP_SIZE;
+		textOffset = DISP_OFFSET;
 		text = "-00-";
 	};
 	

@@ -6,6 +6,7 @@
 //***********************************************************************************************
 
 #include "MindMeldModular.hpp"
+//#include "MixerWidgets.hpp"
 
 
 struct AuxExpander : Module {
@@ -39,26 +40,40 @@ struct AuxExpander : Module {
 	};
 
 	// Expander
-	// TODO
+	float leftMessages[2][23] = {};// messages from mother (first index is page)
+	// [0-19]: 20 track/group names, each float has 4 chars
+	// [20]: update slow (track/group labels, panelTheme, dispColor)
+	// [21]: panelTheme
+	// [22]: dispColor
+
 
 	// Constants
 	// none
 
+
 	// Need to save, no reset
 	int panelTheme;
+	
 	
 	// Need to save, with reset
 	// none
 	
+	
 	// No need to save, with reset
-	// none
-
+	
+	
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
+	char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	int dispColor = 0;
+	int resetTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
 	
 		
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
+		
+		leftExpander.producerMessage = leftMessages[0];
+		leftExpander.consumerMessage = leftMessages[1];
 		
 		onReset();
 
@@ -70,7 +85,6 @@ struct AuxExpander : Module {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
-
 	}
 
 
@@ -101,14 +115,57 @@ struct AuxExpander : Module {
 
 	void process(const ProcessArgs &args) override {
 		 motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster);
+		 
+		if (motherPresent) {
+			// To Mother
+			// float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
+			// for (int i = 0; i < 8; i++) {
+				// messagesToMother[i] = inputs[i].getVoltage();
+			// }
+			// leftExpander.module->rightExpander.messageFlipRequested = true;
+			
+			// From Mother
+			float *messagesFromMother = (float*)leftExpander.consumerMessage;
+			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[20]);
+			if (*updateSlow != 0) {
+				memcpy(trackLabels, &messagesFromMother[0], 4 * 20);
+				resetTrackLabelRequest = 1;
+				int32_t tmp;
+				memcpy(&tmp, &messagesFromMother[21], 4);
+				panelTheme = tmp;
+				memcpy(&tmp, &messagesFromMother[22], 4);
+				dispColor = tmp;
+			}
+		}		
+		 
+		 
 	}// process()
 };
 
 
+static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
+
+struct TrackAndGroupLabel : LedDisplayChoice {
+	 int* dispColor;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
+	
+	TrackAndGroupLabel() {
+		box.size = Vec(38, 16);
+		textOffset = Vec(7.5, 12);
+		text = "-00-";
+	};
+	
+	void draw(const DrawArgs &args) override {
+		if (dispColor) {
+			color = DISP_COLORS[*dispColor];
+		}	
+		LedDisplayChoice::draw(args);
+	}
+};
 
 struct AuxExpanderWidget : ModuleWidget {
 	PanelBorder* panelBorder;
 	bool oldMotherPresent = false;
+	TrackAndGroupLabel* trackAndGroupLabels[20];
 
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);
@@ -159,8 +216,10 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Right side (individual tracks)
 		for (int i = 0; i < 8; i++) {
 			// Labels for tracks 1 to 8
-			// Y is 4.7, same X as below
-
+			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 4.7))));
+			if (module) {
+				trackAndGroupLabels[i]->dispColor = &(module->dispColor);
+			}
 			// aux A send for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
 			// aux B send for tracks 1 to 8
@@ -174,7 +233,10 @@ struct AuxExpanderWidget : ModuleWidget {
 			
 			
 			// Labels for tracks 9 to 16
-			// Y is 65.08, same X as below
+			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 65.08))));
+			if (module) {
+				trackAndGroupLabels[i + 8]->dispColor = &(module->dispColor);
+			}
 
 			// aux A send for tracks 9 to 16
 			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, AuxExpander::TRACK_SEND_PARAMS + (i + 8) * 4 + 0, module ? &module->panelTheme : NULL));			
@@ -191,32 +253,38 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Right side (individual groups)
 		for (int i = 0; i < 2; i++) {
 			// Labels for groups 1 to 2
-			// Y is 4.7, same X as below
+			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 4.7))));
+			if (module) {
+				trackAndGroupLabels[i + 16]->dispColor = &(module->dispColor);
+			}
 
-			// aux A send for tracks 1 to 8
+			// aux A send for groups 1 to 2
 			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
-			// aux B send for tracks 1 to 8
+			// aux B send for groups 1 to 2
 			addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
-			// aux C send for tracks 1 to 8
+			// aux C send for groups 1 to 2
 			addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
-			// aux D send for tracks 1 to 8
+			// aux D send for groups 1 to 2
 			addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_SEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
-			// mute for tracks 1 to 8
+			// mute for groups 1 to 2
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, AuxExpander::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			
 			
-			// Labels for tracks 9 to 16
-			// Y is 65.08, same X as below
+			// Labels for groups 3 to 4
+			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 65.08))));
+			if (module) {
+				trackAndGroupLabels[i + 18]->dispColor = &(module->dispColor);
+			}
 
-			// aux A send for tracks 9 to 16
+			// aux A send for groups 3 to 4
 			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 0, module ? &module->panelTheme : NULL));			
-			// aux B send for tracks 9 to 16
+			// aux B send for groups 3 to 4
 			addParam(createDynamicParamCentered<DynSmallKnobAuxB>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 1, module ? &module->panelTheme : NULL));
-			// aux C send for tracks 9 to 16
+			// aux C send for groups 3 to 4
 			addParam(createDynamicParamCentered<DynSmallKnobAuxC>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 2, module ? &module->panelTheme : NULL));
-			// aux D send for tracks 9 to 16
+			// aux D send for groups 3 to 4
 			addParam(createDynamicParamCentered<DynSmallKnobAuxD>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_SEND_PARAMS + (i + 2) * 4 + 3, module ? &module->panelTheme : NULL));
-			// mute for tracks 1 to 8
+			// mute for groups 3 to 4
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, AuxExpander::GROUP_MUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));
 		}
 		
@@ -239,8 +307,20 @@ struct AuxExpanderWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			if ( ((AuxExpander*)module)->motherPresent != oldMotherPresent ) {
-				oldMotherPresent = ((AuxExpander*)module)->motherPresent;
+			AuxExpander* moduleA = (AuxExpander*)module;
+			
+			// Track labels (pull from module)
+			if (moduleA->resetTrackLabelRequest >= 1) {// pull request from module
+				// track and group labels
+				for (int trk = 0; trk < 20; trk++) {
+					trackAndGroupLabels[trk]->text = std::string(&(moduleA->trackLabels[trk * 4]), 4);
+				}
+				moduleA->resetTrackLabelRequest = 0;// all done pulling
+			}
+			
+			// Borders			
+			if ( moduleA->motherPresent != oldMotherPresent ) {
+				oldMotherPresent = moduleA->motherPresent;
 				if (oldMotherPresent) {
 					panelBorder->box.pos.x = -3;
 					panelBorder->box.size.x = box.size.x + 3;
