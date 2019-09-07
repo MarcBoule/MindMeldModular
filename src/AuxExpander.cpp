@@ -146,7 +146,7 @@ struct AuxExpander : Module {
 static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	 int* dispColor;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
+	 int* dispColor = NULL;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
 	
 	TrackAndGroupLabel() {
 		box.size = Vec(38, 16);
