@@ -47,7 +47,7 @@ struct VuMeterBase : OpaqueWidget {
 	
 	// instantiator must setup:
 	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
-	int *colorThemeGlobal;
+	int8_t *colorThemeGlobal;
 	
 	// derived class must setup:
 	float gapX;// in px
@@ -416,7 +416,7 @@ struct MasterDisplay : OpaqueWidget {
 			vLimitItem->srcMaster = srcMaster;
 			menu->addChild(vLimitItem);
 				
-			if (srcMaster->gInfo->vuColor >= numThemes) {	
+			if (srcMaster->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcMaster->vu[0].vuColorTheme);
 				vuColItem->isGlobal = false;
@@ -445,7 +445,7 @@ static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	 int* dispColor = NULL;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
+	 int8_t* dispColor = NULL;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
 	
 	TrackAndGroupLabel() {
 		box.size = DISP_SIZE;
@@ -464,11 +464,12 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 // Editable track and group displays base struct
 // --------------------
 
-struct GroupAndTrackDisplayBase : LedDisplayTextField {
+struct GroupTrackAuxDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;
 	GlobalInfo *gInfo = NULL;
+	ColorAndCloak* colorAndCloak = NULL; // make this separate so that we can use the base for Aux displays
 
-	GroupAndTrackDisplayBase() {
+	GroupTrackAuxDisplayBase() {
 		box.size = DISP_SIZE;
 		textOffset = DISP_OFFSET;
 		text = "-00-";
@@ -476,8 +477,8 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 	
 	// don't want background so implement adapted version here
 	void draw(const DrawArgs &args) override {
-		if (gInfo) {
-			color = DISP_COLORS[gInfo->dispColor];
+		if (colorAndCloak) {
+			color = DISP_COLORS[colorAndCloak->cc4[dispColor]];
 		}
 		if (cursor > 4) {
 			text.resize(4);
@@ -540,7 +541,7 @@ struct GroupAndTrackDisplayBase : LedDisplayTextField {
 // Track display editable label with menu
 // --------------------
 
-struct TrackDisplay : GroupAndTrackDisplayBase {
+struct TrackDisplay : GroupTrackAuxDisplayBase {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;
 	int *resetTrackLabelRequestPtr;
@@ -592,7 +593,7 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (srcTrack->gInfo->vuColor >= numThemes) {	
+			if (srcTrack->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcTrack->vu[0].vuColorTheme);
 				vuColItem->isGlobal = false;
@@ -620,14 +621,14 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 			e.consume(this);
 			return;
 		}
-		GroupAndTrackDisplayBase::onButton(e);
+		GroupTrackAuxDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			tracks[trackNumSrc].trackName[i] = text[i];
 		}
-		GroupAndTrackDisplayBase::onChange(e);
+		GroupTrackAuxDisplayBase::onChange(e);
 	};
 };
 
@@ -635,16 +636,16 @@ struct TrackDisplay : GroupAndTrackDisplayBase {
 // Group display editable label with menu
 // --------------------
 
-struct GroupDisplay : GroupAndTrackDisplayBase {
+struct GroupDisplay : GroupTrackAuxDisplayBase {
 	MixerGroup *srcGroup = NULL;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
-			menu->addChild(trkSetLabel);
+			MenuLabel *grpSetLabel = new MenuLabel();
+			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
+			menu->addChild(grpSetLabel);
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
 			fadeSlider->box.size.x = 200.0f;
@@ -671,7 +672,7 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (srcGroup->gInfo->vuColor >= numThemes) {	
+			if (srcGroup->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcGroup->vu[0].vuColorTheme);
 				vuColItem->isGlobal = false;
@@ -681,15 +682,67 @@ struct GroupDisplay : GroupAndTrackDisplayBase {
 			e.consume(this);
 			return;
 		}
-		GroupAndTrackDisplayBase::onButton(e);
+		GroupTrackAuxDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			srcGroup->groupName[i] = text[i];
 		}
-		GroupAndTrackDisplayBase::onChange(e);
+		GroupTrackAuxDisplayBase::onChange(e);
 	};
+};
+
+
+// Aux display editable label with menu
+// --------------------
+
+struct AuxDisplay : GroupTrackAuxDisplayBase {
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *auxSetLabel = new MenuLabel();
+			auxSetLabel->text = "Aux settings: " + text;
+			menu->addChild(auxSetLabel);
+			
+/*			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
+			
+			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Link fader", CHECKMARK(srcGroup->isLinked()));
+			linkFadItem->srcTrkGrp = srcGroup;
+			menu->addChild(linkFadItem);
+			
+			if (srcGroup->gInfo->directOutsMode >= 2) {
+				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
+				dirTrkItem->srcTrkGrp = srcGroup;
+				menu->addChild(dirTrkItem);
+			}
+
+			if (srcGroup->gInfo->panLawStereo >= 2) {
+				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
+				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
+				panLawStereoItem->isGlobal = false;
+				menu->addChild(panLawStereoItem);
+			}
+
+			if (srcGroup->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
+				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+				vuColItem->srcColor = &(srcGroup->vu[0].vuColorTheme);
+				vuColItem->isGlobal = false;
+				menu->addChild(vuColItem);
+			}
+			*/
+			e.consume(this);
+			return;
+		}
+		GroupTrackAuxDisplayBase::onButton(e);
+	}
 };
 
 
@@ -711,7 +764,7 @@ struct GroupSelectDisplay : LedDisplayChoice {
 			int grp = srcTrack->getGroup();
 			text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
 			text[1] = 0;
-			color = DISP_COLORS[srcTrack->gInfo->dispColor];
+			color = DISP_COLORS[srcTrack->gInfo->colorAndCloak.cc4[dispColor]];
 		}
 		LedDisplayChoice::draw(args);
 	};
@@ -962,7 +1015,7 @@ struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
 				nvgBeginPath(args.vg);
 				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
 				nvgStrokeWidth(args.vg, 1.5f);// arc thickness
-				nvgStrokeColor(args.vg, DISP_COLORS[gInfo->dispColor]);// arc color, same as displays
+				nvgStrokeColor(args.vg, DISP_COLORS[gInfo->colorAndCloak.cc4[dispColor]]);// arc color, same as displays
 				nvgStroke(args.vg);
 			}
 		}

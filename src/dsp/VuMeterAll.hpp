@@ -19,7 +19,7 @@ class VuMeterAll {
 
 	public:
 	
-	int vuColorTheme; // 0 to numthemes - 1; (when per-track choice)
+	int8_t vuColorTheme; // 0 to numthemes - 1; (when per-track choice)
 
 	void reset() {
 		vPeak = 0.f;

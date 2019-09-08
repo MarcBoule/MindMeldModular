@@ -153,16 +153,16 @@ struct ChainItem : MenuItem {
 struct CloakedModeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {
-		gInfo->cloakedMode = !gInfo->cloakedMode;
+		gInfo->colorAndCloak.cc4[cloakedMode] ^= 0x1;
 	}
 };
 
 struct VuColorItem : MenuItem {
-	int *srcColor;
+	int8_t *srcColor;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
 
 	struct VuColorSubItem : MenuItem {
-		int *srcColor;
+		int8_t *srcColor;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
 			*srcColor = setVal;
@@ -209,10 +209,10 @@ struct VuColorItem : MenuItem {
 
 
 struct DispColorItem : MenuItem {
-	int *srcColor;
+	int8_t *srcColor;
 
 	struct DispColorSubItem : MenuItem {
-		int *srcColor;
+		int8_t *srcColor;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
 			*srcColor = setVal;

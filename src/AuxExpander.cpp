@@ -65,7 +65,7 @@ struct AuxExpander : Module {
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
-	int dispColor = 0;
+	ColorAndCloak colorAndCloak;
 	int resetTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
 	
 		
@@ -74,6 +74,8 @@ struct AuxExpander : Module {
 		
 		leftExpander.producerMessage = leftMessages[0];
 		leftExpander.consumerMessage = leftMessages[1];
+		
+		colorAndCloak.cc1 = 0;
 		
 		onReset();
 
@@ -133,8 +135,7 @@ struct AuxExpander : Module {
 				int32_t tmp;
 				memcpy(&tmp, &messagesFromMother[21], 4);
 				panelTheme = tmp;
-				memcpy(&tmp, &messagesFromMother[22], 4);
-				dispColor = tmp;
+				memcpy(&colorAndCloak.cc1, &messagesFromMother[22], 4);
 			}
 		}		
 		 
@@ -147,6 +148,7 @@ struct AuxExpanderWidget : ModuleWidget {
 	PanelBorder* panelBorder;
 	bool oldMotherPresent = false;
 	TrackAndGroupLabel* trackAndGroupLabels[20];
+	AuxDisplay* auxDisplays[4];
 
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);
@@ -159,6 +161,13 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
 			// Labels
+			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
+			if (module) {
+				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
+				char buf[5] = "GRP0";
+				buf[3] += i;
+				auxDisplays[i]->text = buf;
+			}
 			// Y is 4.7, same X as below
 			
 			// Left sends
@@ -199,7 +208,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for tracks 1 to 8
 			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 4.7))));
 			if (module) {
-				trackAndGroupLabels[i]->dispColor = &(module->dispColor);
+				trackAndGroupLabels[i]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
 			}
 			// aux A send for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynSmallKnobAuxA>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_SEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
@@ -216,7 +225,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for tracks 9 to 16
 			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 65.08))));
 			if (module) {
-				trackAndGroupLabels[i + 8]->dispColor = &(module->dispColor);
+				trackAndGroupLabels[i + 8]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
 			}
 
 			// aux A send for tracks 9 to 16
@@ -236,7 +245,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for groups 1 to 2
 			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 4.7))));
 			if (module) {
-				trackAndGroupLabels[i + 16]->dispColor = &(module->dispColor);
+				trackAndGroupLabels[i + 16]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
 			}
 
 			// aux A send for groups 1 to 2
@@ -254,7 +263,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for groups 3 to 4
 			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 65.08))));
 			if (module) {
-				trackAndGroupLabels[i + 18]->dispColor = &(module->dispColor);
+				trackAndGroupLabels[i + 18]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
 			}
 
 			// aux A send for groups 3 to 4
@@ -286,6 +295,47 @@ struct AuxExpanderWidget : ModuleWidget {
 	
 	}
 	
+	
+	json_t* toJson() override {
+		json_t* rootJ = ModuleWidget::toJson();
+
+		// aux0
+		json_object_set_new(rootJ, "aux0", json_string(auxDisplays[0]->text.c_str()));
+		// aux1
+		json_object_set_new(rootJ, "aux1", json_string(auxDisplays[1]->text.c_str()));
+		// aux2
+		json_object_set_new(rootJ, "aux2", json_string(auxDisplays[2]->text.c_str()));
+		// aux3
+		json_object_set_new(rootJ, "aux3", json_string(auxDisplays[3]->text.c_str()));
+
+		return rootJ;
+	}
+
+	void fromJson(json_t* rootJ) override {
+		ModuleWidget::fromJson(rootJ);
+
+		// aux0
+		json_t* aux0J = json_object_get(rootJ, "aux0");
+		if (aux0J)
+			auxDisplays[0]->text = json_string_value(aux0J);
+		
+		// aux1
+		json_t* aux1J = json_object_get(rootJ, "aux1");
+		if (aux1J)
+			auxDisplays[1]->text = json_string_value(aux1J);
+
+		// aux2
+		json_t* aux2J = json_object_get(rootJ, "aux2");
+		if (aux2J)
+			auxDisplays[2]->text = json_string_value(aux2J);
+		
+		// aux3
+		json_t* aux3J = json_object_get(rootJ, "aux3");
+		if (aux3J)
+			auxDisplays[3]->text = json_string_value(aux3J);
+	}
+
+
 	void step() override {
 		if (module) {
 			AuxExpander* moduleA = (AuxExpander*)module;

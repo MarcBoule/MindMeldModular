@@ -17,7 +17,7 @@ struct MixMaster : Module {
 
 
 	// Constants
-	int numChannelsDirectOuts = 16;// avoids warning when hardcode 16 (static const or directly use 16 in code below)
+	int numChannelsDirectOuts = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
 	int panelTheme;
@@ -296,8 +296,7 @@ struct MixMaster : Module {
 				memcpy(&messageToExpander[0], trackLabels, 4 * 20);
 				int32_t tmp = panelTheme;
 				memcpy(&messageToExpander[21], &tmp, 4);
-				tmp = gInfo.dispColor;
-				memcpy(&messageToExpander[22], &tmp, 4);
+				memcpy(&messageToExpander[22], &gInfo.colorAndCloak.cc1, 4);
 			}
 			else {
 				*updateSlow = 0;
@@ -405,17 +404,17 @@ struct MixMasterWidget : ModuleWidget {
 		settingsVLabel->text = "Settings (visual)";
 		menu->addChild(settingsVLabel);
 		
-		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.cloakedMode));
+		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
-		vuColItem->srcColor = &(module->gInfo.vuColor);
+		vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 		vuColItem->isGlobal = true;
 		menu->addChild(vuColItem);
 		
 		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-		dispColItem->srcColor = &(module->gInfo.dispColor);
+		dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 		menu->addChild(dispColItem);
 	}
 
@@ -436,6 +435,7 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
 				trackDisplays[i]->gInfo = &(module->gInfo);
+				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->resetTrackLabelRequestPtr = &(module->resetTrackLabelRequest);
@@ -469,7 +469,7 @@ struct MixMasterWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
-				newVU->colorThemeGlobal = &(module->gInfo.vuColor);
+				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 				// Fade pointers
 				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 2.95 + 12.7 * i, 81.2)));
@@ -522,6 +522,7 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
 				groupDisplays[i]->gInfo = &(module->gInfo);
+				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 			}
 			
@@ -545,7 +546,7 @@ struct MixMasterWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu[0]);
-				newVU->colorThemeGlobal = &(module->gInfo.vuColor);
+				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 				// Fade pointers
 				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 2.95 + 12.7 * i, 81.2)));
@@ -588,7 +589,7 @@ struct MixMasterWidget : ModuleWidget {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(274.5, 70.3)));
 			newVU->srcLevels = &(module->master.vu[0]);
-			newVU->colorThemeGlobal = &(module->gInfo.vuColor);
+			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 			addChild(newVU);
 			// Fade pointer
 			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(274.5 - 3.4, 70.3)));

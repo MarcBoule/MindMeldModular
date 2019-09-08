@@ -182,7 +182,15 @@ struct TrackSettingsCpBuffer {
 
 //*****************************************************************************
 
-
+enum ccIds {
+	cloakedMode, // turn off track VUs only, keep master VUs (also called "Cloaked mode")
+	vuColor, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
+	dispColor // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray
+};
+union ColorAndCloak {
+	int32_t cc1;
+	int8_t cc4[4];
+};
 
 // managed by Mixer, not by tracks (tracks read only)
 struct GlobalInfo {
@@ -200,9 +208,7 @@ struct GlobalInfo {
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	//int auxSendsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	int chainMode;// 0 is pre-master, 1 is post-master
-	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
-	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
-	int dispColor;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray
+	ColorAndCloak colorAndCloak;
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -254,9 +260,9 @@ struct GlobalInfo {
 		panLawStereo = 0;
 		directOutsMode = 1;// post should be default
 		chainMode = 1;// post should be default
-		cloakedMode = false;
-		vuColor = 0;
-		dispColor = 0;
+		colorAndCloak.cc4[cloakedMode] = false;
+		colorAndCloak.cc4[vuColor] = 0;
+		colorAndCloak.cc4[dispColor] = 0;
 		for (int i = 0; i < 4; i++) {
 			groupUsage[i] = 0;
 		}
@@ -282,14 +288,8 @@ struct GlobalInfo {
 		// chainMode
 		json_object_set_new(rootJ, "chainMode", json_integer(chainMode));
 		
-		// cloakedMode
-		json_object_set_new(rootJ, "cloakedMode", json_boolean(cloakedMode));
-
-		// vuColor
-		json_object_set_new(rootJ, "vuColor", json_integer(vuColor));
-		
-		// dispColor
-		json_object_set_new(rootJ, "dispColor", json_integer(dispColor));
+		// colorAndCloak
+		json_object_set_new(rootJ, "colorAndCloak", json_integer(colorAndCloak.cc1));
 		
 		// groupUsage does not need to be saved here, it is computed indirectly in MixerTrack::dataFromJson();
 		
@@ -321,20 +321,10 @@ struct GlobalInfo {
 		if (chainModeJ)
 			chainMode = json_integer_value(chainModeJ);
 		
-		// cloakedMode
-		json_t *cloakedModeJ = json_object_get(rootJ, "cloakedMode");
-		if (cloakedModeJ)
-			cloakedMode = json_is_true(cloakedModeJ);
-
-		// vuColor
-		json_t *vuColorJ = json_object_get(rootJ, "vuColor");
-		if (vuColorJ)
-			vuColor = json_integer_value(vuColorJ);
-		
-		// dispColor
-		json_t *dispColorJ = json_object_get(rootJ, "dispColor");
-		if (dispColorJ)
-			dispColor = json_integer_value(dispColorJ);
+		// colorAndCloak
+		json_t *colorAndCloakJ = json_object_get(rootJ, "colorAndCloak");
+		if (colorAndCloakJ)
+			colorAndCloak.cc1 = json_integer_value(colorAndCloakJ);
 		
 		// groupUsage does not need to be loaded here, it is computed indirectly in MixerTrack::dataFromJson();
 		
@@ -875,13 +865,13 @@ struct MixerGroup {
 		}
 		
 		// VUs
-		if (!gInfo->cloakedMode) {
-			vu[0].process(gInfo->sampleTime, post[0]);
-			vu[1].process(gInfo->sampleTime, post[1]);
-		}
-		else {
+		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
 			vu[0].reset();
 			vu[1].reset();
+		}
+		else {
+			vu[0].process(gInfo->sampleTime, post[0]);
+			vu[1].process(gInfo->sampleTime, post[1]);
 		}
 	}
 };// struct MixerGroup
@@ -1326,13 +1316,13 @@ struct MixerTrack {
 		}
 		
 		// VUs
-		if (!gInfo->cloakedMode) {
-			vu[0].process(gInfo->sampleTime, post[0]);
-			vu[1].process(gInfo->sampleTime, post[1]);
-		}
-		else {
+		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
 			vu[0].reset();
 			vu[1].reset();
+		}
+		else {
+			vu[0].process(gInfo->sampleTime, post[0]);
+			vu[1].process(gInfo->sampleTime, post[1]);
 		}
 	}
 };// struct MixerTrack
