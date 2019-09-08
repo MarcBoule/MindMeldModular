@@ -198,6 +198,7 @@ struct GlobalInfo {
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
 	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
+	//int auxSendsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
 	int chainMode;// 0 is pre-master, 1 is post-master
 	bool cloakedMode;// turn off track VUs only, keep master VUs (also called "Cloaked mode")
 	int vuColor;// 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)

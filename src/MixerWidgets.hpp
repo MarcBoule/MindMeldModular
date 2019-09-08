@@ -14,6 +14,7 @@
 #include <time.h>
 
 
+// --------------------
 // VU meters
 // --------------------
 
@@ -37,6 +38,7 @@ static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)}
 
 static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
 static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
+
 
 // Base struct
 struct VuMeterBase : OpaqueWidget {
@@ -443,11 +445,11 @@ static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	int* dispColor;
+	 int* dispColor = NULL;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
 	
 	TrackAndGroupLabel() {
 		box.size = DISP_SIZE;
-		textOffset = DISP_OFFSET;
+		textOffset = Vec(7.5, 12);
 		text = "-00-";
 	};
 	
@@ -852,37 +854,35 @@ struct DynamicSVGSwitchDual : SvgSwitch {
 	std::vector<std::shared_ptr<Svg>> framesAll;
 	std::vector<std::string> frameAltNames;
 	
-	void addFrameAll(std::shared_ptr<Svg> svg);
+	void addFrameAll(std::shared_ptr<Svg> svg) {
+		framesAll.push_back(svg);
+		if (framesAll.size() == 2) {
+			addFrame(framesAll[0]);
+			addFrame(framesAll[1]);
+		}
+	}
     void addFrameAlt(std::string filename) {frameAltNames.push_back(filename);}
-	void step() override;
+	void step() override {
+		if( mode != NULL && type != NULL && ((*mode != oldMode) || (*type != oldType)) ) {
+			if (!frameAltNames.empty()) {
+				for (std::string strName : frameAltNames) {
+					framesAll.push_back(APP->window->loadSvg(strName));
+				}
+				frameAltNames.clear();
+			}
+			int typeOffset = (*type < MixerTrack::minFadeRate ? 0 : 2);
+			frames[0]=framesAll[(*mode) * 4 + typeOffset + 0];
+			frames[1]=framesAll[(*mode) * 4 + typeOffset + 1];
+			oldMode = *mode;
+			oldType = *type;
+			onChange(*(new event::Change()));// required because of the way SVGSwitch changes images, we only change the frames above.
+			fb->dirty = true;// dirty is not sufficient when changing via frames assignments above (i.e. onChange() is required)
+		}
+		SvgSwitch::step();
+	}
 };
 
-void DynamicSVGSwitchDual::addFrameAll(std::shared_ptr<Svg> svg) {
-    framesAll.push_back(svg);
-	if (framesAll.size() == 2) {
-		addFrame(framesAll[0]);
-		addFrame(framesAll[1]);
-	}
-}
 
-void DynamicSVGSwitchDual::step() {
-    if( mode != NULL && type != NULL && ((*mode != oldMode) || (*type != oldType)) ) {
-		if (!frameAltNames.empty()) {
-			for (std::string strName : frameAltNames) {
-				framesAll.push_back(APP->window->loadSvg(strName));
-			}
-			frameAltNames.clear();
-		}
-		int typeOffset = (*type < MixerTrack::minFadeRate ? 0 : 2);
-		frames[0]=framesAll[(*mode) * 4 + typeOffset + 0];
-		frames[1]=framesAll[(*mode) * 4 + typeOffset + 1];
-        oldMode = *mode;
-        oldType = *type;
-		onChange(*(new event::Change()));// required because of the way SVGSwitch changes images, we only change the frames above.
-		fb->dirty = true;// dirty is not sufficient when changing via frames assignments above (i.e. onChange() is required)
-    }
-	SvgSwitch::step();
-}
 
 struct DynMuteFadeButton : DynamicSVGSwitchDual {
 	DynMuteFadeButton() {

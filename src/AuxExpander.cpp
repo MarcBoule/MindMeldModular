@@ -6,7 +6,7 @@
 //***********************************************************************************************
 
 #include "MindMeldModular.hpp"
-//#include "MixerWidgets.hpp"
+#include "MixerWidgets.hpp"
 
 
 struct AuxExpander : Module {
@@ -64,7 +64,7 @@ struct AuxExpander : Module {
 	
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	int dispColor = 0;
 	int resetTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
 	
@@ -142,25 +142,6 @@ struct AuxExpander : Module {
 	}// process()
 };
 
-
-static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
-
-struct TrackAndGroupLabel : LedDisplayChoice {
-	 int* dispColor = NULL;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
-	
-	TrackAndGroupLabel() {
-		box.size = Vec(38, 16);
-		textOffset = Vec(7.5, 12);
-		text = "-00-";
-	};
-	
-	void draw(const DrawArgs &args) override {
-		if (dispColor) {
-			color = DISP_COLORS[*dispColor];
-		}	
-		LedDisplayChoice::draw(args);
-	}
-};
 
 struct AuxExpanderWidget : ModuleWidget {
 	PanelBorder* panelBorder;
