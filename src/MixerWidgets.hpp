@@ -706,6 +706,11 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			auxSetLabel->text = "Aux settings: " + text;
 			menu->addChild(auxSetLabel);
 			
+			// this menu must offer:
+			// * direct out mode (of aux poly jack), when per track (must return to main, or return the 8 values for the direct jack)
+			// * vu color, when per track (local storage)
+			// * stereo pan mode, when per track (local storage if aux processed in here)
+			
 /*			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
