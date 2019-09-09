@@ -751,85 +751,96 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 };
 
 
-// Group select display, non-editable label, but will respond to hover key press
+// Group select parameter with non-editable label, but will respond to hover key press
 // --------------------
 
-struct GroupSelectDisplay : LedDisplayChoice {
+struct GroupSelectDisplay : ParamWidget {
 	MixerTrack *srcTrack = NULL;
-
+	LedDisplayChoice ldc;
+	
 	GroupSelectDisplay() {
 		box.size = Vec(18, 16);
-		textOffset = math::Vec(6.6f, 11.7f);
-		bgColor.a = 0.0f;
-		text = "-";
+		ldc.box.size = box.size;
+		ldc.textOffset = math::Vec(6.6f, 11.7f);
+		ldc.bgColor.a = 0.0f;
+		ldc.text = "-";
 	};
 	
 	void draw(const DrawArgs &args) override {
 		if (srcTrack) {
-			int grp = srcTrack->getGroup();
-			text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
-			text[1] = 0;
-			color = DISP_COLORS[srcTrack->gInfo->colorAndCloak.cc4[dispColor]];
+			int grp = (int)(srcTrack->paGroup->getValue() + 0.5f);// this could also be accessed through paramQuantity->getValue()
+			ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
+			ldc.text[1] = 0;
+			ldc.color = DISP_COLORS[srcTrack->gInfo->colorAndCloak.cc4[dispColor]];
 		}
-		LedDisplayChoice::draw(args);
+		ldc.draw(args);
+		ParamWidget::draw(args);
 	};
 
 	void onHoverKey(const event::HoverKey &e) override {
-		if (e.action == GLFW_PRESS) {
-			if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
-				srcTrack->setGroup(e.key - GLFW_KEY_0);
-			}
-			else if (e.key >= GLFW_KEY_KP_1 && e.key <= GLFW_KEY_KP_4) {
-				srcTrack->setGroup(e.key - GLFW_KEY_KP_0);
-			}
-			else if ( ((e.mods & RACK_MOD_MASK) == 0) && (
-					(e.key >= GLFW_KEY_A && e.key <= GLFW_KEY_Z) ||
-					e.key == GLFW_KEY_SPACE || e.key == GLFW_KEY_MINUS || 
-					e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0 || 
-					(e.key >= GLFW_KEY_5 && e.key <= GLFW_KEY_9) || 
-					(e.key >= GLFW_KEY_KP_5 && e.key <= GLFW_KEY_KP_9) ) ){
-				srcTrack->setGroup(0);
+		if (paramQuantity) {
+			if (e.action == GLFW_PRESS) {
+				if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
+					paramQuantity->setValue((float)(e.key - GLFW_KEY_0));
+				}
+				else if (e.key >= GLFW_KEY_KP_1 && e.key <= GLFW_KEY_KP_4) {
+					paramQuantity->setValue((float)(e.key - GLFW_KEY_KP_0));
+				}
+				else if ( ((e.mods & RACK_MOD_MASK) == 0) && (
+						(e.key >= GLFW_KEY_A && e.key <= GLFW_KEY_Z) ||
+						e.key == GLFW_KEY_SPACE || e.key == GLFW_KEY_MINUS || 
+						e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0 || 
+						(e.key >= GLFW_KEY_5 && e.key <= GLFW_KEY_9) || 
+						(e.key >= GLFW_KEY_KP_5 && e.key <= GLFW_KEY_KP_9) ) ){
+					paramQuantity->setValue(0.0f);
+				}
 			}
 		}
 	}
 };
 
 
-// Buttons that have their own Tigger mechanism built in and don't need to be polled by the dsp engine, 
+// Buttons that don't have their own param but linked to a param, and don't need to be polled by the dsp engine, 
 //   they will do thier own processing in here and update their source automatically
 // --------------------
 
-struct DynGroupMinusButtonNotify : DynGroupMinusButton {
-	Trigger buttonTrigger;
-	MixerTrack *srcTrack;
+struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
+	Param* sourceParam = NULL;// param that is mapped to this
 	
 	void onChange(const event::Change &e) override {// called after value has changed
-		DynGroupMinusButton::onChange(e);
-		if (paramQuantity) {
-			if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
-				int group = srcTrack->getGroup();
-				if (group == 0) group = 4;
-				else group--;
-				srcTrack->setGroup(group);
-			}
+		DynGroupMinusButtonNoParam::onChange(e);
+		if (sourceParam && state != 0) {
+			float group = sourceParam->getValue();// separate variable so no glitch
+			if (group < 0.5f) group = 4.0f;
+			else group -= 1.0f;
+			sourceParam->setValue(group);
+			// if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
+				// int group = srcTrack->getGroup();
+				// if (group == 0) group = 4;
+				// else group--;
+				// srcTrack->setGroup(group);
+			// }
 		}		
 	}
 };
 
 
-struct DynGroupPlusButtonNotify : DynGroupPlusButton {
-	Trigger buttonTrigger;
-	MixerTrack *srcTrack;
+struct DynGroupPlusButtonNotify : DynGroupPlusButtonNoParam {
+	Param* sourceParam = NULL;// param that is mapped to this
 	
 	void onChange(const event::Change &e) override {// called after value has changed
-		DynGroupPlusButton::onChange(e);
-		if (paramQuantity) {
-			if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
-				int group = srcTrack->getGroup();
-				if (group == 4) group = 0;
-				else group++;	
-				srcTrack->setGroup(group);
-			}
+		DynGroupPlusButtonNoParam::onChange(e);
+		if (sourceParam && state != 0) {
+			float group = sourceParam->getValue();// separate variable so no glitch
+			if (group > 3.5f) group = 0.0f;
+			else group += 1.0f;
+			sourceParam->setValue(group);
+			// if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
+				// int group = srcTrack->getGroup();
+				// if (group == 4) group = 0;
+				// else group++;	
+				// srcTrack->setGroup(group);
+			// }
 		}		
 	}
 };

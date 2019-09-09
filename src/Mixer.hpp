@@ -27,12 +27,11 @@ enum ParamIds {
 	MAIN_MUTE_PARAM,
 	MAIN_DIM_PARAM,
 	MAIN_MONO_PARAM,
-	ENUMS(GRP_INC_PARAMS, 16),
-	ENUMS(GRP_DEC_PARAMS, 16),
-	ENUMS(TRACK_LOWCUT_PARAMS, 16),// NUM_PARAMS_JR's last param is on previous line
+	ENUMS(GROUP_SELECT_PARAMS, 16),
+	ENUMS(FIRST_AUX_PARAM, 1),// NUM_PARAMS_MIXER's last param is on previous line
 	NUM_PARAMS
 }; 
-static const int NUM_PARAMS_JR = TRACK_LOWCUT_PARAMS;
+static const int NUM_PARAMS_MIXER = FIRST_AUX_PARAM;
 
 
 enum InputIds {
@@ -146,7 +145,7 @@ struct TrackSettingsCpBuffer {
 	bool linkedFader;
 
 	// second level of copy paste (for track re-ordering)
-	int group;
+	float paGroup;
 	float paFade;
 	float paMute;
 	float paSolo;
@@ -168,7 +167,7 @@ struct TrackSettingsCpBuffer {
 		linkedFader = false;
 		
 		// second level
-		group = 0;
+		paGroup = 0.0f;
 		paFade = 1.0f;
 		paMute = 0.0f;
 		paSolo = 0.0f;
@@ -896,7 +895,6 @@ struct MixerTrack {
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	private:
-	int group;// 0 is no group (i.e. deposit post in mix[0..1]), 1 to 4 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
@@ -925,6 +923,7 @@ struct MixerTrack {
 	Input *inR;
 	Input *inVol;
 	Input *inPan;
+	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
 	Param *paFade;
 	Param *paMute;
 	Param *paSolo;
@@ -946,6 +945,7 @@ struct MixerTrack {
 		inR = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 1];
 		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
 		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
+		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
 		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
 		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
@@ -963,7 +963,6 @@ struct MixerTrack {
 		gainAdjust = 1.0f;
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
-		group = 0;// no need to use setter since it is reset in GlobalInfo::onReset()
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		directOutsMode = 1;// post should be default
@@ -1008,7 +1007,7 @@ struct MixerTrack {
 	// level 2 read and write
 	void write2(TrackSettingsCpBuffer *dest) {
 		write(dest);
-		dest->group = group;
+		dest->paGroup = paGroup->getValue();;
 		dest->paFade = paFade->getValue();
 		dest->paMute = paMute->getValue();
 		dest->paSolo = paSolo->getValue();
@@ -1021,7 +1020,7 @@ struct MixerTrack {
 	}
 	void read2(TrackSettingsCpBuffer *src) {
 		read(src);
-		setGroup(src->group);
+		paGroup->setValue(src->paGroup);
 		paFade->setValue(src->paFade);
 		paMute->setValue(src->paMute);
 		paSolo->setValue(src->paSolo);
@@ -1034,17 +1033,17 @@ struct MixerTrack {
 	}
 	
 	
-	void setGroup(int _group) {
+	void updateGroupUsage() {
+		// clear groupUsage for this track in all groups
+		for (int i = 0; i < 4; i++) {
+			gInfo->groupUsage[i] &= ~(1 << trackNum);
+		}
+		
+		// set groupUsage for this track in the new group
+		int group = (int)(paGroup->getValue() + 0.5f);
 		if (group > 0) {
-			gInfo->groupUsage[group - 1] &= ~(1 << trackNum);// clear groupUsage for this track in the old group
+			gInfo->groupUsage[group - 1] |= (1 << trackNum);
 		}
-		if (_group > 0) {
-			gInfo->groupUsage[_group - 1] |= (1 << trackNum);// set groupUsage for this track in the new group
-		}
-		group = _group;
-	}
-	int getGroup() {
-		return group;
 	}
 	
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
@@ -1070,6 +1069,7 @@ struct MixerTrack {
 			return true;
 		}
 		// here solo is off for this track and there is at least one track or group that has their solo on.
+		int group = (int)(paGroup->getValue() + 0.5f);
 		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {// if going through soloed group  
 			// check all solos of all tracks mapped to group, and return true if all those solos are off
 			return (gInfo->groupUsage[group - 1] & gInfo->soloBitMask) == 0;
@@ -1085,11 +1085,15 @@ struct MixerTrack {
 
 	
 	// Contract: 
+	//  * update group usage
 	//  * calc fadeGain
 	//  * process linked
 	//  * calc stereo
 	//  * calc gainMatrix
 	void updateSlowValues() {
+		// update group usage
+		updateGroupUsage();
+		
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
@@ -1190,9 +1194,6 @@ struct MixerTrack {
 		// fadeProfile
 		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
 		
-		// group
-		json_object_set_new(rootJ, (ids + "group").c_str(), json_integer(group));
-
 		// hpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
 		
@@ -1225,11 +1226,6 @@ struct MixerTrack {
 		if (fadeProfileJ)
 			fadeProfile = json_number_value(fadeProfileJ);
 
-		// group
-		json_t *groupJ = json_object_get(rootJ, (ids + "group").c_str());
-		if (groupJ)
-			setGroup(json_integer_value(groupJ));
-		
 		// hpfCutoffFreq
 		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
 		if (hpfCutoffFreqJ)
@@ -1311,8 +1307,9 @@ struct MixerTrack {
 			post[1] = sigs[1] + sigs[3];
 				
 			// Add to mix
-			mix[group * 2 + 0] += post[0];
-			mix[group * 2 + 1] += post[1];
+			int groupIndex = (int)(paGroup->getValue() + 0.5f);
+			mix[groupIndex * 2 + 0] += post[0];
+			mix[groupIndex * 2 + 1] += post[1];
 		}
 		
 		// VUs

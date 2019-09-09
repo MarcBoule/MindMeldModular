@@ -9,6 +9,7 @@
 
 
 #include "rack.hpp"
+#include "GenericComponents.hpp"
 
 using namespace rack;
 
@@ -25,6 +26,12 @@ static const float blurRadiusRatio = 0.06f;
 template <class TWidget>
 TWidget* createDynamicWidget(Vec pos, int* mode) {
 	TWidget *dynWidget = createWidget<TWidget>(pos);
+	dynWidget->mode = mode;
+	return dynWidget;
+}
+template <class TWidget>
+TWidget* createDynamicWidgetCentered(Vec pos, int* mode) {
+	TWidget *dynWidget = createWidgetCentered<TWidget>(pos);
 	dynWidget->mode = mode;
 	return dynWidget;
 }
@@ -120,6 +127,20 @@ struct DynamicSVGSwitch : SvgSwitch {
     void step() override;
 };
 
+struct DynamicSVGSwitchNoParam : MomentarySvgSwitchNoParam {
+    int* mode = NULL;
+    int oldMode = -1;
+	std::vector<std::shared_ptr<Svg>> framesAll;
+	std::string frameAltName0;
+	std::string frameAltName1;
+	
+	void addFrameAll(std::shared_ptr<Svg> svg);
+    void addFrameAlt0(std::string filename) {frameAltName0 = filename;}
+    void addFrameAlt1(std::string filename) {frameAltName1 = filename;}
+    void step() override;
+};
+
+
 struct DynamicSVGKnob : SvgKnob {
     int* mode = NULL;
     int oldMode = -1;
@@ -211,6 +232,25 @@ struct DynGroupPlusButton : DynamicSVGSwitch {
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
+	}
+};
+
+
+struct DynGroupMinusButtonNoParam : DynamicSVGSwitchNoParam {
+	DynGroupMinusButtonNoParam() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-minus.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-minus-active.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+	}
+};
+
+struct DynGroupPlusButtonNoParam : DynamicSVGSwitchNoParam {
+	DynGroupPlusButtonNoParam() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-plus.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-plus-active.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 	}
 };
 

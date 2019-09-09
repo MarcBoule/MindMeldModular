@@ -42,7 +42,7 @@ struct MixMaster : Module {
 
 		
 	MixMaster() {
-		config(NUM_PARAMS_JR, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
+		config(NUM_PARAMS_MIXER, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
 		char strBuf[32];
 		// Track
@@ -60,12 +60,9 @@ struct MixMaster : Module {
 			// Solo
 			snprintf(strBuf, 32, "Track #%i solo", i + 1);
 			configParam(TRACK_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
-			// Group decrement
-			snprintf(strBuf, 32, "Track #%i group -", i + 1);
-			configParam(GRP_DEC_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
-			// Group increment
+			// Group select
 			snprintf(strBuf, 32, "Track #%i group +", i + 1);
-			configParam(GRP_INC_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+			configParam(GROUP_SELECT_PARAMS + i, 0.0f, 4.0f, 0.0f, strBuf);
 		}
 		// Group
 		for (int i = 0; i < 4; i++) {
@@ -91,7 +88,6 @@ struct MixMaster : Module {
 		// Solo
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
-	
 
 		gInfo.construct(&params[0]);
 		for (int i = 0; i < 16; i++) {
@@ -104,7 +100,7 @@ struct MixMaster : Module {
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
-		
+
 		// busId = messages->registerMember();
 	}
   
@@ -492,18 +488,18 @@ struct MixMasterWidget : ModuleWidget {
 			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
 			// Group dec
 			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addParam(newGrpMinusButton = createDynamicParamCentered<DynGroupMinusButtonNotify>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 123.1)), module, GRP_DEC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
-				newGrpMinusButton->srcTrack = &(module->tracks[i]);
+				newGrpMinusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addParam(newGrpPlusButton = createDynamicParamCentered<DynGroupPlusButtonNotify>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 123.1)), module, GRP_INC_PARAMS + i, module ? &module->panelTheme : NULL));
+			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
-				newGrpPlusButton->srcTrack = &(module->tracks[i]);
+				newGrpPlusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
 			}
 			// Group select displays
-			addChild(groupSelectDisplays[i] = createWidgetCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 123.1))));
+			addParam(groupSelectDisplays[i] = createParamCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
 			if (module) {
 				groupSelectDisplays[i]->srcTrack = &(module->tracks[i]);
 			}
