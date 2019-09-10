@@ -28,10 +28,8 @@ enum ParamIds {
 	MAIN_DIM_PARAM,
 	MAIN_MONO_PARAM,
 	ENUMS(GROUP_SELECT_PARAMS, 16),
-	ENUMS(FIRST_AUX_PARAM, 1),// NUM_PARAMS_MIXER's last param is on previous line
 	NUM_PARAMS
 }; 
-static const int NUM_PARAMS_MIXER = FIRST_AUX_PARAM;
 
 
 enum InputIds {
@@ -56,6 +54,22 @@ enum LightIds {
 	ENUMS(TRACK_HPF_LIGHTS, 16),
 	ENUMS(TRACK_LPF_LIGHTS, 16),
 	NUM_LIGHTS
+};
+
+
+//*****************************************************************************
+
+// Communications between mixer and auxspander
+// For float arrays
+
+enum AuxFromMotherIds { // for expander messages from main to aux panel
+	ENUMS(AFM_TRACK_GROUP_NAMES, 16 + 4),
+	AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
+	AFM_PANEL_THEME,
+	AFM_COLOR_AND_CLOAK,
+	ENUMS(AFM_AUX_SENDS, 8), // left A, B, C, D, right A, B, C, D
+	ENUMS(AFM_AUX_VUS, 8), // left A, right A, left B, right B, etc.
+	AFM_NUM_VALUES
 };
 
 

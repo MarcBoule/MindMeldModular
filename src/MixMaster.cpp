@@ -6,9 +6,7 @@
 //***********************************************************************************************
 
 
-#include "Mixer.hpp"
 #include "MixerWidgets.hpp"
-#include "MixerMenus.hpp"
 
 
 struct MixMaster : Module {
@@ -42,7 +40,7 @@ struct MixMaster : Module {
 
 		
 	MixMaster() {
-		config(NUM_PARAMS_MIXER, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
+		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
 		char strBuf[32];
 		// Track
@@ -286,20 +284,20 @@ struct MixMaster : Module {
 			float *messageToExpander = (float*)(rightExpander.module->leftExpander.producerMessage);
 			
 			// Slow
-			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[20]);
+			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[AFM_UPDATE_SLOW]);
 			if (slowExpander) {
 				*updateSlow = 1;
-				memcpy(&messageToExpander[0], trackLabels, 4 * 20);
+				memcpy(&messageToExpander[AFM_TRACK_GROUP_NAMES], trackLabels, 4 * 20);
 				int32_t tmp = panelTheme;
-				memcpy(&messageToExpander[21], &tmp, 4);
-				memcpy(&messageToExpander[22], &gInfo.colorAndCloak.cc1, 4);
+				memcpy(&messageToExpander[AFM_PANEL_THEME], &tmp, 4);
+				memcpy(&messageToExpander[AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
 			}
 			else {
 				*updateSlow = 0;
 			}
 			
 			// Fast
-			// none for now
+			memcpy(&messageToExpander[AFM_AUX_VUS], &mix[2], 8 * 4);
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}
@@ -352,7 +350,6 @@ struct MixMaster : Module {
 struct MixMasterWidget : ModuleWidget {
 	TrackDisplay* trackDisplays[16];
 	GroupDisplay* groupDisplays[4];
-	GroupSelectDisplay* groupSelectDisplays[16];
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
@@ -488,20 +485,21 @@ struct MixMasterWidget : ModuleWidget {
 			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
 			// Group dec
 			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(7.7 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(11.43 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(15.2 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(11.43 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
 			}
 			// Group select displays
-			addParam(groupSelectDisplays[i] = createParamCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
+			GroupSelectDisplay* groupSelectDisplay;
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
 			if (module) {
-				groupSelectDisplays[i]->srcTrack = &(module->tracks[i]);
+				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
 			}
 		}
 		

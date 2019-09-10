@@ -302,6 +302,20 @@ struct VuMeterMaster : VuMeterBase {
 };
 
 
+
+// 2.8mm x 30mm VU for aux returns
+// --------------------
+
+struct VuMeterAux : VuMeterTrack {//
+	VuMeterAux() {
+		barY = mm2px(30.0);
+		box.size = Vec(barX * 2 + gapX, barY);
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
+	}
+};
+
+
+
 // Fade pointer
 // --------------------
 
@@ -698,6 +712,9 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 // --------------------
 
 struct AuxDisplay : GroupTrackAuxDisplayBase {
+	VuMeterAll* srcVus = NULL;
+	int auxNumber = 0;
+	
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
@@ -708,8 +725,10 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			
 			// this menu must offer:
 			// * direct out mode (of aux poly jack), when per track (must return to main, or return the 8 values for the direct jack)
-			// * vu color, when per track (local storage)
 			// * stereo pan mode, when per track (local storage if aux processed in here)
+			// * vu color, when per track (local storage)
+			
+			bool isEmptyMenu = true;
 			
 /*			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
 			fadeSlider->box.size.x = 200.0f;
@@ -735,14 +754,21 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 				panLawStereoItem->isGlobal = false;
 				menu->addChild(panLawStereoItem);
 			}
-
-			if (srcGroup->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
+*/
+			if (colorAndCloak->cc4[vuColor] >= numThemes) {	
+				isEmptyMenu = false;
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcGroup->vu[0].vuColorTheme);
+				vuColItem->srcColor = &(srcVus[auxNumber << 1].vuColorTheme);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
-			*/
+			
+			if (isEmptyMenu) {
+				MenuLabel *auxNoneLabel = new MenuLabel();
+				auxNoneLabel->text = "(none)";
+				menu->addChild(auxNoneLabel);
+			}
+			
 			e.consume(this);
 			return;
 		}
@@ -755,7 +781,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 // --------------------
 
 struct GroupSelectDisplay : ParamWidget {
-	MixerTrack *srcTrack = NULL;
+	ColorAndCloak *srcColor = NULL;
 	LedDisplayChoice ldc;
 	
 	GroupSelectDisplay() {
@@ -767,11 +793,14 @@ struct GroupSelectDisplay : ParamWidget {
 	};
 	
 	void draw(const DrawArgs &args) override {
-		if (srcTrack) {
-			int grp = (int)(srcTrack->paGroup->getValue() + 0.5f);// this could also be accessed through paramQuantity->getValue()
-			ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
-			ldc.text[1] = 0;
-			ldc.color = DISP_COLORS[srcTrack->gInfo->colorAndCloak.cc4[dispColor]];
+		int grp = 0;
+		if (paramQuantity) {
+			grp = (int)(paramQuantity->getValue() + 0.5f);
+		}
+		ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
+		ldc.text[1] = 0;
+		if (srcColor) {
+			ldc.color = DISP_COLORS[srcColor->cc4[dispColor]];
 		}
 		ldc.draw(args);
 		ParamWidget::draw(args);
@@ -814,12 +843,6 @@ struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
 			if (group < 0.5f) group = 4.0f;
 			else group -= 1.0f;
 			sourceParam->setValue(group);
-			// if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
-				// int group = srcTrack->getGroup();
-				// if (group == 0) group = 4;
-				// else group--;
-				// srcTrack->setGroup(group);
-			// }
 		}		
 	}
 };
@@ -835,12 +858,6 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButtonNoParam {
 			if (group > 3.5f) group = 0.0f;
 			else group += 1.0f;
 			sourceParam->setValue(group);
-			// if (buttonTrigger.process(paramQuantity->getValue() * 2.0f)) {
-				// int group = srcTrack->getGroup();
-				// if (group == 4) group = 0;
-				// else group++;	
-				// srcTrack->setGroup(group);
-			// }
 		}		
 	}
 };

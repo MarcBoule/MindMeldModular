@@ -5,13 +5,13 @@
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
 
-#include "MindMeldModular.hpp"
+
 #include "MixerWidgets.hpp"
 
 
 struct AuxExpander : Module {
 	enum ParamIds {
-		ENUMS(TRACK_AUXSEND_PARAMS, 16 * 4), // 0 = aux A trk 1, 1 = aux B trk 1, ... 4 = aux A trk 2
+		ENUMS(TRACK_AUXSEND_PARAMS, 16 * 4), // trk 1 aux A, trk 1 aux B, ... 
 		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),
 		ENUMS(TRACK_AUXMUTE_PARAMS, 16),
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),
@@ -20,7 +20,7 @@ struct AuxExpander : Module {
 		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),
 		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),
 		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),
-		
+		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -40,11 +40,11 @@ struct AuxExpander : Module {
 	};
 
 	// Expander
-	float leftMessages[2][23] = {};// messages from mother (first index is page)
+	float leftMessages[2][AFM_NUM_VALUES] = {};// messages from mother (first index is page)
 	// [0-19]: 20 track/group names, each float has 4 chars
-	// [20]: update slow (track/group labels, panelTheme, dispColor)
+	// [20]: update slow (track/group labels, panelTheme, colorAndCloak)
 	// [21]: panelTheme
-	// [22]: dispColor
+	// [22]: colorAndCloak
 
 
 	// Constants
@@ -56,7 +56,7 @@ struct AuxExpander : Module {
 	
 	
 	// Need to save, with reset
-	// none
+	VuMeterAll vu[8];// use post[]. aux A left, aux A right, aux B left, ...
 	
 	
 	// No need to save, with reset
@@ -155,9 +155,15 @@ struct AuxExpander : Module {
 	}
   
 	void onReset() override {
+		for (int i = 0; i < 4; i++) {
+			vu[i << 1].vuColorTheme = 0;// vu[1], vu[3], vu[5], vu[7]  color theme is not used
+		}
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
+		for (int i = 0; i < 8; i++) {
+			vu[i].reset();
+		}
 	}
 
 
@@ -171,6 +177,11 @@ struct AuxExpander : Module {
 		// panelTheme
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 
+		// vuColorTheme
+		for (int i = 0; i < 4; i++ ) {
+			json_object_set_new(rootJ, ("vuColorTheme" + i), json_integer(vu[i << 1].vuColorTheme));
+		}
+		
 		return rootJ;
 	}
 
@@ -181,13 +192,21 @@ struct AuxExpander : Module {
 		if (panelThemeJ)
 			panelTheme = json_integer_value(panelThemeJ);
 
+		// vuColorTheme
+		for (int i = 0; i < 4; i++ ) {
+			json_t *vuColorThemeJ = json_object_get(rootJ, "vuColorTheme" + i);
+			if (vuColorThemeJ)
+				vu[i << 1].vuColorTheme = json_integer_value(vuColorThemeJ);
+		}
+		
 		resetNonJson(true);
 	}
 
 
 
 	void process(const ProcessArgs &args) override {
-		 motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster);
+		motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster);
+		float *messagesFromMother = (float*)leftExpander.consumerMessage;
 		 
 		if (motherPresent) {
 			// To Mother
@@ -198,19 +217,36 @@ struct AuxExpander : Module {
 			// leftExpander.module->rightExpander.messageFlipRequested = true;
 			
 			// From Mother
-			float *messagesFromMother = (float*)leftExpander.consumerMessage;
-			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[20]);
+			
+			// Slow values from mother
+			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[AFM_UPDATE_SLOW]);
 			if (*updateSlow != 0) {
-				memcpy(trackLabels, &messagesFromMother[0], 4 * 20);
+				memcpy(trackLabels, &messagesFromMother[AFM_TRACK_GROUP_NAMES], 4 * 20);
 				resetTrackLabelRequest = 1;
 				int32_t tmp;
-				memcpy(&tmp, &messagesFromMother[21], 4);
+				memcpy(&tmp, &messagesFromMother[AFM_PANEL_THEME], 4);
 				panelTheme = tmp;
-				memcpy(&colorAndCloak.cc1, &messagesFromMother[22], 4);
+				memcpy(&colorAndCloak.cc1, &messagesFromMother[AFM_COLOR_AND_CLOAK], 4);
 			}
-		}		
-		 
-		 
+			
+			// Fast values from mother
+			// VUS: leave is messagesFromMother, nothing to do
+			
+		}	
+
+
+		// VUs
+		if (!motherPresent || colorAndCloak.cc4[cloakedMode]) {
+			for (int i = 0; i < 8; i++) {
+				vu[i].reset();
+			}
+		}
+		else {
+			for (int i = 0; i < 8; i++) {
+				vu[i].process(args.sampleTime, messagesFromMother[AFM_AUX_VUS + i]);
+			}
+		}
+		
 	}// process()
 };
 
@@ -235,6 +271,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
 			if (module) {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
+				auxDisplays[i]->srcVus = &(module->vu[0]);
+				auxDisplays[i]->auxNumber = i;
 				char buf[5] = "GRP0";
 				buf[3] += i;
 				auxDisplays[i]->text = buf;
@@ -256,6 +294,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			
 			// Return faders
 			addParam(createDynamicParamCentered<DynSmallerFader>(mm2px(Vec(6.35 + 3.67 + 12.7 * i, 87.2)), module, AuxExpander::GLOBAL_AUXRETURN_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				// VU meters
+				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
+				newVU->srcLevels = &(module->vu[i << 1]);
+				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColor]);
+				addChild(newVU);
+			}				
 			
 			// Global mute buttons
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, AuxExpander::GLOBAL_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -263,8 +308,24 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Global solo buttons
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(6.35  + 12.7 * i, 116.1)), module, AuxExpander::GLOBAL_AUXSOLO_PARAMS + i, module ? &module->panelTheme : NULL));		
 
-			// Group select
-			// same Y as in mixmaster, same X as above
+			// Group dec
+			DynGroupMinusButtonNotify *newGrpMinusButton;
+			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(6.35 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			if (module) {
+				newGrpMinusButton->sourceParam = &(module->params[AuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
+			}
+			// Group inc
+			DynGroupPlusButtonNotify *newGrpPlusButton;
+			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(6.35 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			if (module) {
+				newGrpPlusButton->sourceParam = &(module->params[AuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
+			}
+			// Group select displays
+			GroupSelectDisplay* groupSelectDisplay;
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i - 0.1, 123.1)), module, AuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
+			if (module) {
+				groupSelectDisplay->srcColor = &(module->colorAndCloak);
+			}
 		}
 
 		// Global send knobs
