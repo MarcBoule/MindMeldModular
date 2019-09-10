@@ -197,6 +197,14 @@ struct GlobalInfo {
 	// constants
 	static constexpr float trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float individualAuxSendScalingExponent = 2.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float individualAuxSendMaxLinearGain = 1.0f; // for example, 2.0f is +6 dB
+	static constexpr float globalAuxSendScalingExponent = 2.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
+	static constexpr float globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+
+	
 	
 	// need to save, no reset
 	// none

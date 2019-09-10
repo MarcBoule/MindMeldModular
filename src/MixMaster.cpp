@@ -61,7 +61,7 @@ struct MixMaster : Module {
 			snprintf(strBuf, 32, "Track #%i solo", i + 1);
 			configParam(TRACK_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 			// Group select
-			snprintf(strBuf, 32, "Track #%i group +", i + 1);
+			snprintf(strBuf, 32, "Track #%i group", i + 1);
 			configParam(GROUP_SELECT_PARAMS + i, 0.0f, 4.0f, 0.0f, strBuf);
 		}
 		// Group
