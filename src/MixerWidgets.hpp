@@ -724,8 +724,8 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			menu->addChild(auxSetLabel);
 			
 			// this menu must offer:
-			// * direct out mode (of aux poly jack), when per track (must return to main, or return the 8 values for the direct jack)
-			// * stereo pan mode, when per track (local storage if aux processed in here)
+			// * direct out mode (of aux poly jack), when per track (must return to main)
+			// * stereo pan mode, when per track (must return to main)
 			// * vu color, when per track (local storage)
 			
 			bool isEmptyMenu = true;
@@ -743,12 +743,14 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			menu->addChild(linkFadItem);
 			
 			if (srcGroup->gInfo->directOutsMode >= 2) {
+				isEmptyMenu = false;
 				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
 				dirTrkItem->srcTrkGrp = srcGroup;
 				menu->addChild(dirTrkItem);
 			}
 
 			if (srcGroup->gInfo->panLawStereo >= 2) {
+				isEmptyMenu = false;
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
 				panLawStereoItem->isGlobal = false;

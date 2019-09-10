@@ -11,7 +11,7 @@
 
 struct MixMaster : Module {
 	// Expander
-	// float rightMessages[2][5] = {};// messages from expander
+	float rightMessages[2][MFA_NUM_VALUES] = {};// messages from aux-expander (first index is page), see enum called MotherFromAuxIds in Mixer.hpp
 
 
 	// Constants
@@ -35,13 +35,15 @@ struct MixMaster : Module {
 	RefreshCounter refresh;	
 	int panelThemeWithAuxPresent = 0;
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	bool inExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	// std::string busId;
 
 		
 	MixMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
+		rightExpander.producerMessage = rightMessages[0];
+		rightExpander.consumerMessage = rightMessages[1];
+
 		char strBuf[32];
 		// Track
 		float maxTGFader = std::pow(GlobalInfo::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalInfo::trkAndGrpFaderScalingExponent);
@@ -206,9 +208,16 @@ struct MixMaster : Module {
 	void process(const ProcessArgs &args) override {
 		
 		auxExpanderPresent = (rightExpander.module && rightExpander.module->model == modelAuxExpander);
-		inExpanderPresent = false;//(leftExpander.module && leftExpander.module->model == modelInExpander);
 		
 		//********** Inputs **********
+		
+		// From Aux-Expander
+		if (auxExpanderPresent) {
+			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
+			
+			float* returns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+		}
+		
 		
 		if (refresh.processInputs()) {
 			panelThemeWithAuxPresent = (auxExpanderPresent ? panelTheme : -1);
@@ -297,7 +306,8 @@ struct MixMaster : Module {
 			}
 			
 			// Fast
-			memcpy(&messageToExpander[AFM_AUX_VUS], &mix[2], 8 * 4);
+			float sends[8];// contains 8 values of the sends that go to the aux panel
+			memcpy(&messageToExpander[AFM_AUX_VUS], &mix[2], 8 * 4); // temporary for now, show group pre[] in aux VUs
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}
@@ -353,7 +363,6 @@ struct MixMasterWidget : ModuleWidget {
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
-	bool oldInExpanderPresent = false;
 	
 
 
@@ -624,25 +633,15 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			
 			// Borders
-			if ( moduleM->auxExpanderPresent != oldAuxExpanderPresent || moduleM->inExpanderPresent != oldInExpanderPresent  ) {
+			if ( moduleM->auxExpanderPresent != oldAuxExpanderPresent ) {
 				oldAuxExpanderPresent = moduleM->auxExpanderPresent;
-				oldInExpanderPresent = moduleM->inExpanderPresent;
-				
-				// TODO optimize this code!
-				if (oldAuxExpanderPresent && !oldInExpanderPresent) {
-					panelBorder->box.pos.x = 0;
+			
+				if (oldAuxExpanderPresent) {
+					//panelBorder->box.pos.x = 0;
 					panelBorder->box.size.x = box.size.x + 3;
-				}
-				else if (!oldAuxExpanderPresent && oldInExpanderPresent) {
-					panelBorder->box.pos.x = -3;
-					panelBorder->box.size.x = box.size.x + 3;
-				}
-				else if (oldAuxExpanderPresent && oldInExpanderPresent) {
-					panelBorder->box.pos.x = -3;
-					panelBorder->box.size.x = box.size.x + 6;
 				}
 				else {
-					panelBorder->box.pos.x = 0;
+					//panelBorder->box.pos.x = 0;
 					panelBorder->box.size.x = box.size.x;
 				}
 				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes

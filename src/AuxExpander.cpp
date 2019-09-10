@@ -40,11 +40,7 @@ struct AuxExpander : Module {
 	};
 
 	// Expander
-	float leftMessages[2][AFM_NUM_VALUES] = {};// messages from mother (first index is page)
-	// [0-19]: 20 track/group names, each float has 4 chars
-	// [20]: update slow (track/group labels, panelTheme, colorAndCloak)
-	// [21]: panelTheme
-	// [22]: colorAndCloak
+	float leftMessages[2][AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in Mixer.hpp
 
 
 	// Constants

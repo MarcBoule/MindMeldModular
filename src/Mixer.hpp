@@ -60,7 +60,7 @@ enum LightIds {
 //*****************************************************************************
 
 // Communications between mixer and auxspander
-// For float arrays
+// Fields in the float arrays
 
 enum AuxFromMotherIds { // for expander messages from main to aux panel
 	ENUMS(AFM_TRACK_GROUP_NAMES, 16 + 4),
@@ -71,6 +71,12 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	ENUMS(AFM_AUX_VUS, 8), // left A, right A, left B, right B, etc.
 	AFM_NUM_VALUES
 };
+
+enum MotherFromAuxIds { // for expander messages from aux panel to main
+	ENUMS(AFM_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
+	MFA_NUM_VALUES
+};
+
 
 
 //*****************************************************************************
