@@ -430,11 +430,28 @@ struct MixMasterWidget : ModuleWidget {
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster.svg")));
 		panelBorder = findBorder(panel);		
 		
+		// Inserts and CVs
+		static const float xIns = 13.8;
+		// Insert outputs
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 21.8)), false, module, INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 30.8)), false, module, INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		// Insert inputs
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 40.5)), true, module, INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 49.5)), true, module, INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 58.5)), true, module, INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		// Insert inputs
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 79.3)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 88.3)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 100.0)), true, module, GRPM_MUTE_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 109.0)), true, module, GRPM_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		
 		
 		// Tracks
+		static const float xTrck1 = 11.43 + 20.32;
 		for (int i = 0; i < 16; i++) {
 			// Labels
-			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(11.43 + 12.7 * i + 0.4, 4.7))));
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
 				trackDisplays[i]->gInfo = &(module->gInfo);
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
@@ -444,37 +461,37 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->inputWidgets = inputWidgets;
 			}
 			// HPF lights
-			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(11.43 - 4.17 + 12.7 * i, 8.3)), module, TRACK_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TRACK_HPF_LIGHTS + i));	
 			// LPF lights
-			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(11.43 + 4.17 + 12.7 * i, 8.3)), module, TRACK_LPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TRACK_LPF_LIGHTS + i));	
 			// Left inputs
-			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 12.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
-			addInput(inputWidgets[i + 16] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 21.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(inputWidgets[i + 16] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
 			// Volume inputs
-			addInput(inputWidgets[i + 16 * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 31.5)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(11.43 + 12.7 * i, 40.5)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
 			DynSmallKnobGreyWithPanCol *panKnobTrack;
-			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(11.43 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobTrack->gInfo = &(module->gInfo);
 			}
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(11.43 + 3.67 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newFader->gInfo = &(module->gInfo);
 				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
 				// VU meters
-				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(11.43 + 12.7 * i, 81.2)));
+				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu[0]);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(11.43 - 2.95 + 12.7 * i, 81.2)));
+				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				newFP->srcFadeRate = &(module->tracks[i].fadeRate);
@@ -484,45 +501,46 @@ struct MixMasterWidget : ModuleWidget {
 			
 			// Mutes
 			DynMuteFadeButton* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(11.43 + 12.7 * i, 109.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = &(module->tracks[i].fadeRate);
 			}
 			// Solos
 			DynSoloButtonMutex *newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(11.43 + 12.7 * i, 116.1)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
 			// Group dec
 			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(11.43 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(11.43 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
-			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(11.43 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
 			}
 		}
 		
 		// Monitor outputs and groups
+		static const float xGrp1 = 217.17 + 20.32;
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
 			if (i == 3) {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(217.17 + 12.7 * i, 11.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelThemeWithAuxPresent : NULL));
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * i, 11.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelThemeWithAuxPresent : NULL));
 			}
 			else {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(217.17 + 12.7 * i, 11.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * i, 11.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
 			}
 			// Labels
-			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(217.17 + 12.7 * i + 0.4, 23.5))));
+			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
 				groupDisplays[i]->gInfo = &(module->gInfo);
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
@@ -530,29 +548,29 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 31.5)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(217.17 + 12.7 * i, 40.5)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
 			DynSmallKnobGreyWithPanCol *panKnobGroup;
-			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(217.17 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobGroup->gInfo = &(module->gInfo);
 			}
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(217.17 + 3.67 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 			if (module) {
 				newFader->gInfo = &(module->gInfo);
 				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
 				// VU meters
-				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(217.17 + 12.7 * i, 81.2)));
+				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu[0]);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(217.17 - 2.95 + 12.7 * i, 81.2)));
+				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				newFP->srcFadeRate = &(module->groups[i].fadeRate);
@@ -561,41 +579,41 @@ struct MixMasterWidget : ModuleWidget {
 
 			// Mutes
 			DynMuteFadeButton* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(217.17 + 12.7 * i, 109.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = &(module->groups[i].fadeRate);
 			}
 			// Solos
 			DynSoloButtonMutex* newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(217.17 + 12.7 * i, 116.1)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
 			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
 		}
 		
 		// Master inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(269.3, 12.8)), true, module, CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(269.3, 21.8)), true, module, CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 12.8)), true, module, CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 21.8)), true, module, CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(279.8, 12.8)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(279.8, 21.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 12.8)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
 		MasterDisplay *mastLabel;
-		addChild(mastLabel = createWidgetCentered<MasterDisplay>(mm2px(Vec(274.5, 128.5 - 97.2 + 0.2))));
+		addChild(mastLabel = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.82, 128.5 - 97.2 + 0.2))));
 		if (module) {
 			mastLabel->srcMaster = &(module->master);
 		}
 		
 		// Master fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(279.85, 70.3)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(300.17, 70.3)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			// VU meter
-			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(274.5, 70.3)));
+			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
 			newVU->srcLevels = &(module->master.vu[0]);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 			addChild(newVU);
 			// Fade pointer
-			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(274.5 - 3.4, 70.3)));
+			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
 			newFP->srcFadeGain = &(module->master.fadeGain);
 			newFP->srcFadeRate = &(module->master.fadeRate);
@@ -604,16 +622,16 @@ struct MixMasterWidget : ModuleWidget {
 		
 		// Master mute
 		DynMuteFadeButton* newMuteFade;
-		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(274.5, 109.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(294.82, 109.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
 		}
 		
 		// Master dim
-		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(269.1, 116.1)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(289.42, 116.1)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
 		
 		// Master mono
-		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(279.9, 116.1)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22, 116.1)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {

@@ -269,7 +269,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
 				auxDisplays[i]->srcVus = &(module->vu[0]);
 				auxDisplays[i]->auxNumber = i;
-				char buf[5] = "GRP0";
+				char buf[5] = "AUXA";
 				buf[3] += i;
 				auxDisplays[i]->text = buf;
 			}
@@ -427,14 +427,14 @@ struct AuxExpanderWidget : ModuleWidget {
 	json_t* toJson() override {
 		json_t* rootJ = ModuleWidget::toJson();
 
-		// aux0
-		json_object_set_new(rootJ, "aux0", json_string(auxDisplays[0]->text.c_str()));
-		// aux1
-		json_object_set_new(rootJ, "aux1", json_string(auxDisplays[1]->text.c_str()));
-		// aux2
-		json_object_set_new(rootJ, "aux2", json_string(auxDisplays[2]->text.c_str()));
-		// aux3
-		json_object_set_new(rootJ, "aux3", json_string(auxDisplays[3]->text.c_str()));
+		// aux0 label
+		json_object_set_new(rootJ, "aux0label", json_string(auxDisplays[0]->text.c_str()));
+		// aux1 label
+		json_object_set_new(rootJ, "aux1label", json_string(auxDisplays[1]->text.c_str()));
+		// aux2 label
+		json_object_set_new(rootJ, "aux2label", json_string(auxDisplays[2]->text.c_str()));
+		// aux3 label
+		json_object_set_new(rootJ, "aux3label", json_string(auxDisplays[3]->text.c_str()));
 
 		return rootJ;
 	}
@@ -442,26 +442,27 @@ struct AuxExpanderWidget : ModuleWidget {
 	void fromJson(json_t* rootJ) override {
 		ModuleWidget::fromJson(rootJ);
 
-		// aux0
-		json_t* aux0J = json_object_get(rootJ, "aux0");
+		// aux0 label
+		json_t* aux0J = json_object_get(rootJ, "aux0label");
 		if (aux0J)
 			auxDisplays[0]->text = json_string_value(aux0J);
 		
-		// aux1
-		json_t* aux1J = json_object_get(rootJ, "aux1");
+		// aux1 label
+		json_t* aux1J = json_object_get(rootJ, "aux1label");
 		if (aux1J)
 			auxDisplays[1]->text = json_string_value(aux1J);
 
-		// aux2
-		json_t* aux2J = json_object_get(rootJ, "aux2");
+		// aux2 label
+		json_t* aux2J = json_object_get(rootJ, "aux2label");
 		if (aux2J)
 			auxDisplays[2]->text = json_string_value(aux2J);
 		
-		// aux3
-		json_t* aux3J = json_object_get(rootJ, "aux3");
+		// aux3 label
+		json_t* aux3J = json_object_get(rootJ, "aux3label");
 		if (aux3J)
 			auxDisplays[3]->text = json_string_value(aux3J);
 	}
+
 
 
 	void step() override {
