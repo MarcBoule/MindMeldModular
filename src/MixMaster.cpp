@@ -28,7 +28,7 @@ struct MixMaster : Module {
 	MixerMaster master;
 	
 	// No need to save, with reset
-	int resetTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
+	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 
 
 	// No need to save, no reset
@@ -122,7 +122,7 @@ struct MixMaster : Module {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
-		resetTrackLabelRequest = 1;
+		updateTrackLabelRequest = 1;
 		if (recurseNonJson) {
 			gInfo.resetNonJson();
 			for (int i = 0; i < 16; i++) {
@@ -443,8 +443,7 @@ struct MixMasterWidget : ModuleWidget {
 		// Insert inputs
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 79.3)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 88.3)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 100.0)), true, module, GRPM_MUTE_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 109.0)), true, module, GRPM_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 100.0)), true, module, GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
 		
 		
 		// Tracks
@@ -457,7 +456,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
-				trackDisplays[i]->resetTrackLabelRequestPtr = &(module->resetTrackLabelRequest);
+				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
 			}
 			// HPF lights
@@ -638,7 +637,7 @@ struct MixMasterWidget : ModuleWidget {
 		MixMaster* moduleM = (MixMaster*)module;
 		if (moduleM) {
 			// Track labels (pull from module)
-			if (moduleM->resetTrackLabelRequest >= 1) {// pull request from module
+			if (moduleM->updateTrackLabelRequest != 0) {// pull request from module
 				// track displays
 				for (int trk = 0; trk < 16; trk++) {
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
@@ -647,7 +646,7 @@ struct MixMasterWidget : ModuleWidget {
 				for (int grp = 0; grp < 4; grp++) {
 					groupDisplays[grp]->text = std::string(&(moduleM->trackLabels[(16 + grp) * 4]), 4);
 				}
-				moduleM->resetTrackLabelRequest = 0;// all done pulling
+				moduleM->updateTrackLabelRequest = 0;// all done pulling
 			}
 			
 			// Borders

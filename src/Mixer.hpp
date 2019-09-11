@@ -43,8 +43,7 @@ enum InputIds {
 	INSERT_GRP_AUX_INPUT,
 	TRACK_MUTE_INPUT,
 	TRACK_SOLO_INPUT,
-	GRPM_MUTE_INPUT,
-	GRPM_SOLO_INPUT,
+	GRPM_MUTESOLO_INPUT,
 	NUM_INPUTS
 };
 
@@ -1289,6 +1288,7 @@ struct MixerTrack {
 		
 		// extern must call resetNonJson()
 	}
+	
 	
 	
 	// Contract: 

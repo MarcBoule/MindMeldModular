@@ -558,7 +558,7 @@ struct GroupTrackAuxDisplayBase : LedDisplayTextField {
 struct TrackDisplay : GroupTrackAuxDisplayBase {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;
-	int *resetTrackLabelRequestPtr;
+	int *updateTrackLabelRequestPtr;
 	PortWidget **inputWidgets;
 
 	void onButton(const event::Button &e) override {
@@ -623,7 +623,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
 			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
-			reodrerItem->resetTrackLabelRequestPtr = resetTrackLabelRequestPtr;
+			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
 			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
 			
@@ -1048,8 +1048,9 @@ struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
 				float r = box.size.x / 2.0f + 2.6f;// arc radius
 				int dir = a0 < a1 ? NVG_CW : NVG_CCW;
 				nvgBeginPath(args.vg);
+				nvgLineCap(args.vg, NVG_ROUND);
 				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-				nvgStrokeWidth(args.vg, 1.5f);// arc thickness
+				nvgStrokeWidth(args.vg, 2.0f);// arc thickness
 				nvgStrokeColor(args.vg, DISP_COLORS[gInfo->colorAndCloak.cc4[dispColor]]);// arc color, same as displays
 				nvgStroke(args.vg);
 			}

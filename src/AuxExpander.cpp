@@ -62,9 +62,10 @@ struct AuxExpander : Module {
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	ColorAndCloak colorAndCloak;
-	int resetTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
+	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
+	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget
 	
-		
+	
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
@@ -154,6 +155,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++) {
 			vu[i << 1].vuColorTheme = 0;// vu[1], vu[3], vu[5], vu[7]  color theme is not used
 		}
+		resetAuxLabelRequest = 1;
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -218,7 +220,7 @@ struct AuxExpander : Module {
 			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[AFM_UPDATE_SLOW]);
 			if (*updateSlow != 0) {
 				memcpy(trackLabels, &messagesFromMother[AFM_TRACK_GROUP_NAMES], 4 * 20);
-				resetTrackLabelRequest = 1;
+				updateTrackLabelRequest = 1;
 				int32_t tmp;
 				memcpy(&tmp, &messagesFromMother[AFM_PANEL_THEME], 4);
 				panelTheme = tmp;
@@ -253,6 +255,13 @@ struct AuxExpanderWidget : ModuleWidget {
 	TrackAndGroupLabel* trackAndGroupLabels[20];
 	AuxDisplay* auxDisplays[4];
 
+	std::string getInitAuxLabel(int aux) {
+		std::string ret = "AUXA";
+		ret[3] += aux;
+		return ret;
+	}
+
+
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);
 
@@ -269,9 +278,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
 				auxDisplays[i]->srcVus = &(module->vu[0]);
 				auxDisplays[i]->auxNumber = i;
-				char buf[5] = "AUXA";
-				buf[3] += i;
-				auxDisplays[i]->text = buf;
+				auxDisplays[i]->text = getInitAuxLabel(i);
 			}
 			// Y is 4.7, same X as below
 			
@@ -469,13 +476,21 @@ struct AuxExpanderWidget : ModuleWidget {
 		if (module) {
 			AuxExpander* moduleA = (AuxExpander*)module;
 			
-			// Track labels (pull from module)
-			if (moduleA->resetTrackLabelRequest >= 1) {// pull request from module
+			// Labels (pull from module)
+			if (moduleA->resetAuxLabelRequest != 0) {
+				// aux labels
+				for (int aux = 0; aux < 4; aux++) {
+					auxDisplays[aux]->text = getInitAuxLabel(aux);
+				}
+				
+				moduleA->resetAuxLabelRequest = 0;
+			}
+			if (moduleA->updateTrackLabelRequest != 0) {// pull request from module
 				// track and group labels
 				for (int trk = 0; trk < 20; trk++) {
 					trackAndGroupLabels[trk]->text = std::string(&(moduleA->trackLabels[trk * 4]), 4);
 				}
-				moduleA->resetTrackLabelRequest = 0;// all done pulling
+				moduleA->updateTrackLabelRequest = 0;// all done pulling
 			}
 			
 			// Borders			
