@@ -35,6 +35,8 @@ struct MixMaster : Module {
 	RefreshCounter refresh;	
 	int panelThemeWithAuxPresent = 0;
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
+	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks
+	float trackInsertOuts[16 * 2];// room for 16 stereo insert outs
 	// std::string busId;
 
 		
@@ -91,7 +93,7 @@ struct MixMaster : Module {
 
 		gInfo.construct(&params[0]);
 		for (int i = 0; i < 16; i++) {
-			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]));
+			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]));
@@ -268,10 +270,13 @@ struct MixMaster : Module {
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
 		// Direct outs
-		SetDirectTrackOuts(0);// P1-8
-		SetDirectTrackOuts(8);// P9-16
-		SetDirectGroupOuts(mix);// PGrp
+		SetDirectTrackOuts(0);// 1-8
+		SetDirectTrackOuts(8);// 9-16
+		SetDirectGroupOuts(mix);// Grp
 				
+		// Insert outs
+		SetTrackInsertOuts(0);// 1-8
+		SetTrackInsertOuts(8);// 9-16
 				
 
 		//********** Lights **********
@@ -321,10 +326,17 @@ struct MixMaster : Module {
 		if (outputs[DIRECT_OUTPUTS + outi].isConnected()) {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
 
-			for (unsigned int i = 0; i < 8; i++) {
-				int tapIndex = gInfo.directOutsMode < 4 ? gInfo.directOutsMode : tracks[base + i].directOutsMode;
-				outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].taps[tapIndex][0], 2 * i);
-				outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].taps[tapIndex][1], 2 * i + 1);
+			if (gInfo.directOutsMode >= 4) {// per track direct outs
+				for (unsigned int i = 0; i < 8; i++) {
+					int tapIndex = tracks[base + i].directOutsMode;
+					int offset = (tapIndex << 5) + ((base + i) << 1);
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
+				}
+			}
+			else {// global direct outs
+				int tapIndex = gInfo.directOutsMode;
+				memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
 			}
 		}
 	}
@@ -347,15 +359,17 @@ struct MixMaster : Module {
 		}
 	}
 	
-	void SetInsertOuts(const int base) {// base is 0 or 8
+	void SetTrackInsertOuts(const int base) {// base is 0 or 8
 		int outi = base >> 3;
 		if (outputs[INSERT_TRACK_OUTPUTS + outi].isConnected()) {
 			outputs[INSERT_TRACK_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
 
-			for (unsigned int i = 0; i < 8; i++) {
-				outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[0], 2 * i);
-				outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[1], 2 * i + 1);
-			}
+			memcpy(outputs[INSERT_TRACK_OUTPUTS + outi].getVoltages(), &trackInsertOuts[(base << 1)], 4 * 16);
+			
+			// for (unsigned int i = 0; i < 8; i++) {
+				// outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[0], 2 * i);
+				// outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[1], 2 * i + 1);
+			// }
 		}
 	}
 
