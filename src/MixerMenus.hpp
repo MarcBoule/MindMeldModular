@@ -89,33 +89,47 @@ struct PanLawStereoItem : MenuItem {
 };
 
 
-struct DirectOutsItem : MenuItem {
-	GlobalInfo *gInfo;
+// used for direct outs mode and aux send mode (tap choice 1-4)
+struct TapModeItem : MenuItem {
+	int* tapModePtr;
+	bool isGlobal;
 
-	struct DirectOutsSubItem : MenuItem {
-		GlobalInfo *gInfo;
+	struct TapModeSubItem : MenuItem {
+		int* tapModePtr;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
-			gInfo->directOutsMode = setVal;
+			*tapModePtr = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		DirectOutsSubItem *pre0Item = createMenuItem<DirectOutsSubItem>("Pre-fader", CHECKMARK(gInfo->directOutsMode == 0));
-		pre0Item->gInfo = gInfo;
+		TapModeSubItem *pre0Item = createMenuItem<TapModeSubItem>("Pre-insert", CHECKMARK(*tapModePtr == 0));
+		pre0Item->tapModePtr = tapModePtr;
 		menu->addChild(pre0Item);
 
-		DirectOutsSubItem *pre1Item = createMenuItem<DirectOutsSubItem>("Post-fader", CHECKMARK(gInfo->directOutsMode == 1));
-		pre1Item->gInfo = gInfo;
+		TapModeSubItem *pre1Item = createMenuItem<TapModeSubItem>("Pre-fader", CHECKMARK(*tapModePtr == 1));
+		pre1Item->tapModePtr = tapModePtr;
 		pre1Item->setVal = 1;
 		menu->addChild(pre1Item);
 
-		DirectOutsSubItem *pre2Item = createMenuItem<DirectOutsSubItem>("Set per track", CHECKMARK(gInfo->directOutsMode == 2));
-		pre2Item->gInfo = gInfo;
+		TapModeSubItem *pre2Item = createMenuItem<TapModeSubItem>("Post-fader", CHECKMARK(*tapModePtr == 2));
+		pre2Item->tapModePtr = tapModePtr;
 		pre2Item->setVal = 2;
 		menu->addChild(pre2Item);
+
+		TapModeSubItem *pre3Item = createMenuItem<TapModeSubItem>("Post-solo", CHECKMARK(*tapModePtr == 3));
+		pre3Item->tapModePtr = tapModePtr;
+		pre3Item->setVal = 3;
+		menu->addChild(pre3Item);
+
+		if (isGlobal) {
+			TapModeSubItem *pre4Item = createMenuItem<TapModeSubItem>("Set per track", CHECKMARK(*tapModePtr == 4));
+			pre4Item->tapModePtr = tapModePtr;
+			pre4Item->setVal = 4;
+			menu->addChild(pre4Item);
+		}
 
 		return menu;
 	}
@@ -499,37 +513,6 @@ struct FadeProfileSlider : ui::Slider {
 	}
 };
 
-
-
-// Direct outs pre/post menu item
-
-template <typename TrackOrGroup>
-struct DirectOutsTrackItem : MenuItem {
-	TrackOrGroup *srcTrkGrp = NULL;
-
-	struct DirectOutsTrackSubItem : MenuItem {
-		TrackOrGroup *srcTrkGrp = NULL;
-		int setVal = 0;
-		void onAction(const event::Action &e) override {
-			srcTrkGrp->directOutsMode = setVal;
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-
-		DirectOutsTrackSubItem *pre0Item = createMenuItem<DirectOutsTrackSubItem>("Pre-fader", CHECKMARK(srcTrkGrp->directOutsMode == 0));
-		pre0Item->srcTrkGrp = srcTrkGrp;
-		menu->addChild(pre0Item);
-
-		DirectOutsTrackSubItem *pre1Item = createMenuItem<DirectOutsTrackSubItem>("Post-fader", CHECKMARK(srcTrkGrp->directOutsMode == 1));
-		pre1Item->srcTrkGrp = srcTrkGrp;
-		pre1Item->setVal = 1;
-		menu->addChild(pre1Item);
-
-		return menu;
-	}
-};
 
 
 // linked fader menu item

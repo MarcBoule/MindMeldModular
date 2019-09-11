@@ -167,6 +167,7 @@ struct TrackSettingsCpBuffer {
 	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	int directOutsMode;
+	int auxSendsMode;
 	int panLawStereo;
 	int vuColorTheme;
 	bool linkedFader;
@@ -188,7 +189,8 @@ struct TrackSettingsCpBuffer {
 		fadeProfile = 0.0f;
 		hpfCutoffFreq = 13.0f;// !! user must call filters' setCutoffs manually when copy pasting these
 		lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
-		directOutsMode = 1;
+		directOutsMode = 3;
+		auxSendsMode = 3;
 		panLawStereo = 0;
 		vuColorTheme = 0;
 		linkedFader = false;
@@ -239,8 +241,8 @@ struct GlobalInfo {
 	// need to save, with reset
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
-	int directOutsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
-	//int auxSendsMode;// 0 is pre-fader, 1 is post-fader, 2 is per-track choice
+	int directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+	int auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int chainMode;// 0 is pre-master, 1 is post-master
 	ColorAndCloak colorAndCloak;
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
@@ -292,7 +294,8 @@ struct GlobalInfo {
 	void onReset() {
 		panLawMono = 1;
 		panLawStereo = 0;
-		directOutsMode = 1;// post should be default
+		directOutsMode = 3;// post-solo should be default
+		auxSendsMode = 3;// post-solo should be default
 		chainMode = 1;// post should be default
 		colorAndCloak.cc4[cloakedMode] = false;
 		colorAndCloak.cc4[vuColor] = 0;
@@ -318,6 +321,9 @@ struct GlobalInfo {
 
 		// directOutsMode
 		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
+		
+		// auxSendsMode
+		json_object_set_new(rootJ, "auxSendsMode", json_integer(auxSendsMode));
 		
 		// chainMode
 		json_object_set_new(rootJ, "chainMode", json_integer(chainMode));
@@ -349,6 +355,11 @@ struct GlobalInfo {
 		json_t *directOutsModeJ = json_object_get(rootJ, "directOutsMode");
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// auxSendsMode
+		json_t *auxSendsModeJ = json_object_get(rootJ, "auxSendsMode");
+		if (auxSendsModeJ)
+			auxSendsMode = json_integer_value(auxSendsModeJ);
 		
 		// chainMode
 		json_t *chainModeJ = json_object_get(rootJ, "chainMode");
@@ -417,9 +428,9 @@ struct MixerMaster {
 	
 	// no need to save, with reset
 	private:
-	simd::float_4 gainMatrix;// L, R, RinL, LinR
+	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	float chainGains[2];// L, R
-	dsp::TSlewLimiter<simd::float_4> gainSlewers;
+	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter chainGainSlewers[2];
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	public:
@@ -440,7 +451,7 @@ struct MixerMaster {
 		gInfo = _gInfo;
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
-		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[0].setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[1].setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
 	}
@@ -457,7 +468,7 @@ struct MixerMaster {
 	}
 	void resetNonJson() {
 		updateSlowValues();
-		gainSlewers.reset();
+		gainMatrixSlewers.reset();
 		chainGainSlewers[0].reset();
 		chainGainSlewers[1].reset();
 		setupDcBlocker();
@@ -612,8 +623,8 @@ struct MixerMaster {
 		
 		// Calc master gain with slewer
 		simd::float_4 gains = gainMatrix;
-		if (movemask(gains == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gains = gainSlewers.process(gInfo->sampleTime, gains);
+		if (movemask(gains == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gains = gainMatrixSlewers.process(gInfo->sampleTime, gains);
 		}
 		
 		// Test for all gains equal to 0
@@ -684,13 +695,14 @@ struct MixerGroup {
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int directOutsMode;// when per track
+	int auxSendsMode;// when per track
 	int panLawStereo;// when per track
 	VuMeterAll vu[2];// use post[]
 
 	// no need to save, with reset
 	private:
-	simd::float_4 gainMatrix;// L, R, RinL, LinR
-	dsp::TSlewLimiter<simd::float_4> gainSlewers;
+	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
+	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
@@ -725,21 +737,22 @@ struct MixerGroup {
 		paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 		groupName = _groupName;
-		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
 	void onReset() {
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
-		directOutsMode = 1;// post should be default
+		directOutsMode = 3;// post-solo should be default
+		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 0;
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
 	void resetNonJson() {
 		updateSlowValues();
-		gainSlewers.reset();
+		gainMatrixSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
 		fadeGain = calcFadeGain();
@@ -827,6 +840,9 @@ struct MixerGroup {
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 		
+		// auxSendsMode
+		json_object_set_new(rootJ, (ids + "auxSendsMode").c_str(), json_integer(auxSendsMode));
+		
 		// panLawStereo
 		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
 
@@ -849,6 +865,11 @@ struct MixerGroup {
 		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// auxSendsMode
+		json_t *auxSendsModeJ = json_object_get(rootJ, (ids + "auxSendsMode").c_str());
+		if (auxSendsModeJ)
+			auxSendsMode = json_integer_value(auxSendsModeJ);
 		
 		// panLawStereo
 		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
@@ -875,8 +896,8 @@ struct MixerGroup {
 		
 		// Calc group gains with slewer
 		simd::float_4 gains = gainMatrix;
-		if (movemask(gains == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gains = gainSlewers.process(gInfo->sampleTime, gains);
+		if (movemask(gains == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gains = gainMatrixSlewers.process(gInfo->sampleTime, gains);
 		}
 		
 		// Test for all gains equal to 0
@@ -934,14 +955,17 @@ struct MixerTrack {
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
 	int directOutsMode;// when per track
+	int auxSendsMode;// when per track
 	int panLawStereo;// when per track
 	VuMeterAll vu[2];// use post[]
 
 	// no need to save, with reset
 	private:
 	bool stereo;// pan coefficients use this, so set up first
-	simd::float_4 gainMatrix;// L, R, RinL, LinR
-	dsp::TSlewLimiter<simd::float_4> gainSlewers;
+	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
+	float inGain;
+	float soloGain; // value of the solo enable (i.e. 0.0f or 1.0f)
+	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
@@ -954,8 +978,8 @@ struct MixerTrack {
 	int trackNum;
 	std::string ids;
 	GlobalInfo *gInfo;
-	Input *inL;
-	Input *inR;
+	Input *inSig;
+	Input *inInsert;
 	Input *inVol;
 	Input *inPan;
 	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
@@ -964,8 +988,8 @@ struct MixerTrack {
 	Param *paSolo;
 	Param *paPan;
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
-	float pre[2];// for pre-track (aka fader+pan) monitor outputs
-	float post[2];// post-track monitor outputs
+	float taps[4][2];// [0][]: pre-insert L R; [1][]: pre-fader L R, [2][]: post-fader L R, [3][]: post-mute-solo L R
+	float insertOut[2];
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(trackNum);}
@@ -976,8 +1000,8 @@ struct MixerTrack {
 		trackNum = _trackNum;
 		ids = "id_t" + std::to_string(trackNum) + "_";
 		gInfo = _gInfo;
-		inL = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 0];
-		inR = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 1];
+		inSig = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 0];
+		inInsert = &_inputs[INSERT_TRACK_INPUTS];
 		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
 		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
 		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
@@ -986,7 +1010,7 @@ struct MixerTrack {
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
-		gainSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
@@ -1000,18 +1024,17 @@ struct MixerTrack {
 		fadeProfile = 0.0f;
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
-		directOutsMode = 1;// post should be default
+		directOutsMode = 3;// post-solo should be default
+		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 0;
 		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
 		resetNonJson();
 	}
 	void resetNonJson() {
 		updateSlowValues();
-		gainSlewers.reset();
+		gainMatrixSlewers.reset();
 		vu[0].reset();
 		vu[1].reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 	}
 	
 	
@@ -1023,6 +1046,7 @@ struct MixerTrack {
 		dest->hpfCutoffFreq = hpfCutoffFreq;
 		dest->lpfCutoffFreq = lpfCutoffFreq;	
 		dest->directOutsMode = directOutsMode;
+		dest->auxSendsMode = auxSendsMode;
 		dest->panLawStereo = panLawStereo;
 		dest->vuColorTheme = vu[0].vuColorTheme;
 		dest->linkedFader = gInfo->isLinked(trackNum);
@@ -1034,6 +1058,7 @@ struct MixerTrack {
 		setHPFCutoffFreq(src->hpfCutoffFreq);
 		setLPFCutoffFreq(src->lpfCutoffFreq);	
 		directOutsMode = src->directOutsMode;
+		auxSendsMode = src->auxSendsMode;
 		panLawStereo = src->panLawStereo;
 		vu[0].vuColorTheme = src->vuColorTheme;
 		gInfo->setLinked(trackNum, src->linkedFader);
@@ -1099,17 +1124,17 @@ struct MixerTrack {
 	}
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
-	bool calcSoloEnable() {// returns true when the check for solo means this track should play 
+	float calcSoloGain() {// returns 1.0f when the check for solo means this track should play, 0.0f otherwise
 		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
-			return true;
+			return 1.0f;
 		}
 		// here solo is off for this track and there is at least one track or group that has their solo on.
 		int group = (int)(paGroup->getValue() + 0.5f);
 		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {// if going through soloed group  
 			// check all solos of all tracks mapped to group, and return true if all those solos are off
-			return (gInfo->groupUsage[group - 1] & gInfo->soloBitMask) == 0;
+			return ((gInfo->groupUsage[group - 1] & gInfo->soloBitMask) == 0) ? 1.0f : 0.0f;
 		}
-		return false;
+		return 0.0f;
 	}
 
 
@@ -1121,14 +1146,22 @@ struct MixerTrack {
 	
 	// Contract: 
 	//  * update group usage
-	//  * calc fadeGain
-	//  * process linked
 	//  * calc stereo
-	//  * calc gainMatrix
+	//  * calc inGain (computes gainAdjust with input presence, for gain-adjust block, single float)
+	//  * calc fadeGain (computes fade/mute gain, for mute-solo block, single float)
+	//  * calc soloGain (computes solo gain, for mute-solo block, single float)
+	//  * process linked
+	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
 		// update group usage
 		updateGroupUsage();
 		
+		// calc stereo
+		stereo = inSig[1].isConnected();
+
+		// calc inGain
+		inGain = inSig[0].isConnected() ? gainAdjust : 0.0f;
+
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
@@ -1146,21 +1179,16 @@ struct MixerTrack {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
+		// calc soloGain
+		soloGain = calcSoloGain();
+
 		// process linked
 		float slowGain = paFade->getValue();
 		gInfo->processLinked(trackNum, slowGain);
 				
-		// calc stereo
-		stereo = inR->isConnected();
-
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
-		if (fadeGain == 0.0f || !inL->isConnected() || !calcSoloEnable()) {// check mute/fade and solo
-			return;
-		}
-		slowGain *= fadeGain;
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-		slowGain *= gainAdjust;
 		if (inVol->isConnected()) {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
 		}
@@ -1218,6 +1246,87 @@ struct MixerTrack {
 		}
 	}
 	
+	
+	// Contract: 
+	//  * calc tap[], insertOut[] and vu[] vectors
+	//  * add proper tap[] to mix[]
+	void process(float *mix) {
+		// Tap[0]: pre-insert (Inputs with gain adjust)
+		// TODO: inGainSlewers (two of them so antipop on R connect?)
+		taps[0][0] = (inSig[0].getVoltage() * inGain);
+		taps[0][1] = stereo ? (inSig[1].getVoltage() * inGain) : taps[0][0];
+		
+		// Filters
+		float filtered[2] = {taps[0][0], taps[0][1]};
+		// HPF
+		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			filtered[0] = hpFilter[0].process(hpPreFilter[0].processHP(filtered[0]));
+			filtered[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(filtered[1])) : filtered[0];
+		}
+		// LPF
+		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			filtered[0] = lpFilter[0].process(filtered[0]);
+			filtered[1] = stereo ? lpFilter[1].process(filtered[1]) : filtered[0];
+		}
+		
+		// Insert outputs
+		insertOut[0] = filtered[0];
+		insertOut[1] = stereo ? filtered[1] : 0.0f;// don't send to R of insert outs when mono!
+		
+		// Tap[1]: pre-fader (post insert)
+		int insertPortIndex = trackNum >> 3;
+		if (inInsert[insertPortIndex].isConnected()) {
+			taps[1][0] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
+			taps[1][1] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+		}
+		else {
+			taps[1][0] = filtered[0];
+			taps[1][1] = filtered[1];
+		}
+		
+		// Calc track gains with slewer
+		simd::float_4 gainMatrixSlewed = gainMatrix;
+		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
+		}
+		
+		// Tap[2]: post-fader
+		// Tap[3]: post-mute-solo
+		// Test for all gainMatrixSlewed equal to 0
+		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
+			taps[2][0] = 0.0f;	
+			taps[2][1] = 0.0f;
+			taps[3][0] = 0.0f;	
+			taps[3][1] = 0.0f;
+		}
+		else {
+			// Apply gainMatrixSlewed
+			simd::float_4 sigs(taps[1][0], taps[1][1], taps[1][1], taps[1][0]);
+			sigs = sigs * gainMatrixSlewed;
+			
+			taps[2][0] = sigs[0] + sigs[2];
+			taps[2][1] = sigs[1] + sigs[3];
+
+			// TODO: mute/solo gain slewers
+			taps[3][0] *= fadeGain * soloGain;
+			taps[3][1] *= fadeGain * soloGain;
+				
+			// Add to mix
+			int groupIndex = (int)(paGroup->getValue() + 0.5f);
+			mix[groupIndex * 2 + 0] += taps[3][0];
+			mix[groupIndex * 2 + 1] += taps[3][1];
+		}
+		
+		// VUs
+		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
+			vu[0].reset();
+			vu[1].reset();
+		}
+		else {
+			vu[0].process(gInfo->sampleTime, taps[3][0]);
+			vu[1].process(gInfo->sampleTime, taps[3][1]);
+		}
+	}
 		
 	void dataToJson(json_t *rootJ) {
 		// gainAdjust
@@ -1237,6 +1346,9 @@ struct MixerTrack {
 		
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
+		
+		// auxSendsMode
+		json_object_set_new(rootJ, (ids + "auxSendsMode").c_str(), json_integer(auxSendsMode));
 		
 		// panLawStereo
 		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
@@ -1276,6 +1388,11 @@ struct MixerTrack {
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
 		
+		// auxSendsMode
+		json_t *auxSendsModeJ = json_object_get(rootJ, (ids + "auxSendsMode").c_str());
+		if (auxSendsModeJ)
+			auxSendsMode = json_integer_value(auxSendsModeJ);
+		
 		// panLawStereo
 		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
 		if (panLawStereoJ)
@@ -1287,76 +1404,6 @@ struct MixerTrack {
 			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// extern must call resetNonJson()
-	}
-	
-	
-	
-	// Contract: 
-	//  * calc pre[], post[] and vu[] vectors
-	//  * add post[] to mix[] when post is non-zero
-	void process(float *mix) {
-		if (!inL->isConnected()) {
-			post[0] = pre[0] = 0.0f;
-			post[1] = pre[1] = 0.0f;
-			vu[0].reset();
-			vu[1].reset();
-			gainSlewers.reset();
-			return;
-		}
-				
-		// Here we have an input, so get it and set the "pre" values
-		pre[0] = inL->getVoltage();
-		pre[1] = stereo ? inR->getVoltage() : pre[0];
-		
-		// Calc track gains with slewer
-		simd::float_4 gains = gainMatrix;
-		if (movemask(gains == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gains = gainSlewers.process(gInfo->sampleTime, gains);
-		}
-		
-		// Test for all gains equal to 0
-		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
-			post[0] = 0.0f;	
-			post[1] = 0.0f;
-		}
-		else {
-			post[0] = pre[0];
-			post[1] = pre[1];
-
-			// HPF
-			if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-				post[0] = hpFilter[0].process(hpPreFilter[0].processHP(post[0]));
-				post[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(post[1])) : post[0];
-			}
-			// LPF
-			if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
-				post[0] = lpFilter[0].process(post[0]);
-				post[1] = stereo ? lpFilter[1].process(post[1]) : post[0];
-			}
-
-			// Apply gains
-			simd::float_4 sigs(post[0], post[1], post[1], post[0]);
-			sigs = sigs * gains;
-			
-			// Post signals
-			post[0] = sigs[0] + sigs[2];
-			post[1] = sigs[1] + sigs[3];
-				
-			// Add to mix
-			int groupIndex = (int)(paGroup->getValue() + 0.5f);
-			mix[groupIndex * 2 + 0] += post[0];
-			mix[groupIndex * 2 + 1] += post[1];
-		}
-		
-		// VUs
-		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
-			vu[0].reset();
-			vu[1].reset();
-		}
-		else {
-			vu[0].process(gInfo->sampleTime, post[0]);
-			vu[1].process(gInfo->sampleTime, post[1]);
-		}
 	}
 };// struct MixerTrack
 

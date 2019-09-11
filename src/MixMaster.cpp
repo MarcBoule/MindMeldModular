@@ -322,15 +322,9 @@ struct MixMaster : Module {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
 
 			for (unsigned int i = 0; i < 8; i++) {
-				if (gInfo.directOutsMode == 1 || (gInfo.directOutsMode == 2 && tracks[base + i].directOutsMode == 1) ) {// post-fader
-					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].post[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].post[1], 2 * i + 1);
-				}
-				else// pre-fader
-				{
-					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].pre[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].pre[1], 2 * i + 1);
-				}
+				int tapIndex = gInfo.directOutsMode < 4 ? gInfo.directOutsMode : tracks[base + i].directOutsMode;
+				outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].taps[tapIndex][0], 2 * i);
+				outputs[DIRECT_OUTPUTS + outi].setVoltage(tracks[base + i].taps[tapIndex][1], 2 * i + 1);
 			}
 		}
 	}
@@ -352,6 +346,19 @@ struct MixMaster : Module {
 			}
 		}
 	}
+	
+	void SetInsertOuts(const int base) {// base is 0 or 8
+		int outi = base >> 3;
+		if (outputs[INSERT_TRACK_OUTPUTS + outi].isConnected()) {
+			outputs[INSERT_TRACK_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
+
+			for (unsigned int i = 0; i < 8; i++) {
+				outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[0], 2 * i);
+				outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[1], 2 * i + 1);
+			}
+		}
+	}
+
 
 };
 
@@ -379,9 +386,17 @@ struct MixMasterWidget : ModuleWidget {
 		settingsALabel->text = "Settings (audio)";
 		menu->addChild(settingsALabel);
 		
-		DirectOutsItem *directOutsItem = createMenuItem<DirectOutsItem>("Direct outs", RIGHT_ARROW);
-		directOutsItem->gInfo = &(module->gInfo);
+		TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+		directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
+		directOutsItem->isGlobal = true;
 		menu->addChild(directOutsItem);
+		
+		if (module->auxExpanderPresent) {
+			TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
+			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
+			auxSendsItem->isGlobal = true;
+			menu->addChild(auxSendsItem);
+		}
 		
 		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
 		chainItem->gInfo = &(module->gInfo);
@@ -458,6 +473,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
+				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 			}
 			// HPF lights
 			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TRACK_HPF_LIGHTS + i));	
@@ -544,6 +560,7 @@ struct MixMasterWidget : ModuleWidget {
 				groupDisplays[i]->gInfo = &(module->gInfo);
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
+				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 			}
 			
 			// Volume inputs

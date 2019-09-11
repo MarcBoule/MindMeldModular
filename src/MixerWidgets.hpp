@@ -560,6 +560,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 	int trackNumSrc;
 	int *updateTrackLabelRequestPtr;
 	PortWidget **inputWidgets;
+	bool *auxExpanderPresentPtr;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -594,10 +595,18 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 			linkFadItem->srcTrkGrp = srcTrack;
 			menu->addChild(linkFadItem);
 			
-			if (srcTrack->gInfo->directOutsMode >= 2) {
-				DirectOutsTrackItem<MixerTrack> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerTrack>>("Direct outs", RIGHT_ARROW);
-				dirTrkItem->srcTrkGrp = srcTrack;
-				menu->addChild(dirTrkItem);
+			if (srcTrack->gInfo->directOutsMode >= 4) {
+				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);
+				directOutsItem->isGlobal = false;
+				menu->addChild(directOutsItem);
+			}
+
+			if (srcTrack->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
+				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
+				auxSendsItem->tapModePtr = &(srcTrack->auxSendsMode);
+				auxSendsItem->isGlobal = false;
+				menu->addChild(auxSendsItem);
 			}
 
 			if (srcTrack->gInfo->panLawStereo >= 2) {
@@ -652,6 +661,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 
 struct GroupDisplay : GroupTrackAuxDisplayBase {
 	MixerGroup *srcGroup = NULL;
+	bool *auxExpanderPresentPtr;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -673,10 +683,18 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 			linkFadItem->srcTrkGrp = srcGroup;
 			menu->addChild(linkFadItem);
 			
-			if (srcGroup->gInfo->directOutsMode >= 2) {
-				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
-				dirTrkItem->srcTrkGrp = srcGroup;
-				menu->addChild(dirTrkItem);
+			if (srcGroup->gInfo->directOutsMode >= 4) {
+				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
+				directOutsItem->isGlobal = false;
+				menu->addChild(directOutsItem);
+			}
+
+			if (srcGroup->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
+				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
+				auxSendsItem->tapModePtr = &(srcGroup->auxSendsMode);
+				auxSendsItem->isGlobal = false;
+				menu->addChild(auxSendsItem);
 			}
 
 			if (srcGroup->gInfo->panLawStereo >= 2) {
@@ -742,7 +760,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			linkFadItem->srcTrkGrp = srcGroup;
 			menu->addChild(linkFadItem);
 			
-			if (srcGroup->gInfo->directOutsMode >= 2) {
+			if (srcGroup->gInfo->directOutsMode >= 4) {
 				isEmptyMenu = false;
 				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
 				dirTrkItem->srcTrkGrp = srcGroup;
