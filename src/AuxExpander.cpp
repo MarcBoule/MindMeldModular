@@ -78,16 +78,16 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 16; i++) {
 			// Track send aux A
 			snprintf(strBuf, 32, "Track #%i aux send A", i + 1);
-			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Track send aux B
 			snprintf(strBuf, 32, "Track #%i aux send B", i + 1);
-			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 1, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 1, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Track send aux C
 			snprintf(strBuf, 32, "Track #%i aux send C", i + 1);
-			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 2, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 2, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Track send aux D
 			snprintf(strBuf, 32, "Track #%i aux send D", i + 1);
-			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 3, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 3, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Track #%i aux send mute", i + 1);
 			configParam(TRACK_AUXMUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
@@ -95,16 +95,16 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++) {
 			// Group send aux A
 			snprintf(strBuf, 32, "Group #%i aux send A", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Group send aux B
 			snprintf(strBuf, 32, "Group #%i aux send B", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 1, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 1, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Group send aux C
 			snprintf(strBuf, 32, "Group #%i aux send C", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 2, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 2, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Group send aux D
 			snprintf(strBuf, 32, "Group #%i aux send D", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 3, 0.0f, maxAGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 3, 0.0f, maxAGFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Group #%i aux send mute", i + 1);
 			configParam(GROUP_AUXMUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);		
@@ -176,8 +176,10 @@ struct AuxExpander : Module {
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 
 		// vuColorTheme
+		std::string buf = "vuColorTheme0";
 		for (int i = 0; i < 4; i++ ) {
-			json_object_set_new(rootJ, ("vuColorTheme" + i), json_integer(vu[i << 1].vuColorTheme));
+			json_object_set_new(rootJ, buf.c_str(), json_integer(vu[i << 1].vuColorTheme));
+			buf[12]++;
 		}
 		
 		return rootJ;
@@ -191,10 +193,12 @@ struct AuxExpander : Module {
 			panelTheme = json_integer_value(panelThemeJ);
 
 		// vuColorTheme
+		std::string buf = "vuColorTheme0";
 		for (int i = 0; i < 4; i++ ) {
-			json_t *vuColorThemeJ = json_object_get(rootJ, "vuColorTheme" + i);
+			json_t *vuColorThemeJ = json_object_get(rootJ, buf.c_str());
 			if (vuColorThemeJ)
 				vu[i << 1].vuColorTheme = json_integer_value(vuColorThemeJ);
+			buf[12]++;
 		}
 		
 		resetNonJson(true);
@@ -208,28 +212,40 @@ struct AuxExpander : Module {
 		 
 		if (motherPresent) {
 			// To Mother
-			// float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
-			// for (int i = 0; i < 8; i++) {
-				// messagesToMother[i] = inputs[i].getVoltage();
-			// }
-			// leftExpander.module->rightExpander.messageFlipRequested = true;
+			// ***********
+			
+			// Aux returns
+			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
+			for (int i = 0; i < 8; i++) {
+				messagesToMother[AFM_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();
+			}
+			leftExpander.module->rightExpander.messageFlipRequested = true;
+			
 			
 			// From Mother
+			// ***********
 			
 			// Slow values from mother
 			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[AFM_UPDATE_SLOW]);
 			if (*updateSlow != 0) {
+				// Track labels
 				memcpy(trackLabels, &messagesFromMother[AFM_TRACK_GROUP_NAMES], 4 * 20);
 				updateTrackLabelRequest = 1;
+				// Panel theme
 				int32_t tmp;
 				memcpy(&tmp, &messagesFromMother[AFM_PANEL_THEME], 4);
 				panelTheme = tmp;
+				// Color theme
 				memcpy(&colorAndCloak.cc1, &messagesFromMother[AFM_COLOR_AND_CLOAK], 4);
 			}
 			
 			// Fast values from mother
-			// VUS: leave is messagesFromMother, nothing to do
-			
+			// Vus handled below outside the block
+						
+			// Aux sends
+			for (int i = 0; i < 8; i++) {
+				outputs[SEND_OUTPUTS + i].setVoltage(messagesFromMother[AFM_AUX_SENDS + i]);
+			}
 		}	
 
 
@@ -283,9 +299,9 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 4.7, same X as below
 			
 			// Left sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), false, module, AuxExpander::SEND_OUTPUTS + i, module ? &module->panelTheme : NULL));			
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), false, module, AuxExpander::SEND_OUTPUTS + i * 2 + 0, module ? &module->panelTheme : NULL));			
 			// Right sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, AuxExpander::SEND_OUTPUTS + 4 + i, module ? &module->panelTheme : NULL));
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, AuxExpander::SEND_OUTPUTS + i * 2 + 1, module ? &module->panelTheme : NULL));
 
 			// Left returns
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), true, module, AuxExpander::RETURN_INPUTS + i, module ? &module->panelTheme : NULL));			
@@ -293,7 +309,11 @@ struct AuxExpanderWidget : ModuleWidget {
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), true, module, AuxExpander::RETURN_INPUTS + 4 + i, module ? &module->panelTheme : NULL));			
 			
 			// Pan knobs
-			addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(6.35 + 12.7 * i, 62.83)), module, AuxExpander::GLOBAL_AUXPAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSmallKnobGreyWithPanCol *panKnobAux;
+			addParam(panKnobAux = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(6.35 + 12.7 * i, 62.83)), module, AuxExpander::GLOBAL_AUXPAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				panKnobAux->dispColorPtr = &(module->colorAndCloak.cc4[dispColor]);
+			}
 			
 			// Return faders
 			addParam(createDynamicParamCentered<DynSmallerFader>(mm2px(Vec(6.35 + 3.67 + 12.7 * i, 87.2)), module, AuxExpander::GLOBAL_AUXRETURN_PARAMS + i, module ? &module->panelTheme : NULL));

@@ -39,6 +39,8 @@ struct MixMaster : Module {
 	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
 	float groupTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo groups
 	float groupInsertOuts[4 * 2];// room for 4 stereo group insert outs
+	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
+	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
 	// std::string busId;
 
 		
@@ -219,7 +221,7 @@ struct MixMaster : Module {
 		if (auxExpanderPresent) {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
-			float* returns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			float* auxReturns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
 		}
 		
 		
@@ -276,7 +278,7 @@ struct MixMaster : Module {
 		SetDirectTrackOuts(0);// 1-8
 		SetDirectTrackOuts(8);// 9-16
 		SetDirectGroupOuts();
-		SetDirectAuxOuts();
+		SetDirectAuxOuts();// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other diretct outs
 				
 		// Insert outs
 		SetInsertTrackOuts(0);// 1-8
@@ -304,12 +306,16 @@ struct MixMaster : Module {
 			float *messageToExpander = (float*)(rightExpander.module->leftExpander.producerMessage);
 			
 			// Slow
+			
 			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[AFM_UPDATE_SLOW]);
 			if (slowExpander) {
+				// Track names
 				*updateSlow = 1;
 				memcpy(&messageToExpander[AFM_TRACK_GROUP_NAMES], trackLabels, 4 * 20);
 				int32_t tmp = panelTheme;
+				// Panel theme
 				memcpy(&messageToExpander[AFM_PANEL_THEME], &tmp, 4);
+				// Color theme
 				memcpy(&messageToExpander[AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
 			}
 			else {
@@ -317,8 +323,13 @@ struct MixMaster : Module {
 			}
 			
 			// Fast
-			float sends[8];// contains 8 values of the sends that go to the aux panel
-			memcpy(&messageToExpander[AFM_AUX_VUS], &mix[2], 8 * 4); // temporary for now, show group pre[] in aux VUs
+			
+			// Aux sends
+			auxSends = &messageToExpander[AFM_AUX_SENDS];// room for 8 values of the sends to the aux panel
+			// TODO: populate auxSends[0..7]. Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
+			
+			// Aux VUs
+			//memcpy(&messageToExpander[AFM_AUX_VUS], &auxVus[0], 8 * 4);// tap 4 of the aux return signal flows
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}
@@ -521,7 +532,7 @@ struct MixMasterWidget : ModuleWidget {
 			DynSmallKnobGreyWithPanCol *panKnobTrack;
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobTrack->gInfo = &(module->gInfo);
+				panKnobTrack->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 			}
 			
 			// Faders
@@ -601,7 +612,7 @@ struct MixMasterWidget : ModuleWidget {
 			DynSmallKnobGreyWithPanCol *panKnobGroup;
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobGroup->gInfo = &(module->gInfo);
+				panKnobGroup->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 			}
 			
 			// Faders

@@ -459,7 +459,7 @@ static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	 int8_t* dispColor = NULL;// TODO make int32_t (here and all over the place where values are passed through floats for exp)
+	 int8_t* dispColor = NULL;
 	
 	TrackAndGroupLabel() {
 		box.size = DISP_SIZE;
@@ -629,17 +629,17 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
 			menu->addChild(settingsALabel);
 
+			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
+			copyItem->tracks = tracks;
+			copyItem->trackNumSrc = trackNumSrc;
+			menu->addChild(copyItem);
+			
 			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
 			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
 			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
 			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
-			
-			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
-			copyItem->tracks = tracks;
-			copyItem->trackNumSrc = trackNumSrc;
-			menu->addChild(copyItem);
 			
 			e.consume(this);
 			return;
@@ -1065,13 +1065,13 @@ struct DynSmallFaderWithLink : DynSmallFader {
 // --------------------
 
 struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
-	GlobalInfo *gInfo = NULL;
+	int8_t* dispColorPtr = NULL;
 	
 	void draw(const DrawArgs &args) override {
 		static const float a0 = 3.0f * M_PI / 2.0f;
 		
 		DynSmallKnobGrey::draw(args);
-		if (paramQuantity && gInfo) {
+		if (paramQuantity && dispColorPtr) {
 			float normalizedParam = paramQuantity->getScaledValue();
 			if (normalizedParam != 0.5f) {
 				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
@@ -1082,7 +1082,7 @@ struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
 				nvgLineCap(args.vg, NVG_ROUND);
 				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
 				nvgStrokeWidth(args.vg, 2.0f);// arc thickness
-				nvgStrokeColor(args.vg, DISP_COLORS[gInfo->colorAndCloak.cc4[dispColor]]);// arc color, same as displays
+				nvgStrokeColor(args.vg, DISP_COLORS[*dispColorPtr]);// arc color, same as displays
 				nvgStroke(args.vg);
 			}
 		}
