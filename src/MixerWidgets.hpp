@@ -846,6 +846,19 @@ struct GroupSelectDisplay : ParamWidget {
 			}
 		}
 	}
+	
+	void reset() override {
+		if (paramQuantity) {
+			paramQuantity->reset();
+		}
+	}
+
+	void randomize() override {
+		if (paramQuantity) {
+			float value = paramQuantity->getMinValue() + std::floor(random::uniform() * (paramQuantity->getRange() + 1));
+			paramQuantity->setValue(value);
+		}
+	}
 };
 
 

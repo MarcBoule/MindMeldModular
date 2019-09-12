@@ -703,6 +703,8 @@ struct MixerGroup {
 	private:
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
+	dsp::SlewLimiter muteSoloGainSlewer;
+	float muteSoloGain; // value of the mute/fade * solo_enable
 	public:
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
@@ -711,6 +713,7 @@ struct MixerGroup {
 	int groupNum;// 0 to 3
 	std::string ids;
 	GlobalInfo *gInfo;
+	Input *inInsert;
 	Input *inVol;
 	Input *inPan;
 	Param *paFade;
@@ -718,7 +721,6 @@ struct MixerGroup {
 	Param *paSolo;
 	Param *paPan;
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
-	float post[2];// post-group monitor outputs (don't need pre-group variable, since those are already in mix[] and they are not affected here)
 	float target = -1.0f;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
@@ -732,6 +734,7 @@ struct MixerGroup {
 		groupNum = _groupNum;
 		ids = "id_g" + std::to_string(groupNum) + "_";
 		gInfo = _gInfo;
+		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
 		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
 		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
 		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
@@ -742,6 +745,7 @@ struct MixerGroup {
 		taps = _taps;
 		insertOuts = _insertOuts;
 		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
@@ -757,6 +761,7 @@ struct MixerGroup {
 	void resetNonJson() {
 		updateSlowValues();
 		gainMatrixSlewers.reset();
+		muteSoloGainSlewer.reset();
 		vu[0].reset();
 		vu[1].reset();
 		fadeGain = calcFadeGain();
@@ -765,9 +770,10 @@ struct MixerGroup {
 	
 	
 	// Contract: 
-	//  * calc fadeGain
+	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
+	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * process linked
-	//  * calc gainMatrix
+	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
 		// calc fadeGain 
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
@@ -786,16 +792,16 @@ struct MixerGroup {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
+		// calc muteSoloGain
+		muteSoloGain = fadeGain;// TODO: solo not in here but in groups, how to handle?
+		
+		
 		// process linked
 		float slowGain = paFade->getValue();
 		gInfo->processLinked(16 + groupNum, slowGain);
 		
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
-		if (fadeGain == 0.0f) {
-			return;
-		}
-		slowGain *= fadeGain;
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
@@ -833,7 +839,74 @@ struct MixerGroup {
 		}
 	}
 	
-
+	// Contract: 
+	//  * calc all but the first taps[], insertOuts[] and vu[] vectors
+	//  * add final tap to mix[0..1]
+	void process(float *mix) {// give the full mix[10] vector, proper offset will be computed in here
+		// Tap[0],[1]: pre-insert (group inputs)
+		// nothing to do, already set up by the mix master
+		
+		// Insert outputs
+		insertOuts[0] = taps[0];
+		insertOuts[1] = taps[1];
+		
+		// Tap[8],[9]: pre-fader (post insert)
+		if (inInsert->isConnected()) {
+			taps[8] = inInsert->getVoltage((groupNum << 1) + 0);
+			taps[9] = inInsert->getVoltage((groupNum << 1) + 1);
+		}
+		else {
+			taps[8] = taps[0];
+			taps[9] = taps[1];
+		}
+		
+		// Calc group gains with slewer
+		simd::float_4 gainMatrixSlewed = gainMatrix;
+		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
+		}
+		
+		// Test for all gainMatrixSlewed equal to 0
+		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
+			taps[16] = 0.0f;	
+			taps[17] = 0.0f;
+			taps[24] = 0.0f;	
+			taps[25] = 0.0f;
+		}
+		else {
+			// Apply gainMatrixSlewed
+			simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
+			sigs = sigs * gainMatrixSlewed;
+			
+			taps[16] = sigs[0] + sigs[2];
+			taps[17] = sigs[1] + sigs[3];
+			
+			// Calc muteSoloGainSlewed
+			float muteSoloGainSlewed = muteSoloGain;
+			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
+				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
+			}
+			
+			taps[24] = taps[16] * muteSoloGainSlewed;
+			taps[25] = taps[17] * muteSoloGainSlewed;
+				
+			// Add to mix
+			mix[0] += taps[24];
+			mix[1] += taps[25];
+		}
+		
+		// VUs
+		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
+			vu[0].reset();
+			vu[1].reset();
+		}
+		else {
+			vu[0].process(gInfo->sampleTime, taps[24]);
+			vu[1].process(gInfo->sampleTime, taps[25]);
+		}
+	}
+	
+	
 	void dataToJson(json_t *rootJ) {
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
@@ -887,52 +960,6 @@ struct MixerGroup {
 		
 		// extern must call resetNonJson()
 	}
-	
-
-	// Contract: 
-	//  * calc post[] and vu[] vectors
-	//  * add post[] to mix[0..1] when post is non-zero
-	void process(float *mix) {// give the full mix[10] vector, proper offset will be computed in here
-		post[0] = mix[groupNum * 2 + 2];
-		post[1] = mix[groupNum * 2 + 3];
-
-		// no optimization of post[0..1] == {0, 0}, since it could be a zero crossing of a mono source!
-		
-		// Calc group gains with slewer
-		simd::float_4 gains = gainMatrix;
-		if (movemask(gains == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gains = gainMatrixSlewers.process(gInfo->sampleTime, gains);
-		}
-		
-		// Test for all gains equal to 0
-		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
-			post[0] = 0.0f;	
-			post[1] = 0.0f;
-		}
-		else {
-			// Apply gains
-			simd::float_4 sigs(post[0], post[1], post[1], post[0]);
-			sigs = sigs * gains;
-			
-			// Post signals
-			post[0] = sigs[0] + sigs[2];
-			post[1] = sigs[1] + sigs[3];
-				
-			// Add to mix
-			mix[0] += post[0];
-			mix[1] += post[1];
-		}
-		
-		// VUs
-		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
-			vu[0].reset();
-			vu[1].reset();
-		}
-		else {
-			vu[0].process(gInfo->sampleTime, post[0]);
-			vu[1].process(gInfo->sampleTime, post[1]);
-		}
-	}
 };// struct MixerGroup
 
 
@@ -968,7 +995,7 @@ struct MixerTrack {
 	bool stereo;// pan coefficients use this, so set up first
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 	float inGain;
-	float muteSoloGain; // value of the solo enable (i.e. 0.0f or 1.0f)
+	float muteSoloGain; // value of the mute/fade * solo_enable
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter inGainSlewer;
 	dsp::SlewLimiter muteSoloGainSlewer;
@@ -1262,7 +1289,7 @@ struct MixerTrack {
 	
 	// Contract: 
 	//  * calc taps[], insertOuts[] and vu[] vectors
-	//  * add proper taps[] to mix[] when track in use
+	//  * when track in use, add final tap to mix[] according to group
 	void process(float *mix) {
 		int insertPortIndex = trackNum >> 3;
 

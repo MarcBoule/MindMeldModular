@@ -15,7 +15,7 @@ struct MixMaster : Module {
 
 
 	// Constants
-	int numChannelsDirectOuts = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
+	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
 	int panelTheme;
@@ -260,6 +260,7 @@ struct MixMaster : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].process(mix);
 		}
+		memcpy(groupTaps, &mix[2], 8 * 4);
 		// Groups
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
@@ -274,12 +275,15 @@ struct MixMaster : Module {
 		// Direct outs
 		SetDirectTrackOuts(0);// 1-8
 		SetDirectTrackOuts(8);// 9-16
-		SetDirectGroupOuts(mix);// Grp
+		SetDirectGroupOuts();
+		SetDirectAuxOuts();
 				
 		// Insert outs
 		SetInsertTrackOuts(0);// 1-8
 		SetInsertTrackOuts(8);// 9-16
-				
+		SetInsertGroupAuxOuts();	
+
+
 
 		//********** Lights **********
 		
@@ -326,9 +330,13 @@ struct MixMaster : Module {
 	void SetDirectTrackOuts(const int base) {// base is 0 or 8
 		int outi = base >> 3;
 		if (outputs[DIRECT_OUTPUTS + outi].isConnected()) {
-			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
+			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannels16);
 
-			if (gInfo.directOutsMode >= 4) {// per track direct outs
+			if (gInfo.directOutsMode < 4) {// global direct outs
+				int tapIndex = gInfo.directOutsMode;
+				memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
+			}
+			else {// per track direct outs
 				for (unsigned int i = 0; i < 8; i++) {
 					int tapIndex = tracks[base + i].directOutsMode;
 					int offset = (tapIndex << 5) + ((base + i) << 1);
@@ -336,45 +344,51 @@ struct MixMaster : Module {
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
 				}
 			}
-			else {// global direct outs
+		}
+	}
+	
+	void SetDirectGroupOuts() {
+		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
+			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
+
+			if (gInfo.directOutsMode < 4) {// global direct outs
 				int tapIndex = gInfo.directOutsMode;
-				memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
+				memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(), &groupTaps[(tapIndex << 3)], 4 * 8);
+			}
+			else {// per group direct outs
+				for (unsigned int i = 0; i < 4; i++) {
+					int tapIndex = tracks[i].directOutsMode;
+					int offset = (tapIndex << 3);
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
+				}
 			}
 		}
 	}
 	
-	void SetDirectGroupOuts(float *mix) {
-		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
-			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
-
-			for (unsigned int i = 0; i < 4; i++) {
-				if (gInfo.directOutsMode == 1 || (gInfo.directOutsMode == 2 && groups[i].directOutsMode == 1) ) {// post-fader
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].post[0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(groups[i].post[1], 2 * i + 1);
-				}
-				else// pre-fader
-				{
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(mix[2 * i + 2], 2 * i);
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(mix[2 * i + 3], 2 * i + 1);
-				}
-			}
+	void SetDirectAuxOuts() {
+		if (outputs[DIRECT_OUTPUTS + 3].isConnected()) {
+			outputs[DIRECT_OUTPUTS + 3].setChannels(8);
+			// TODO
 		}
 	}
+
 	
 	void SetInsertTrackOuts(const int base) {// base is 0 or 8
 		int outi = base >> 3;
 		if (outputs[INSERT_TRACK_OUTPUTS + outi].isConnected()) {
-			outputs[INSERT_TRACK_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
-
+			outputs[INSERT_TRACK_OUTPUTS + outi].setChannels(numChannels16);
 			memcpy(outputs[INSERT_TRACK_OUTPUTS + outi].getVoltages(), &trackInsertOuts[(base << 1)], 4 * 16);
-			
-			// for (unsigned int i = 0; i < 8; i++) {
-				// outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[0], 2 * i);
-				// outputs[INSERT_TRACK_OUTPUTS + outi].setVoltage(tracks[base + i].insertOut[1], 2 * i + 1);
-			// }
 		}
 	}
 
+	void SetInsertGroupAuxOuts() {
+		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
+			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(numChannels16);
+			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupInsertOuts[0], 4 * 8);
+			// TODO aux insert outs
+		}
+	}
 
 };
 
