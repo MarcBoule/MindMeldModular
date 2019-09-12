@@ -720,13 +720,15 @@ struct MixerGroup {
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float post[2];// post-group monitor outputs (don't need pre-group variable, since those are already in mix[] and they are not affected here)
 	float target = -1.0f;
+	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
+	float *insertOuts;// [0][1]: insert outs for this track
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
 
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName) {
+	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps, float* _insertOuts) {
 		groupNum = _groupNum;
 		ids = "id_g" + std::to_string(groupNum) + "_";
 		gInfo = _gInfo;
@@ -737,6 +739,8 @@ struct MixerGroup {
 		paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 		groupName = _groupName;
+		taps = _taps;
+		insertOuts = _insertOuts;
 		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
 	}
 	
@@ -964,8 +968,10 @@ struct MixerTrack {
 	bool stereo;// pan coefficients use this, so set up first
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 	float inGain;
-	float soloGain; // value of the solo enable (i.e. 0.0f or 1.0f)
+	float muteSoloGain; // value of the solo enable (i.e. 0.0f or 1.0f)
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
+	dsp::SlewLimiter inGainSlewer;
+	dsp::SlewLimiter muteSoloGainSlewer;
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
@@ -990,6 +996,7 @@ struct MixerTrack {
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
+	bool oldInUse = true;
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(trackNum);}
@@ -1013,6 +1020,8 @@ struct MixerTrack {
 		taps = _taps;
 		insertOuts = _insertOuts;
 		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
+		inGainSlewer.setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
@@ -1035,6 +1044,8 @@ struct MixerTrack {
 	void resetNonJson() {
 		updateSlowValues();
 		gainMatrixSlewers.reset();
+		inGainSlewer.reset();
+		muteSoloGainSlewer.reset();
 		vu[0].reset();
 		vu[1].reset();
 	}
@@ -1150,8 +1161,8 @@ struct MixerTrack {
 	//  * update group usage
 	//  * calc stereo
 	//  * calc inGain (computes gainAdjust with input presence, for gain-adjust block, single float)
-	//  * calc fadeGain (computes fade/mute gain, for mute-solo block, single float)
-	//  * calc soloGain (computes solo gain, for mute-solo block, single float)
+	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
+	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * process linked
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
@@ -1164,7 +1175,7 @@ struct MixerTrack {
 		// calc inGain
 		inGain = inSig[0].isConnected() ? gainAdjust : 0.0f;
 
-		// calc fadeGain 
+		// calc fadeGain (does mute also)
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
 			if (!gInfo->symmetricalFade && newTarget != target) {
@@ -1181,8 +1192,8 @@ struct MixerTrack {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
-		// calc soloGain
-		soloGain = calcSoloGain();
+		// calc muteSoloGain
+		muteSoloGain = calcSoloGain() * fadeGain;
 
 		// process linked
 		float slowGain = paFade->getValue();
@@ -1256,23 +1267,35 @@ struct MixerTrack {
 		int insertPortIndex = trackNum >> 3;
 
 		// optimize unused track
-		if (!inSig[0].isConnected()) {
-			taps[0] = 0.0f; taps[1] = 0.0f;
-			taps[32] = 0.0f; taps[33] = 0.0f;
-			taps[64] = 0.0f; taps[65] = 0.0f;
-			taps[96] = 0.0f; taps[97] = 0.0f;
-			insertOuts[0] = 0.0f;
-			insertOuts[1] = 0.0f;
-			vu[0].reset();
-			vu[1].reset();
+		bool inUse = inSig[0].isConnected();
+		if (!inUse) {
+			if (oldInUse) {
+				taps[0] = 0.0f; taps[1] = 0.0f;
+				taps[32] = 0.0f; taps[33] = 0.0f;
+				taps[64] = 0.0f; taps[65] = 0.0f;
+				taps[96] = 0.0f; taps[97] = 0.0f;
+				insertOuts[0] = 0.0f;
+				insertOuts[1] = 0.0f;
+				vu[0].reset();
+				vu[1].reset();
+				gainMatrixSlewers.reset();
+				inGainSlewer.reset();
+				muteSoloGainSlewer.reset();
+				oldInUse = false;
+			}
 			return;
 		}
+		oldInUse = true;
 		
+		// Calc inGainSlewed
+		float inGainSlewed = inGain;
+		if (inGainSlewed != inGainSlewer.out) {
+			inGainSlewed = inGainSlewer.process(gInfo->sampleTime, inGainSlewed);
+		}
 		
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
-		// TODO: inGainSlewers (two of them so antipop on R connect?)
-		taps[0] = (inSig[0].getVoltage() * inGain);
-		taps[1] = stereo ? (inSig[1].getVoltage() * inGain) : taps[0];
+		taps[0] = (inSig[0].getVoltage() * inGainSlewed);
+		taps[1] = stereo ? (inSig[1].getVoltage() * inGainSlewed) : taps[0];
 		
 		// Filters
 		float filtered[2] = {taps[0], taps[1]};
@@ -1301,7 +1324,7 @@ struct MixerTrack {
 			taps[33] = filtered[1];
 		}
 		
-		// Calc track gains with slewer
+		// Calc gainMatrixSlewed
 		simd::float_4 gainMatrixSlewed = gainMatrix;
 		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
@@ -1324,9 +1347,14 @@ struct MixerTrack {
 			taps[64] = sigs[0] + sigs[2];
 			taps[65] = sigs[1] + sigs[3];
 
-			// TODO: mute/solo gain slewers
-			taps[96] = taps[64] * fadeGain * soloGain;
-			taps[97] = taps[65] * fadeGain * soloGain;
+			// Calc muteSoloGainSlewed
+			float muteSoloGainSlewed = muteSoloGain;
+			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
+				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
+			}
+
+			taps[96] = taps[64] * muteSoloGainSlewed;
+			taps[97] = taps[65] * muteSoloGainSlewed;
 				
 			// Add to mix since gainMatrixSlewed non zero
 			int groupIndex = (int)(paGroup->getValue() + 0.5f);

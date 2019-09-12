@@ -36,7 +36,9 @@ struct MixMaster : Module {
 	int panelThemeWithAuxPresent = 0;
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks
-	float trackInsertOuts[16 * 2];// room for 16 stereo insert outs
+	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
+	float groupTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo groups
+	float groupInsertOuts[4 * 2];// room for 4 stereo group insert outs
 	// std::string busId;
 
 		
@@ -96,7 +98,7 @@ struct MixMaster : Module {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
-			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]));
+			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		onReset();
@@ -275,8 +277,8 @@ struct MixMaster : Module {
 		SetDirectGroupOuts(mix);// Grp
 				
 		// Insert outs
-		SetTrackInsertOuts(0);// 1-8
-		SetTrackInsertOuts(8);// 9-16
+		SetInsertTrackOuts(0);// 1-8
+		SetInsertTrackOuts(8);// 9-16
 				
 
 		//********** Lights **********
@@ -359,7 +361,7 @@ struct MixMaster : Module {
 		}
 	}
 	
-	void SetTrackInsertOuts(const int base) {// base is 0 or 8
+	void SetInsertTrackOuts(const int base) {// base is 0 or 8
 		int outi = base >> 3;
 		if (outputs[INSERT_TRACK_OUTPUTS + outi].isConnected()) {
 			outputs[INSERT_TRACK_OUTPUTS + outi].setChannels(numChannelsDirectOuts);
