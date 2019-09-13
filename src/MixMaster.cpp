@@ -29,7 +29,7 @@ struct MixMaster : Module {
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
-
+	float values80[80];
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -139,6 +139,9 @@ struct MixMaster : Module {
 			}
 			master.resetNonJson();
 		}
+		for (int i = 0; i < 80; i++) {
+			values80[i] = 0.0f;
+		}
 	}
 
 
@@ -222,6 +225,9 @@ struct MixMaster : Module {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
 			float* auxReturns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			
+			int value80i = clamp((int)(messagesFromExpander[AFM_VALUE80_INDEX]), 0, 79);
+			values80[value80i] = messagesFromExpander[AFM_VALUE80];
 		}
 		
 		
@@ -325,9 +331,33 @@ struct MixMaster : Module {
 			// Fast
 			
 			// Aux sends
-			auxSends = &messageToExpander[AFM_AUX_SENDS];// room for 8 values of the sends to the aux panel
-			// TODO: populate auxSends[0..7]. Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
-			
+			auxSends = &messageToExpander[AFM_AUX_SENDS];// room for 8 values of the sends to the aux panel (left A, right A, left B, right B ...)
+			// populate auxSends[0..7]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
+			for (int i = 0; i < 8; i++) {
+				auxSends[i] = 0.0f;
+			}
+			// accumulate tracks
+			for (int trk = 0; trk < 16; trk++) {
+				if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue;
+				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : tracks[trk].auxSendsMode;
+				tapIndex <<= 5;
+				float valTap[2] = {trackTaps[tapIndex + (trk << 1) + 0], trackTaps[tapIndex + (trk << 1) + 1]};
+				for (int aux = 0; aux < 4; aux++) {
+					auxSends[(aux << 1) + 0] += values80[(trk << 2) + aux] * valTap[0];
+					auxSends[(aux << 1) + 1] += values80[(trk << 2) + aux] * valTap[1];
+				}
+			}
+			// accumulate groups
+			for (int grp = 0; grp < 4; grp++) {
+				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : groups[grp].auxSendsMode;
+				tapIndex <<= 3;
+				float valTap[2] = {groupTaps[tapIndex + (grp << 1) + 0], groupTaps[tapIndex + (grp << 1) + 1]};
+				for (int aux = 0; aux < 4; aux++) {
+					auxSends[(aux << 1) + 0] += values80[64 + (grp << 2) + aux] * valTap[0];
+					auxSends[(aux << 1) + 1] += values80[64 + (grp << 2) + aux] * valTap[1];
+				}
+			}
+						
 			// Aux VUs
 			//memcpy(&messageToExpander[AFM_AUX_VUS], &auxVus[0], 8 * 4);// tap 4 of the aux return signal flows
 			
@@ -369,7 +399,7 @@ struct MixMaster : Module {
 			else {// per group direct outs
 				for (unsigned int i = 0; i < 4; i++) {
 					int tapIndex = tracks[i].directOutsMode;
-					int offset = (tapIndex << 3);
+					int offset = (tapIndex << 3) + (i << 1);
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
 				}

@@ -81,6 +81,8 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 
 enum MotherFromAuxIds { // for expander messages from aux panel to main
 	ENUMS(AFM_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
+	AFM_VALUE80_INDEX,
+	AFM_VALUE80,
 	MFA_NUM_VALUES
 };
 
