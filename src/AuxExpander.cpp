@@ -17,10 +17,10 @@ struct AuxExpander : Module {
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
 		ENUMS(GLOBAL_AUXPAN_PARAMS, 4),
-		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),
-		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),
-		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),
-		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),
+		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),// must be contiguous with GLOBAL_AUXPAN_PARAMS
+		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),// must be contiguous with GLOBAL_AUXRETURN_PARAMS
+		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),// must be contiguous with GLOBAL_AUXMUTE_PARAMS
+		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),// must be contiguous with GLOBAL_AUXSOLO_PARAMS
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -67,11 +67,7 @@ struct AuxExpander : Module {
 	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	ColorAndCloak colorAndCloak;
 	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
-	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget
-	float maxAGIndivSendFader;
-	float maxAGGlobSendFader;
-	float maxAGAuxRetFader;
-	
+	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget	
 	
 	
 	AuxExpander() {
@@ -82,7 +78,7 @@ struct AuxExpander : Module {
 		
 		char strBuf[32];
 
-		maxAGIndivSendFader = std::pow(GlobalInfo::individualAuxSendMaxLinearGain, 1.0f / GlobalInfo::individualAuxSendScalingExponent);
+		float maxAGIndivSendFader = std::pow(GlobalInfo::individualAuxSendMaxLinearGain, 1.0f / GlobalInfo::individualAuxSendScalingExponent);
 		for (int i = 0; i < 16; i++) {
 			// Track send aux A
 			snprintf(strBuf, 32, "Track #%i aux send A", i + 1);
@@ -119,7 +115,7 @@ struct AuxExpander : Module {
 		}
 
 		// Global send aux A-D
-		maxAGGlobSendFader = std::pow(GlobalInfo::globalAuxSendMaxLinearGain, 1.0f / GlobalInfo::globalAuxSendScalingExponent);
+		float maxAGGlobSendFader = std::pow(GlobalInfo::globalAuxSendMaxLinearGain, 1.0f / GlobalInfo::globalAuxSendScalingExponent);
 		configParam(GLOBAL_AUXSEND_PARAMS + 0, 0.0f, maxAGGlobSendFader, 1.0f, "Global aux send A", " dB", -10, 20.0f * GlobalInfo::globalAuxSendScalingExponent);
 		configParam(GLOBAL_AUXSEND_PARAMS + 1, 0.0f, maxAGGlobSendFader, 1.0f, "Global aux send B", " dB", -10, 20.0f * GlobalInfo::globalAuxSendScalingExponent);
 		configParam(GLOBAL_AUXSEND_PARAMS + 2, 0.0f, maxAGGlobSendFader, 1.0f, "Global aux send C", " dB", -10, 20.0f * GlobalInfo::globalAuxSendScalingExponent);
@@ -132,7 +128,7 @@ struct AuxExpander : Module {
 		configParam(GLOBAL_AUXPAN_PARAMS + 3, 0.0f, 1.0f, 0.5f, "Global aux return pan D", "%", 0.0f, 200.0f, -100.0f);
 
 		// Global return aux A-D
-		maxAGAuxRetFader = std::pow(GlobalInfo::globalAuxReturnMaxLinearGain, 1.0f / GlobalInfo::globalAuxReturnScalingExponent);
+		float maxAGAuxRetFader = std::pow(GlobalInfo::globalAuxReturnMaxLinearGain, 1.0f / GlobalInfo::globalAuxReturnScalingExponent);
 		configParam(GLOBAL_AUXRETURN_PARAMS + 0, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return A", " dB", -10, 20.0f * GlobalInfo::globalAuxReturnScalingExponent);
 		configParam(GLOBAL_AUXRETURN_PARAMS + 1, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return B", " dB", -10, 20.0f * GlobalInfo::globalAuxReturnScalingExponent);
 		configParam(GLOBAL_AUXRETURN_PARAMS + 2, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return C", " dB", -10, 20.0f * GlobalInfo::globalAuxReturnScalingExponent);
@@ -262,7 +258,7 @@ struct AuxExpander : Module {
 			}
 			leftExpander.module->rightExpander.messageFlipRequested = true;
 
-			// value80
+			// values send 80 (one at a time)
 			messagesToMother[AFM_VALUE80_INDEX] = (float)refreshCounter80;
 			//   precalc global send knobs with cvs (4 instances)
 			if (refreshCounter80 % 20 == 0) {
@@ -284,7 +280,7 @@ struct AuxExpander : Module {
 				}
 				mutes[global20i] = clamp(1.0f - val, 0.0f, 1.0f);
 			}
-			//   calc an 80 value
+			//   calc an 80 send value
 			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
 			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
 			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i];
@@ -292,13 +288,28 @@ struct AuxExpander : Module {
 			cv = clamp(cv * 0.1f, 0.0f, 1.0f);
 			messagesToMother[AFM_VALUE80] = val * cv;
 			
+			// values ret 20 (pan, fader, mute, solo, group) (one of the twenty at a time)
+			int refreshCounter20 = refreshCounter80 % 20;
+			messagesToMother[AFM_VALUE20_INDEX] = (float)refreshCounter20;
+			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
+			if (refreshCounter20 < 4) {// pan
+				val += clamp(inputs[POLY_BUS_CV_INPUT + 4 + refreshCounter20]->getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
+			}
+			else if (refreshCounter20 < 8) {// fader
+				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
+				val *= clamp(inputs[POLY_BUS_CV_INPUT + 8 + refreshCounter20]->getVoltage() * 0.1f, 0.f, 1.f);
+			}
+			else if (refreshCounter20 < 12) {// mute
+				val += clamp(inputs[POLY_BUS_CV_INPUT + 12 + refreshCounter20]->getVoltage() * 0.1f, 0.0f, 1,0f);
+			}
+			// no CV inputs for solo and group
+			messagesToMother[AFM_VALUE20] = val;
+			
 			refreshCounter80++;
 			if (refreshCounter80 >= 80) {
 				refreshCounter80 = 0;
 			}
-
 		}	
-
 
 		// VUs
 		if (!motherPresent || colorAndCloak.cc4[cloakedMode]) {

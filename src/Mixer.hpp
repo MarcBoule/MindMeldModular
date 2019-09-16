@@ -81,8 +81,10 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 
 enum MotherFromAuxIds { // for expander messages from aux panel to main
 	ENUMS(AFM_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	AFM_VALUE80_INDEX,
+	AFM_VALUE80_INDEX,// a send value, 80 of such values to send, one per sample
 	AFM_VALUE80,
+	AFM_VALUE20_INDEX,// a return value, 20 of such values to send, one per sample
+	AFM_VALUE20,
 	MFA_NUM_VALUES
 };
 
@@ -807,14 +809,14 @@ struct MixerGroup {
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
-		if (inVol->isConnected()) {
+		// if (inVol->isConnected()) {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
-		}
+		// }
 
 		float pan = paPan->getValue();
-		if (inPan->isConnected()) {
-			pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
-		}
+		// if (inPan->isConnected()) {
+			pan += clamp(inPan->getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
+		// }
 		
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
@@ -1231,14 +1233,14 @@ struct MixerTrack {
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-		if (inVol->isConnected()) {
+		// if (inVol->isConnected()) {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
-		}
+		// }
 
 		float pan = paPan->getValue();
-		if (inPan->isConnected()) {
-			pan += inPan->getVoltage() * 0.1f;// this is a -5V to +5V input
-		}
+		// if (inPan->isConnected()) {
+			pan += clamp(inPan->getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
+		// }
 		
 		if (pan == 0.5f) {
 			if (!stereo) gainMatrix[3] = slowGain;
