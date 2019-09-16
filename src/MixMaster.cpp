@@ -104,7 +104,7 @@ struct MixMaster : Module {
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupAuxInsertOuts[i << 1]);
-			aux[i].construct(i, &gInfo, &inputs[0], values20, &groupTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)]);
+			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		onReset();
@@ -283,7 +283,7 @@ struct MixMaster : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].process(mix);
 		}
-		memcpy(groupTaps, &mix[2], 8 * 4);
+		memcpy(groupTaps, &mix[2], 8 * 4);// TODO: change memory layout so that this is not necessary
 		// Groups
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
@@ -291,9 +291,11 @@ struct MixMaster : Module {
 		// Master
 		master.process(mix);
 		// Aux
-		memcpy(auxTaps, auxReturns, 8 * 4);		
-		for (int i = 0; i < 4; i++) {
-			aux[i].process(mix);
+		if (auxExpanderPresent) {
+			memcpy(auxTaps, auxReturns, 8 * 4);// TODO: change memory layout so that this is not necessary		
+			for (int i = 0; i < 4; i++) {
+				aux[i].process(mix);
+			}
 		}
 		
 		// Set master outputs
@@ -418,7 +420,7 @@ struct MixMaster : Module {
 			}
 			else {// per group direct outs
 				for (unsigned int i = 0; i < 4; i++) {
-					int tapIndex = tracks[i].directOutsMode;
+					int tapIndex = groups[i].directOutsMode;
 					int offset = (tapIndex << 3) + (i << 1);
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
 					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
@@ -430,7 +432,19 @@ struct MixMaster : Module {
 	void SetDirectAuxOuts() {
 		if (outputs[DIRECT_OUTPUTS + 3].isConnected()) {
 			outputs[DIRECT_OUTPUTS + 3].setChannels(8);
-			// TODO
+
+			if (gInfo.directOutsMode < 4) {// global direct outs
+				int tapIndex = gInfo.directOutsMode;
+				memcpy(outputs[DIRECT_OUTPUTS + 3].getVoltages(), &auxTaps[(tapIndex << 3)], 4 * 8);
+			}
+			else {// per aux direct outs
+				for (unsigned int i = 0; i < 4; i++) {
+					int tapIndex = aux[i].directOutsMode;
+					int offset = (tapIndex << 3) + (i << 1);
+					outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 0], 2 * i);
+					outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 1], 2 * i + 1);
+				}
+			}		
 		}
 	}
 
@@ -511,18 +525,18 @@ struct MixMasterWidget : ModuleWidget {
 		settingsVLabel->text = "Settings (visual)";
 		menu->addChild(settingsVLabel);
 		
-		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
-		nightItem->gInfo = &(module->gInfo);
-		menu->addChild(nightItem);
+		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+		dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+		menu->addChild(dispColItem);
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
 		vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 		vuColItem->isGlobal = true;
 		menu->addChild(vuColItem);
 		
-		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-		dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
-		menu->addChild(dispColItem);
+		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
+		nightItem->gInfo = &(module->gInfo);
+		menu->addChild(nightItem);
 	}
 
 	// Module's widget

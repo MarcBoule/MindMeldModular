@@ -809,9 +809,9 @@ struct MixerGroup {
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
-		// if (inVol->isConnected()) {
+		if (inVol->isConnected()) {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
-		// }
+		}
 
 		float pan = paPan->getValue();
 		// if (inPan->isConnected()) {
@@ -1233,9 +1233,9 @@ struct MixerTrack {
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-		// if (inVol->isConnected()) {
+		if (inVol->isConnected()) {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
-		// }
+		}
 
 		float pan = paPan->getValue();
 		// if (inPan->isConnected()) {
@@ -1317,7 +1317,7 @@ struct MixerTrack {
 			return;
 		}
 		oldInUse = true;
-		
+				
 		// Calc inGainSlewed
 		float inGainSlewed = inGain;
 		if (inGainSlewed != inGainSlewer.out) {
@@ -1601,7 +1601,7 @@ struct MixerAux {
 		// Insert outputs
 		insertOuts[0] = taps[0];
 		insertOuts[1] = taps[1];
-		
+				
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
 			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);

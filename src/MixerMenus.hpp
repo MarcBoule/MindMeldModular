@@ -195,7 +195,7 @@ struct VuColorItem : MenuItem {
 		col1Item->setVal = 1;
 		menu->addChild(col1Item);
 
-		VuColorSubItem *col2Item = createMenuItem<VuColorSubItem>("Light blue", CHECKMARK(*srcColor == 2));
+		VuColorSubItem *col2Item = createMenuItem<VuColorSubItem>("Cyan", CHECKMARK(*srcColor == 2));// Light blue
 		col2Item->srcColor = srcColor;
 		col2Item->setVal = 2;
 		menu->addChild(col2Item);
@@ -250,7 +250,7 @@ struct DispColorItem : MenuItem {
 		col2Item->setVal = 2;
 		menu->addChild(col2Item);
 
-		DispColorSubItem *col3Item = createMenuItem<DispColorSubItem>("Light-gray", CHECKMARK(*srcColor == 3));
+		DispColorSubItem *col3Item = createMenuItem<DispColorSubItem>("Light-grey", CHECKMARK(*srcColor == 3));
 		col3Item->srcColor = srcColor;
 		col3Item->setVal = 3;
 		menu->addChild(col3Item);

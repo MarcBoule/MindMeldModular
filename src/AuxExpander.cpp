@@ -265,8 +265,10 @@ struct AuxExpander : Module {
 				int global4i = refreshCounter80 / 20;
 				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue();
 				val = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
-				float cv = clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(global4i) * 0.1f, 0.0f, 1.0f);
-				globalSends[global4i] = val * cv;
+				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
+					val *= clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(global4i) * 0.1f, 0.0f, 1.0f);
+				}
+				globalSends[global4i] = val;
 			}
 			//   precalc trk/grp mutes with cvs (20 instances)
 			int global20i = refreshCounter80 / 4;
@@ -284,9 +286,18 @@ struct AuxExpander : Module {
 			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
 			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
 			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i];
-			float cv = (refreshCounter80 < 64) ? inputs[POLY_AUX_AD_CV_INPUTS + (refreshCounter80 >> 4)].getVoltage(refreshCounter80 & 0xF) : inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) / 10.0f;
-			cv = clamp(cv * 0.1f, 0.0f, 1.0f);
-			messagesToMother[AFM_VALUE80] = val * cv;
+			if (refreshCounter80 < 64) {
+				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 >> 4);
+				if (inputs[inputNum].isConnected()) {
+					val *= clamp(inputs[inputNum].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
+				}
+			}
+			else {
+				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
+					val *= clamp(inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
+				}
+			}			
+			messagesToMother[AFM_VALUE80] = val;
 			
 			// values ret 20 (pan, fader, mute, solo, group) (one of the twenty at a time)
 			int refreshCounter20 = refreshCounter80 % 20;
@@ -297,7 +308,10 @@ struct AuxExpander : Module {
 			}
 			else if (refreshCounter20 < 8) {// fader
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
-				val *= clamp(inputs[POLY_BUS_CV_INPUT + 8 + refreshCounter20].getVoltage() * 0.1f, 0.f, 1.f);
+				int inputNum = POLY_BUS_CV_INPUT + 8 + refreshCounter20;
+				if (inputs[inputNum].isConnected()) {
+					val *= clamp(inputs[inputNum].getVoltage() * 0.1f, 0.f, 1.f);
+				}
 			}
 			else if (refreshCounter20 < 12) {// mute
 				val += clamp(inputs[POLY_BUS_CV_INPUT + 12 + refreshCounter20].getVoltage() * 0.1f, 0.0f, 1.0f);
