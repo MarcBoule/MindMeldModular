@@ -119,7 +119,7 @@ struct TapModeItem : MenuItem {
 		pre2Item->setVal = 2;
 		menu->addChild(pre2Item);
 
-		TapModeSubItem *pre3Item = createMenuItem<TapModeSubItem>("Post-solo", CHECKMARK(*tapModePtr == 3));
+		TapModeSubItem *pre3Item = createMenuItem<TapModeSubItem>("Post-mute/solo", CHECKMARK(*tapModePtr == 3));
 		pre3Item->tapModePtr = tapModePtr;
 		pre3Item->setVal = 3;
 		menu->addChild(pre3Item);

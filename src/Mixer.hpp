@@ -234,7 +234,7 @@ struct GlobalInfo {
 	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
 	static constexpr float globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-
+	static constexpr float antipopSlew = 400.0f;
 	
 	
 	// need to save, no reset
@@ -453,9 +453,9 @@ struct MixerMaster {
 		gInfo = _gInfo;
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
-		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
-		chainGainSlewers[0].setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
-		chainGainSlewers[1].setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+		chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+		chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
@@ -746,8 +746,8 @@ struct MixerGroup {
 		groupName = _groupName;
 		taps = _taps;
 		insertOuts = _insertOuts;
-		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
@@ -1048,9 +1048,9 @@ struct MixerTrack {
 		trackName = _trackName;
 		taps = _taps;
 		insertOuts = _insertOuts;
-		gainMatrixSlewers.setRiseFall(simd::float_4(30.0f), simd::float_4(30.0f)); // slew rate is in input-units per second (ex: V/s)
-		inGainSlewer.setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(30.0f, 30.0f); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+		inGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);

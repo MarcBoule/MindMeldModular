@@ -27,8 +27,9 @@ struct AuxExpander : Module {
 		ENUMS(RETURN_INPUTS, 2 * 4),
 		ENUMS(POLY_AUX_AD_CV_INPUTS, 4),
 		POLY_AUX_M_CV_INPUT,
-		POLY_GRPS_CV_INPUT,
-		POLY_EXTRA_CV_INPUT,
+		POLY_GRPS_AD_CV_INPUT,
+		POLY_GRPS_M_CV_INPUT,
+		POLY_BUS_CV_INPUT,
 		NUM_INPUTS
 	};
 	enum OutputIds {
@@ -266,9 +267,10 @@ struct AuxExpander : Module {
 			//   precalc global send knobs with cvs (4 instances)
 			if (refreshCounter80 % 20 == 0) {
 				int global4i = refreshCounter80 / 20;
-				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue() + inputs[POLY_EXTRA_CV_INPUT].getVoltage(4 + global4i) * maxAGGlobSendFader / 10.0f;
-				val = clamp(val, 0.0f, maxAGGlobSendFader);
-				globalSends[global4i] = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
+				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue();
+				val = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
+				float cv = clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(global4i) * 0.1f, 0.0f, 1.0f);
+				globalSends[global4i] = val * cv;
 			}
 			//   precalc trk/grp mutes with cvs (20 instances)
 			int global20i = refreshCounter80 / 4;
@@ -278,25 +280,17 @@ struct AuxExpander : Module {
 					val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) / 10.0f;
 				}
 				else {
-					val += inputs[POLY_EXTRA_CV_INPUT].getVoltage(global20i - 16) / 10.0f;
+					val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) / 10.0f;
 				}
 				mutes[global20i] = clamp(1.0f - val, 0.0f, 1.0f);
 			}
 			//   calc an 80 value
 			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
-			if (refreshCounter80 < 64) {
-				val += inputs[POLY_AUX_AD_CV_INPUTS + (refreshCounter80 >> 4)].getVoltage(refreshCounter80 & 0xF) * maxAGIndivSendFader / 10.0f;
-			}
-			else {
-				val += inputs[POLY_GRPS_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * maxAGIndivSendFader / 10.0f;
-			}
 			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
 			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i];
-			val = clamp(val, 0.0f, GlobalInfo::globalAuxSendMaxLinearGain);
-			messagesToMother[AFM_VALUE80] = val;
-			
-			// if (refreshCounter80 == 64) INFO("debug[64] = %g", val);
-			// if (refreshCounter80 == 0) INFO("debug[0] = %g", val);
+			float cv = (refreshCounter80 < 64) ? inputs[POLY_AUX_AD_CV_INPUTS + (refreshCounter80 >> 4)].getVoltage(refreshCounter80 & 0xF) : inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) / 10.0f;
+			cv = clamp(cv * 0.1f, 0.0f, 1.0f);
+			messagesToMother[AFM_VALUE80] = val * cv;
 			
 			refreshCounter80++;
 			if (refreshCounter80 >= 80) {
@@ -491,19 +485,22 @@ struct AuxExpanderWidget : ModuleWidget {
 		}
 		
 		// CV inputs A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 14)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 24.85)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 35.7)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 46.55)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 1)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 2)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 3)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
 		
 		// CV input M
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 57.2)), true, module, AuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 4)), true, module, AuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input grp A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 74.5)), true, module, AuxExpander::POLY_GRPS_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 5)), true, module, AuxExpander::POLY_GRPS_AD_CV_INPUT, module ? &module->panelTheme : NULL));	
+		
+		// CV input M grp
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 6)), true, module, AuxExpander::POLY_GRPS_M_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input extra
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 96.2)), true, module, AuxExpander::POLY_EXTRA_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 7)), true, module, AuxExpander::POLY_BUS_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 	}
 	

@@ -520,16 +520,16 @@ struct MixMasterWidget : ModuleWidget {
 		static const float xIns = 13.8;
 		// Insert outputs
 		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 21.8)), false, module, INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 30.8)), false, module, INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), false, module, INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 40.5)), true, module, INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 49.5)), true, module, INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 58.5)), true, module, INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 79.3)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 88.3)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 100.0)), true, module, GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
 		
 		
 		// Tracks
