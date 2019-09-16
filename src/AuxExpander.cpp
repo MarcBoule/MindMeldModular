@@ -33,7 +33,7 @@ struct AuxExpander : Module {
 		NUM_INPUTS
 	};
 	enum OutputIds {
-		ENUMS(SEND_OUTPUTS, 2 * 4), // aux A is 0=L and 4=R, aux B is 1=L and 5=R, etc...
+		ENUMS(SEND_OUTPUTS, 2 * 4),
 		NUM_OUTPUTS
 	};
 	enum LightIds {
@@ -254,7 +254,7 @@ struct AuxExpander : Module {
 			// Aux returns
 			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
 			for (int i = 0; i < 8; i++) {
-				messagesToMother[AFM_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();
+				messagesToMother[AFM_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();// left A, right A, left B, right B, left C, right C, left D, right D
 			}
 			leftExpander.module->rightExpander.messageFlipRequested = true;
 
@@ -293,14 +293,14 @@ struct AuxExpander : Module {
 			messagesToMother[AFM_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
 			if (refreshCounter20 < 4) {// pan
-				val += clamp(inputs[POLY_BUS_CV_INPUT + 4 + refreshCounter20]->getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
+				val += clamp(inputs[POLY_BUS_CV_INPUT + 4 + refreshCounter20].getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
 			}
 			else if (refreshCounter20 < 8) {// fader
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
-				val *= clamp(inputs[POLY_BUS_CV_INPUT + 8 + refreshCounter20]->getVoltage() * 0.1f, 0.f, 1.f);
+				val *= clamp(inputs[POLY_BUS_CV_INPUT + 8 + refreshCounter20].getVoltage() * 0.1f, 0.f, 1.f);
 			}
 			else if (refreshCounter20 < 12) {// mute
-				val += clamp(inputs[POLY_BUS_CV_INPUT + 12 + refreshCounter20]->getVoltage() * 0.1f, 0.0f, 1,0f);
+				val += clamp(inputs[POLY_BUS_CV_INPUT + 12 + refreshCounter20].getVoltage() * 0.1f, 0.0f, 1.0f);
 			}
 			// no CV inputs for solo and group
 			messagesToMother[AFM_VALUE20] = val;
@@ -366,9 +366,9 @@ struct AuxExpanderWidget : ModuleWidget {
 			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, AuxExpander::SEND_OUTPUTS + i * 2 + 1, module ? &module->panelTheme : NULL));
 
 			// Left returns
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), true, module, AuxExpander::RETURN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), true, module, AuxExpander::RETURN_INPUTS + i * 2 + 0, module ? &module->panelTheme : NULL));			
 			// Right returns
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), true, module, AuxExpander::RETURN_INPUTS + 4 + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), true, module, AuxExpander::RETURN_INPUTS + i * 2 + 1, module ? &module->panelTheme : NULL));			
 			
 			// Pan knobs
 			DynSmallKnobGreyWithPanCol *panKnobAux;

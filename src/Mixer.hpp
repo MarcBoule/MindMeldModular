@@ -81,9 +81,9 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 
 enum MotherFromAuxIds { // for expander messages from aux panel to main
 	ENUMS(AFM_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	AFM_VALUE80_INDEX,// a send value, 80 of such values to send, one per sample
+	AFM_VALUE80_INDEX,// a send value, 80 of such values to bring back to main, one per sample
 	AFM_VALUE80,
-	AFM_VALUE20_INDEX,// a return value, 20 of such values to send, one per sample
+	AFM_VALUE20_INDEX,// a return value, 20 of such values to bring back to main, one per sample
 	AFM_VALUE20,
 	MFA_NUM_VALUES
 };
@@ -846,7 +846,7 @@ struct MixerGroup {
 	// Contract: 
 	//  * calc all but the first taps[], insertOuts[] and vu[] vectors
 	//  * add final tap to mix[0..1]
-	void process(float *mix) {// give the full mix[10] vector, proper offset will be computed in here
+	void process(float *mix) {
 		// Tap[0],[1]: pre-insert (group inputs)
 		// nothing to do, already set up by the mix master
 		
@@ -1486,6 +1486,205 @@ struct MixerTrack {
 
 //*****************************************************************************
 
+
+
+struct MixerAux {
+	// Constants
+	// none
+	
+	// need to save, no reset
+	// none
+	
+	// need to save, with reset
+	int directOutsMode;// when per track. TODO this should not be in here, should come from aux
+	int panLawStereo;// when per track. TODO this should not be in here, should come from aux
+
+	// no need to save, with reset
+	private:
+	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
+	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
+	dsp::SlewLimiter muteSoloGainSlewer;
+	float muteSoloGain; // value of the mute/fade * solo_enable
+	public:
+
+	// no need to save, no reset
+	int auxNum;// 0 to 3
+	std::string ids;
+	GlobalInfo *gInfo;
+	Input *inInsert;
+	float *flPan;
+	float *flFade;
+	float *flMute;
+	float *flSolo;
+	float *flGroup;
+	float *taps;
+	float *insertOuts;// [0][1]: insert outs for this track
+
+
+
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val20, float* _taps, float* _insertOuts) {
+		auxNum = _auxNum;
+		ids = "id_a" + std::to_string(auxNum) + "_";
+		gInfo = _gInfo;
+		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
+		flPan = &_val20[auxNum + 0];
+		flFade = &_val20[auxNum + 4];
+		flMute = &_val20[auxNum + 8];
+		flSolo = &_val20[auxNum + 12];
+		flGroup = &_val20[auxNum + 16];
+		taps = _taps;
+		insertOuts = _insertOuts;
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+	}
+	
+	
+	void onReset() {
+		directOutsMode = 3;// post-solo should be default. 
+		panLawStereo = 0;
+		resetNonJson();
+	}
+	void resetNonJson() {
+		updateSlowValues();
+		gainMatrixSlewers.reset();
+		muteSoloGainSlewer.reset();
+	}
+	
+	
+	// Contract: 
+	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
+	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
+	void updateSlowValues() {
+		float fadeGain = (*flMute > 0.5f) ? 0.0f : 1.0f;
+
+		// calc muteSoloGain
+		muteSoloGain = fadeGain;// TODO: solo must be done in here, separate solo from tracks/groups
+		
+		// calc gainMatrix
+		float slowGain = *flFade;// cv input and scaling already done in auxspander
+		gainMatrix = simd::float_4::zero();
+
+		float pan = *flPan;// cv input already done in auxspander
+		
+		if (pan == 0.5f) {
+			gainMatrix[1] = slowGain;
+			gainMatrix[0] = slowGain;
+		}
+		else {
+			pan = clamp(pan, 0.0f, 1.0f);
+			
+			// implicitly stereo for aux
+			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
+			if (stereoBalance) {
+				// Stereo balance (+3dB), same as mono equal power
+				gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+			}
+			else {
+				// True panning, equal power
+				gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+				gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+			}
+			gainMatrix *= slowGain;
+		}
+	}
+	
+	// Contract: 
+	//  * calc all but the first taps[], calc insertOuts[] and vu[] vectors
+	//  * add final tap to mix[0..1]
+	void process(float *mix) {
+		// Tap[0],[1]: pre-insert (aux inputs)
+		// nothing to do, already set up by the auxspander
+		
+		// Insert outputs
+		insertOuts[0] = taps[0];
+		insertOuts[1] = taps[1];
+		
+		// Tap[8],[9]: pre-fader (post insert)
+		if (inInsert->isConnected()) {
+			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
+			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
+		}
+		else {
+			taps[8] = taps[0];
+			taps[9] = taps[1];
+		}
+		
+		// Calc group gains with slewer
+		simd::float_4 gainMatrixSlewed = gainMatrix;
+		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
+		}
+		
+		// Test for all gainMatrixSlewed equal to 0
+		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
+			taps[16] = 0.0f;	
+			taps[17] = 0.0f;
+			taps[24] = 0.0f;	
+			taps[25] = 0.0f;
+		}
+		else {
+			// Apply gainMatrixSlewed
+			simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
+			sigs = sigs * gainMatrixSlewed;
+			
+			taps[16] = sigs[0] + sigs[2];
+			taps[17] = sigs[1] + sigs[3];
+			
+			// Calc muteSoloGainSlewed
+			float muteSoloGainSlewed = muteSoloGain;
+			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
+				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
+			}
+			
+			taps[24] = taps[16] * muteSoloGainSlewed;
+			taps[25] = taps[17] * muteSoloGainSlewed;
+				
+			// Add to mix
+			mix[0] += taps[24];
+			mix[1] += taps[25];
+		}
+		
+		// VUs
+		/*if (gInfo->colorAndCloak.cc4[cloakedMode]) {
+			vu[0].reset();
+			vu[1].reset();
+		}
+		else {
+			vu[0].process(gInfo->sampleTime, taps[24]);
+			vu[1].process(gInfo->sampleTime, taps[25]);
+		}*/
+	}
+	
+	
+	void dataToJson(json_t *rootJ) {
+		// directOutsMode
+		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
+		
+		// panLawStereo
+		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
+	}
+	
+	void dataFromJson(json_t *rootJ) {
+		// directOutsMode
+		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
+		if (directOutsModeJ)
+			directOutsMode = json_integer_value(directOutsModeJ);
+
+		// panLawStereo
+		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
+		if (panLawStereoJ)
+			panLawStereo = json_integer_value(panLawStereoJ);
+		
+		// extern must call resetNonJson()
+	}
+};// struct MixerAux
+
+
+
+//*****************************************************************************
 
 
 #endif

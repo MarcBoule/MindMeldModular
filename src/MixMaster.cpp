@@ -25,11 +25,13 @@ struct MixMaster : Module {
 	GlobalInfo gInfo;
 	MixerTrack tracks[16];
 	MixerGroup groups[4];
+	MixerAux aux[4];
 	MixerMaster master;
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	float values80[80];
+	float values20[20];
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -38,7 +40,8 @@ struct MixMaster : Module {
 	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks
 	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
 	float groupTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo groups
-	float groupInsertOuts[4 * 2];// room for 4 stereo group insert outs
+	float groupAuxInsertOuts[8 * 2];// room for 4 stereo group insert outs and 4 stereo aux insert outs
+	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
 	// std::string busId;
@@ -100,7 +103,8 @@ struct MixMaster : Module {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
-			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
+			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupAuxInsertOuts[i << 1]);
+			aux[i].construct(i, &gInfo, &inputs[0], values20, &groupTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		onReset();
@@ -123,6 +127,7 @@ struct MixMaster : Module {
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].onReset();
+			aux[i].onReset();
 		}
 		master.onReset();
 		resetNonJson(false);
@@ -136,11 +141,15 @@ struct MixMaster : Module {
 			}
 			for (int i = 0; i < 4; i++) {
 				groups[i].resetNonJson();
+				aux[i].resetNonJson();
 			}
 			master.resetNonJson();
 		}
 		for (int i = 0; i < 80; i++) {
 			values80[i] = 0.0f;
+		}
+		for (int i = 0; i < 20; i++) {
+			values20[i] = 0.0f;
 		}
 	}
 
@@ -165,9 +174,10 @@ struct MixMaster : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].dataToJson(rootJ);
 		}
-		// groups
+		// groups/aux
 		for (int i = 0; i < 4; i++) {
 			groups[i].dataToJson(rootJ);
+			aux[i].dataToJson(rootJ);
 		}
 		// master
 		master.dataToJson(rootJ);
@@ -194,9 +204,10 @@ struct MixMaster : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].dataFromJson(rootJ);
 		}
-		// groups
+		// groups/aux
 		for (int i = 0; i < 4; i++) {
 			groups[i].dataFromJson(rootJ);
+			aux[i].dataFromJson(rootJ);
 		}
 		// master
 		master.dataFromJson(rootJ);
@@ -224,10 +235,13 @@ struct MixMaster : Module {
 		if (auxExpanderPresent) {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
-			float* auxReturns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			auxReturns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
 			
 			int value80i = clamp((int)(messagesFromExpander[AFM_VALUE80_INDEX]), 0, 79);
 			values80[value80i] = messagesFromExpander[AFM_VALUE80];
+			
+			int value20i = clamp((int)(messagesFromExpander[AFM_VALUE20_INDEX]), 0, 19);
+			values20[value20i] = messagesFromExpander[AFM_VALUE20];
 		}
 		
 		
@@ -239,10 +253,11 @@ struct MixMaster : Module {
 			// Tracks
 			gInfo.updateSoloBit(trackToProcess);
 			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
-			// Groups
+			// Groups/Aux
 			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
 				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
 				groups[trackToProcess >> 2].updateSlowValues();
+				aux[trackToProcess >> 2].updateSlowValues();
 			}
 			// Master
 			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
@@ -275,6 +290,11 @@ struct MixMaster : Module {
 		}
 		// Master
 		master.process(mix);
+		// Aux
+		memcpy(auxTaps, auxReturns, 8 * 4);		
+		for (int i = 0; i < 4; i++) {
+			aux[i].process(mix);
+		}
 		
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
@@ -426,8 +446,7 @@ struct MixMaster : Module {
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
 			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(numChannels16);
-			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupInsertOuts[0], 4 * 8);
-			// TODO aux insert outs
+			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 16);
 		}
 	}
 
