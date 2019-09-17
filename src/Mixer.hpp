@@ -43,7 +43,7 @@ enum InputIds {
 	INSERT_GRP_AUX_INPUT,
 	TRACK_MUTE_INPUT,
 	TRACK_SOLO_INPUT,
-	GRPM_MUTESOLO_INPUT,
+	GRPM_MUTESOLO_INPUT,// 1-4 Group mutes, 5-8 Group solos, 9 Master Mute, 10 Master Dim, 11 Master Mono, 12 Master VOL
 	NUM_INPUTS
 };
 
@@ -546,9 +546,9 @@ struct MixerMaster {
 			}
 			
 			// Vol CV
-			// if (inVol->isConnected()) {
-				// slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
-			// }
+			if (inMuteDimMono->isConnected()) {
+				slowGain *= clamp(inMuteDimMono->getVoltage(11) * 0.1f, 0.f, 1.f);
+			}
 			
 			// Mono
 			if (params[MAIN_MONO_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(10) * 0.1f, 0.0f, 1.0f) > 0.5f) {
@@ -1518,7 +1518,7 @@ struct MixerAux {
 	float *flPan;
 	float *flFade;
 	float *flMute;
-	float *flSolo;
+	float *flSolo0;
 	float *flGroup;
 	float *taps;
 	float *insertOuts;// [0][1]: insert outs for this track
@@ -1533,7 +1533,7 @@ struct MixerAux {
 		flPan = &_val20[auxNum + 0];
 		flFade = &_val20[auxNum + 4];
 		flMute = &_val20[auxNum + 8];
-		flSolo = &_val20[auxNum + 12];
+		flSolo0 = &_val20[12];
 		flGroup = &_val20[auxNum + 16];
 		taps = _taps;
 		insertOuts = _insertOuts;
@@ -1558,10 +1558,11 @@ struct MixerAux {
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
-		float fadeGain = *flMute;
-
+		float soloGain = 1.0f;// TODO: solo must be done in here, separate solo from tracks/groups
+	
+		
 		// calc muteSoloGain
-		muteSoloGain = fadeGain;// TODO: solo must be done in here, separate solo from tracks/groups
+		muteSoloGain = *flMute * soloGain;
 		
 		// calc gainMatrix
 		float slowGain = *flFade;// cv input and scaling already done in auxspander

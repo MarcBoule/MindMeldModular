@@ -302,10 +302,10 @@ struct AuxExpander : Module {
 			int refreshCounter20 = refreshCounter80 % 20;
 			messagesToMother[AFM_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
-			if (refreshCounter20 < 4) {// pan
+			if (refreshCounter20 < 4) {// pan cv
 				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
 			}
-			else if (refreshCounter20 < 8) {// fader
+			else if (refreshCounter20 < 8) {// fader scaling and cv
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
 				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
 					val *= clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.f, 1.f);
