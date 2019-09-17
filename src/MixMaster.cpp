@@ -381,7 +381,10 @@ struct MixMaster : Module {
 			}
 						
 			// Aux VUs
-			//memcpy(&messageToExpander[AFM_AUX_VUS], &auxVus[0], 8 * 4);// tap 4 of the aux return signal flows
+			for (int i = 0; i < 4; i++) {
+				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];// send tap 4 of the aux return signal flows
+				messageToExpander[AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];// send tap 4 of the aux return signal flows
+			}
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}
@@ -608,6 +611,7 @@ struct MixMasterWidget : ModuleWidget {
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
 				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
@@ -688,6 +692,7 @@ struct MixMasterWidget : ModuleWidget {
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
 				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
@@ -731,6 +736,7 @@ struct MixMasterWidget : ModuleWidget {
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
 			newVU->srcLevels = &(module->master.vu);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			addChild(newVU);
 			// Fade pointer
 			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));

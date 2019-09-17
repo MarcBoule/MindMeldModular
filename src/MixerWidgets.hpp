@@ -48,6 +48,7 @@ struct VuMeterBase : OpaqueWidget {
 	// instantiator must setup:
 	VuMeterAllDual *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
 	int8_t *colorThemeGlobal;
+	int8_t *colorThemeLocal;
 	
 	// derived class must setup:
 	float gapX;// in px
@@ -100,7 +101,7 @@ struct VuMeterBase : OpaqueWidget {
 	void draw(const DrawArgs &args) override {
 		processPeakHold();
 		
-		colorTheme = (*colorThemeGlobal >= numThemes) ? srcLevels->vuColorTheme : *colorThemeGlobal;
+		colorTheme = (*colorThemeGlobal >= numThemes) ? *colorThemeLocal : *colorThemeGlobal;
 		
 		// PEAK
 		drawVu(args, srcLevels->getPeak(0), 0, 0);
@@ -432,7 +433,7 @@ struct MasterDisplay : OpaqueWidget {
 				
 			if (srcMaster->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcMaster->vu.vuColorTheme);
+				vuColItem->srcColor = &(srcMaster->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -618,7 +619,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 
 			if (srcTrack->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcTrack->vu.vuColorTheme);
+				vuColItem->srcColor = &(srcTrack->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -706,7 +707,7 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 
 			if (srcGroup->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcGroup->vu.vuColorTheme);
+				vuColItem->srcColor = &(srcGroup->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -730,7 +731,7 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 // --------------------
 
 struct AuxDisplay : GroupTrackAuxDisplayBase {
-	VuMeterAllDual* srcVus = NULL;
+	int8_t* srcColor = NULL;
 	int auxNumber = 0;
 	
 	void onButton(const event::Button &e) override {
@@ -778,7 +779,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			if (colorAndCloak->cc4[vuColor] >= numThemes) {	
 				isEmptyMenu = false;
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcVus[auxNumber].vuColorTheme);
+				vuColItem->srcColor = srcColor;
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}

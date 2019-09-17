@@ -50,14 +50,15 @@ struct AuxExpander : Module {
 
 	// Need to save, no reset
 	int panelTheme;
+	int8_t vuColorThemeLocal[4]; // 0 to numthemes - 1; (when per-track choice)
 	
 	
 	// Need to save, with reset
-	VuMeterAllDual vu[4];
 	
 	
 	// No need to save, with reset
 	int refreshCounter80;
+	VuMeterAllDual vu[4];
 	float globalSends[4];
 	float mutes[20];
 	
@@ -157,7 +158,7 @@ struct AuxExpander : Module {
   
 	void onReset() override {
 		for (int i = 0; i < 4; i++) {
-			vu[i].vuColorTheme = 0;
+			vuColorThemeLocal[i] = 0;
 		}
 		resetAuxLabelRequest = 1;
 		resetNonJson(false);
@@ -187,7 +188,7 @@ struct AuxExpander : Module {
 		// vuColorTheme
 		std::string buf = "vuColorTheme0";
 		for (int i = 0; i < 4; i++ ) {
-			json_object_set_new(rootJ, buf.c_str(), json_integer(vu[i].vuColorTheme));
+			json_object_set_new(rootJ, buf.c_str(), json_integer(vuColorThemeLocal[i]));
 			buf[12]++;
 		}
 		
@@ -206,7 +207,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++ ) {
 			json_t *vuColorThemeJ = json_object_get(rootJ, buf.c_str());
 			if (vuColorThemeJ)
-				vu[i].vuColorTheme = json_integer_value(vuColorThemeJ);
+				vuColorThemeLocal[i] = json_integer_value(vuColorThemeJ);
 			buf[12]++;
 		}
 		
@@ -302,17 +303,16 @@ struct AuxExpander : Module {
 			messagesToMother[AFM_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
 			if (refreshCounter20 < 4) {// pan
-				val += clamp(inputs[POLY_BUS_CV_INPUT + 4 + refreshCounter20].getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
+				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
 			}
 			else if (refreshCounter20 < 8) {// fader
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
-				int inputNum = POLY_BUS_CV_INPUT + 8 + refreshCounter20;
-				if (inputs[inputNum].isConnected()) {
-					val *= clamp(inputs[inputNum].getVoltage() * 0.1f, 0.f, 1.f);
+				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
+					val *= clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.f, 1.f);
 				}
 			}
 			else if (refreshCounter20 < 12) {// mute
-				val += clamp(inputs[POLY_BUS_CV_INPUT + 12 + refreshCounter20].getVoltage() * 0.1f, 0.0f, 1.0f);
+				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.0f, 1.0f);
 			}
 			// no CV inputs for solo and group
 			messagesToMother[AFM_VALUE20] = val;
@@ -330,7 +330,7 @@ struct AuxExpander : Module {
 			}
 		}
 		else {
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < 4; i++) { 
 				vu[i].process(args.sampleTime, &messagesFromMother[AFM_AUX_VUS + (i << 1) + 0]);
 			}
 		}
@@ -366,7 +366,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
 			if (module) {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
-				auxDisplays[i]->srcVus = &(module->vu[0]);
+				auxDisplays[i]->srcColor = &(module->vuColorThemeLocal[i]);
 				auxDisplays[i]->auxNumber = i;
 				auxDisplays[i]->text = getInitAuxLabel(i);
 			}
@@ -396,6 +396,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
 				newVU->srcLevels = &(module->vu[i]);
 				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColor]);
+				newVU->colorThemeLocal = &(module->vuColorThemeLocal[i]);
 				addChild(newVU);
 			}				
 			

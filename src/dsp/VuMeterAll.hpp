@@ -14,7 +14,6 @@ enum VuIds {VU_PEAK_L, VU_PEAK_R, VU_RMS_L, VU_RMS_R};
 struct VuMeterAllDual {
 	float vuValues[4];// organized according to VuIds
 	float lambda = 30.f;// Inverse time constant in 1/seconds
-	int8_t vuColorTheme; // 0 to numthemes - 1; (when per-track choice)
 
 	void reset() {
 		for (int i = 0; i < 4; i++) {
