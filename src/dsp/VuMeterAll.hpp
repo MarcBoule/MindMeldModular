@@ -13,7 +13,7 @@ enum VuIds {VU_PEAK_L, VU_PEAK_R, VU_RMS_L, VU_RMS_R};
 
 struct VuMeterAllDual {
 	float vuValues[4];// organized according to VuIds
-	float lambda = 30.f;// Inverse time constant in 1/seconds
+	static constexpr float lambda = 30.f;// Inverse time constant in 1/seconds
 
 	void reset() {
 		for (int i = 0; i < 4; i++) {
@@ -42,6 +42,6 @@ struct VuMeterAllDual {
 		return vuValues[VU_PEAK_L + chan];
 	}
 	float getRms(int chan) {// chan0 is L, chan1 is R
-		return vuValues[VU_RMS_L + chan];
+		return std::sqrt(vuValues[VU_RMS_L + chan]);
 	}
 };

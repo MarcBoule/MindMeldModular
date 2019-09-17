@@ -288,8 +288,6 @@ struct MixMaster : Module {
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
 		}
-		// Master
-		master.process(mix);
 		// Aux
 		if (auxExpanderPresent) {
 			memcpy(auxTaps, auxReturns, 8 * 4);// TODO: change memory layout so that this is not necessary		
@@ -297,6 +295,8 @@ struct MixMaster : Module {
 				aux[i].process(mix);
 			}
 		}
+		// Master
+		master.process(mix);
 		
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
@@ -360,7 +360,7 @@ struct MixMaster : Module {
 			}
 			// accumulate tracks
 			for (int trk = 0; trk < 16; trk++) {
-				if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue;
+				//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should always have aux sends even when grouped
 				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : tracks[trk].auxSendsMode;
 				tapIndex <<= 5;
 				float valTap[2] = {trackTaps[tapIndex + (trk << 1) + 0], trackTaps[tapIndex + (trk << 1) + 1]};
