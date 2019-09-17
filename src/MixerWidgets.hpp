@@ -46,7 +46,7 @@ struct VuMeterBase : OpaqueWidget {
 	static constexpr float peakHoldThick = 1.0f;// in px
 	
 	// instantiator must setup:
-	VuMeterAll *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	VuMeterAllDual *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
 	int8_t *colorThemeGlobal;
 	
 	// derived class must setup:
@@ -90,8 +90,8 @@ struct VuMeterBase : OpaqueWidget {
 			peakHold[1] = 0.0f;
 		}		
 		for (int i = 0; i < 2; i++) {
-			if (srcLevels[i].getPeak() > peakHold[i]) {
-				peakHold[i] = srcLevels[i].getPeak();
+			if (srcLevels->getPeak(i) > peakHold[i]) {
+				peakHold[i] = srcLevels->getPeak(i);
 			}
 		}
 	}
@@ -100,15 +100,15 @@ struct VuMeterBase : OpaqueWidget {
 	void draw(const DrawArgs &args) override {
 		processPeakHold();
 		
-		colorTheme = (*colorThemeGlobal >= numThemes) ? srcLevels[0].vuColorTheme : *colorThemeGlobal;
+		colorTheme = (*colorThemeGlobal >= numThemes) ? srcLevels->vuColorTheme : *colorThemeGlobal;
 		
 		// PEAK
-		drawVu(args, srcLevels[0].getPeak(), 0, 0);
-		drawVu(args, srcLevels[1].getPeak(), barX + gapX, 0);
+		drawVu(args, srcLevels->getPeak(0), 0, 0);
+		drawVu(args, srcLevels->getPeak(1), barX + gapX, 0);
 
 		// RMS
-		drawVu(args, srcLevels[0].getRms(), 0, 1);
-		drawVu(args, srcLevels[1].getRms(), barX + gapX, 1);
+		drawVu(args, srcLevels->getRms(0), 0, 1);
+		drawVu(args, srcLevels->getRms(1), barX + gapX, 1);
 		
 		// PEAK_HOLD
 		drawPeakHold(args, peakHold[0], 0);
@@ -432,7 +432,7 @@ struct MasterDisplay : OpaqueWidget {
 				
 			if (srcMaster->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcMaster->vu[0].vuColorTheme);
+				vuColItem->srcColor = &(srcMaster->vu.vuColorTheme);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -618,7 +618,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 
 			if (srcTrack->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcTrack->vu[0].vuColorTheme);
+				vuColItem->srcColor = &(srcTrack->vu.vuColorTheme);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -706,7 +706,7 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 
 			if (srcGroup->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcGroup->vu[0].vuColorTheme);
+				vuColItem->srcColor = &(srcGroup->vu.vuColorTheme);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
@@ -730,7 +730,7 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 // --------------------
 
 struct AuxDisplay : GroupTrackAuxDisplayBase {
-	VuMeterAll* srcVus = NULL;
+	VuMeterAllDual* srcVus = NULL;
 	int auxNumber = 0;
 	
 	void onButton(const event::Button &e) override {
@@ -778,7 +778,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			if (colorAndCloak->cc4[vuColor] >= numThemes) {	
 				isEmptyMenu = false;
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcVus[auxNumber << 1].vuColorTheme);
+				vuColItem->srcColor = &(srcVus[auxNumber].vuColorTheme);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}

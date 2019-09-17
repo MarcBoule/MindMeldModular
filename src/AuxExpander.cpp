@@ -53,7 +53,7 @@ struct AuxExpander : Module {
 	
 	
 	// Need to save, with reset
-	VuMeterAll vu[8];// use post[]. aux A left, aux A right, aux B left, ...
+	VuMeterAllDual vu[4];
 	
 	
 	// No need to save, with reset
@@ -157,17 +157,15 @@ struct AuxExpander : Module {
   
 	void onReset() override {
 		for (int i = 0; i < 4; i++) {
-			vu[i << 1].vuColorTheme = 0;// vu[1], vu[3], vu[5], vu[7]  color theme is not used
+			vu[i].vuColorTheme = 0;
 		}
 		resetAuxLabelRequest = 1;
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
-		for (int i = 0; i < 8; i++) {
-			vu[i].reset();
-		}
 		refreshCounter80 = 0;
 		for (int i = 0; i < 4; i++) {
+			vu[i].reset();
 			globalSends[i] = 0.0f;
 		}
 		for (int i = 0; i < 20; i++) {
@@ -189,7 +187,7 @@ struct AuxExpander : Module {
 		// vuColorTheme
 		std::string buf = "vuColorTheme0";
 		for (int i = 0; i < 4; i++ ) {
-			json_object_set_new(rootJ, buf.c_str(), json_integer(vu[i << 1].vuColorTheme));
+			json_object_set_new(rootJ, buf.c_str(), json_integer(vu[i].vuColorTheme));
 			buf[12]++;
 		}
 		
@@ -208,7 +206,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++ ) {
 			json_t *vuColorThemeJ = json_object_get(rootJ, buf.c_str());
 			if (vuColorThemeJ)
-				vu[i << 1].vuColorTheme = json_integer_value(vuColorThemeJ);
+				vu[i].vuColorTheme = json_integer_value(vuColorThemeJ);
 			buf[12]++;
 		}
 		
@@ -327,13 +325,13 @@ struct AuxExpander : Module {
 
 		// VUs
 		if (!motherPresent || colorAndCloak.cc4[cloakedMode]) {
-			for (int i = 0; i < 8; i++) {
+			for (int i = 0; i < 4; i++) {
 				vu[i].reset();
 			}
 		}
 		else {
-			for (int i = 0; i < 8; i++) {
-				vu[i].process(args.sampleTime, messagesFromMother[AFM_AUX_VUS + i]);
+			for (int i = 0; i < 4; i++) {
+				vu[i].process(args.sampleTime, &messagesFromMother[AFM_AUX_VUS + (i << 1) + 0]);
 			}
 		}
 		
@@ -396,7 +394,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				// VU meters
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
-				newVU->srcLevels = &(module->vu[i << 1]);
+				newVU->srcLevels = &(module->vu[i]);
 				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 			}				

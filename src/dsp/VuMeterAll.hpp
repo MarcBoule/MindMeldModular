@@ -9,43 +9,40 @@
 
 // Code below adapted from Andrew Belt's dsp::VuMeter2 struct in VCV Rack's source code
 
-class VuMeterAll {
-	float vPeak = 0.f;
-	float vRms = 0.f;
+enum VuIds {VU_PEAK_L, VU_PEAK_R, VU_RMS_L, VU_RMS_R};
 
-	/** Inverse time constant in 1/seconds */
-	float lambda = 30.f;
-
-
-	public:
-	
+struct VuMeterAllDual {
+	float vuValues[4];// organized according to VuIds
+	float lambda = 30.f;// Inverse time constant in 1/seconds
 	int8_t vuColorTheme; // 0 to numthemes - 1; (when per-track choice)
 
 	void reset() {
-		vPeak = 0.f;
-		vRms = 0.f;
-	}
-
-	void process(float deltaTime, const float value) {
-		// RMS
-		float valueSquared = std::pow(value, 2);
-		vRms += (valueSquared - vRms) * lambda * deltaTime;
-
-		// PEAK
-		float valueAbs = std::fabs(value);
-		if (valueAbs >= vPeak) {
-			vPeak = valueAbs;
-		}
-		else {
-			vPeak += (valueAbs - vPeak) * lambda * deltaTime;
+		for (int i = 0; i < 4; i++) {
+			vuValues[i] = 0.0f;
 		}
 	}
 
-	float getPeak() {
-		return vPeak;
+	void process(float deltaTime, const float *values) {// L and R
+		for (int i = 0; i < 2; i++) {
+			// RMS
+			float valueSquared = std::pow(values[i], 2);
+			vuValues[VU_RMS_L + i] += (valueSquared - vuValues[VU_RMS_L + i]) * lambda * deltaTime;
+
+			// PEAK
+			float valueAbs = std::fabs(values[i]);
+			if (valueAbs >= vuValues[VU_PEAK_L + i]) {
+				vuValues[VU_PEAK_L + i] = valueAbs;
+			}
+			else {
+				vuValues[VU_PEAK_L + i] += (valueAbs - vuValues[VU_PEAK_L + i]) * lambda * deltaTime;
+			}
+		}
 	}
 	
-	float getRms() {
-		return std::sqrt(vRms);
+	float getPeak(int chan) {// chan0 is L, chan1 is R
+		return vuValues[VU_PEAK_L + chan];
+	}
+	float getRms(int chan) {// chan0 is L, chan1 is R
+		return vuValues[VU_RMS_L + chan];
 	}
 };

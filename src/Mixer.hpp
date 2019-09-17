@@ -427,7 +427,7 @@ struct MixerMaster {
 	float voltageLimiter;
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
-	VuMeterAll vu[2];// use mix[0..1]
+	VuMeterAllDual vu;// use mix[0..1]
 	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	
 	// no need to save, with reset
@@ -466,7 +466,7 @@ struct MixerMaster {
 		voltageLimiter = 10.0f;
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
-		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
+		vu.vuColorTheme = 0;
 		dimGain = 0.1f;// 0.1 = -20 dB
 		resetNonJson();
 	}
@@ -476,8 +476,7 @@ struct MixerMaster {
 		chainGainSlewers[0].reset();
 		chainGainSlewers[1].reset();
 		setupDcBlocker();
-		vu[0].reset();
-		vu[1].reset();
+		vu.reset();
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		updateDimGainIntegerDB();
@@ -570,7 +569,7 @@ struct MixerMaster {
 		json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
 		
 		// vuColorTheme
-		json_object_set_new(rootJ, "vuColorTheme", json_integer(vu[0].vuColorTheme));
+		json_object_set_new(rootJ, "vuColorTheme", json_integer(vu.vuColorTheme));
 		
 		// dimGain
 		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
@@ -601,7 +600,7 @@ struct MixerMaster {
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, "vuColorTheme");
 		if (vuColorThemeJ)
-			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
+			vu.vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// dimGain
 		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
@@ -613,7 +612,7 @@ struct MixerMaster {
 	
 	
 	// Contract: 
-	//  * calc mix[] and vu[] vectors
+	//  * calc mix[] and vu
 	void process(float *mix) {// takes mix[0..1] and redeposits post in same place, since don't need pre
 		// no optimization of mix[0..1] == {0, 0}, since it could be a zero crossing of a mono source!
 		
@@ -656,9 +655,8 @@ struct MixerMaster {
 			mix[1] = sigs[1] + sigs[3];
 		}
 		
-		// VUs (no cloaked mode here)
-		vu[0].process(gInfo->sampleTime, mix[0]);
-		vu[1].process(gInfo->sampleTime, mix[1]);		
+		// VUs (no cloaked mode for master, always on)
+		vu.process(gInfo->sampleTime, mix);
 				
 		// Chain inputs when post master
 		if (gInfo->chainMode == 1) {
@@ -701,7 +699,7 @@ struct MixerGroup {
 	int directOutsMode;// when per track
 	int auxSendsMode;// when per track
 	int panLawStereo;// when per track
-	VuMeterAll vu[2];// use post[]
+	VuMeterAllDual vu;// use post[]
 
 	// no need to save, with reset
 	private:
@@ -759,15 +757,14 @@ struct MixerGroup {
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 0;
-		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
+		vu.vuColorTheme = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
 		updateSlowValues();
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
-		vu[0].reset();
-		vu[1].reset();
+		vu.reset();
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 	}
@@ -844,7 +841,7 @@ struct MixerGroup {
 	}
 	
 	// Contract: 
-	//  * calc all but the first taps[], insertOuts[] and vu[] vectors
+	//  * calc all but the first taps[], insertOuts[] and vu
 	//  * add final tap to mix[0..1]
 	void process(float *mix) {
 		// Tap[0],[1]: pre-insert (group inputs)
@@ -901,12 +898,10 @@ struct MixerGroup {
 		
 		// VUs
 		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
-			vu[0].reset();
-			vu[1].reset();
+			vu.reset();
 		}
 		else {
-			vu[0].process(gInfo->sampleTime, taps[24]);
-			vu[1].process(gInfo->sampleTime, taps[25]);
+			vu.process(gInfo->sampleTime, &taps[24]);
 		}
 	}
 	
@@ -928,7 +923,7 @@ struct MixerGroup {
 		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
 
 		// vuColorTheme
-		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu[0].vuColorTheme));
+		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu.vuColorTheme));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -960,7 +955,7 @@ struct MixerGroup {
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, (ids + "vuColorTheme").c_str());
 		if (vuColorThemeJ)
-			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
+			vu.vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -992,7 +987,7 @@ struct MixerTrack {
 	int directOutsMode;// when per track
 	int auxSendsMode;// when per track
 	int panLawStereo;// when per track
-	VuMeterAll vu[2];// use post[]
+	VuMeterAllDual vu;// use post[]
 
 	// no need to save, with reset
 	private:
@@ -1069,7 +1064,7 @@ struct MixerTrack {
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 0;
-		vu[0].vuColorTheme = 0;// vu[1]'s color theme is not used
+		vu.vuColorTheme = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -1077,8 +1072,7 @@ struct MixerTrack {
 		gainMatrixSlewers.reset();
 		inGainSlewer.reset();
 		muteSoloGainSlewer.reset();
-		vu[0].reset();
-		vu[1].reset();
+		vu.reset();
 	}
 	
 	
@@ -1092,7 +1086,7 @@ struct MixerTrack {
 		dest->directOutsMode = directOutsMode;
 		dest->auxSendsMode = auxSendsMode;
 		dest->panLawStereo = panLawStereo;
-		dest->vuColorTheme = vu[0].vuColorTheme;
+		dest->vuColorTheme = vu.vuColorTheme;
 		dest->linkedFader = gInfo->isLinked(trackNum);
 	}
 	void read(TrackSettingsCpBuffer *src) {
@@ -1104,7 +1098,7 @@ struct MixerTrack {
 		directOutsMode = src->directOutsMode;
 		auxSendsMode = src->auxSendsMode;
 		panLawStereo = src->panLawStereo;
-		vu[0].vuColorTheme = src->vuColorTheme;
+		vu.vuColorTheme = src->vuColorTheme;
 		gInfo->setLinked(trackNum, src->linkedFader);
 	}
 	
@@ -1292,7 +1286,7 @@ struct MixerTrack {
 	
 	
 	// Contract: 
-	//  * calc taps[], insertOuts[] and vu[] vectors
+	//  * calc taps[], insertOuts[] and vu
 	//  * when track in use, add final tap to mix[] according to group
 	void process(float *mix) {
 		int insertPortIndex = trackNum >> 3;
@@ -1307,8 +1301,7 @@ struct MixerTrack {
 				taps[96] = 0.0f; taps[97] = 0.0f;
 				insertOuts[0] = 0.0f;
 				insertOuts[1] = 0.0f;
-				vu[0].reset();
-				vu[1].reset();
+				vu.reset();
 				gainMatrixSlewers.reset();
 				inGainSlewer.reset();
 				muteSoloGainSlewer.reset();
@@ -1395,12 +1388,10 @@ struct MixerTrack {
 		
 		// VUs
 		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
-			vu[0].reset();
-			vu[1].reset();
+			vu.reset();
 		}
 		else {
-			vu[0].process(gInfo->sampleTime, taps[96]);
-			vu[1].process(gInfo->sampleTime, taps[97]);
+			vu.process(gInfo->sampleTime, &taps[96]);
 		}
 	}
 		
@@ -1430,7 +1421,7 @@ struct MixerTrack {
 		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
 
 		// vuColorTheme
-		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu[0].vuColorTheme));
+		json_object_set_new(rootJ, (ids + "vuColorTheme").c_str(), json_integer(vu.vuColorTheme));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -1477,7 +1468,7 @@ struct MixerTrack {
 		// vuColorTheme
 		json_t *vuColorThemeJ = json_object_get(rootJ, (ids + "vuColorTheme").c_str());
 		if (vuColorThemeJ)
-			vu[0].vuColorTheme = json_integer_value(vuColorThemeJ);
+			vu.vuColorTheme = json_integer_value(vuColorThemeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -1592,7 +1583,7 @@ struct MixerAux {
 	}
 	
 	// Contract: 
-	//  * calc all but the first taps[], calc insertOuts[] and vu[] vectors
+	//  * calc all but the first taps[], calc insertOuts[] and vu
 	//  * add final tap to mix[0..1]
 	void process(float *mix) {
 		// Tap[0],[1]: pre-insert (aux inputs)
@@ -1649,12 +1640,10 @@ struct MixerAux {
 		
 		// VUs
 		/*if (gInfo->colorAndCloak.cc4[cloakedMode]) {
-			vu[0].reset();
-			vu[1].reset();
+			vu.reset();
 		}
 		else {
-			vu[0].process(gInfo->sampleTime, taps[24]);
-			vu[1].process(gInfo->sampleTime, taps[25]);
+			vu.process(gInfo->sampleTime, taps[24], taps[25]);
 		}*/
 	}
 	

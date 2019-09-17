@@ -606,7 +606,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
-				newVU->srcLevels = &(module->tracks[i].vu[0]);
+				newVU->srcLevels = &(module->tracks[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 				// Fade pointers
@@ -686,7 +686,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
-				newVU->srcLevels = &(module->groups[i].vu[0]);
+				newVU->srcLevels = &(module->groups[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 				addChild(newVU);
 				// Fade pointers
@@ -729,7 +729,7 @@ struct MixMasterWidget : ModuleWidget {
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
-			newVU->srcLevels = &(module->master.vu[0]);
+			newVU->srcLevels = &(module->master.vu);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
 			addChild(newVU);
 			// Fade pointer
