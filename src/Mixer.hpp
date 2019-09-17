@@ -180,7 +180,6 @@ struct TrackSettingsCpBuffer {
 	float paGroup;
 	float paFade;
 	float paMute;
-	float paSolo;
 	float paPan;
 	char trackName[4];// track names are not null terminated in MixerTracks
 	float fadeGain;
@@ -203,7 +202,6 @@ struct TrackSettingsCpBuffer {
 		paGroup = 0.0f;
 		paFade = 1.0f;
 		paMute = 0.0f;
-		paSolo = 0.0f;
 		paPan = 0.5f;
 		trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
 		fadeGain = 1.0f;
@@ -260,6 +258,8 @@ struct GlobalInfo {
 	// no need to save, no reset
 	Param *paSolo;// all 20 solos are here (track and group)
 	Param *paFade;// all 20 faders are here (track and group)
+	Input *inTrackSolo;
+	Input *inGroupSolo;
 	float oldFaders[16 + 4] = {-100.0f};
 	float maxTGFader;
 
@@ -288,9 +288,11 @@ struct GlobalInfo {
 	}
 
 	
-	void construct(Param *_params) {
+	void construct(Param *_params, Input *_inputs) {
 		paSolo = &_params[TRACK_SOLO_PARAMS];
 		paFade = &_params[TRACK_FADER_PARAMS];
+		inTrackSolo = &_inputs[TRACK_MUTE_INPUT];
+		inGroupSolo = &_inputs[GRPM_MUTESOLO_INPUT];
 		maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
 	}
 	
@@ -393,9 +395,14 @@ struct GlobalInfo {
 	
 	void updateSoloBitMask() {
 		unsigned long newSoloBitMask = 0ul;// separate variable so no glitch generated
-		for (unsigned long i = 0; i < (16 + 4); i++) {
-			if (paSolo[i].getValue() > 0.5) {
+		for (unsigned long i = 0; i < 16; i++) {// check track solos
+			if ( (paSolo[i].getValue() + clamp(inTrackSolo->getVoltage(i) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
 				newSoloBitMask |= (1 << i);
+			}
+		}
+		for (unsigned long i = 0; i < 4; i++) {// check group solos
+			if ( (paSolo[16 + i].getValue() + clamp(inGroupSolo->getVoltage(4 + i) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
+				newSoloBitMask |= (1 << (16 + i));
 			}
 		}
 		soloBitMask = newSoloBitMask;
@@ -447,15 +454,17 @@ struct MixerMaster {
 	GlobalInfo *gInfo;
 	Param *params;
 	Input *inChain;
+	Input *inMuteDimMono;
 	float target = -1.0f;
 
-	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(8) * 0.1f, 0.0f, 1.0f) > 0.5f ? 0.0f : 1.0f;}
 
 
 	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
 		gInfo = _gInfo;
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
+		inMuteDimMono = &_inputs[GRPM_MUTESOLO_INPUT];
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
@@ -532,7 +541,7 @@ struct MixerMaster {
 			slowGain = std::pow(slowGain, masterFaderScalingExponent);
 			
 			// Dim
-			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+			if (params[MAIN_DIM_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(9) * 0.1f, 0.0f, 1.0f) > 0.5f) {
 				slowGain *= dimGainIntegerDB;
 			}
 			
@@ -542,7 +551,7 @@ struct MixerMaster {
 			// }
 			
 			// Mono
-			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {// mono button
+			if (params[MAIN_MONO_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(10) * 0.1f, 0.0f, 1.0f) > 0.5f) {
 				gainMatrix = simd::float_4(slowGain * 0.5f);
 			}
 			else {
@@ -720,6 +729,7 @@ struct MixerGroup {
 	Input *inInsert;
 	Input *inVol;
 	Input *inPan;
+	Input *inMuteSolo;
 	Param *paFade;
 	Param *paMute;
 	Param *paSolo;
@@ -729,7 +739,7 @@ struct MixerGroup {
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
 
-	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return paMute->getValue() + clamp(inMuteSolo->getVoltage(groupNum) * 0.1f, 0.0f, 1.0f) > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
@@ -741,9 +751,10 @@ struct MixerGroup {
 		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
 		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
 		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
+		inMuteSolo = &_inputs[GRPM_MUTESOLO_INPUT];
 		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
 		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
-		paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
+		//paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 		groupName = _groupName;
 		taps = _taps;
@@ -1017,17 +1028,17 @@ struct MixerTrack {
 	Input *inInsert;
 	Input *inVol;
 	Input *inPan;
+	Input *inMute;
 	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
 	Param *paFade;
 	Param *paMute;
-	Param *paSolo;
 	Param *paPan;
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
 
-	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return paMute->getValue() + clamp(inMute->getVoltage(trackNum) * 0.1f, 0.0f, 1.0f) > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(trackNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
@@ -1040,10 +1051,10 @@ struct MixerTrack {
 		inInsert = &_inputs[INSERT_TRACK_INPUTS];
 		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
 		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
+		inMute = &_inputs[TRACK_MUTE_INPUT];
 		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
 		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
 		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
-		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
 		taps = _taps;
@@ -1111,7 +1122,6 @@ struct MixerTrack {
 		dest->paGroup = paGroup->getValue();;
 		dest->paFade = paFade->getValue();
 		dest->paMute = paMute->getValue();
-		dest->paSolo = paSolo->getValue();
 		dest->paPan = paPan->getValue();
 		for (int chr = 0; chr < 4; chr++) {
 			dest->trackName[chr] = trackName[chr];
@@ -1124,7 +1134,6 @@ struct MixerTrack {
 		paGroup->setValue(src->paGroup);
 		paFade->setValue(src->paFade);
 		paMute->setValue(src->paMute);
-		paSolo->setValue(src->paSolo);
 		paPan->setValue(src->paPan);
 		for (int chr = 0; chr < 4; chr++) {
 			trackName[chr] = src->trackName[chr];
@@ -1166,7 +1175,7 @@ struct MixerTrack {
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 	float calcSoloGain() {// returns 1.0f when the check for solo means this track should play, 0.0f otherwise
-		if (gInfo->soloBitMask == 0ul || paSolo->getValue() > 0.5f) {
+		if (gInfo->soloBitMask == 0ul || (gInfo->soloBitMask & (1 << trackNum)) != 0) {
 			return 1.0f;
 		}
 		// here solo is off for this track and there is at least one track or group that has their solo on.
@@ -1549,7 +1558,7 @@ struct MixerAux {
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
-		float fadeGain = (*flMute > 0.5f) ? 0.0f : 1.0f;
+		float fadeGain = *flMute;
 
 		// calc muteSoloGain
 		muteSoloGain = fadeGain;// TODO: solo must be done in here, separate solo from tracks/groups

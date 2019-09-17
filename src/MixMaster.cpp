@@ -98,7 +98,7 @@ struct MixMaster : Module {
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 
-		gInfo.construct(&params[0]);
+		gInfo.construct(&params[0], &inputs[0]);
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
 		}

@@ -259,7 +259,7 @@ struct AuxExpander : Module {
 
 			// values send 80 (one at a time)
 			messagesToMother[AFM_VALUE80_INDEX] = (float)refreshCounter80;
-			//   precalc global send knobs with cvs (4 instances)
+			//   Global send knobs with cv (4 instances)
 			if (refreshCounter80 % 20 == 0) {
 				int global4i = refreshCounter80 / 20;
 				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue();
@@ -269,17 +269,17 @@ struct AuxExpander : Module {
 				}
 				globalSends[global4i] = val;
 			}
-			//   precalc trk/grp mutes with cvs (20 instances)
+			//   Indiv mute sends with cvs (20 instances)
 			int global20i = refreshCounter80 / 4;
 			if (refreshCounter80 % 4 == 0) {
 				float val = params[TRACK_AUXMUTE_PARAMS + global20i].getValue();
 				if (global20i < 16) {
-					val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) / 10.0f;
+					val += clamp(inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) * 0.1f, 0.0f, 1.0f);
 				}
 				else {
-					val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) / 10.0f;
+					val += clamp(inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) * 0.1f, 0.0f, 1.0f);
 				}
-				mutes[global20i] = clamp(1.0f - val, 0.0f, 1.0f);
+				mutes[global20i] = (val > 0.5f ? 0.0f : 1.0f);
 			}
 			//   calc an 80 send value
 			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
@@ -295,7 +295,7 @@ struct AuxExpander : Module {
 				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
 					val *= clamp(inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
 				}
-			}			
+			}
 			messagesToMother[AFM_VALUE80] = val;
 			
 			// values ret 20 (pan, fader, mute, solo, group) (one of the twenty at a time)
@@ -313,6 +313,7 @@ struct AuxExpander : Module {
 			}
 			else if (refreshCounter20 < 12) {// mute
 				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.0f, 1.0f);
+				val = (val > 0.5f ? 0.0f : 1.0f);
 			}
 			// no CV inputs for solo and group
 			messagesToMother[AFM_VALUE20] = val;
