@@ -81,11 +81,13 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 };
 
 enum MotherFromAuxIds { // for expander messages from aux panel to main
-	ENUMS(AFM_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	AFM_VALUE80_INDEX,// a send value, 80 of such values to bring back to main, one per sample
-	AFM_VALUE80,
-	AFM_VALUE20_INDEX,// a return value, 20 of such values to bring back to main, one per sample
-	AFM_VALUE20,
+	ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
+	MFA_VALUE80_INDEX,// a send value, 80 of such values to bring back to main, one per sample
+	MFA_VALUE80,
+	MFA_VALUE20_INDEX,// a return value, 20 of such values to bring back to main, one per sample
+	MFA_VALUE20,
+	MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
+	MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
 	MFA_NUM_VALUES
 };
 
@@ -1547,8 +1549,7 @@ struct MixerAux {
 	// none
 	
 	// need to save, with reset
-	int8_t directOutsMode;// when per track. TODO this should not be in here, should come from aux
-	int8_t panLawStereo;// when per track. TODO this should not be in here, should come from aux
+	// none
 
 	// no need to save, with reset
 	private:
@@ -1570,10 +1571,11 @@ struct MixerAux {
 	float *flGroup;
 	float *taps;
 	float *insertOuts;// [0][1]: insert outs for this track
+	int8_t* panLawStereoLocal;
 
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val20, float* _taps, float* _insertOuts) {
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val20, float* _taps, float* _insertOuts, int8_t* _panLawStereoLocal) {
 		auxNum = _auxNum;
 		ids = "id_a" + std::to_string(auxNum) + "_";
 		gInfo = _gInfo;
@@ -1584,14 +1586,13 @@ struct MixerAux {
 		flGroup = &_val20[auxNum + 16];
 		taps = _taps;
 		insertOuts = _insertOuts;
+		panLawStereoLocal = _panLawStereoLocal;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 	}
 	
 	
 	void onReset() {
-		directOutsMode = 3;// post-solo should be default. 
-		panLawStereo = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -1623,7 +1624,7 @@ struct MixerAux {
 			pan = clamp(pan, 0.0f, 1.0f);
 			
 			// implicitly stereo for aux
-			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
+			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && *panLawStereoLocal == 0));			
 			if (stereoBalance) {
 				// Stereo balance (+3dB), same as mono equal power
 				gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
@@ -1701,23 +1702,11 @@ struct MixerAux {
 	
 	
 	void dataToJson(json_t *rootJ) {
-		// directOutsMode
-		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
-		
-		// panLawStereo
-		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
+		// none
 	}
 	
 	void dataFromJson(json_t *rootJ) {
-		// directOutsMode
-		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
-		if (directOutsModeJ)
-			directOutsMode = json_integer_value(directOutsModeJ);
-
-		// panLawStereo
-		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
-		if (panLawStereoJ)
-			panLawStereo = json_integer_value(panLawStereoJ);
+		// none
 		
 		// extern must call resetNonJson()
 	}

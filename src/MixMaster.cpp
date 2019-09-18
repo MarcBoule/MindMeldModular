@@ -44,6 +44,8 @@ struct MixMaster : Module {
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
+	PackedBytes4 directOutsModeLocalAux;
+	PackedBytes4 stereoPanModeLocalAux;
 	// std::string busId;
 
 		
@@ -104,7 +106,7 @@ struct MixMaster : Module {
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupAuxInsertOuts[i << 1]);
-			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)]);
+			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		onReset();
@@ -235,15 +237,17 @@ struct MixMaster : Module {
 		if (auxExpanderPresent) {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
-			auxReturns = &messagesFromExpander[AFM_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			auxReturns = &messagesFromExpander[MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
 			
-			int value80i = clamp((int)(messagesFromExpander[AFM_VALUE80_INDEX]), 0, 79);
-			values80[value80i] = messagesFromExpander[AFM_VALUE80];
+			int value80i = clamp((int)(messagesFromExpander[MFA_VALUE80_INDEX]), 0, 79);
+			values80[value80i] = messagesFromExpander[MFA_VALUE80];
 			
-			int value20i = clamp((int)(messagesFromExpander[AFM_VALUE20_INDEX]), 0, 19);
-			values20[value20i] = messagesFromExpander[AFM_VALUE20];
+			int value20i = clamp((int)(messagesFromExpander[MFA_VALUE20_INDEX]), 0, 19);
+			values20[value20i] = messagesFromExpander[MFA_VALUE20];
 			
-			
+			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
+			memcpy(&directOutsModeLocalAux, &messagesFromExpander[MFA_AUX_DIR_OUTS], 4);
+			memcpy(&stereoPanModeLocalAux, &messagesFromExpander[MFA_AUX_STEREO_PANS], 4);
 		}
 		
 		
@@ -449,20 +453,24 @@ struct MixMaster : Module {
 	
 	void SetDirectAuxOuts() {
 		if (outputs[DIRECT_OUTPUTS + 3].isConnected()) {
-			outputs[DIRECT_OUTPUTS + 3].setChannels(8);
-
-			if (gInfo.directOutsMode < 4) {// global direct outs
-				int tapIndex = gInfo.directOutsMode;
-				memcpy(outputs[DIRECT_OUTPUTS + 3].getVoltages(), &auxTaps[(tapIndex << 3)], 4 * 8);
-			}
-			else {// per aux direct outs
-				for (unsigned int i = 0; i < 4; i++) {
-					int tapIndex = aux[i].directOutsMode;
-					int offset = (tapIndex << 3) + (i << 1);
-					outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 1], 2 * i + 1);
+			if (auxExpanderPresent) {
+				outputs[DIRECT_OUTPUTS + 3].setChannels(8);
+				if (gInfo.directOutsMode < 4) {// global direct outs
+					int tapIndex = gInfo.directOutsMode;
+					memcpy(outputs[DIRECT_OUTPUTS + 3].getVoltages(), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
-			}		
+				else {// per aux direct outs
+					for (unsigned int i = 0; i < 4; i++) {
+						int tapIndex = directOutsModeLocalAux.cc4[i];
+						int offset = (tapIndex << 3) + (i << 1);
+						outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 0], 2 * i);
+						outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 1], 2 * i + 1);
+					}
+				}		
+			}
+			else {
+				outputs[DIRECT_OUTPUTS + 3].setChannels(0);
+			}
 		}
 	}
 
@@ -477,8 +485,14 @@ struct MixMaster : Module {
 
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
-			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(numChannels16);
-			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 16);
+			if (auxExpanderPresent) {
+				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(numChannels16);
+				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 16);
+			}
+			else {
+				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(8);
+				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 8);
+			}
 		}
 	}
 

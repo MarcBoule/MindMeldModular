@@ -268,12 +268,12 @@ struct AuxExpander : Module {
 			// Aux returns
 			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
 			for (int i = 0; i < 8; i++) {
-				messagesToMother[AFM_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();// left A, right A, left B, right B, left C, right C, left D, right D
+				messagesToMother[MFA_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();// left A, right A, left B, right B, left C, right C, left D, right D
 			}
 			leftExpander.module->rightExpander.messageFlipRequested = true;
 
 			// values send 80 (one at a time)
-			messagesToMother[AFM_VALUE80_INDEX] = (float)refreshCounter80;
+			messagesToMother[MFA_VALUE80_INDEX] = (float)refreshCounter80;
 			//   Global send knobs with cv (4 instances)
 			if (refreshCounter80 % 20 == 0) {
 				int global4i = refreshCounter80 / 20;
@@ -311,11 +311,11 @@ struct AuxExpander : Module {
 					val *= clamp(inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
 				}
 			}
-			messagesToMother[AFM_VALUE80] = val;
+			messagesToMother[MFA_VALUE80] = val;
 			
 			// values ret 20 (pan, fader, mute, solo, group) (one of the twenty at a time)
 			int refreshCounter20 = refreshCounter80 % 20;
-			messagesToMother[AFM_VALUE20_INDEX] = (float)refreshCounter20;
+			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
 			if (refreshCounter20 < 4) {// pan cv
 				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
@@ -331,7 +331,11 @@ struct AuxExpander : Module {
 				val = (val > 0.5f ? 0.0f : 1.0f);
 			}
 			// no CV inputs for solo and group
-			messagesToMother[AFM_VALUE20] = val;
+			messagesToMother[MFA_VALUE20] = val;
+			
+			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
+			memcpy(&messagesToMother[MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
+			memcpy(&messagesToMother[MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
 			
 			refreshCounter80++;
 			if (refreshCounter80 >= 80) {
