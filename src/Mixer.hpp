@@ -258,6 +258,7 @@ struct GlobalInfo {
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
+	bool filtersBeforeInserts;
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -364,6 +365,7 @@ struct GlobalInfo {
 		}
 		symmetricalFade = false;
 		linkBitMask = 0;
+		filtersBeforeInserts = false;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -404,6 +406,9 @@ struct GlobalInfo {
 		
 		// linkBitMask
 		json_object_set_new(rootJ, "linkBitMask", json_integer(linkBitMask));
+
+		// filtersBeforeInserts
+		json_object_set_new(rootJ, "filtersBeforeInserts", json_boolean(filtersBeforeInserts));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -458,6 +463,11 @@ struct GlobalInfo {
 		json_t *linkBitMaskJ = json_object_get(rootJ, "linkBitMask");
 		if (linkBitMaskJ)
 			linkBitMask = json_integer_value(linkBitMaskJ);
+		
+		// filtersBeforeInserts
+		json_t *filtersBeforeInsertsJ = json_object_get(rootJ, "filtersBeforeInserts");
+		if (filtersBeforeInsertsJ)
+			filtersBeforeInserts = json_is_true(filtersBeforeInsertsJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -1384,32 +1394,62 @@ struct MixerTrack {
 		taps[0] = (inSig[0].getVoltage() * inGainSlewed);
 		taps[1] = stereo ? (inSig[1].getVoltage() * inGainSlewed) : taps[0];
 		
-		// Filters
-		float filtered[2] = {taps[0], taps[1]};
-		// HPF
-		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
-			filtered[0] = hpFilter[0].process(hpPreFilter[0].processHP(filtered[0]));
-			filtered[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(filtered[1])) : filtered[0];
+		if (gInfo->filtersBeforeInserts) {
+			// Filters
+			float filtered[2] = {taps[0], taps[1]};
+			// HPF
+			if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+				filtered[0] = hpFilter[0].process(hpPreFilter[0].processHP(filtered[0]));
+				filtered[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(filtered[1])) : filtered[0];
+			}
+			// LPF
+			if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+				filtered[0] = lpFilter[0].process(filtered[0]);
+				filtered[1] = stereo ? lpFilter[1].process(filtered[1]) : filtered[0];
+			}
+			
+			// Insert outputs
+			insertOuts[0] = filtered[0];
+			insertOuts[1] = stereo ? filtered[1] : 0.0f;// don't send to R of insert outs when mono!
+			
+			// Tap[32],[33]: pre-fader (post insert)
+			if (inInsert[insertPortIndex].isConnected()) {
+				taps[32] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
+				taps[33] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+			}
+			else {
+				taps[32] = filtered[0];
+				taps[33] = filtered[1];
+			}
 		}
-		// LPF
-		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
-			filtered[0] = lpFilter[0].process(filtered[0]);
-			filtered[1] = stereo ? lpFilter[1].process(filtered[1]) : filtered[0];
-		}
-		
-		// Insert outputs
-		insertOuts[0] = filtered[0];
-		insertOuts[1] = stereo ? filtered[1] : 0.0f;// don't send to R of insert outs when mono!
-		
-		// Tap[32],[33]: pre-fader (post insert)
-		if (inInsert[insertPortIndex].isConnected()) {
-			taps[32] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
-			taps[33] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
-		}
-		else {
-			taps[32] = filtered[0];
-			taps[33] = filtered[1];
-		}
+		else {// filters after inserts
+			// Insert outputs
+			insertOuts[0] = taps[0];
+			insertOuts[1] = stereo ? taps[1] : 0.0f;// don't send to R of insert outs when mono!
+			
+			// Post insert (taps[32..33] are provisional, since not yet filtered)
+			if (inInsert[insertPortIndex].isConnected()) {
+				taps[32] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
+				taps[33] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+			}
+			else {
+				taps[32] = taps[0];
+				taps[33] = taps[1];
+			}
+
+			// Filters
+			// Tap[32],[33]: pre-fader (post insert)
+			// HPF
+			if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+				taps[32] = hpFilter[0].process(hpPreFilter[0].processHP(taps[32]));
+				taps[33] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[33])) : taps[32];
+			}
+			// LPF
+			if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+				taps[32] = lpFilter[0].process(taps[32]);
+				taps[33]  = stereo ? lpFilter[1].process(taps[33]) : taps[32];
+			}
+		}// if (filtersBeforeInserts)
 		
 		// Calc gainMatrixSlewed
 		simd::float_4 gainMatrixSlewed = gainMatrix;

@@ -1055,6 +1055,9 @@ struct DynSmallFaderWithLink : DynSmallFader {
 // knobs with color theme arc
 // --------------------
 
+// If ever aux knobs must be made in two types (top centered arc like pan, or bottom left starting arc like individual aux sends,
+//   don't create new structs, just autodetect the default value being equal to 0 or not to select the arc type to draw
+
 static const float arcThickness = 2.0f;
 
 struct DynSmallKnobGreyWithArc : DynSmallKnobGrey {

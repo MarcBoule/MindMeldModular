@@ -136,6 +136,31 @@ struct TapModeItem : MenuItem {
 };
 
 
+struct FilterPosItem : MenuItem {
+	GlobalInfo *gInfo;
+
+	struct ChainSubItem : MenuItem {
+		GlobalInfo *gInfo;
+		void onAction(const event::Action &e) override {
+			gInfo->filtersBeforeInserts = !gInfo->filtersBeforeInserts;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		ChainSubItem *fp0Item = createMenuItem<ChainSubItem>("Pre-insert", CHECKMARK(gInfo->filtersBeforeInserts));
+		fp0Item->gInfo = gInfo;
+		menu->addChild(fp0Item);
+
+		ChainSubItem *fp1Item = createMenuItem<ChainSubItem>("Post-insert (default)", CHECKMARK(!gInfo->filtersBeforeInserts));
+		fp1Item->gInfo = gInfo;
+		menu->addChild(fp1Item);
+
+		return menu;
+	}
+};
+
 struct AuxReturnItem : MenuItem {
 	int* auxReturnsMutedWhenMainSoloPtr;
 	int* auxReturnsSolosMuteDryPtr;

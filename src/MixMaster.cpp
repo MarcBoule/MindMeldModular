@@ -368,7 +368,6 @@ struct MixMaster : Module {
 				memcpy(&messageToExpander[AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
 				// Track move
 				tmp = trackMoveInAuxRequest;
-				if (tmp != 0) INFO("MOVE request in main %X", tmp);
 				memcpy(&messageToExpander[AFM_TRACK_MOVE], &tmp, 4);
 				trackMoveInAuxRequest = 0;
 			}
@@ -533,6 +532,10 @@ struct MixMasterWidget : ModuleWidget {
 		directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
 		directOutsItem->isGlobal = true;
 		menu->addChild(directOutsItem);
+		
+		FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
+		filterPosItem->gInfo = &(module->gInfo);
+		menu->addChild(filterPosItem);
 		
 		if (module->auxExpanderPresent) {
 			TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);

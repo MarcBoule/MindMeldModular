@@ -254,7 +254,6 @@ struct AuxExpander : Module {
 				// Track move
 				memcpy(&tmp, &messagesFromMother[AFM_TRACK_MOVE], 4);
 				if (tmp != 0) {
-					INFO("MOVE request in aux %X", tmp);
 					moveTrack(tmp);
 					tmp = 0;
 					memcpy(&messagesFromMother[AFM_TRACK_MOVE], &tmp, 4);
@@ -400,7 +399,6 @@ struct AuxExpander : Module {
 			}
 		}
 		readTrackParams(trackNumDest, buffer2);
-		INFO("GOT MOVE %i to %i", trackNumSrc, trackNumDest);
 	}
 };
 
