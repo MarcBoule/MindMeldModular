@@ -591,6 +591,7 @@ struct TrackReorderItem : MenuItem {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;	
 	int *updateTrackLabelRequestPtr;
+	int *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
 
 	struct TrackReorderSubItem : MenuItem {
@@ -598,6 +599,7 @@ struct TrackReorderItem : MenuItem {
 		int trackNumSrc;	
 		int trackNumDest;
 		int *updateTrackLabelRequestPtr;
+		int *trackMoveInAuxRequestPtr;
 		PortWidget **inputWidgets;
 		
 		CableWidget* cwClr[4];
@@ -653,7 +655,8 @@ struct TrackReorderItem : MenuItem {
 			tracks[trackNumDest].read2(&buffer2);
 			reconnectTrackInputs(trackNumDest);
 			
-			*updateTrackLabelRequestPtr = 1;			
+			*updateTrackLabelRequestPtr = 1;
+			*trackMoveInAuxRequestPtr = (trackNumSrc | (trackNumDest << 8));
 		}
 	};
 	
@@ -668,6 +671,7 @@ struct TrackReorderItem : MenuItem {
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
 			reo0Item->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			reo0Item->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
 			reo0Item->inputWidgets = inputWidgets;
 			reo0Item->disabled = onSource;
 			menu->addChild(reo0Item);

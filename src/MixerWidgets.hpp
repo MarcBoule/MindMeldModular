@@ -560,6 +560,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;
 	int *updateTrackLabelRequestPtr;
+	int *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
 	bool *auxExpanderPresentPtr;
 
@@ -639,6 +640,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
 			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			reodrerItem->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
 			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
 			
@@ -1050,10 +1052,12 @@ struct DynSmallFaderWithLink : DynSmallFader {
 };
 
 
-// knob with color theme arc
+// knobs with color theme arc
 // --------------------
 
-struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
+static const float arcThickness = 2.0f;
+
+struct DynSmallKnobGreyWithArc : DynSmallKnobGrey {
 	int8_t* dispColorPtr = NULL;
 	
 	void draw(const DrawArgs &args) override {
@@ -1070,7 +1074,7 @@ struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
 				nvgBeginPath(args.vg);
 				nvgLineCap(args.vg, NVG_ROUND);
 				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-				nvgStrokeWidth(args.vg, 2.0f);// arc thickness
+				nvgStrokeWidth(args.vg, arcThickness);
 				nvgStrokeColor(args.vg, DISP_COLORS[*dispColorPtr]);// arc color, same as displays
 				nvgStroke(args.vg);
 			}
@@ -1078,6 +1082,89 @@ struct DynSmallKnobGreyWithPanCol : DynSmallKnobGrey {
 	}
 };
 
+struct DynSmallKnobAuxAWithArc : DynSmallKnobAuxA {
+	void draw(const DrawArgs &args) override {
+		DynSmallKnobAuxA::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			if (normalizedParam != 0.0f) {
+				float a0 = minAngle - M_PI_2;
+				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
+				Vec cVec = box.size.div(2.0f);
+				float r = box.size.x / 2.0f + 2.6f;// arc radius
+				nvgBeginPath(args.vg);
+				nvgLineCap(args.vg, NVG_ROUND);
+				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
+				nvgStrokeWidth(args.vg, arcThickness);
+				nvgStrokeColor(args.vg, nvgRGB(219, 65, 85));
+				nvgStroke(args.vg);
+			}
+		}
+	}
+};
+
+struct DynSmallKnobAuxBWithArc : DynSmallKnobAuxB {
+	void draw(const DrawArgs &args) override {
+		DynSmallKnobAuxB::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			if (normalizedParam != 0.0f) {
+				float a0 = minAngle - M_PI_2;
+				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
+				Vec cVec = box.size.div(2.0f);
+				float r = box.size.x / 2.0f + 2.6f;// arc radius
+				nvgBeginPath(args.vg);
+				nvgLineCap(args.vg, NVG_ROUND);
+				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
+				nvgStrokeWidth(args.vg, arcThickness);
+				nvgStrokeColor(args.vg, nvgRGB(255, 127, 42));
+				nvgStroke(args.vg);
+			}
+		}
+	}
+};
+
+struct DynSmallKnobAuxCWithArc : DynSmallKnobAuxC {
+	void draw(const DrawArgs &args) override {
+		DynSmallKnobAuxC::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			if (normalizedParam != 0.0f) {
+				float a0 = minAngle - M_PI_2;
+				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
+				Vec cVec = box.size.div(2.0f);
+				float r = box.size.x / 2.0f + 2.6f;// arc radius
+				nvgBeginPath(args.vg);
+				nvgLineCap(args.vg, NVG_ROUND);
+				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
+				nvgStrokeWidth(args.vg, arcThickness);
+				nvgStrokeColor(args.vg, nvgRGB(113, 160, 255));
+				nvgStroke(args.vg);
+			}
+		}
+	}
+};
+
+struct DynSmallKnobAuxDWithArc : DynSmallKnobAuxD {
+	void draw(const DrawArgs &args) override {
+		DynSmallKnobAuxD::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			if (normalizedParam != 0.0f) {
+				float a0 = minAngle - M_PI_2;
+				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
+				Vec cVec = box.size.div(2.0f);
+				float r = box.size.x / 2.0f + 2.6f;// arc radius
+				nvgBeginPath(args.vg);
+				nvgLineCap(args.vg, NVG_ROUND);
+				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
+				nvgStrokeWidth(args.vg, arcThickness);
+				nvgStrokeColor(args.vg, nvgRGB(163, 93, 209));
+				nvgStroke(args.vg);
+			}
+		}
+	}
+};
 
 
 #endif

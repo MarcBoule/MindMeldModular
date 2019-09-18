@@ -30,6 +30,7 @@ struct MixMaster : Module {
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
+	int trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	float values80[80];
 	float values20[20];
 
@@ -136,6 +137,7 @@ struct MixMaster : Module {
 	}
 	void resetNonJson(bool recurseNonJson) {
 		updateTrackLabelRequest = 1;
+		trackMoveInAuxRequest = 0;
 		if (recurseNonJson) {
 			gInfo.resetNonJson();
 			for (int i = 0; i < 16; i++) {
@@ -354,8 +356,8 @@ struct MixMaster : Module {
 				// Track names
 				*updateSlow = 1;
 				memcpy(&messageToExpander[AFM_TRACK_GROUP_NAMES], trackLabels, 4 * 20);
-				int32_t tmp = panelTheme;
 				// Panel theme
+				int32_t tmp = panelTheme;
 				memcpy(&messageToExpander[AFM_PANEL_THEME], &tmp, 4);
 				// Color theme
 				memcpy(&messageToExpander[AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
@@ -364,6 +366,11 @@ struct MixMaster : Module {
 				directAndPan.cc4[0] = gInfo.directOutsMode;
 				directAndPan.cc4[1] = gInfo.panLawStereo;
 				memcpy(&messageToExpander[AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
+				// Track move
+				tmp = trackMoveInAuxRequest;
+				if (tmp != 0) INFO("MOVE request in main %X", tmp);
+				memcpy(&messageToExpander[AFM_TRACK_MOVE], &tmp, 4);
+				trackMoveInAuxRequest = 0;
 			}
 			else {
 				*updateSlow = 0;
@@ -613,6 +620,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 			}
@@ -629,8 +637,8 @@ struct MixMasterWidget : ModuleWidget {
 			// Pan inputs
 			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			DynSmallKnobGreyWithPanCol *panKnobTrack;
-			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSmallKnobGreyWithArc *panKnobTrack;
+			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobTrack->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 			}
@@ -710,8 +718,8 @@ struct MixMasterWidget : ModuleWidget {
 			// Pan inputs
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
-			DynSmallKnobGreyWithPanCol *panKnobGroup;
-			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithPanCol>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynSmallKnobGreyWithArc *panKnobGroup;
+			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobGroup->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 			}

@@ -77,6 +77,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	ENUMS(AFM_AUX_SENDS, 8), // left A, B, C, D, right A, B, C, D
 	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
 	AFM_DIRECT_AND_PAN_MODES,
+	AFM_TRACK_MOVE,
 	AFM_NUM_VALUES
 };
 

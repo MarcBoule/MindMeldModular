@@ -1,4 +1,4 @@
-#### MBSB ####
+#### Mind Meld Modular ####
 
 Copyright (c) 2019 Marc Boulé and Steve Baker. All rights reserved.
 
