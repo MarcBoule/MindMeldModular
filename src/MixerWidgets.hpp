@@ -1005,6 +1005,25 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 	}
 };
 
+struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
+	Param *muteParams;// 19 (or 15) params in here must be cleared when mutex mute performed on a group (track)
+
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+				for (int i = 0; i < 20; i++) {
+					if (i != paramQuantity->paramId - TRACK_MUTE_PARAMS) {
+						muteParams[i].setValue(0.0f);
+					}
+				}
+				e.consume(this);
+				return;
+			}
+		}
+		DynMuteFadeButton::onButton(e);		
+	}	
+};
+
 // linked faders
 // --------------------
 
