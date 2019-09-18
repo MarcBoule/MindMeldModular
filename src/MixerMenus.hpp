@@ -136,6 +136,32 @@ struct TapModeItem : MenuItem {
 };
 
 
+struct AuxReturnItem : MenuItem {
+	int* auxReturnsMutedWhenMainSoloPtr;
+	int* auxReturnsSolosMuteDryPtr;
+
+	struct AuxReturnModeSubItem : MenuItem {
+		int* modePtr;
+		void onAction(const event::Action &e) override {
+			*modePtr ^= 0x1;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		AuxReturnModeSubItem *ret0Item = createMenuItem<AuxReturnModeSubItem>("Mute aux returns when soloing", CHECKMARK(*auxReturnsMutedWhenMainSoloPtr != 0));
+		ret0Item->modePtr = auxReturnsMutedWhenMainSoloPtr;
+		menu->addChild(ret0Item);
+
+		AuxReturnModeSubItem *ret1Item = createMenuItem<AuxReturnModeSubItem>("Silence dry when aux return is solo'd", CHECKMARK(*auxReturnsSolosMuteDryPtr != 0));
+		ret1Item->modePtr = auxReturnsSolosMuteDryPtr;
+		menu->addChild(ret1Item);
+
+		return menu;
+	}
+};
+
 
 struct ChainItem : MenuItem {
 	GlobalInfo *gInfo;

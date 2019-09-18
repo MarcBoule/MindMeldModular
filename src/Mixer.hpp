@@ -245,6 +245,8 @@ struct GlobalInfo {
 	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
 	int directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+	int auxReturnsMutedWhenMainSolo;
+	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
 	ColorAndCloak colorAndCloak;
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
@@ -253,6 +255,8 @@ struct GlobalInfo {
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
+	int returnSoloBitMask;
+
 	float sampleTime;
 
 	// no need to save, no reset
@@ -260,6 +264,7 @@ struct GlobalInfo {
 	Param *paFade;// all 20 faders are here (track and group)
 	Input *inTrackSolo;
 	Input *inGroupSolo;
+	float *values20;
 	float oldFaders[16 + 4] = {-100.0f};
 	float maxTGFader;
 
@@ -269,6 +274,16 @@ struct GlobalInfo {
 	inline void setLinked(int index) {linkBitMask |= (1 << index);}
 	inline void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
 	inline void toggleLinked(int index) {linkBitMask ^= (1 << index);}
+	inline void updateReturnSoloBits() {
+		int newReturnSoloBitMask = 0;
+		for (int aux = 0; aux < 4; aux++) {
+			if (values20[12 + aux] > 0.5f) {
+				newReturnSoloBitMask |= (1 << aux);
+			}
+		}
+		returnSoloBitMask = newReturnSoloBitMask;
+	}
+		
 	
 	inline void processLinked(int trgOrGrpNum, float slowGain) {
 		if (slowGain != oldFaders[trgOrGrpNum]) {
@@ -288,11 +303,12 @@ struct GlobalInfo {
 	}
 
 	
-	void construct(Param *_params, Input *_inputs) {
+	void construct(Param *_params, Input *_inputs, float* _values20) {
 		paSolo = &_params[TRACK_SOLO_PARAMS];
 		paFade = &_params[TRACK_FADER_PARAMS];
 		inTrackSolo = &_inputs[TRACK_MUTE_INPUT];
 		inGroupSolo = &_inputs[GRPM_MUTESOLO_INPUT];
+		values20 = _values20;
 		maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
 	}
 	
@@ -302,6 +318,8 @@ struct GlobalInfo {
 		panLawStereo = 0;
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
+		auxReturnsMutedWhenMainSolo = 0;
+		auxReturnsSolosMuteDry = 0;
 		chainMode = 1;// post should be default
 		colorAndCloak.cc4[cloakedMode] = false;
 		colorAndCloak.cc4[vuColor] = 0;
@@ -315,6 +333,7 @@ struct GlobalInfo {
 	}
 	void resetNonJson() {
 		updateSoloBitMask();
+		updateReturnSoloBits();
 		sampleTime = APP->engine->getSampleTime();
 	}
 	
@@ -330,6 +349,12 @@ struct GlobalInfo {
 		
 		// auxSendsMode
 		json_object_set_new(rootJ, "auxSendsMode", json_integer(auxSendsMode));
+		
+		// auxReturnsMutedWhenMainSolo
+		json_object_set_new(rootJ, "auxReturnsMutedWhenMainSolo", json_integer(auxReturnsMutedWhenMainSolo));
+		
+		// auxReturnsSolosMuteDry
+		json_object_set_new(rootJ, "auxReturnsSolosMuteDry", json_integer(auxReturnsSolosMuteDry));
 		
 		// chainMode
 		json_object_set_new(rootJ, "chainMode", json_integer(chainMode));
@@ -366,6 +391,16 @@ struct GlobalInfo {
 		json_t *auxSendsModeJ = json_object_get(rootJ, "auxSendsMode");
 		if (auxSendsModeJ)
 			auxSendsMode = json_integer_value(auxSendsModeJ);
+		
+		// auxReturnsMutedWhenMainSolo
+		json_t *auxReturnsMutedWhenMainSoloJ = json_object_get(rootJ, "auxReturnsMutedWhenMainSolo");
+		if (auxReturnsMutedWhenMainSoloJ)
+			auxReturnsMutedWhenMainSolo = json_integer_value(auxReturnsMutedWhenMainSoloJ);
+		
+		// auxReturnsSolosMuteDry
+		json_t *auxReturnsSolosMuteDryJ = json_object_get(rootJ, "auxReturnsSolosMuteDry");
+		if (auxReturnsSolosMuteDryJ)
+			auxReturnsSolosMuteDry = json_integer_value(auxReturnsSolosMuteDryJ);
 		
 		// chainMode
 		json_t *chainModeJ = json_object_get(rootJ, "chainMode");
@@ -1533,7 +1568,6 @@ struct MixerAux {
 		flPan = &_val20[auxNum + 0];
 		flFade = &_val20[auxNum + 4];
 		flMute = &_val20[auxNum + 8];
-		flSolo0 = &_val20[12];
 		flGroup = &_val20[auxNum + 16];
 		taps = _taps;
 		insertOuts = _insertOuts;
@@ -1558,10 +1592,8 @@ struct MixerAux {
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
-		float soloGain = 1.0f;// TODO: solo must be done in here, separate solo from tracks/groups
-	
-		
 		// calc muteSoloGain
+		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
 		muteSoloGain = *flMute * soloGain;
 		
 		// calc gainMatrix
@@ -1646,9 +1678,11 @@ struct MixerAux {
 			taps[24] = taps[16] * muteSoloGainSlewed;
 			taps[25] = taps[17] * muteSoloGainSlewed;
 				
-			// Add to mix
-			mix[0] += taps[24];
-			mix[1] += taps[25];
+			// Add to mix when appropriate
+			if (gInfo->soloBitMask == 0 || !gInfo->auxReturnsMutedWhenMainSolo) {
+				mix[0] += taps[24];
+				mix[1] += taps[25];
+			}
 		}
 	}
 	

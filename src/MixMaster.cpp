@@ -98,7 +98,7 @@ struct MixMaster : Module {
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 
-		gInfo.construct(&params[0], &inputs[0]);
+		gInfo.construct(&params[0], &inputs[0], values20);
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
 		}
@@ -257,7 +257,10 @@ struct MixMaster : Module {
 			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
 				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
 				groups[trackToProcess >> 2].updateSlowValues();
-				aux[trackToProcess >> 2].updateSlowValues();
+				if (auxExpanderPresent) {
+					gInfo.updateReturnSoloBits();
+					aux[trackToProcess >> 2].updateSlowValues();
+				}
 			}
 			// Master
 			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
@@ -291,6 +294,11 @@ struct MixMaster : Module {
 		// Aux
 		if (auxExpanderPresent) {
 			memcpy(auxTaps, auxReturns, 8 * 4);// TODO: change memory layout so that this is not necessary		
+			if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0) {
+				for (int i = 0; i < 10; i++) {// kill sound when soloing aux returns and menu option wants the kill
+					mix[i] = 0.0f;
+				}
+			}
 			for (int i = 0; i < 4; i++) {
 				aux[i].process(mix);
 			}
@@ -503,6 +511,11 @@ struct MixMasterWidget : ModuleWidget {
 			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
 			auxSendsItem->isGlobal = true;
 			menu->addChild(auxSendsItem);
+			
+			AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
+			auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo.auxReturnsMutedWhenMainSolo);
+			auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo.auxReturnsSolosMuteDry);
+			menu->addChild(auxRetunsItem);
 		}
 		
 		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
