@@ -431,7 +431,7 @@ struct MasterDisplay : OpaqueWidget {
 			vLimitItem->srcMaster = srcMaster;
 			menu->addChild(vLimitItem);
 				
-			if (srcMaster->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
+			if (srcMaster->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcMaster->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
@@ -482,7 +482,7 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 struct GroupTrackAuxDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;
 	GlobalInfo *gInfo = NULL;
-	ColorAndCloak* colorAndCloak = NULL; // make this separate so that we can use the base for Aux displays
+	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use the base for Aux displays
 
 	GroupTrackAuxDisplayBase() {
 		box.size = DISP_SIZE;
@@ -617,7 +617,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (srcTrack->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
+			if (srcTrack->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcTrack->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
@@ -705,7 +705,7 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (srcGroup->gInfo->colorAndCloak.cc4[vuColor] >= numThemes) {	
+			if (srcGroup->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcGroup->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
@@ -732,6 +732,10 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 
 struct AuxDisplay : GroupTrackAuxDisplayBase {
 	int8_t* srcColor = NULL;
+	int8_t* srcDirectOutsModeLocal = NULL;
+	int8_t* srcPanLawStereoLocal = NULL;
+	int8_t* srcDirectOutsModeGlobal = NULL;
+	int8_t* srcPanLawStereoGlobal = NULL;
 	int auxNumber = 0;
 	
 	void onButton(const event::Button &e) override {
@@ -742,41 +746,25 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			auxSetLabel->text = "Aux settings: " + text;
 			menu->addChild(auxSetLabel);
 			
-			// this menu must offer:
-			// * direct out mode (of aux poly jack), when per track (must return to main)
-			// * stereo pan mode, when per track (must return to main)
-			// * vu color, when per track (local storage)
-			
 			bool isEmptyMenu = true;
 			
-/*			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
-			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
-			fadeProfSlider->box.size.x = 200.0f;
-			menu->addChild(fadeProfSlider);
-			
-			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Link fader", CHECKMARK(srcGroup->isLinked()));
-			linkFadItem->srcTrkGrp = srcGroup;
-			menu->addChild(linkFadItem);
-			
-			if (srcGroup->gInfo->directOutsMode >= 4) {
+			if (*srcDirectOutsModeGlobal >= 4) {
 				isEmptyMenu = false;
-				DirectOutsTrackItem<MixerGroup> *dirTrkItem = createMenuItem<DirectOutsTrackItem<MixerGroup>>("Direct outs", RIGHT_ARROW);
-				dirTrkItem->srcTrkGrp = srcGroup;
-				menu->addChild(dirTrkItem);
+				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
+				directOutsItem->isGlobal = false;
+				menu->addChild(directOutsItem);
 			}
 
-			if (srcGroup->gInfo->panLawStereo >= 2) {
+			if (*srcPanLawStereoGlobal >= 2) {
 				isEmptyMenu = false;
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
+				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
 				panLawStereoItem->isGlobal = false;
 				menu->addChild(panLawStereoItem);
 			}
-*/
-			if (colorAndCloak->cc4[vuColor] >= numThemes) {	
+
+			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
 				isEmptyMenu = false;
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = srcColor;
@@ -802,7 +790,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 // --------------------
 
 struct GroupSelectDisplay : ParamWidget {
-	ColorAndCloak *srcColor = NULL;
+	PackedBytes4 *srcColor = NULL;
 	LedDisplayChoice ldc;
 	
 	GroupSelectDisplay() {

@@ -242,6 +242,8 @@ struct MixMaster : Module {
 			
 			int value20i = clamp((int)(messagesFromExpander[AFM_VALUE20_INDEX]), 0, 19);
 			values20[value20i] = messagesFromExpander[AFM_VALUE20];
+			
+			
 		}
 		
 		
@@ -353,6 +355,11 @@ struct MixMaster : Module {
 				memcpy(&messageToExpander[AFM_PANEL_THEME], &tmp, 4);
 				// Color theme
 				memcpy(&messageToExpander[AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
+				// Direct outs mode global and Stereo pan mode global
+				PackedBytes4 directAndPan;
+				directAndPan.cc4[0] = gInfo.directOutsMode;
+				directAndPan.cc4[1] = gInfo.panLawStereo;
+				memcpy(&messageToExpander[AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
 			}
 			else {
 				*updateSlow = 0;
@@ -546,7 +553,7 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(dispColItem);
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
-		vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+		vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 		vuColItem->isGlobal = true;
 		menu->addChild(vuColItem);
 		
@@ -623,7 +630,7 @@ struct MixMasterWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu);
-				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
@@ -704,7 +711,7 @@ struct MixMasterWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu);
-				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
@@ -748,7 +755,7 @@ struct MixMasterWidget : ModuleWidget {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
 			newVU->srcLevels = &(module->master.vu);
-			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColor]);
+			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			addChild(newVU);
 			// Fade pointer

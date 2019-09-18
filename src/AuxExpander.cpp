@@ -50,10 +50,11 @@ struct AuxExpander : Module {
 
 	// Need to save, no reset
 	int panelTheme;
-	int8_t vuColorThemeLocal[4]; // 0 to numthemes - 1; (when per-track choice)
-	
 	
 	// Need to save, with reset
+	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice), no need to send back to main panel
+	PackedBytes4 directOutsModeLocal;// must send back to main panel
+	PackedBytes4 panLawStereoLocal;// must send back to main panel
 	
 	
 	// No need to save, with reset
@@ -66,7 +67,8 @@ struct AuxExpander : Module {
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
-	ColorAndCloak colorAndCloak;
+	PackedBytes4 colorAndCloak;
+	PackedBytes4 directOutsAndStereoPanModes;// cc1[0] is direct out mode, cc1[1] is stereo pan mode
 	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
 	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget	
 	
@@ -149,6 +151,7 @@ struct AuxExpander : Module {
 
 
 		colorAndCloak.cc1 = 0;
+		directOutsAndStereoPanModes.cc1 = 0;
 		
 		onReset();
 
@@ -158,7 +161,10 @@ struct AuxExpander : Module {
   
 	void onReset() override {
 		for (int i = 0; i < 4; i++) {
-			vuColorThemeLocal[i] = 0;
+			vuColorThemeLocal.cc4[i] = 0;
+			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
+			panLawStereoLocal.cc4[i] = 0;
+			
 		}
 		resetAuxLabelRequest = 1;
 		resetNonJson(false);
@@ -185,13 +191,14 @@ struct AuxExpander : Module {
 		// panelTheme
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 
-		// vuColorTheme
-		std::string buf = "vuColorTheme0";
-		for (int i = 0; i < 4; i++ ) {
-			json_object_set_new(rootJ, buf.c_str(), json_integer(vuColorThemeLocal[i]));
-			buf[12]++;
-		}
-		
+		// vuColorThemeLocal
+		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal.cc1));
+
+		// directOutsModeLocal
+		json_object_set_new(rootJ, "directOutsModeLocal", json_integer(directOutsModeLocal.cc1));
+
+		// panLawStereoLocal
+		json_object_set_new(rootJ, "panLawStereoLocal", json_integer(panLawStereoLocal.cc1));
 		return rootJ;
 	}
 
@@ -202,15 +209,21 @@ struct AuxExpander : Module {
 		if (panelThemeJ)
 			panelTheme = json_integer_value(panelThemeJ);
 
-		// vuColorTheme
-		std::string buf = "vuColorTheme0";
-		for (int i = 0; i < 4; i++ ) {
-			json_t *vuColorThemeJ = json_object_get(rootJ, buf.c_str());
-			if (vuColorThemeJ)
-				vuColorThemeLocal[i] = json_integer_value(vuColorThemeJ);
-			buf[12]++;
-		}
-		
+		// vuColorThemeLocal
+		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
+		if (vuColorThemeLocalJ)
+			vuColorThemeLocal.cc1 = json_integer_value(vuColorThemeLocalJ);
+
+		// directOutsModeLocal
+		json_t *directOutsModeLocalJ = json_object_get(rootJ, "directOutsModeLocal");
+		if (directOutsModeLocalJ)
+			directOutsModeLocal.cc1 = json_integer_value(directOutsModeLocalJ);
+
+		// panLawStereoLocal
+		json_t *panLawStereoLocalJ = json_object_get(rootJ, "panLawStereoLocal");
+		if (panLawStereoLocalJ)
+			panLawStereoLocal.cc1 = json_integer_value(panLawStereoLocalJ);
+
 		resetNonJson(true);
 	}
 
@@ -236,6 +249,8 @@ struct AuxExpander : Module {
 				panelTheme = tmp;
 				// Color theme
 				memcpy(&colorAndCloak.cc1, &messagesFromMother[AFM_COLOR_AND_CLOAK], 4);
+				// Direct outs mode global and Stereo pan mode global
+				memcpy(&directOutsAndStereoPanModes.cc1, &messagesFromMother[AFM_DIRECT_AND_PAN_MODES], 4);			
 			}
 			
 			// Fast values from mother
@@ -367,7 +382,11 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
 			if (module) {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
-				auxDisplays[i]->srcColor = &(module->vuColorThemeLocal[i]);
+				auxDisplays[i]->srcColor = &(module->vuColorThemeLocal.cc4[i]);
+				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
+				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
+				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
+				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
 				auxDisplays[i]->auxNumber = i;
 				auxDisplays[i]->text = getInitAuxLabel(i);
 			}
@@ -396,8 +415,8 @@ struct AuxExpanderWidget : ModuleWidget {
 				// VU meters
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
 				newVU->srcLevels = &(module->vu[i]);
-				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColor]);
-				newVU->colorThemeLocal = &(module->vuColorThemeLocal[i]);
+				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeLocal = &(module->vuColorThemeLocal.cc4[i]);
 				addChild(newVU);
 			}				
 			

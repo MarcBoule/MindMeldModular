@@ -76,6 +76,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_COLOR_AND_CLOAK,
 	ENUMS(AFM_AUX_SENDS, 8), // left A, B, C, D, right A, B, C, D
 	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
+	AFM_DIRECT_AND_PAN_MODES,
 	AFM_NUM_VALUES
 };
 
@@ -170,9 +171,9 @@ struct TrackSettingsCpBuffer {
 	float fadeProfile;
 	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
 	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
-	int directOutsMode;
-	int auxSendsMode;
-	int panLawStereo;
+	int8_t directOutsMode;
+	int8_t auxSendsMode;
+	int8_t panLawStereo;
 	int8_t vuColorThemeLocal;
 	bool linkedFader;
 
@@ -180,6 +181,7 @@ struct TrackSettingsCpBuffer {
 	float paGroup;
 	float paFade;
 	float paMute;
+	float paSolo;
 	float paPan;
 	char trackName[4];// track names are not null terminated in MixerTracks
 	float fadeGain;
@@ -202,6 +204,7 @@ struct TrackSettingsCpBuffer {
 		paGroup = 0.0f;
 		paFade = 1.0f;
 		paMute = 0.0f;
+		paSolo = 0.0f;
 		paPan = 0.5f;
 		trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
 		fadeGain = 1.0f;
@@ -214,10 +217,10 @@ struct TrackSettingsCpBuffer {
 
 enum ccIds {
 	cloakedMode, // turn off track VUs only, keep master VUs (also called "Cloaked mode")
-	vuColor, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table)
+	vuColorGlobal, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table, or else array overflow)
 	dispColor // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray
 };
-union ColorAndCloak {
+union PackedBytes4 {
 	int32_t cc1;
 	int8_t cc4[4];
 };
@@ -242,13 +245,13 @@ struct GlobalInfo {
 	
 	// need to save, with reset
 	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
-	int panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
-	int directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
-	int auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+	int8_t panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
+	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int auxReturnsMutedWhenMainSolo;
 	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
-	ColorAndCloak colorAndCloak;
+	PackedBytes4 colorAndCloak;
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -274,6 +277,35 @@ struct GlobalInfo {
 	inline void setLinked(int index) {linkBitMask |= (1 << index);}
 	inline void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
 	inline void toggleLinked(int index) {linkBitMask ^= (1 << index);}
+	
+	// track and group solos
+	void updateSoloBitMask() {
+		soloBitMask = 0ul;
+		for (unsigned long trkOrGrp = 0; trkOrGrp < 20; trkOrGrp++) {// check track solos
+			updateSoloBit(trkOrGrp);
+		}
+	}
+	void updateSoloBit(unsigned long trkOrGrp) {
+		if (trkOrGrp < 16) {
+			if ( (paSolo[trkOrGrp].getValue() + clamp(inTrackSolo->getVoltage(trkOrGrp) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
+				soloBitMask |= (1 << trkOrGrp);
+			}
+			else {
+				soloBitMask &= ~(1 << trkOrGrp);
+			}	
+		}
+		else {// trkOrGrp >= 16
+			if ( (paSolo[trkOrGrp].getValue() + clamp(inGroupSolo->getVoltage(-12 + trkOrGrp) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
+				soloBitMask |= (1 << trkOrGrp);
+			}
+			else {
+				soloBitMask &= ~(1 << trkOrGrp);
+			}
+		}
+	}		
+			
+	
+	// aux return solos
 	inline void updateReturnSoloBits() {
 		int newReturnSoloBitMask = 0;
 		for (int aux = 0; aux < 4; aux++) {
@@ -284,7 +316,7 @@ struct GlobalInfo {
 		returnSoloBitMask = newReturnSoloBitMask;
 	}
 		
-	
+	// linked faders
 	inline void processLinked(int trgOrGrpNum, float slowGain) {
 		if (slowGain != oldFaders[trgOrGrpNum]) {
 			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
@@ -306,7 +338,7 @@ struct GlobalInfo {
 	void construct(Param *_params, Input *_inputs, float* _values20) {
 		paSolo = &_params[TRACK_SOLO_PARAMS];
 		paFade = &_params[TRACK_FADER_PARAMS];
-		inTrackSolo = &_inputs[TRACK_MUTE_INPUT];
+		inTrackSolo = &_inputs[TRACK_SOLO_INPUT];
 		inGroupSolo = &_inputs[GRPM_MUTESOLO_INPUT];
 		values20 = _values20;
 		maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
@@ -322,7 +354,7 @@ struct GlobalInfo {
 		auxReturnsSolosMuteDry = 0;
 		chainMode = 1;// post should be default
 		colorAndCloak.cc4[cloakedMode] = false;
-		colorAndCloak.cc4[vuColor] = 0;
+		colorAndCloak.cc4[vuColorGlobal] = 0;
 		colorAndCloak.cc4[dispColor] = 0;
 		for (int i = 0; i < 4; i++) {
 			groupUsage[i] = 0;
@@ -426,29 +458,6 @@ struct GlobalInfo {
 		
 		// extern must call resetNonJson()
 	}
-	
-	
-	void updateSoloBitMask() {
-		unsigned long newSoloBitMask = 0ul;// separate variable so no glitch generated
-		for (unsigned long i = 0; i < 16; i++) {// check track solos
-			if ( (paSolo[i].getValue() + clamp(inTrackSolo->getVoltage(i) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
-				newSoloBitMask |= (1 << i);
-			}
-		}
-		for (unsigned long i = 0; i < 4; i++) {// check group solos
-			if ( (paSolo[16 + i].getValue() + clamp(inGroupSolo->getVoltage(4 + i) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
-				newSoloBitMask |= (1 << (16 + i));
-			}
-		}
-		soloBitMask = newSoloBitMask;
-	}
-	void updateSoloBit(unsigned int trkOrGrp) {
-		if (paSolo[trkOrGrp].getValue() > 0.5f)
-			soloBitMask |= (1 << trkOrGrp);
-		else
-			soloBitMask &= ~(1 << trkOrGrp);
-	}
-		
 };// struct GlobalInfo
 
 
@@ -581,7 +590,7 @@ struct MixerMaster {
 			}
 			
 			// Vol CV
-			if (inMuteDimMono->isConnected()) {
+			if (inMuteDimMono->isConnected() && inMuteDimMono->getChannels() > 11) {
 				slowGain *= clamp(inMuteDimMono->getVoltage(11) * 0.1f, 0.f, 1.f);
 			}
 			
@@ -741,9 +750,9 @@ struct MixerGroup {
 	// need to save, with reset
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
-	int directOutsMode;// when per track
-	int auxSendsMode;// when per track
-	int panLawStereo;// when per track
+	int8_t directOutsMode;// when per track
+	int8_t auxSendsMode;// when per track
+	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
 
 	// no need to save, with reset
@@ -1032,9 +1041,9 @@ struct MixerTrack {
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
-	int directOutsMode;// when per track
-	int auxSendsMode;// when per track
-	int panLawStereo;// when per track
+	int8_t directOutsMode;// when per track
+	int8_t auxSendsMode;// when per track
+	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
 
 	// no need to save, with reset
@@ -1067,6 +1076,7 @@ struct MixerTrack {
 	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
 	Param *paFade;
 	Param *paMute;
+	Param *paSolo;
 	Param *paPan;
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
@@ -1090,6 +1100,7 @@ struct MixerTrack {
 		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
 		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
 		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
+		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
 		taps = _taps;
@@ -1157,6 +1168,7 @@ struct MixerTrack {
 		dest->paGroup = paGroup->getValue();;
 		dest->paFade = paFade->getValue();
 		dest->paMute = paMute->getValue();
+		dest->paSolo = paSolo->getValue();
 		dest->paPan = paPan->getValue();
 		for (int chr = 0; chr < 4; chr++) {
 			dest->trackName[chr] = trackName[chr];
@@ -1169,6 +1181,7 @@ struct MixerTrack {
 		paGroup->setValue(src->paGroup);
 		paFade->setValue(src->paFade);
 		paMute->setValue(src->paMute);
+		paSolo->setValue(src->paSolo);
 		paPan->setValue(src->paPan);
 		for (int chr = 0; chr < 4; chr++) {
 			trackName[chr] = src->trackName[chr];
@@ -1534,8 +1547,8 @@ struct MixerAux {
 	// none
 	
 	// need to save, with reset
-	int directOutsMode;// when per track. TODO this should not be in here, should come from aux
-	int panLawStereo;// when per track. TODO this should not be in here, should come from aux
+	int8_t directOutsMode;// when per track. TODO this should not be in here, should come from aux
+	int8_t panLawStereo;// when per track. TODO this should not be in here, should come from aux
 
 	// no need to save, with reset
 	private:

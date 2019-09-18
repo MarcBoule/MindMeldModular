@@ -54,12 +54,12 @@ struct PanLawMonoItem : MenuItem {
 
 
 struct PanLawStereoItem : MenuItem {
-	int *panLawStereoSrc;
+	int8_t *panLawStereoSrc;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
 
 	struct PanLawStereoSubItem : MenuItem {
-		int *panLawStereoSrc;
-		int setVal = 0;
+		int8_t *panLawStereoSrc;
+		int8_t setVal = 0;
 		void onAction(const event::Action &e) override {
 			*panLawStereoSrc = setVal;
 		}
@@ -91,12 +91,12 @@ struct PanLawStereoItem : MenuItem {
 
 // used for direct outs mode and aux send mode (tap choice 1-4)
 struct TapModeItem : MenuItem {
-	int* tapModePtr;
+	int8_t* tapModePtr;
 	bool isGlobal;
 
 	struct TapModeSubItem : MenuItem {
-		int* tapModePtr;
-		int setVal = 0;
+		int8_t* tapModePtr;
+		int8_t setVal = 0;
 		void onAction(const event::Action &e) override {
 			*tapModePtr = setVal;
 		}
