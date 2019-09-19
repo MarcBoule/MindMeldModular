@@ -12,7 +12,7 @@
 struct AuxExpander : Module {
 	enum ParamIds {
 		ENUMS(TRACK_AUXSEND_PARAMS, 16 * 4), // trk 1 aux A, trk 1 aux B, ... 
-		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// must be contiguous with TRACK_AUXSEND_PARAMS 1A, 2A, 3A, 4A, 1B, etc
+		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// must be contiguous with TRACK_AUXSEND_PARAMS. Mapping: 1A, 2A, 3A, 4A, 1B, etc
 		ENUMS(TRACK_AUXMUTE_PARAMS, 16),
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
@@ -27,7 +27,7 @@ struct AuxExpander : Module {
 		ENUMS(RETURN_INPUTS, 2 * 4),
 		ENUMS(POLY_AUX_AD_CV_INPUTS, 4),
 		POLY_AUX_M_CV_INPUT,
-		POLY_GRPS_AD_CV_INPUT,
+		POLY_GRPS_AD_CV_INPUT,// Mapping: 1A, 2A, 3A, 4A, 1B, etc
 		POLY_GRPS_M_CV_INPUT,
 		POLY_BUS_CV_INPUT,
 		NUM_INPUTS
@@ -306,7 +306,7 @@ struct AuxExpander : Module {
 			//   calc an 80 send value
 			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
 			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i];
+			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i < 16 ? global20i : (16 + (refreshCounter80 & 0x3))];
 			if (refreshCounter80 < 64) {
 				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 &0x3);
 				if (inputs[inputNum].isConnected()) {

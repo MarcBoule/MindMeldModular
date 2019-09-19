@@ -39,7 +39,7 @@ struct MixMaster : Module {
 	RefreshCounter refresh;	
 	int panelThemeWithAuxPresent = 0;
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks
+	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
 	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
 	float groupTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo groups
 	float groupAuxInsertOuts[8 * 2];// room for 4 stereo group insert outs and 4 stereo aux insert outs
@@ -409,8 +409,8 @@ struct MixMaster : Module {
 				tapIndex <<= 3;
 				float valTap[2] = {groupTaps[tapIndex + (grp << 1) + 0], groupTaps[tapIndex + (grp << 1) + 1]};
 				for (int aux = 0; aux < 4; aux++) {
-					auxSends[(aux << 1) + 0] += values80[64 + (grp << 2) + aux] * valTap[0];
-					auxSends[(aux << 1) + 1] += values80[64 + (grp << 2) + aux] * valTap[1];
+					auxSends[(aux << 1) + 0] += values80[64 + (aux << 2) + grp] * valTap[0];
+					auxSends[(aux << 1) + 1] += values80[64 + (aux << 2) + grp] * valTap[1];
 				}
 			}
 						
