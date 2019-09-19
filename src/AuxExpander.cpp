@@ -296,10 +296,10 @@ struct AuxExpander : Module {
 			if (refreshCounter80 % 4 == 0) {
 				float val = params[TRACK_AUXMUTE_PARAMS + global20i].getValue();
 				if (global20i < 16) {
-					val += clamp(inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) * 0.1f, 0.0f, 1.0f);
+					val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) * 0.1f;
 				}
 				else {
-					val += clamp(inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) * 0.1f, 0.0f, 1.0f);
+					val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) * 0.1f;
 				}
 				mutes[global20i] = (val > 0.5f ? 0.0f : 1.0f);
 			}
@@ -325,7 +325,8 @@ struct AuxExpander : Module {
 			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
 			if (refreshCounter20 < 4) {// pan cv
-				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
+				val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;// pan CV is a -5V to +5V input
+				val = clamp(val, 0.0f, 1.0f);
 			}
 			else if (refreshCounter20 < 8) {// fader scaling and cv
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
@@ -334,7 +335,7 @@ struct AuxExpander : Module {
 				}
 			}
 			else if (refreshCounter20 < 12) {// mute
-				val += clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.0f, 1.0f);
+				val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;
 				val = (val > 0.5f ? 0.0f : 1.0f);
 			}
 			// no CV inputs for solo and group

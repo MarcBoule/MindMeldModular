@@ -291,7 +291,7 @@ struct GlobalInfo {
 	}
 	void updateSoloBit(unsigned long trkOrGrp) {
 		if (trkOrGrp < 16) {
-			if ( (paSolo[trkOrGrp].getValue() + clamp(inTrackSolo->getVoltage(trkOrGrp) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
+			if ( (paSolo[trkOrGrp].getValue() + inTrackSolo->getVoltage(trkOrGrp) * 0.1f) > 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
 			else {
@@ -299,7 +299,7 @@ struct GlobalInfo {
 			}	
 		}
 		else {// trkOrGrp >= 16
-			if ( (paSolo[trkOrGrp].getValue() + clamp(inGroupSolo->getVoltage(-12 + trkOrGrp) * 0.1f, 0.0f, 1.0f)) > 0.5f) {
+			if ( (paSolo[trkOrGrp].getValue() + inGroupSolo->getVoltage(-12 + trkOrGrp) * 0.1f) > 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
 			else {
@@ -514,7 +514,7 @@ struct MixerMaster {
 	Input *inMuteDimMono;
 	float target = -1.0f;
 
-	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(8) * 0.1f, 0.0f, 1.0f) > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return (params[MAIN_MUTE_PARAM].getValue() + inMuteDimMono->getVoltage(8) * 0.1f) > 0.5f ? 0.0f : 1.0f;}
 
 
 	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
@@ -598,7 +598,7 @@ struct MixerMaster {
 			slowGain = std::pow(slowGain, masterFaderScalingExponent);
 			
 			// Dim
-			if (params[MAIN_DIM_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(9) * 0.1f, 0.0f, 1.0f) > 0.5f) {
+			if ((params[MAIN_DIM_PARAM].getValue() + inMuteDimMono->getVoltage(9) * 0.1f) > 0.5f) {
 				slowGain *= dimGainIntegerDB;
 			}
 			
@@ -608,7 +608,7 @@ struct MixerMaster {
 			}
 			
 			// Mono
-			if (params[MAIN_MONO_PARAM].getValue() + clamp(inMuteDimMono->getVoltage(10) * 0.1f, 0.0f, 1.0f) > 0.5f) {
+			if ((params[MAIN_MONO_PARAM].getValue() + inMuteDimMono->getVoltage(10) * 0.1f) > 0.5f) {
 				gainMatrix = simd::float_4(slowGain * 0.5f);
 			}
 			else {
@@ -621,63 +621,7 @@ struct MixerMaster {
 		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
 	}
 	
-	
-	void dataToJson(json_t *rootJ) {
-		// dcBlock
-		json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
 
-		// voltageLimiter
-		json_object_set_new(rootJ, "voltageLimiter", json_real(voltageLimiter));
-		
-		// fadeRate
-		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
-		
-		// fadeProfile
-		json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
-		
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal));
-		
-		// dimGain
-		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
-	}
-
-	
-	void dataFromJson(json_t *rootJ) {
-		// dcBlock
-		json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
-		if (dcBlockJ)
-			dcBlock = json_is_true(dcBlockJ);
-		
-		// voltageLimiter
-		json_t *voltageLimiterJ = json_object_get(rootJ, "voltageLimiter");
-		if (voltageLimiterJ)
-			voltageLimiter = json_number_value(voltageLimiterJ);
-
-		// fadeRate
-		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
-		if (fadeRateJ)
-			fadeRate = json_number_value(fadeRateJ);
-		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-		
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
-		
-		// dimGain
-		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
-		if (dimGainJ)
-			dimGain = json_number_value(dimGainJ);
-		
-		// extern must call resetNonJson()
-	}
-	
-	
 	// Contract: 
 	//  * calc mix[] and vu
 	void process(float *mix) {// takes mix[0..1] and redeposits post in same place, since don't need pre
@@ -745,6 +689,63 @@ struct MixerMaster {
 		mix[0] = clamp(mix[0], -voltageLimiter, voltageLimiter);
 		mix[1] = clamp(mix[1], -voltageLimiter, voltageLimiter);
 	}
+	
+	
+	void dataToJson(json_t *rootJ) {
+		// dcBlock
+		json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
+
+		// voltageLimiter
+		json_object_set_new(rootJ, "voltageLimiter", json_real(voltageLimiter));
+		
+		// fadeRate
+		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
+		
+		// fadeProfile
+		json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
+		
+		// vuColorThemeLocal
+		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal));
+		
+		// dimGain
+		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
+	}
+
+	
+	void dataFromJson(json_t *rootJ) {
+		// dcBlock
+		json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
+		if (dcBlockJ)
+			dcBlock = json_is_true(dcBlockJ);
+		
+		// voltageLimiter
+		json_t *voltageLimiterJ = json_object_get(rootJ, "voltageLimiter");
+		if (voltageLimiterJ)
+			voltageLimiter = json_number_value(voltageLimiterJ);
+
+		// fadeRate
+		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
+		if (fadeRateJ)
+			fadeRate = json_number_value(fadeRateJ);
+		
+		// fadeProfile
+		json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
+		if (fadeProfileJ)
+			fadeProfile = json_number_value(fadeProfileJ);
+		
+		// vuColorThemeLocal
+		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
+		if (vuColorThemeLocalJ)
+			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
+		
+		// dimGain
+		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
+		if (dimGainJ)
+			dimGain = json_number_value(dimGainJ);
+		
+		// extern must call resetNonJson()
+	}
+		
 };// struct MixerMaster
 
 
@@ -796,7 +797,7 @@ struct MixerGroup {
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
 
-	inline float calcFadeGain() {return paMute->getValue() + clamp(inMuteSolo->getVoltage(groupNum) * 0.1f, 0.0f, 1.0f) > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return (paMute->getValue() + inMuteSolo->getVoltage(groupNum) * 0.1f) > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
@@ -880,10 +881,8 @@ struct MixerGroup {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
 		}
 
-		float pan = paPan->getValue();
-		// if (inPan->isConnected()) {
-			pan += clamp(inPan->getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
-		// }
+		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+		pan = clamp(pan, 0.0f, 1.0f);
 		
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
@@ -1096,7 +1095,7 @@ struct MixerTrack {
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
 
-	inline float calcFadeGain() {return paMute->getValue() + clamp(inMute->getVoltage(trackNum) * 0.1f, 0.0f, 1.0f) > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return (paMute->getValue() + inMute->getVoltage(trackNum) * 0.1f) > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(trackNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
@@ -1304,10 +1303,8 @@ struct MixerTrack {
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.f);
 		}
 
-		float pan = paPan->getValue();
-		// if (inPan->isConnected()) {
-			pan += clamp(inPan->getVoltage(), -5.0f, 5.0f) * 0.1f;// this is a -5V to +5V input
-		// }
+		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+		pan = clamp(pan, 0.0f, 1.0f);
 		
 		if (pan == 0.5f) {
 			if (!stereo) gainMatrix[3] = slowGain;
