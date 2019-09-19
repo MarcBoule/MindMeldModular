@@ -534,7 +534,7 @@ struct MixerMaster {
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		vuColorThemeLocal = 0;
-		dimGain = 0.1f;// 0.1 = -20 dB
+		dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
 		resetNonJson();
 	}
 	void resetNonJson() {

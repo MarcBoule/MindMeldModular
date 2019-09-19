@@ -12,7 +12,7 @@
 struct AuxExpander : Module {
 	enum ParamIds {
 		ENUMS(TRACK_AUXSEND_PARAMS, 16 * 4), // trk 1 aux A, trk 1 aux B, ... 
-		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// must be contiguous with TRACK_AUXSEND_PARAMS
+		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// must be contiguous with TRACK_AUXSEND_PARAMS 1A, 2A, 3A, 4A, 1B, etc
 		ENUMS(TRACK_AUXMUTE_PARAMS, 16),
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
@@ -99,22 +99,22 @@ struct AuxExpander : Module {
 			snprintf(strBuf, 32, "Track #%i aux send mute", i + 1);
 			configParam(TRACK_AUXMUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		for (int i = 0; i < 4; i++) {
+		for (int grp = 0; grp < 4; grp++) {
 			// Group send aux A
-			snprintf(strBuf, 32, "Group #%i aux send A", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			snprintf(strBuf, 32, "Group #%i aux send A", grp + 1);
+			configParam(GROUP_AUXSEND_PARAMS + 0 + grp, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Group send aux B
-			snprintf(strBuf, 32, "Group #%i aux send B", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 1, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			snprintf(strBuf, 32, "Group #%i aux send B", grp + 1);
+			configParam(GROUP_AUXSEND_PARAMS + 4 + grp, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Group send aux C
-			snprintf(strBuf, 32, "Group #%i aux send C", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 2, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			snprintf(strBuf, 32, "Group #%i aux send C", grp + 1);
+			configParam(GROUP_AUXSEND_PARAMS + 8 + grp, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Group send aux D
-			snprintf(strBuf, 32, "Group #%i aux send D", i + 1);
-			configParam(GROUP_AUXSEND_PARAMS + i * 4 + 3, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
+			snprintf(strBuf, 32, "Group #%i aux send D", grp + 1);
+			configParam(GROUP_AUXSEND_PARAMS + 12 + grp, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::individualAuxSendScalingExponent);
 			// Mute
-			snprintf(strBuf, 32, "Group #%i aux send mute", i + 1);
-			configParam(GROUP_AUXMUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);		
+			snprintf(strBuf, 32, "Group #%i aux send mute", grp + 1);
+			configParam(GROUP_AUXMUTE_PARAMS + grp, 0.0f, 1.0f, 0.0f, strBuf);		
 		}
 
 		// Global send aux A-D
@@ -308,14 +308,14 @@ struct AuxExpander : Module {
 			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
 			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i];
 			if (refreshCounter80 < 64) {
-				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 >> 4);
+				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 &0x3);
 				if (inputs[inputNum].isConnected()) {
-					val *= clamp(inputs[inputNum].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
+					val = clamp(val + inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f, 0.0f, 1.0f);
 				}
 			}
 			else {
 				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-					val *= clamp(inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
+					val = clamp(val + inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
 				}
 			}
 			messagesToMother[MFA_VALUE80] = val;
@@ -547,13 +547,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 0 + i, module ? &module->panelTheme : NULL));			
 			// aux B send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 4 + i, module ? &module->panelTheme : NULL));
 			// aux C send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 8 + i, module ? &module->panelTheme : NULL));
 			// aux D send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 12 + i, module ? &module->panelTheme : NULL));
 			// mute for groups 1 to 2
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			
@@ -565,13 +565,13 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 0, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 0 + i + 2, module ? &module->panelTheme : NULL));			
 			// aux B send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 1, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 4 + i + 2, module ? &module->panelTheme : NULL));
 			// aux C send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 8 + i + 2, module ? &module->panelTheme : NULL));
 			// aux D send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 3, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 12 + i + 2, module ? &module->panelTheme : NULL));
 			// mute for groups 3 to 4
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));
 		}

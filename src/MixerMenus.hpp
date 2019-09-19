@@ -175,11 +175,11 @@ struct AuxReturnItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		AuxReturnModeSubItem *ret0Item = createMenuItem<AuxReturnModeSubItem>("Mute aux returns when soloing", CHECKMARK(*auxReturnsMutedWhenMainSoloPtr != 0));
+		AuxReturnModeSubItem *ret0Item = createMenuItem<AuxReturnModeSubItem>("Mute aux returns when soloing tracks", CHECKMARK(*auxReturnsMutedWhenMainSoloPtr != 0));
 		ret0Item->modePtr = auxReturnsMutedWhenMainSoloPtr;
 		menu->addChild(ret0Item);
 
-		AuxReturnModeSubItem *ret1Item = createMenuItem<AuxReturnModeSubItem>("Silence dry when aux return is solo'd", CHECKMARK(*auxReturnsSolosMuteDryPtr != 0));
+		AuxReturnModeSubItem *ret1Item = createMenuItem<AuxReturnModeSubItem>("Mute tracks when soloing aux returns", CHECKMARK(*auxReturnsSolosMuteDryPtr != 0));
 		ret1Item->modePtr = auxReturnsSolosMuteDryPtr;
 		menu->addChild(ret1Item);
 
@@ -616,7 +616,7 @@ struct TrackReorderItem : MenuItem {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;	
 	int *updateTrackLabelRequestPtr;
-	int *trackMoveInAuxRequestPtr;
+	int32_t *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
 
 	struct TrackReorderSubItem : MenuItem {
@@ -624,7 +624,7 @@ struct TrackReorderItem : MenuItem {
 		int trackNumSrc;	
 		int trackNumDest;
 		int *updateTrackLabelRequestPtr;
-		int *trackMoveInAuxRequestPtr;
+		int32_t *trackMoveInAuxRequestPtr;
 		PortWidget **inputWidgets;
 		
 		CableWidget* cwClr[4];

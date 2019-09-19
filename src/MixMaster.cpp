@@ -19,6 +19,7 @@ struct MixMaster : Module {
 
 	// Need to save, no reset
 	int panelTheme;
+	int expansion;
 	
 	// Need to save, with reset
 	alignas(4) char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
@@ -30,7 +31,7 @@ struct MixMaster : Module {
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
-	int trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
+	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	float values80[80];
 	float values20[20];
 
@@ -113,7 +114,8 @@ struct MixMaster : Module {
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
-
+		expansion = 0;
+		
 		// busId = messages->registerMember();
 	}
   
@@ -168,6 +170,9 @@ struct MixMaster : Module {
 		// panelTheme
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 
+		// expansion
+		json_object_set_new(rootJ, "expansion", json_integer(expansion));
+
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 
@@ -195,6 +200,11 @@ struct MixMaster : Module {
 		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
 		if (panelThemeJ)
 			panelTheme = json_integer_value(panelThemeJ);
+
+		// expansion
+		json_t *expansionJ = json_object_get(rootJ, "expansion");
+		if (expansionJ)
+			expansion = json_integer_value(expansionJ);
 
 		// trackLabels
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
@@ -367,8 +377,7 @@ struct MixMaster : Module {
 				directAndPan.cc4[1] = gInfo.panLawStereo;
 				memcpy(&messageToExpander[AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
 				// Track move
-				tmp = trackMoveInAuxRequest;
-				memcpy(&messageToExpander[AFM_TRACK_MOVE], &tmp, 4);
+				memcpy(&messageToExpander[AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
 				trackMoveInAuxRequest = 0;
 			}
 			else {
@@ -512,7 +521,8 @@ struct MixMasterWidget : ModuleWidget {
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
-	
+	int oldExpansion = -1;// for hiding 4HP cvs at left side of main panel
+	DynamicSVGPort* inspanderPorts[9];
 
 
 	// Module's context menu
@@ -599,17 +609,17 @@ struct MixMasterWidget : ModuleWidget {
 		// Inserts and CVs
 		static const float xIns = 13.8;
 		// Insert outputs
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), false, module, INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		addOutput(inspanderPorts[0] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
+		addOutput(inspanderPorts[1] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), false, module, INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+		addOutput(inspanderPorts[2] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		addInput(inspanderPorts[3] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(inspanderPorts[4] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(inspanderPorts[5] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(inspanderPorts[6] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
+		addInput(inspanderPorts[7] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(inspanderPorts[8] = createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
 		
 		
 		// Tracks
@@ -836,11 +846,24 @@ struct MixMasterWidget : ModuleWidget {
 					panelBorder->box.size.x = box.size.x;
 				}
 				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
-			}			
+			}
+
+			// Resizing to hide inspander
+			if(moduleM->expansion != oldExpansion) {
+				if (oldExpansion!= -1 && moduleM->expansion == 0) {// if just removed expansion panel, disconnect wires to those jacks
+					for (int i = 0; i < 9; i++) {
+						APP->scene->rack->clearCablesOnPort(inspanderPorts[i]);
+					}
+				}
+				oldExpansion = moduleM->expansion;		
+			}
+			//box.size.x = panel->box.size.x - (1 - moduleM->expansion) * 60.0f;// 4 HP
+			//((SvgPanel*)panel)->dirty = true;
 		}			
 		
+			
 		Widget::step();
-	}
+	}// void step()
 };
 
 Model *modelMixMaster = createModel<MixMaster, MixMasterWidget>("MixMaster");
