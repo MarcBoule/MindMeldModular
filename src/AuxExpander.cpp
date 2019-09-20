@@ -279,7 +279,7 @@ struct AuxExpander : Module {
 			}
 			leftExpander.module->rightExpander.messageFlipRequested = true;
 
-			// values send 80 (one at a time)
+			// values for sends, 80 such values (one at a time)
 			messagesToMother[MFA_VALUE80_INDEX] = (float)refreshCounter80;
 			//   Global send knobs with cv (4 instances)
 			if (refreshCounter80 % 20 == 0) {
@@ -287,7 +287,8 @@ struct AuxExpander : Module {
 				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue();
 				val = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
 				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
-					val *= clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(global4i) * 0.1f, 0.0f, 1.0f);
+					val += inputs[POLY_BUS_CV_INPUT].getVoltage(global4i) * 0.1f * GlobalInfo::globalAuxSendMaxLinearGain;// cv for global aux send knobs (4 knobs)
+					val = clamp(val, 0.0f, GlobalInfo::globalAuxSendMaxLinearGain);
 				}
 				globalSends[global4i] = val;
 			}
@@ -296,10 +297,16 @@ struct AuxExpander : Module {
 			if (refreshCounter80 % 4 == 0) {
 				float val = params[TRACK_AUXMUTE_PARAMS + global20i].getValue();
 				if (global20i < 16) {
-					val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) * 0.1f;
+					if (inputs[POLY_AUX_M_CV_INPUT].isConnected()) {
+						val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) * 0.1f;
+						// no clamp needed, will do a compare below
+					}
 				}
 				else {
-					val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) * 0.1f;
+					if (inputs[POLY_GRPS_M_CV_INPUT].isConnected()) {
+						val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) * 0.1f;
+						// no clamp needed, will do a compare below
+					}
 				}
 				mutes[global20i] = (val > 0.5f ? 0.0f : 1.0f);
 			}
@@ -310,32 +317,39 @@ struct AuxExpander : Module {
 			if (refreshCounter80 < 64) {
 				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 &0x3);
 				if (inputs[inputNum].isConnected()) {
-					val = clamp(val + inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f, 0.0f, 1.0f);
+					val += inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f * GlobalInfo::individualAuxSendMaxLinearGain;// cv for 64 individual track aux send knobs
+					val = clamp(val, 0.0f, GlobalInfo::individualAuxSendMaxLinearGain);
 				}
 			}
 			else {
 				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-					val = clamp(val + inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f, 0.0f, 1.0f);
+					val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f * GlobalInfo::individualAuxSendMaxLinearGain;// cv for 16 individual group aux send knobs
+					val = clamp(val, 0.0f, GlobalInfo::individualAuxSendMaxLinearGain);
 				}
 			}
 			messagesToMother[MFA_VALUE80] = val;
 			
-			// values ret 20 (pan, fader, mute, solo, group) (one of the twenty at a time)
+			// values for returns, 20 such values (pan, fader, mute, solo, group) (one at a time)
 			int refreshCounter20 = refreshCounter80 % 20;
 			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
 			if (refreshCounter20 < 4) {// pan cv
-				val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;// pan CV is a -5V to +5V input
-				val = clamp(val, 0.0f, 1.0f);
+				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
+					val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;// cv for pan. Pan CV is a -5V to +5V input
+					val = clamp(val, 0.0f, 1.0f);
+				}
 			}
 			else if (refreshCounter20 < 8) {// fader scaling and cv
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
 				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
-					val *= clamp(inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.f, 1.f);
+					val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f * GlobalInfo::globalAuxReturnMaxLinearGain;
+					val = clamp(val, 0.0f, GlobalInfo::globalAuxReturnMaxLinearGain);
 				}
 			}
 			else if (refreshCounter20 < 12) {// mute
-				val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;
+				if (inputs[POLY_BUS_CV_INPUT].isConnected()) {
+					val += inputs[POLY_BUS_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;
+				}
 				val = (val > 0.5f ? 0.0f : 1.0f);
 			}
 			// no CV inputs for solo and group
