@@ -432,16 +432,27 @@ struct MixMaster : Module {
 		if (outputs[DIRECT_OUTPUTS + outi].isConnected()) {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannels16);
 
-			if (gInfo.directOutsMode < 4) {// global direct outs
-				int tapIndex = gInfo.directOutsMode;
-				memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
+			int tapIndex = gInfo.directOutsMode;		
+			if (tapIndex < 4) {// global direct outs
+				if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
+					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
+				}
+				else {
+					outputs[DIRECT_OUTPUTS + outi].clearVoltages();
+				}
 			}
 			else {// per track direct outs
 				for (unsigned int i = 0; i < 8; i++) {
-					int tapIndex = tracks[base + i].directOutsMode;
+					tapIndex = tracks[base + i].directOutsMode;
 					int offset = (tapIndex << 5) + ((base + i) << 1);
-					outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
-					outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
+					if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
+					}
+					else {
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i);
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i + 1);
+					}
 				}
 			}
 		}
@@ -451,16 +462,29 @@ struct MixMaster : Module {
 		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
 			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
 
+			int tapIndex = gInfo.directOutsMode;			
 			if (gInfo.directOutsMode < 4) {// global direct outs
-				int tapIndex = gInfo.directOutsMode;
-				memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(), &groupTaps[(tapIndex << 3)], 4 * 8);
+				if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
+					memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(), &groupTaps[(tapIndex << 3)], 4 * 8);
+				}
+				else {
+					for (unsigned int i = 0; i < 8; i++) {
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, i);
+					}
+				}
 			}
 			else {// per group direct outs
 				for (unsigned int i = 0; i < 4; i++) {
-					int tapIndex = groups[i].directOutsMode;
+					tapIndex = groups[i].directOutsMode;
 					int offset = (tapIndex << 3) + (i << 1);
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
-					outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
+					if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
+					}
+					else {
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, 2 * i);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, 2 * i + 1);
+					}
 				}
 			}
 		}
@@ -544,7 +568,8 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(directOutsItem);
 		
 		FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
-		filterPosItem->gInfo = &(module->gInfo);
+		filterPosItem->filterPosSrc = &(module->gInfo.filterPos);
+		filterPosItem->isGlobal = true;
 		menu->addChild(filterPosItem);
 		
 		if (module->auxExpanderPresent) {

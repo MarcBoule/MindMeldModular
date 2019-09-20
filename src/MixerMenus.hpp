@@ -136,27 +136,38 @@ struct TapModeItem : MenuItem {
 };
 
 
-struct FilterPosItem : MenuItem {
-	GlobalInfo *gInfo;
 
-	struct ChainSubItem : MenuItem {
-		GlobalInfo *gInfo;
+struct FilterPosItem : MenuItem {
+	int8_t *filterPosSrc;
+	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
+
+	struct FilterPosSubItem : MenuItem {
+		int8_t *filterPosSrc;
+		int8_t setVal = 0;
 		void onAction(const event::Action &e) override {
-			gInfo->filtersBeforeInserts = !gInfo->filtersBeforeInserts;
+			*filterPosSrc = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		ChainSubItem *fp0Item = createMenuItem<ChainSubItem>("Pre-insert", CHECKMARK(gInfo->filtersBeforeInserts));
-		fp0Item->gInfo = gInfo;
+		FilterPosSubItem *fp0Item = createMenuItem<FilterPosSubItem>("Pre-insert", CHECKMARK(*filterPosSrc == 0));
+		fp0Item->filterPosSrc = filterPosSrc;
 		menu->addChild(fp0Item);
 
-		ChainSubItem *fp1Item = createMenuItem<ChainSubItem>("Post-insert (default)", CHECKMARK(!gInfo->filtersBeforeInserts));
-		fp1Item->gInfo = gInfo;
+		FilterPosSubItem *fp1Item = createMenuItem<FilterPosSubItem>("Post-insert (default)", CHECKMARK(*filterPosSrc == 1));
+		fp1Item->filterPosSrc = filterPosSrc;
+		fp1Item->setVal = 1;
 		menu->addChild(fp1Item);
 
+		if (isGlobal) {
+			FilterPosSubItem *fp2Item = createMenuItem<FilterPosSubItem>("Set per track", CHECKMARK(*filterPosSrc == 2));
+			fp2Item->filterPosSrc = filterPosSrc;
+			fp2Item->setVal = 2;
+			menu->addChild(fp2Item);
+		}
+			
 		return menu;
 	}
 };

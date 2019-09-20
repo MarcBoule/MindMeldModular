@@ -604,6 +604,13 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(directOutsItem);
 			}
 
+			if (srcTrack->gInfo->filterPos >= 2) {
+				FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
+				filterPosItem->filterPosSrc = &(srcTrack->filterPos);
+				filterPosItem->isGlobal = false;
+				menu->addChild(filterPosItem);
+			}
+
 			if (srcTrack->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
 				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
 				auxSendsItem->tapModePtr = &(srcTrack->auxSendsMode);
