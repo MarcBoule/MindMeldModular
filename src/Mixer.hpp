@@ -597,14 +597,15 @@ struct MixerMaster {
 			slowGain = params[MAIN_FADER_PARAM].getValue() * fadeGain;
 			slowGain = std::pow(slowGain, masterFaderScalingExponent);
 			
+			// Vol CV
+			if (inMuteDimMono->isConnected()) {
+				slowGain += inMuteDimMono->getVoltage(11) * 0.1f * masterFaderMaxLinearGain;
+				slowGain = clamp(slowGain, 0.f, masterFaderMaxLinearGain);
+			}
+			
 			// Dim
 			if ((params[MAIN_DIM_PARAM].getValue() + inMuteDimMono->getVoltage(9) * 0.1f) > 0.5f) {
 				slowGain *= dimGainIntegerDB;
-			}
-			
-			// Vol CV
-			if (inMuteDimMono->isConnected() && inMuteDimMono->getChannels() > 11) {
-				slowGain *= clamp(inMuteDimMono->getVoltage(11) * 0.1f, 0.f, 1.f);
 			}
 			
 			// Mono
