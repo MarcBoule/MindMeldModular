@@ -114,7 +114,7 @@ struct MixMaster : Module {
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
-		expansion = 0;
+		expansion = 1;
 		
 		// busId = messages->registerMember();
 	}
@@ -434,24 +434,24 @@ struct MixMaster : Module {
 
 			int tapIndex = gInfo.directOutsMode;		
 			if (tapIndex < 4) {// global direct outs
-				if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
-					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
+				if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					outputs[DIRECT_OUTPUTS + outi].clearVoltages();
 				}
 				else {
-					outputs[DIRECT_OUTPUTS + outi].clearVoltages();
+					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
 				}
 			}
 			else {// per track direct outs
 				for (unsigned int i = 0; i < 8; i++) {
 					tapIndex = tracks[base + i].directOutsMode;
 					int offset = (tapIndex << 5) + ((base + i) << 1);
-					if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
-					}
-					else {
+					if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i);
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i + 1);
+					}
+					else {
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
 					}
 				}
 			}
@@ -464,26 +464,26 @@ struct MixMaster : Module {
 
 			int tapIndex = gInfo.directOutsMode;			
 			if (gInfo.directOutsMode < 4) {// global direct outs
-				if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
-					memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(), &groupTaps[(tapIndex << 3)], 4 * 8);
-				}
-				else {
+				if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 					for (unsigned int i = 0; i < 8; i++) {
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, i);
 					}
+				}
+				else {
+					memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(), &groupTaps[(tapIndex << 3)], 4 * 8);
 				}
 			}
 			else {// per group direct outs
 				for (unsigned int i = 0; i < 4; i++) {
 					tapIndex = groups[i].directOutsMode;
 					int offset = (tapIndex << 3) + (i << 1);
-					if (!gInfo.auxReturnsSolosMuteDry || tapIndex != 3) {
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
-					}
-					else {
+					if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, 2 * i);
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, 2 * i + 1);
+					}
+					else {
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
 					}
 				}
 			}
@@ -619,6 +619,10 @@ struct MixMasterWidget : ModuleWidget {
 		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
+		
+		ExpansionItem *expItem = createMenuItem<ExpansionItem>("Show CVs on left side", CHECKMARK(module->expansion));
+		expItem->expansionPtr = &(module->expansion);
+		menu->addChild(expItem);
 	}
 
 	// Module's widget
@@ -874,16 +878,16 @@ struct MixMasterWidget : ModuleWidget {
 			}
 
 			// Resizing to hide inspander
-			if(moduleM->expansion != oldExpansion) {
-				if (oldExpansion!= -1 && moduleM->expansion == 0) {// if just removed expansion panel, disconnect wires to those jacks
+			/*if(moduleM->expansion != oldExpansion) {
+				if (oldExpansion != -1 && moduleM->expansion == 0) {// if just removed expansion panel, disconnect wires to those jacks
 					for (int i = 0; i < 9; i++) {
 						APP->scene->rack->clearCablesOnPort(inspanderPorts[i]);
 					}
 				}
-				oldExpansion = moduleM->expansion;		
-			}
-			//box.size.x = panel->box.size.x - (1 - moduleM->expansion) * 60.0f;// 4 HP
-			//((SvgPanel*)panel)->dirty = true;
+				oldExpansion = moduleM->expansion;
+				box.size.x = panel->box.size.x - (1 - moduleM->expansion) * 60.0f;// 4 HP
+				((SvgPanel*)panel)->dirty = true;
+			}*/
 		}			
 		
 			

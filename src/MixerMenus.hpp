@@ -233,6 +233,13 @@ struct CloakedModeItem : MenuItem {
 	}
 };
 
+struct ExpansionItem : MenuItem {
+	int *expansionPtr;
+	void onAction(const event::Action &e) override {
+		*expansionPtr ^= 0x1;
+	}
+};
+
 struct VuColorItem : MenuItem {
 	int8_t *srcColor;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
