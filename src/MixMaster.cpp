@@ -37,7 +37,6 @@ struct MixMaster : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
-	int panelThemeWithAuxPresent = 0;
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
 	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
@@ -264,8 +263,6 @@ struct MixMaster : Module {
 		
 		
 		if (refresh.processInputs()) {
-			panelThemeWithAuxPresent = (auxExpanderPresent ? panelTheme : -1);
-			
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
 			// Tracks
@@ -331,8 +328,7 @@ struct MixMaster : Module {
 		// Direct outs
 		SetDirectTrackOuts(0);// 1-8
 		SetDirectTrackOuts(8);// 9-16
-		SetDirectGroupOuts();
-		SetDirectAuxOuts();// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other diretct outs
+		SetDirectGroupAuxOuts();
 				
 		// Insert outs
 		SetInsertTrackOuts(0);// 1-8
@@ -458,10 +454,16 @@ struct MixMaster : Module {
 		}
 	}
 	
-	void SetDirectGroupOuts() {
+	void SetDirectGroupAuxOuts() {
 		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
-			outputs[DIRECT_OUTPUTS + 2].setChannels(8);
+			if (auxExpanderPresent) {
+				outputs[DIRECT_OUTPUTS + 2].setChannels(numChannels16);
+			}
+			else {
+				outputs[DIRECT_OUTPUTS + 2].setChannels(8);
+			}
 
+			// Groups
 			int tapIndex = gInfo.directOutsMode;			
 			if (gInfo.directOutsMode < 4) {// global direct outs
 				if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
@@ -487,32 +489,26 @@ struct MixMaster : Module {
 					}
 				}
 			}
-		}
-	}
-	
-	void SetDirectAuxOuts() {
-		if (outputs[DIRECT_OUTPUTS + 3].isConnected()) {
+			
+			// Aux
+			// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other diretct outs
 			if (auxExpanderPresent) {
-				outputs[DIRECT_OUTPUTS + 3].setChannels(8);
 				if (gInfo.directOutsMode < 4) {// global direct outs
 					int tapIndex = gInfo.directOutsMode;
-					memcpy(outputs[DIRECT_OUTPUTS + 3].getVoltages(), &auxTaps[(tapIndex << 3)], 4 * 8);
+					memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(8), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
 				else {// per aux direct outs
 					for (unsigned int i = 0; i < 4; i++) {
 						int tapIndex = directOutsModeLocalAux.cc4[i];
 						int offset = (tapIndex << 3) + (i << 1);
-						outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 0], 2 * i);
-						outputs[DIRECT_OUTPUTS + 3].setVoltage(auxTaps[offset + 1], 2 * i + 1);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(auxTaps[offset + 0], 8 + 2 * i);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(auxTaps[offset + 1], 8 + 2 * i + 1);
 					}
 				}		
 			}
-			else {
-				outputs[DIRECT_OUTPUTS + 3].setChannels(0);
-			}
 		}
 	}
-
+	
 	
 	void SetInsertTrackOuts(const int base) {// base is 0 or 8
 		int outi = base >> 3;
@@ -562,15 +558,19 @@ struct MixMasterWidget : ModuleWidget {
 		settingsALabel->text = "Settings (audio)";
 		menu->addChild(settingsALabel);
 		
-		TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
-		directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
-		directOutsItem->isGlobal = true;
-		menu->addChild(directOutsItem);
-		
 		FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
 		filterPosItem->filterPosSrc = &(module->gInfo.filterPos);
 		filterPosItem->isGlobal = true;
 		menu->addChild(filterPosItem);
+		
+		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
+		panLawMonoItem->gInfo = &(module->gInfo);
+		menu->addChild(panLawMonoItem);
+		
+		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
+		panLawStereoItem->panLawStereoSrc = &(module->gInfo.panLawStereo);
+		panLawStereoItem->isGlobal = true;
+		menu->addChild(panLawStereoItem);
 		
 		if (module->auxExpanderPresent) {
 			TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
@@ -588,14 +588,10 @@ struct MixMasterWidget : ModuleWidget {
 		chainItem->gInfo = &(module->gInfo);
 		menu->addChild(chainItem);
 		
-		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
-		panLawMonoItem->gInfo = &(module->gInfo);
-		menu->addChild(panLawMonoItem);
-		
-		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-		panLawStereoItem->panLawStereoSrc = &(module->gInfo.panLawStereo);
-		panLawStereoItem->isGlobal = true;
-		menu->addChild(panLawStereoItem);
+		TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+		directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
+		directOutsItem->isGlobal = true;
+		menu->addChild(directOutsItem);
 		
 		SymmetricalFadeItem *symItem = createMenuItem<SymmetricalFadeItem>("Symmetrical fade", CHECKMARK(module->gInfo.symmetricalFade));
 		symItem->gInfo = &(module->gInfo);
@@ -741,11 +737,8 @@ struct MixMasterWidget : ModuleWidget {
 		static const float xGrp1 = 217.17 + 20.32;
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
-			if (i == 3) {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * i, 11.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelThemeWithAuxPresent : NULL));
-			}
-			else {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * i, 11.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+			if (i < 3) {
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i + 1), 12.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
 			}
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));

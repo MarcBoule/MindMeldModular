@@ -49,7 +49,7 @@ enum InputIds {
 
 
 enum OutputIds {
-	ENUMS(DIRECT_OUTPUTS, 4), // Track 1-8, Track 9-16, Groups and Aux
+	ENUMS(DIRECT_OUTPUTS, 3), // Track 1-8, Track 9-16, Groups and Aux
 	ENUMS(MAIN_OUTPUTS, 2),
 	ENUMS(INSERT_TRACK_OUTPUTS, 2),
 	INSERT_GRP_AUX_OUTPUT,

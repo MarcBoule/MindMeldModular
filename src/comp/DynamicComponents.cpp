@@ -47,18 +47,9 @@ void DynamicSVGPort::step() {
 			frames.push_back(APP->window->loadSvg(frameAltName));
 			frameAltName.clear();// don't reload!
 		}
-        if ((*mode) < 0 && !frameUnusedName.empty()) {// JIT loading of unused skin
-			frameUnused = APP->window->loadSvg(frameUnusedName);
-			frameUnusedName.clear();// don't reload!
-		}
-        if (*mode >= 0) {
-			sw->setSvg(frames[*mode]);
-		}
-		else {
-			sw->setSvg(frameUnused);
-		}
-        oldMode = *mode;
-        fb->dirty = true;
+ 		sw->setSvg(frames[*mode]);
+		oldMode = *mode;
+		fb->dirty = true;
     }
 	SvgPort::step();
 }
