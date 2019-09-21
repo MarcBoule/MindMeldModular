@@ -598,9 +598,8 @@ struct MixerMaster {
 			slowGain = std::pow(slowGain, masterFaderScalingExponent);
 			
 			// Vol CV
-			if (inMuteDimMono->isConnected()) {
-				slowGain += inMuteDimMono->getVoltage(11) * 0.1f * masterFaderMaxLinearGain;
-				slowGain = clamp(slowGain, 0.f, masterFaderMaxLinearGain);
+			if (inMuteDimMono->isConnected() && inMuteDimMono->getChannels() >= 12) {
+				slowGain *= clamp(inMuteDimMono->getVoltage(11) * 0.1f, 0.f, 1.0f);
 			}
 			
 			// Dim
@@ -879,8 +878,9 @@ struct MixerGroup {
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
 		if (inVol->isConnected()) {
-			slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
-			slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
+			// slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
+			// slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 		}
 
 		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
@@ -1304,8 +1304,9 @@ struct MixerTrack {
 		gainMatrix = simd::float_4::zero();
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		if (inVol->isConnected()) {
-			slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
-			slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
+			// slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
+			// slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 		}
 
 		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
