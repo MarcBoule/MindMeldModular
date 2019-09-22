@@ -323,14 +323,14 @@ struct AuxExpander : Module {
 				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 &0x3);
 				if (inputs[inputNum].isConnected()) {
 					// cv for 64 individual track aux send knobs
-					val += inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.2f * GlobalInfo::individualAuxSendMaxLinearGain;
+					val += inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f * GlobalInfo::individualAuxSendMaxLinearGain;
 					val = clamp(val, 0.0f, GlobalInfo::individualAuxSendMaxLinearGain);
 				}
 			}
 			else {
 				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
 					// cv for 16 individual group aux send knobs
-					val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.2f * GlobalInfo::individualAuxSendMaxLinearGain;
+					val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f * GlobalInfo::individualAuxSendMaxLinearGain;
 					val = clamp(val, 0.0f, GlobalInfo::individualAuxSendMaxLinearGain);
 				}
 			}

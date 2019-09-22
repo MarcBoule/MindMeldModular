@@ -738,7 +738,10 @@ struct MixMasterWidget : ModuleWidget {
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
 			if (i < 3) {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i + 1), 12.8)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+			}
+			else {
+				addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * (3), 12.8)), true, module, MASTER_CV_INPUT, module ? &module->panelTheme : NULL));				
 			}
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
