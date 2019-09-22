@@ -1090,7 +1090,9 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	}
 	
 	void draw(const DrawArgs &args) override {
-		arcColor = DISP_COLORS[*dispColorPtr];// arc color, same as displays
+		if (dispColorPtr) {
+			arcColor = DISP_COLORS[*dispColorPtr];// arc color, same as displays
+		}
 		DynKnobWithArc::draw(args);
 	}
 };
