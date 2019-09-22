@@ -1664,6 +1664,11 @@ struct MixerAux {
 		// calc muteSoloGain
 		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
 		muteSoloGain = *flMute * soloGain;
+		// Handle "Mute aux returns when soloing track"
+		// i.e. add aux returns to mix when no solo, or when solo and don't want mutes aux returns
+		if (gInfo->soloBitMask != 0 && gInfo->auxReturnsMutedWhenMainSolo) {
+			muteSoloGain = 0.0f;
+		}
 		
 		// calc gainMatrix
 		float slowGain = *flFade;// cv input and scaling already done in auxspander
@@ -1747,11 +1752,8 @@ struct MixerAux {
 			taps[24] = taps[16] * muteSoloGainSlewed;
 			taps[25] = taps[17] * muteSoloGainSlewed;
 				
-			// Add to mix when appropriate
-			if (gInfo->soloBitMask == 0 || !gInfo->auxReturnsMutedWhenMainSolo) {
-				mix[0] += taps[24];
-				mix[1] += taps[25];
-			}
+			mix[0] += taps[24];
+			mix[1] += taps[25];
 		}
 	}
 	
