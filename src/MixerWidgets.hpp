@@ -1081,117 +1081,46 @@ struct DynSmallFaderWithLink : DynSmallFader {
 // knobs with color theme arc
 // --------------------
 
-// If ever aux knobs must be made in two types (top centered arc like pan, or bottom left starting arc like individual aux sends,
-//   don't create new structs, just autodetect the default value being equal to 0 or not to select the arc type to draw
-
-static const float arcThickness = 2.0f;
-
-struct DynSmallKnobGreyWithArc : DynSmallKnobGrey {
+struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	int8_t* dispColorPtr = NULL;
 	
+	DynSmallKnobGreyWithArc() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+	
 	void draw(const DrawArgs &args) override {
-		static const float a0 = 3.0f * M_PI / 2.0f;
-		
-		DynSmallKnobGrey::draw(args);
-		if (paramQuantity && dispColorPtr) {
-			float normalizedParam = paramQuantity->getScaledValue();
-			if (normalizedParam != 0.5f) {
-				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
-				Vec cVec = box.size.div(2.0f);
-				float r = box.size.x / 2.0f + 2.6f;// arc radius
-				int dir = a0 < a1 ? NVG_CW : NVG_CCW;
-				nvgBeginPath(args.vg);
-				nvgLineCap(args.vg, NVG_ROUND);
-				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-				nvgStrokeWidth(args.vg, arcThickness);
-				nvgStrokeColor(args.vg, DISP_COLORS[*dispColorPtr]);// arc color, same as displays
-				nvgStroke(args.vg);
-			}
-		}
+		arcColor = DISP_COLORS[*dispColorPtr];// arc color, same as displays
+		DynKnobWithArc::draw(args);
 	}
 };
 
-struct DynSmallKnobAuxAWithArc : DynSmallKnobAuxA {
-	void draw(const DrawArgs &args) override {
-		DynSmallKnobAuxA::draw(args);
-		if (paramQuantity) {
-			float normalizedParam = paramQuantity->getScaledValue();
-			if (normalizedParam != 0.0f) {
-				float a0 = minAngle - M_PI_2;
-				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
-				Vec cVec = box.size.div(2.0f);
-				float r = box.size.x / 2.0f + 2.6f;// arc radius
-				nvgBeginPath(args.vg);
-				nvgLineCap(args.vg, NVG_ROUND);
-				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
-				nvgStrokeWidth(args.vg, arcThickness);
-				nvgStrokeColor(args.vg, nvgRGB(219, 65, 85));
-				nvgStroke(args.vg);
-			}
-		}
+struct DynSmallKnobAuxAWithArc : DynKnobWithArc {
+	DynSmallKnobAuxAWithArc() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxA.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+		arcColor = nvgRGB(219, 65, 85);
 	}
 };
-
-struct DynSmallKnobAuxBWithArc : DynSmallKnobAuxB {
-	void draw(const DrawArgs &args) override {
-		DynSmallKnobAuxB::draw(args);
-		if (paramQuantity) {
-			float normalizedParam = paramQuantity->getScaledValue();
-			if (normalizedParam != 0.0f) {
-				float a0 = minAngle - M_PI_2;
-				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
-				Vec cVec = box.size.div(2.0f);
-				float r = box.size.x / 2.0f + 2.6f;// arc radius
-				nvgBeginPath(args.vg);
-				nvgLineCap(args.vg, NVG_ROUND);
-				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
-				nvgStrokeWidth(args.vg, arcThickness);
-				nvgStrokeColor(args.vg, nvgRGB(255, 127, 42));
-				nvgStroke(args.vg);
-			}
-		}
+struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
+	DynSmallKnobAuxBWithArc() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxB.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+		arcColor = nvgRGB(255, 127, 42);
 	}
 };
-
-struct DynSmallKnobAuxCWithArc : DynSmallKnobAuxC {
-	void draw(const DrawArgs &args) override {
-		DynSmallKnobAuxC::draw(args);
-		if (paramQuantity) {
-			float normalizedParam = paramQuantity->getScaledValue();
-			if (normalizedParam != 0.0f) {
-				float a0 = minAngle - M_PI_2;
-				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
-				Vec cVec = box.size.div(2.0f);
-				float r = box.size.x / 2.0f + 2.6f;// arc radius
-				nvgBeginPath(args.vg);
-				nvgLineCap(args.vg, NVG_ROUND);
-				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
-				nvgStrokeWidth(args.vg, arcThickness);
-				nvgStrokeColor(args.vg, nvgRGB(113, 160, 255));
-				nvgStroke(args.vg);
-			}
-		}
+struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
+	DynSmallKnobAuxCWithArc() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxC.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+		arcColor = nvgRGB(113, 160, 255);
 	}
 };
-
-struct DynSmallKnobAuxDWithArc : DynSmallKnobAuxD {
-	void draw(const DrawArgs &args) override {
-		DynSmallKnobAuxD::draw(args);
-		if (paramQuantity) {
-			float normalizedParam = paramQuantity->getScaledValue();
-			if (normalizedParam != 0.0f) {
-				float a0 = minAngle - M_PI_2;
-				float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
-				Vec cVec = box.size.div(2.0f);
-				float r = box.size.x / 2.0f + 2.6f;// arc radius
-				nvgBeginPath(args.vg);
-				nvgLineCap(args.vg, NVG_ROUND);
-				nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
-				nvgStrokeWidth(args.vg, arcThickness);
-				nvgStrokeColor(args.vg, nvgRGB(163, 93, 209));
-				nvgStroke(args.vg);
-			}
-		}
+struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
+	DynSmallKnobAuxDWithArc() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxD.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+		arcColor = nvgRGB(163, 93, 209);
 	}
 };
 

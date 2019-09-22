@@ -249,7 +249,6 @@ struct DynGroupPlusButtonNoParam : DynamicSVGSwitchNoParam {
 	}
 };
 
-
 struct DynKnob : DynamicSVGKnob {
 	DynKnob() {
 		minAngle = -0.83*M_PI;
@@ -263,28 +262,49 @@ struct DynSmallKnobGrey : DynKnob {
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-struct DynSmallKnobAuxA : DynKnob {
-	DynSmallKnobAuxA() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxA.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+
+struct DynKnobWithArc : DynKnob {
+	NVGcolor arcColor;
+	static constexpr float arcThickness = 2.0f;
+	static constexpr float a0 = 3.0f * M_PI / 2.0f;
+	
+	DynKnobWithArc() {
 	}
-};
-struct DynSmallKnobAuxB : DynKnob {
-	DynSmallKnobAuxB() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxB.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
-	}
-};
-struct DynSmallKnobAuxC : DynKnob {
-	DynSmallKnobAuxC() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxC.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
-	}
-};
-struct DynSmallKnobAuxD : DynKnob {
-	DynSmallKnobAuxD() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxD.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	
+	void draw(const DrawArgs &args) override {
+		DynamicSVGKnob::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			if (paramQuantity->getDefaultValue() != 0.0f) {
+				// pan knob arc style
+				if (normalizedParam != 0.5f) {
+					float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
+					Vec cVec = box.size.div(2.0f);
+					float r = box.size.x / 2.0f + 2.6f;// arc radius
+					int dir = a0 < a1 ? NVG_CW : NVG_CCW;
+					nvgBeginPath(args.vg);
+					nvgLineCap(args.vg, NVG_ROUND);
+					nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
+					nvgStrokeWidth(args.vg, arcThickness);
+					nvgStrokeColor(args.vg, arcColor);
+					nvgStroke(args.vg);
+				}
+			}
+			else {
+				if (normalizedParam != 0.0f) {
+					float aa0 = minAngle - M_PI_2;
+					float aa1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
+					Vec cVec = box.size.div(2.0f);
+					float r = box.size.x / 2.0f + 2.6f;// arc radius
+					nvgBeginPath(args.vg);
+					nvgLineCap(args.vg, NVG_ROUND);
+					nvgArc(args.vg, cVec.x, cVec.y, r, aa0, aa1, NVG_CW);
+					nvgStrokeWidth(args.vg, arcThickness);
+					nvgStrokeColor(args.vg, arcColor);
+					nvgStroke(args.vg);
+				}
+			}
+		}
 	}
 };
 
