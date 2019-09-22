@@ -34,6 +34,7 @@ struct MixMaster : Module {
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	float values80[80];
 	float values20[20];
+	dsp::SlewLimiter muteTrackWhenSoloAuxRetSlewer;
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -110,6 +111,7 @@ struct MixMaster : Module {
 			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
+		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second 
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
@@ -156,6 +158,7 @@ struct MixMaster : Module {
 		for (int i = 0; i < 20; i++) {
 			values20[i] = 0.0f;
 		}
+		muteTrackWhenSoloAuxRetSlewer.reset();
 	}
 
 
@@ -260,6 +263,9 @@ struct MixMaster : Module {
 			memcpy(&directOutsModeLocalAux, &messagesFromExpander[MFA_AUX_DIR_OUTS], 4);
 			memcpy(&stereoPanModeLocalAux, &messagesFromExpander[MFA_AUX_STEREO_PANS], 4);
 		}
+		else {
+			muteTrackWhenSoloAuxRetSlewer.reset();
+		}
 		
 		
 		if (refresh.processInputs()) {
@@ -301,18 +307,22 @@ struct MixMaster : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].process(mix);
 		}
+		//   At this point, mix[0..9] has content
 		memcpy(groupTaps, &mix[2], 8 * 4);// TODO: change memory layout so that this is not necessary
 		// Groups
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
 		}
+		//   At this point, only mix[0..1] has content
 		// Aux
 		if (auxExpanderPresent) {
 			memcpy(auxTaps, auxReturns, 8 * 4);// TODO: change memory layout so that this is not necessary		
+			// where at: copying structure of gain slewer in Mixer.hpp L642
+			//muteTrackWhenSoloAuxRetSlewer
 			if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0) {
-				for (int i = 0; i < 10; i++) {// kill sound when soloing aux returns and menu option wants the kill
-					mix[i] = 0.0f;
-				}
+				// Mute tracks/groups when soloing aux returns
+				mix[0] = 0.0f;// TODO: these two lines need antipop
+				mix[1] = 0.0f;
 			}
 			for (int i = 0; i < 4; i++) {
 				aux[i].process(mix);
@@ -325,12 +335,12 @@ struct MixMaster : Module {
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
 		outputs[MAIN_OUTPUTS + 1].setVoltage(mix[1]);
 		
-		// Direct outs
+		// Direct outs (uses trackTaps, groupTaps and auxTaps)
 		SetDirectTrackOuts(0);// 1-8
 		SetDirectTrackOuts(8);// 9-16
 		SetDirectGroupAuxOuts();
 				
-		// Insert outs
+		// Insert outs (uses trackInsertOuts and groupAuxInsertOuts)
 		SetInsertTrackOuts(0);// 1-8
 		SetInsertTrackOuts(8);// 9-16
 		SetInsertGroupAuxOuts();	
