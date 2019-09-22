@@ -72,6 +72,7 @@ struct AuxExpander : Module {
 	PackedBytes4 directOutsAndStereoPanModes;// cc1[0] is direct out mode, cc1[1] is stereo pan mode
 	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
 	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget	
+	float maxAGIndivSendFader;
 	float maxAGGlobSendFader;
 	
 	
@@ -83,7 +84,7 @@ struct AuxExpander : Module {
 		
 		char strBuf[32];
 
-		float maxAGIndivSendFader = std::pow(GlobalInfo::individualAuxSendMaxLinearGain, 1.0f / GlobalInfo::individualAuxSendScalingExponent);
+		maxAGIndivSendFader = std::pow(GlobalInfo::individualAuxSendMaxLinearGain, 1.0f / GlobalInfo::individualAuxSendScalingExponent);
 		for (int i = 0; i < 16; i++) {
 			// Track send aux A
 			snprintf(strBuf, 32, "Track #%i aux send A", i + 1);
@@ -283,12 +284,12 @@ struct AuxExpander : Module {
 
 			// values for sends, 80 such values (one at a time)
 			messagesToMother[MFA_VALUE80_INDEX] = (float)refreshCounter80;
-			//   Global aux send knobs with cv (4 instances)
+			//   Global aux send knobs (4 instances)
 			if (refreshCounter80 % 20 == 0) {
 				int global4i = refreshCounter80 / 20;
 				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue();
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-					// cv for global aux send knobs (4 knobs)
+					// Knob CV (adding, pre-scaling)
 					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(global4i) * 0.1f * maxAGGlobSendFader;
 					val = clamp(val, 0.0f, maxAGGlobSendFader);
 				}
@@ -317,23 +318,25 @@ struct AuxExpander : Module {
 			}
 			//   calc an 80 send value
 			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
-			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i < 16 ? global20i : (16 + (refreshCounter80 & 0x3))];
 			if (refreshCounter80 < 64) {
+				// 64 individual track aux send knobs
 				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 &0x3);
 				if (inputs[inputNum].isConnected()) {
-					// cv for 64 individual track aux send knobs
-					val += inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f * GlobalInfo::individualAuxSendMaxLinearGain;
-					val = clamp(val, 0.0f, GlobalInfo::individualAuxSendMaxLinearGain);
+					// Knob CV (adding, pre-scaling)
+					val += inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f * maxAGIndivSendFader;
+					val = clamp(val, 0.0f, maxAGIndivSendFader);
 				}
 			}
 			else {
+				// 16 individual group aux send knobs
 				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-					// cv for 16 individual group aux send knobs
-					val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f * GlobalInfo::individualAuxSendMaxLinearGain;
-					val = clamp(val, 0.0f, GlobalInfo::individualAuxSendMaxLinearGain);
+					// Knob CV (adding, pre-scaling)
+					val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f * maxAGIndivSendFader;
+					val = clamp(val, 0.0f, maxAGIndivSendFader);
 				}
 			}
+			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
+			val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i < 16 ? global20i : (16 + (refreshCounter80 & 0x3))];
 			messagesToMother[MFA_VALUE80] = val;
 			
 			// values for returns, 20 such values (pan, fader, mute, solo, group) (one at a time)
@@ -348,8 +351,9 @@ struct AuxExpander : Module {
 				}
 			}
 			else if (refreshCounter20 < 8) {
-				// return fader scaling and cv
+				// return fader
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
+				// Fader CV (multiplying, post-scaling)
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
 						inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (4 + refreshCounter20 + 1)) {
 					val *= clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.0f, 1.0f);

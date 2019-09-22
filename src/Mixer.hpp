@@ -241,7 +241,7 @@ struct GlobalInfo {
 	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
 	static constexpr float globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float antipopSlew = 400.0f;
+	static constexpr float antipopSlew = 150.0f;
 	
 	
 	// need to save, no reset
@@ -598,7 +598,7 @@ struct MixerMaster {
 		float slowGain = 0.0f;
 		if (fadeGain != slowGain) {
 			slowGain = params[MAIN_FADER_PARAM].getValue() * fadeGain;
-			// Vol CV
+			// Fader CV (multiplying, pre-scaling)
 			if (inVol->isConnected()) {
 				slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.0f);
 			}
@@ -880,6 +880,7 @@ struct MixerGroup {
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
+		// Fader CV (multiplying, post-scaling)
 		if (inVol->isConnected()) {
 			// slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
 			// slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
@@ -1306,6 +1307,7 @@ struct MixerTrack {
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
+		// Fader CV (multiplying, post-scaling)
 		if (inVol->isConnected()) {
 			// slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
 			// slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
