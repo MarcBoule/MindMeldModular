@@ -46,6 +46,7 @@ struct MixMaster : Module {
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
+	uint32_t auxSendMuteGroupedReturn;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
 	// std::string busId;
@@ -309,6 +310,19 @@ struct MixMaster : Module {
 		}
 		// At this point, mix[0..9] has content
 		memcpy(groupTaps, &mix[2], 8 * 4);// TODO: change memory layout so that this is not necessary
+
+		// Aux return when group
+		if (auxExpanderPresent) {
+			auxSendMuteGroupedReturn = 0;
+			for (int i = 0; i < 4; i++) {
+				int auxGroup = aux[i].getAuxGroup();
+				if (auxGroup != 0) {
+					auxGroup--;
+					aux[i].process(&groupTaps[auxGroup << 1]);
+					auxSendMuteGroupedReturn |= (0x1 << ((auxGroup << 2) + i));
+				}
+			}
+		}
 		
 		// Groups
 		for (int i = 0; i < 4; i++) {
@@ -325,8 +339,12 @@ struct MixMaster : Module {
 			muteTrackWhenSoloAuxRetSlewer.process(args.sampleTime, newMuteTrackWhenSoloAuxRet);
 			mix[0] *= muteTrackWhenSoloAuxRetSlewer.out;
 			mix[1] *= muteTrackWhenSoloAuxRetSlewer.out;
+			
+			// Aux returns when no group
 			for (int i = 0; i < 4; i++) {
-				aux[i].process(mix);
+				if (aux[i].getAuxGroup() == 0) {
+					aux[i].process(mix);
+				}
 			}
 		}
 		// Master
@@ -386,6 +404,8 @@ struct MixMaster : Module {
 				// Track move
 				memcpy(&messageToExpander[AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
 				trackMoveInAuxRequest = 0;
+				// Aux send mute when grouped return lights
+				messageToExpander[AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(auxSendMuteGroupedReturn);
 			}
 			else {
 				*updateSlow = 0;

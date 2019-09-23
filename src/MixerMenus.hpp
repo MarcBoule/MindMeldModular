@@ -1,5 +1,5 @@
 //***********************************************************************************************
-//Mixer module for VCV Rack by Steve Baker and Marc Boulé 
+//Mixer module for VCV Rack by Steve Baker and Marc BoulĂ© 
 //
 //Based on code from the Fundamental plugin by Andrew Belt 
 //See ./LICENSE.txt for all licenses
@@ -709,11 +709,11 @@ struct VoltLimitItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		VoltLimitSubItem *lim0Item = createMenuItem<VoltLimitSubItem>("�10 V (default)", CHECKMARK(srcMaster->voltageLimiter < 11.0f));
+		VoltLimitSubItem *lim0Item = createMenuItem<VoltLimitSubItem>("±10 V (default)", CHECKMARK(srcMaster->voltageLimiter < 11.0f));
 		lim0Item->srcMaster = srcMaster;
 		menu->addChild(lim0Item);
 
-		VoltLimitSubItem *lim1Item = createMenuItem<VoltLimitSubItem>("�20 V", CHECKMARK(srcMaster->voltageLimiter >= 11.0f));
+		VoltLimitSubItem *lim1Item = createMenuItem<VoltLimitSubItem>("±20 V", CHECKMARK(srcMaster->voltageLimiter >= 11.0f));
 		lim1Item->srcMaster = srcMaster;
 		lim1Item->setVal = 20.0f;
 		menu->addChild(lim1Item);

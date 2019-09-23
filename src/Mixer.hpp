@@ -79,6 +79,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
 	AFM_DIRECT_AND_PAN_MODES,
 	AFM_TRACK_MOVE,
+	AFM_AUXSENDMUTE_GROUPED_RETURN,
 	AFM_NUM_VALUES
 };
 
@@ -1636,6 +1637,7 @@ struct MixerAux {
 	float *insertOuts;// [0][1]: insert outs for this track
 	int8_t* panLawStereoLocal;
 
+	inline int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 
 
 	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val20, float* _taps, float* _insertOuts, int8_t* _panLawStereoLocal) {
