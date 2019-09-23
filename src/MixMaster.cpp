@@ -307,23 +307,24 @@ struct MixMaster : Module {
 		for (int i = 0; i < 16; i++) {
 			tracks[i].process(mix);
 		}
-		//   At this point, mix[0..9] has content
+		// At this point, mix[0..9] has content
 		memcpy(groupTaps, &mix[2], 8 * 4);// TODO: change memory layout so that this is not necessary
+		
 		// Groups
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
 		}
-		//   At this point, only mix[0..1] has content
+		// At this point, only mix[0..1] has content
+		
 		// Aux
 		if (auxExpanderPresent) {
 			memcpy(auxTaps, auxReturns, 8 * 4);// TODO: change memory layout so that this is not necessary		
-			// where at: copying structure of gain slewer in Mixer.hpp L642
-			//muteTrackWhenSoloAuxRetSlewer
-			if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0) {
-				// Mute tracks/groups when soloing aux returns
-				mix[0] = 0.0f;// TODO: these two lines need antipop
-				mix[1] = 0.0f;
-			}
+			
+			// Mute tracks/groups when soloing aux returns
+			float newMuteTrackWhenSoloAuxRet = (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0) ? 0.0f : 1.0f;
+			muteTrackWhenSoloAuxRetSlewer.process(args.sampleTime, newMuteTrackWhenSoloAuxRet);
+			mix[0] *= muteTrackWhenSoloAuxRetSlewer.out;
+			mix[1] *= muteTrackWhenSoloAuxRetSlewer.out;
 			for (int i = 0; i < 4; i++) {
 				aux[i].process(mix);
 			}
@@ -440,8 +441,12 @@ struct MixMaster : Module {
 
 			int tapIndex = gInfo.directOutsMode;		
 			if (tapIndex < 4) {// global direct outs
-				if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-					outputs[DIRECT_OUTPUTS + outi].clearVoltages();
+				if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					for (unsigned int i = 0; i < 8; i++) {
+						int offset = (tapIndex << 5) + ((base + i) << 1);
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
+					}
 				}
 				else {
 					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
@@ -451,9 +456,9 @@ struct MixMaster : Module {
 				for (unsigned int i = 0; i < 8; i++) {
 					tapIndex = tracks[base + i].directOutsMode;
 					int offset = (tapIndex << 5) + ((base + i) << 1);
-					if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i);
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i + 1);
+					if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
+						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
 					else {
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
@@ -476,9 +481,11 @@ struct MixMaster : Module {
 			// Groups
 			int tapIndex = gInfo.directOutsMode;			
 			if (gInfo.directOutsMode < 4) {// global direct outs
-				if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-					for (unsigned int i = 0; i < 8; i++) {
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, i);
+				if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					for (unsigned int i = 0; i < 4; i++) {
+						int offset = (tapIndex << 3) + (i << 1);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
 				}
 				else {
@@ -489,9 +496,9 @@ struct MixMaster : Module {
 				for (unsigned int i = 0; i < 4; i++) {
 					tapIndex = groups[i].directOutsMode;
 					int offset = (tapIndex << 3) + (i << 1);
-					if (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, 2 * i);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(0.0f, 2 * i + 1);
+					if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
+						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
 					else {
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
