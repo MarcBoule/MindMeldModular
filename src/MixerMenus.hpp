@@ -20,7 +20,7 @@ struct PanLawMonoItem : MenuItem {
 	
 	struct PanLawMonoSubItem : MenuItem {
 		GlobalInfo *gInfo;
-		int setVal = 0;
+		int setVal;
 		void onAction(const event::Action &e) override {
 			gInfo->panLawMono = setVal;
 		}
@@ -29,25 +29,20 @@ struct PanLawMonoItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		PanLawMonoSubItem *law0Item = createMenuItem<PanLawMonoSubItem>("+0 dB (no compensation)", CHECKMARK(gInfo->panLawMono == 0));
-		law0Item->gInfo = gInfo;
-		menu->addChild(law0Item);
-
-		PanLawMonoSubItem *law1Item = createMenuItem<PanLawMonoSubItem>("+3 dB boost (equal power, default)", CHECKMARK(gInfo->panLawMono == 1));
-		law1Item->gInfo = gInfo;
-		law1Item->setVal = 1;
-		menu->addChild(law1Item);
-
-		PanLawMonoSubItem *law2Item = createMenuItem<PanLawMonoSubItem>("+4.5 dB boost (compromise)", CHECKMARK(gInfo->panLawMono == 2));
-		law2Item->gInfo = gInfo;
-		law2Item->setVal = 2;
-		menu->addChild(law2Item);
-
-		PanLawMonoSubItem *law3Item = createMenuItem<PanLawMonoSubItem>("+6 dB boost (linear)", CHECKMARK(gInfo->panLawMono == 3));
-		law3Item->gInfo = gInfo;
-		law3Item->setVal = 3;
-		menu->addChild(law3Item);
-
+		std::string panLawMonoNames[4] = {
+			"+0 dB (no compensation)", 
+			"+3 dB boost (equal power, default)", 
+			"+4.5 dB boost (compromise)", 
+			"+6 dB boost (linear)"
+		};
+			
+		for (int i = 0; i < 4; i++) {
+			PanLawMonoSubItem *lawMonoItem = createMenuItem<PanLawMonoSubItem>(panLawMonoNames[i], CHECKMARK(gInfo->panLawMono == i));
+			lawMonoItem->gInfo = gInfo;
+			lawMonoItem->setVal = i;
+			menu->addChild(lawMonoItem);
+		}
+		
 		return menu;
 	}
 };
@@ -59,7 +54,7 @@ struct PanLawStereoItem : MenuItem {
 
 	struct PanLawStereoSubItem : MenuItem {
 		int8_t *panLawStereoSrc;
-		int8_t setVal = 0;
+		int8_t setVal;
 		void onAction(const event::Action &e) override {
 			*panLawStereoSrc = setVal;
 		}
@@ -68,22 +63,19 @@ struct PanLawStereoItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		PanLawStereoSubItem *law0Item = createMenuItem<PanLawStereoSubItem>("Stereo balance (default)", CHECKMARK(*panLawStereoSrc == 0));
-		law0Item->panLawStereoSrc = panLawStereoSrc;
-		menu->addChild(law0Item);
-
-		PanLawStereoSubItem *law1Item = createMenuItem<PanLawStereoSubItem>("True panning", CHECKMARK(*panLawStereoSrc == 1));
-		law1Item->panLawStereoSrc = panLawStereoSrc;
-		law1Item->setVal = 1;
-		menu->addChild(law1Item);
-
-		if (isGlobal) {
-			PanLawStereoSubItem *law2Item = createMenuItem<PanLawStereoSubItem>("Set per track", CHECKMARK(*panLawStereoSrc == 2));
-			law2Item->panLawStereoSrc = panLawStereoSrc;
-			law2Item->setVal = 2;
-			menu->addChild(law2Item);
+		std::string panLawStereoNames[3] = {
+			"Stereo balance (default)",
+			"True panning",
+			"Set per track"
+		};
+		
+		for (int i = 0; i < (isGlobal ? 3 : 2); i++) {
+			PanLawStereoSubItem *lawStereoItem = createMenuItem<PanLawStereoSubItem>(panLawStereoNames[i], CHECKMARK(*panLawStereoSrc == i));
+			lawStereoItem->panLawStereoSrc = panLawStereoSrc;
+			lawStereoItem->setVal = i;
+			menu->addChild(lawStereoItem);
 		}
-			
+
 		return menu;
 	}
 };
@@ -96,7 +88,7 @@ struct TapModeItem : MenuItem {
 
 	struct TapModeSubItem : MenuItem {
 		int8_t* tapModePtr;
-		int8_t setVal = 0;
+		int8_t setVal;
 		void onAction(const event::Action &e) override {
 			*tapModePtr = setVal;
 		}
@@ -105,30 +97,19 @@ struct TapModeItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		TapModeSubItem *pre0Item = createMenuItem<TapModeSubItem>("Pre-insert", CHECKMARK(*tapModePtr == 0));
-		pre0Item->tapModePtr = tapModePtr;
-		menu->addChild(pre0Item);
-
-		TapModeSubItem *pre1Item = createMenuItem<TapModeSubItem>("Pre-fader", CHECKMARK(*tapModePtr == 1));
-		pre1Item->tapModePtr = tapModePtr;
-		pre1Item->setVal = 1;
-		menu->addChild(pre1Item);
-
-		TapModeSubItem *pre2Item = createMenuItem<TapModeSubItem>("Post-fader", CHECKMARK(*tapModePtr == 2));
-		pre2Item->tapModePtr = tapModePtr;
-		pre2Item->setVal = 2;
-		menu->addChild(pre2Item);
-
-		TapModeSubItem *pre3Item = createMenuItem<TapModeSubItem>("Post-mute/solo", CHECKMARK(*tapModePtr == 3));
-		pre3Item->tapModePtr = tapModePtr;
-		pre3Item->setVal = 3;
-		menu->addChild(pre3Item);
-
-		if (isGlobal) {
-			TapModeSubItem *pre4Item = createMenuItem<TapModeSubItem>("Set per track", CHECKMARK(*tapModePtr == 4));
-			pre4Item->tapModePtr = tapModePtr;
-			pre4Item->setVal = 4;
-			menu->addChild(pre4Item);
+		std::string tapModeNames[5] = {
+			"Pre-insert",
+			"Pre-fader",
+			"Post-fader",
+			"Post-mute/solo",
+			"Set per track"
+		};
+		
+		for (int i = 0; i < (isGlobal ? 5 : 4); i++) {
+			TapModeSubItem *tapModeItem = createMenuItem<TapModeSubItem>(tapModeNames[i], CHECKMARK(*tapModePtr == i));
+			tapModeItem->tapModePtr = tapModePtr;
+			tapModeItem->setVal = i;
+			menu->addChild(tapModeItem);
 		}
 
 		return menu;
@@ -143,7 +124,7 @@ struct FilterPosItem : MenuItem {
 
 	struct FilterPosSubItem : MenuItem {
 		int8_t *filterPosSrc;
-		int8_t setVal = 0;
+		int8_t setVal;
 		void onAction(const event::Action &e) override {
 			*filterPosSrc = setVal;
 		}
@@ -152,22 +133,19 @@ struct FilterPosItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		FilterPosSubItem *fp0Item = createMenuItem<FilterPosSubItem>("Pre-insert", CHECKMARK(*filterPosSrc == 0));
-		fp0Item->filterPosSrc = filterPosSrc;
-		menu->addChild(fp0Item);
-
-		FilterPosSubItem *fp1Item = createMenuItem<FilterPosSubItem>("Post-insert (default)", CHECKMARK(*filterPosSrc == 1));
-		fp1Item->filterPosSrc = filterPosSrc;
-		fp1Item->setVal = 1;
-		menu->addChild(fp1Item);
-
-		if (isGlobal) {
-			FilterPosSubItem *fp2Item = createMenuItem<FilterPosSubItem>("Set per track", CHECKMARK(*filterPosSrc == 2));
-			fp2Item->filterPosSrc = filterPosSrc;
-			fp2Item->setVal = 2;
-			menu->addChild(fp2Item);
+		std::string filterPosNames[3] = {
+			"Pre-insert",
+			"Post-insert (default)",
+			"Set per track"
+		};
+		
+		for (int i = 0; i < (isGlobal ? 3 : 2); i++) {
+			FilterPosSubItem *fpItem = createMenuItem<FilterPosSubItem>(filterPosNames[i], CHECKMARK(*filterPosSrc == i));
+			fpItem->filterPosSrc = filterPosSrc;
+			fpItem->setVal = i;
+			menu->addChild(fpItem);
 		}
-			
+		
 		return menu;
 	}
 };
@@ -246,7 +224,7 @@ struct VuColorItem : MenuItem {
 
 	struct VuColorSubItem : MenuItem {
 		int8_t *srcColor;
-		int setVal = 0;
+		int setVal;
 		void onAction(const event::Action &e) override {
 			*srcColor = setVal;
 		}
@@ -255,35 +233,20 @@ struct VuColorItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		VuColorSubItem *col0Item = createMenuItem<VuColorSubItem>("Green (default)", CHECKMARK(*srcColor == 0));
-		col0Item->srcColor = srcColor;
-		menu->addChild(col0Item);
-
-		VuColorSubItem *col1Item = createMenuItem<VuColorSubItem>("Aqua", CHECKMARK(*srcColor == 1));
-		col1Item->srcColor = srcColor;
-		col1Item->setVal = 1;
-		menu->addChild(col1Item);
-
-		VuColorSubItem *col2Item = createMenuItem<VuColorSubItem>("Cyan", CHECKMARK(*srcColor == 2));// Light blue
-		col2Item->srcColor = srcColor;
-		col2Item->setVal = 2;
-		menu->addChild(col2Item);
-
-		VuColorSubItem *col3Item = createMenuItem<VuColorSubItem>("Blue", CHECKMARK(*srcColor == 3));
-		col3Item->srcColor = srcColor;
-		col3Item->setVal = 3;
-		menu->addChild(col3Item);
-
-		VuColorSubItem *col4Item = createMenuItem<VuColorSubItem>("Purple", CHECKMARK(*srcColor == 4));
-		col4Item->srcColor = srcColor;
-		col4Item->setVal = 4;
-		menu->addChild(col4Item);
-	
-		if (isGlobal) {
-			VuColorSubItem *colIItem = createMenuItem<VuColorSubItem>("Set per track", CHECKMARK(*srcColor == 5));
-			colIItem->srcColor = srcColor;
-			colIItem->setVal = 5;
-			menu->addChild(colIItem);
+		std::string vuColorNames[6] = {
+			"Green (default)",
+			"Aqua",
+			"Cyan",
+			"Blue",
+			"Purple",
+			"Set per track"
+		};
+		
+		for (int i = 0; i < (isGlobal ? 6 : 5); i++) {
+			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColor == i));
+			vuColItem->srcColor = srcColor;
+			vuColItem->setVal = i;
+			menu->addChild(vuColItem);
 		}
 
 		return menu;
@@ -296,7 +259,7 @@ struct DispColorItem : MenuItem {
 
 	struct DispColorSubItem : MenuItem {
 		int8_t *srcColor;
-		int setVal = 0;
+		int setVal;
 		void onAction(const event::Action &e) override {
 			*srcColor = setVal;
 		}
@@ -305,25 +268,20 @@ struct DispColorItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		DispColorSubItem *col0Item = createMenuItem<DispColorSubItem>("Yellow (default)", CHECKMARK(*srcColor == 0));
-		col0Item->srcColor = srcColor;
-		menu->addChild(col0Item);
-
-		DispColorSubItem *col1Item = createMenuItem<DispColorSubItem>("Blue", CHECKMARK(*srcColor == 1));
-		col1Item->srcColor = srcColor;
-		col1Item->setVal = 1;
-		menu->addChild(col1Item);
-
-		DispColorSubItem *col2Item = createMenuItem<DispColorSubItem>("Green", CHECKMARK(*srcColor == 2));
-		col2Item->srcColor = srcColor;
-		col2Item->setVal = 2;
-		menu->addChild(col2Item);
-
-		DispColorSubItem *col3Item = createMenuItem<DispColorSubItem>("Light-grey", CHECKMARK(*srcColor == 3));
-		col3Item->srcColor = srcColor;
-		col3Item->setVal = 3;
-		menu->addChild(col3Item);
-
+		std::string vuColorNames[4] = {
+			"Yellow (default)",
+			"Blue",
+			"Green",
+			"Light-grey"
+		};
+		
+		for (int i = 0; i < 4; i++) {		
+			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(vuColorNames[i], CHECKMARK(*srcColor == i));
+			dispColItem->srcColor = srcColor;
+			dispColItem->setVal = i;
+			menu->addChild(dispColItem);
+		}
+		
 		return menu;
 	}
 };
@@ -751,11 +709,11 @@ struct VoltLimitItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		VoltLimitSubItem *lim0Item = createMenuItem<VoltLimitSubItem>("Â±10 V (default)", CHECKMARK(srcMaster->voltageLimiter < 11.0f));
+		VoltLimitSubItem *lim0Item = createMenuItem<VoltLimitSubItem>("±10 V (default)", CHECKMARK(srcMaster->voltageLimiter < 11.0f));
 		lim0Item->srcMaster = srcMaster;
 		menu->addChild(lim0Item);
 
-		VoltLimitSubItem *lim1Item = createMenuItem<VoltLimitSubItem>("Â±20 V", CHECKMARK(srcMaster->voltageLimiter >= 11.0f));
+		VoltLimitSubItem *lim1Item = createMenuItem<VoltLimitSubItem>("±20 V", CHECKMARK(srcMaster->voltageLimiter >= 11.0f));
 		lim1Item->srcMaster = srcMaster;
 		lim1Item->setVal = 20.0f;
 		menu->addChild(lim1Item);

@@ -344,20 +344,20 @@ struct AuxExpander : Module {
 			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
 			if (refreshCounter20 < 4) {
-				// cv for pan. Pan CV is a -5V to +5V input
+				// cv for pan
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;
+					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;// Pan CV is a -5V to +5V input
 					val = clamp(val, 0.0f, 1.0f);
 				}
 			}
 			else if (refreshCounter20 < 8) {
-				// return fader
-				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
-				// Fader CV (multiplying, post-scaling)
+				// cv for return fader
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
 						inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (4 + refreshCounter20 + 1)) {
 					val *= clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f, 0.0f, 1.0f);
 				}
+				// scaling
+				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
 			}
 			else if (refreshCounter20 < 12) {
 				//cv for return mute

@@ -576,7 +576,7 @@ struct MixerMaster {
 	//  * calc gainMatrix
 	//  * calc chainGains
 	void updateSlowValues() {
-		// calc fadeGain 
+		// calc ** fadeGain **
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
 			if (!gInfo->symmetricalFade && newTarget != target) {
@@ -593,33 +593,37 @@ struct MixerMaster {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}	
 
-		// calc gainMatrix
+		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
-		float slowGain = 0.0f;
-		if (fadeGain != slowGain) {
-			slowGain = params[MAIN_FADER_PARAM].getValue() * fadeGain;
-			// Fader CV (multiplying, pre-scaling)
-			if (inVol->isConnected()) {
-				slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.0f);
-			}
-			// Scaling
-			slowGain = std::pow(slowGain, masterFaderScalingExponent);
-			
-			// Dim
-			if ((params[MAIN_DIM_PARAM].getValue() + inMuteDimMono->getVoltage(9) * 0.1f) > 0.5f) {
-				slowGain *= dimGainIntegerDB;
-			}
-			
-			// Mono
-			if ((params[MAIN_MONO_PARAM].getValue() + inMuteDimMono->getVoltage(10) * 0.1f) > 0.5f) {
-				gainMatrix = simd::float_4(slowGain * 0.5f);
-			}
-			else {
-				gainMatrix[0] = gainMatrix[1] = slowGain;
-			}
+		
+		// fader
+		float slowGain = params[MAIN_FADER_PARAM].getValue();
+		
+		// fader CV (multiplying, pre-scaling)
+		if (inVol->isConnected()) {
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.0f);
 		}
 		
-		// calc chainGains
+		// mute/fade
+		slowGain *= fadeGain;
+		
+		// scaling
+		slowGain = std::pow(slowGain, masterFaderScalingExponent);
+		
+		// dim
+		if ((params[MAIN_DIM_PARAM].getValue() + inMuteDimMono->getVoltage(9) * 0.1f) > 0.5f) {
+			slowGain *= dimGainIntegerDB;
+		}
+		
+		// mono
+		if ((params[MAIN_MONO_PARAM].getValue() + inMuteDimMono->getVoltage(10) * 0.1f) > 0.5f) {
+			gainMatrix = simd::float_4(slowGain * 0.5f);
+		}
+		else {
+			gainMatrix[0] = gainMatrix[1] = slowGain;
+		}
+		
+		// calc ** chainGains **
 		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
 		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
 	}
@@ -850,7 +854,7 @@ struct MixerGroup {
 	//  * process linked
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
-		// calc fadeGain 
+		// calc ** fadeGain **
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
 			if (!gInfo->symmetricalFade && newTarget != target) {
@@ -867,36 +871,36 @@ struct MixerGroup {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
-		// calc muteSoloGain
-		muteSoloGain = fadeGain;// TODO: solo not in here but in groups, how to handle?
+		// calc ** muteSoloGain **
+		muteSoloGain = fadeGain;// solo not actually in here but in groups
 		
+		// calc ** gainMatrix **
+		gainMatrix = simd::float_4::zero();
 		
-		// process linked
+		// fader
 		float slowGain = paFade->getValue();
+		
+		// fader CV (multiplying, pre-scaling)
+		if (inVol->isConnected()) {
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
+		}
+		
+		// ** process linked **
 		gInfo->processLinked(16 + groupNum, slowGain);
 		
-		// calc gainMatrix
-		gainMatrix = simd::float_4::zero();
+		// scaling
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
-		// Fader CV (multiplying, post-scaling)
-		if (inVol->isConnected()) {
-			// slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
-			// slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
-			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
-		}
 
+		// panning
 		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
-		pan = clamp(pan, 0.0f, 1.0f);
-		
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
 		}
 		else {
 			pan = clamp(pan, 0.0f, 1.0f);
-			
 			// implicitly stereo for groups
 			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
 			if (stereoBalance) {
@@ -1271,16 +1275,16 @@ struct MixerTrack {
 	//  * process linked
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
-		// update group usage
+		// ** update group usage **
 		updateGroupUsage();
 		
-		// calc stereo
+		// calc ** stereo **
 		stereo = inSig[1].isConnected();
 
-		// calc inGain
+		// calc ** inGain **
 		inGain = inSig[0].isConnected() ? gainAdjust : 0.0f;
 
-		// calc fadeGain (does mute also)
+		// calc ** fadeGain ** (does mute also)
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
 			if (!gInfo->symmetricalFade && newTarget != target) {
@@ -1297,26 +1301,28 @@ struct MixerTrack {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
-		// calc muteSoloGain
+		// calc ** muteSoloGain **
 		muteSoloGain = calcSoloGain() * fadeGain;
 
-		// process linked
-		float slowGain = paFade->getValue();
-		gInfo->processLinked(trackNum, slowGain);
-				
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
-		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-		// Fader CV (multiplying, post-scaling)
+		
+		// fader
+		float slowGain = paFade->getValue();
+		
+		// fader CV (multiplying, pre-scaling)
 		if (inVol->isConnected()) {
-			// slowGain += inVol->getVoltage() * 0.1f * GlobalInfo::trkAndGrpFaderMaxLinearGain;
-			// slowGain = clamp(slowGain, 0.f, GlobalInfo::trkAndGrpFaderMaxLinearGain);
 			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 		}
-
-		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
-		pan = clamp(pan, 0.0f, 1.0f);
 		
+		// ** process linked **
+		gInfo->processLinked(trackNum, slowGain);
+				
+		// scaling
+		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
+
+		// panning
+		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
 		if (pan == 0.5f) {
 			if (!stereo) gainMatrix[3] = slowGain;
 			else gainMatrix[1] = slowGain;
@@ -1663,7 +1669,7 @@ struct MixerAux {
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
-		// calc muteSoloGain
+		// calc ** muteSoloGain **
 		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
 		muteSoloGain = *flMute * soloGain;
 		// Handle "Mute aux returns when soloing track"
@@ -1672,19 +1678,22 @@ struct MixerAux {
 			muteSoloGain = 0.0f;
 		}
 		
-		// calc gainMatrix
-		float slowGain = *flFade;// cv input and scaling already done in auxspander
+		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
-
-		float pan = *flPan;// cv input already done in auxspander
 		
+		// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
+		float slowGain = *flFade; 
+		
+		// scaling 
+		// done in auxspander
+
+		// panning
+		float pan = *flPan;// cv input and clamping already done in auxspander
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
 		}
 		else {
-			pan = clamp(pan, 0.0f, 1.0f);
-			
 			// implicitly stereo for aux
 			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && *panLawStereoLocal == 0));			
 			if (stereoBalance) {

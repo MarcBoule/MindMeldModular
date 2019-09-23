@@ -441,7 +441,7 @@ struct MixMaster : Module {
 
 			int tapIndex = gInfo.directOutsMode;		
 			if (tapIndex < 4) {// global direct outs
-				if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 					for (unsigned int i = 0; i < 8; i++) {
 						int offset = (tapIndex << 5) + ((base + i) << 1);
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
@@ -456,7 +456,7 @@ struct MixMaster : Module {
 				for (unsigned int i = 0; i < 8; i++) {
 					tapIndex = tracks[base + i].directOutsMode;
 					int offset = (tapIndex << 5) + ((base + i) << 1);
-					if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
@@ -481,7 +481,7 @@ struct MixMaster : Module {
 			// Groups
 			int tapIndex = gInfo.directOutsMode;			
 			if (gInfo.directOutsMode < 4) {// global direct outs
-				if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 					for (unsigned int i = 0; i < 4; i++) {
 						int offset = (tapIndex << 3) + (i << 1);
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
@@ -496,7 +496,7 @@ struct MixMaster : Module {
 				for (unsigned int i = 0; i < 4; i++) {
 					tapIndex = groups[i].directOutsMode;
 					int offset = (tapIndex << 3) + (i << 1);
-					if (gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
 						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
@@ -633,9 +633,9 @@ struct MixMasterWidget : ModuleWidget {
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
 		
-		ExpansionItem *expItem = createMenuItem<ExpansionItem>("Show CVs on left side", CHECKMARK(module->expansion));
-		expItem->expansionPtr = &(module->expansion);
-		menu->addChild(expItem);
+		// ExpansionItem *expItem = createMenuItem<ExpansionItem>("Show CVs on left side", CHECKMARK(module->expansion));
+		// expItem->expansionPtr = &(module->expansion);
+		// menu->addChild(expItem);
 	}
 
 	// Module's widget
