@@ -367,7 +367,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 		}
 		// cv pointer (draw only when cv has en effect)
 		if (srcParamWithCV != NULL && *srcParamWithCV != srcParam->getValue()) {
-			float fadePosNormalized = srcParam->getValue() / maxTFader;
+			float fadePosNormalized = *srcParamWithCV / maxTFader;
 			float vertPos = box.size.y - box.size.y * (*srcParamWithCV) * fadePosNormalized ;// in px
 			nvgBeginPath(args.vg);
 			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
