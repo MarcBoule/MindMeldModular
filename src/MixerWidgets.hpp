@@ -323,7 +323,7 @@ struct VuMeterAux : VuMeterTrack {//
 // Fade pointer
 // --------------------
 
-static const float prtHeight = 3.4f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
+static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
 static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
 
 struct CvAndFadePointerBase : OpaqueWidget {
@@ -387,7 +387,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 
 struct CvAndFadePointerTrack : CvAndFadePointerBase {
 	CvAndFadePointerTrack() {
-		box.size = mm2px(math::Vec(2.8, 42));
+		box.size = mm2px(math::Vec(2.24, 42));
 		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
 		minFadeRate = MixerTrack::minFadeRate;
@@ -396,7 +396,7 @@ struct CvAndFadePointerTrack : CvAndFadePointerBase {
 };
 struct CvAndFadePointerGroup : CvAndFadePointerBase {
 	CvAndFadePointerGroup() {
-		box.size = mm2px(math::Vec(2.8, 42));
+		box.size = mm2px(math::Vec(2.24, 42));
 		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
 		minFadeRate = MixerGroup::minFadeRate;
@@ -405,7 +405,7 @@ struct CvAndFadePointerGroup : CvAndFadePointerBase {
 };
 struct CvAndFadePointerMaster : CvAndFadePointerBase {
 	CvAndFadePointerMaster() {
-		box.size = mm2px(math::Vec(2.8, 60));
+		box.size = mm2px(math::Vec(2.24, 60));
 		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
 		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
 		minFadeRate = MixerMaster::minFadeRate;
