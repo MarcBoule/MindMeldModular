@@ -261,6 +261,7 @@ struct GlobalInfo {
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
+	int8_t groupedAuxReturnFeedbackProtection;
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -368,6 +369,7 @@ struct GlobalInfo {
 		symmetricalFade = false;
 		linkBitMask = 0;
 		filterPos = 1;// default is post-insert
+		groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -411,6 +413,9 @@ struct GlobalInfo {
 
 		// filterPos
 		json_object_set_new(rootJ, "filterPos", json_integer(filterPos));
+
+		// groupedAuxReturnFeedbackProtection
+		json_object_set_new(rootJ, "groupedAuxReturnFeedbackProtection", json_integer(groupedAuxReturnFeedbackProtection));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -470,6 +475,11 @@ struct GlobalInfo {
 		json_t *filterPosJ = json_object_get(rootJ, "filterPos");
 		if (filterPosJ)
 			filterPos = json_integer_value(filterPosJ);
+		
+		// groupedAuxReturnFeedbackProtection
+		json_t *groupedAuxReturnFeedbackProtectionJ = json_object_get(rootJ, "groupedAuxReturnFeedbackProtection");
+		if (groupedAuxReturnFeedbackProtectionJ)
+			groupedAuxReturnFeedbackProtection = json_integer_value(groupedAuxReturnFeedbackProtectionJ);
 		
 		// extern must call resetNonJson()
 	}

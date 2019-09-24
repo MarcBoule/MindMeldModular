@@ -204,6 +204,31 @@ struct ChainItem : MenuItem {
 	}
 };
 
+struct AuxRetFbProtItem : MenuItem {
+	GlobalInfo *gInfo;
+
+	struct AuxRetFbProtSubItem : MenuItem {
+		GlobalInfo *gInfo;
+		void onAction(const event::Action &e) override {
+			gInfo->groupedAuxReturnFeedbackProtection ^= 0x1;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		AuxRetFbProtSubItem *fb1Item = createMenuItem<AuxRetFbProtSubItem>("Feedback protection ON (default)", CHECKMARK(gInfo->groupedAuxReturnFeedbackProtection == 1));
+		fb1Item->gInfo = gInfo;
+		menu->addChild(fb1Item);
+
+		AuxRetFbProtSubItem *fb0Item = createMenuItem<AuxRetFbProtSubItem>("Feedback protection OFF (Warning RTFM!)", CHECKMARK(gInfo->groupedAuxReturnFeedbackProtection == 0));
+		fb0Item->gInfo = gInfo;
+		menu->addChild(fb0Item);
+
+		return menu;
+	}
+};
+
 struct CloakedModeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {

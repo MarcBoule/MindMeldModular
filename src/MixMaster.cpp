@@ -319,7 +319,9 @@ struct MixMaster : Module {
 				if (auxGroup != 0) {
 					auxGroup--;
 					aux[i].process(&groupTaps[auxGroup << 1]);
-					auxSendMuteGroupedReturn |= (0x1 << ((auxGroup << 2) + i));
+					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
+						auxSendMuteGroupedReturn |= (0x1 << ((auxGroup << 2) + i));
+					}
 				}
 			}
 		}
@@ -421,13 +423,13 @@ struct MixMaster : Module {
 			}
 			// accumulate tracks
 			for (int trk = 0; trk < 16; trk++) {
-				//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should always have aux sends even when grouped
+				//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should have aux sends even when grouped
 				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : tracks[trk].auxSendsMode;
 				tapIndex <<= 5;
 				float valTap[2] = {trackTaps[tapIndex + (trk << 1) + 0], trackTaps[tapIndex + (trk << 1) + 1]};
-				for (int aux = 0; aux < 4; aux++) {
-					auxSends[(aux << 1) + 0] += values80[(trk << 2) + aux] * valTap[0];
-					auxSends[(aux << 1) + 1] += values80[(trk << 2) + aux] * valTap[1];
+				for (int auxi = 0; auxi < 4; auxi++) {
+					auxSends[(auxi << 1) + 0] += values80[(trk << 2) + auxi] * valTap[0];
+					auxSends[(auxi << 1) + 1] += values80[(trk << 2) + auxi] * valTap[1];
 				}
 			}
 			// accumulate groups
@@ -435,9 +437,11 @@ struct MixMaster : Module {
 				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : groups[grp].auxSendsMode;
 				tapIndex <<= 3;
 				float valTap[2] = {groupTaps[tapIndex + (grp << 1) + 0], groupTaps[tapIndex + (grp << 1) + 1]};
-				for (int aux = 0; aux < 4; aux++) {
-					auxSends[(aux << 1) + 0] += values80[64 + (aux << 2) + grp] * valTap[0];
-					auxSends[(aux << 1) + 1] += values80[64 + (aux << 2) + grp] * valTap[1];
+				for (int auxi = 0; auxi < 4; auxi++) {
+					if ((auxSendMuteGroupedReturn & (1 << ((grp << 2) + auxi))) == 0) {
+						auxSends[(auxi << 1) + 0] += values80[64 + (auxi << 2) + grp] * valTap[0];
+						auxSends[(auxi << 1) + 1] += values80[64 + (auxi << 2) + grp] * valTap[1];
+					}
 				}
 			}
 						
@@ -619,6 +623,10 @@ struct MixMasterWidget : ModuleWidget {
 			auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo.auxReturnsMutedWhenMainSolo);
 			auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo.auxReturnsSolosMuteDry);
 			menu->addChild(auxRetunsItem);
+		
+			AuxRetFbProtItem *fbpItem = createMenuItem<AuxRetFbProtItem>("Routing returns to groups", RIGHT_ARROW);
+			fbpItem->gInfo = &(module->gInfo);
+			menu->addChild(fbpItem);
 		}
 		
 		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
