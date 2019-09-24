@@ -256,7 +256,7 @@ struct GlobalInfo {
 	int auxReturnsMutedWhenMainSolo;
 	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
-	PackedBytes4 colorAndCloak;
+	PackedBytes4 colorAndCloak;// see enum above called ccIds for fields
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -517,6 +517,7 @@ struct MixerMaster {
 	VuMeterAllDual vu;// use mix[0..1]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
+	float paramWithCV;
 	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
 
 	// no need to save, no reset
@@ -560,6 +561,7 @@ struct MixerMaster {
 		vu.reset();
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		paramWithCV = params[MAIN_FADER_PARAM].getValue();
 		updateDimGainIntegerDB();
 	}
 	
@@ -584,6 +586,7 @@ struct MixerMaster {
 
 	// Contract: 
 	//  * calc fadeGain
+	//  * calc paramWithCV
 	//  * calc gainMatrix
 	//  * calc chainGains
 	void updateSlowValues() {
@@ -604,19 +607,17 @@ struct MixerMaster {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}	
 
+		// calc ** paramWithCV **
+		paramWithCV = params[MAIN_FADER_PARAM].getValue();
+		if (inVol->isConnected()) {
+			paramWithCV *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+		}
+		
 		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
 		
-		// fader
-		float slowGain = params[MAIN_FADER_PARAM].getValue();
-		
-		// fader CV (multiplying, pre-scaling)
-		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.0f);
-		}
-		
 		// mute/fade
-		slowGain *= fadeGain;
+		float slowGain = paramWithCV * fadeGain;
 		
 		// scaling
 		slowGain = std::pow(slowGain, masterFaderScalingExponent);
@@ -797,6 +798,7 @@ struct MixerGroup {
 	VuMeterAllDual vu;// use post[]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
+	float paramWithCV;
 
 	// no need to save, no reset
 	int groupNum;// 0 to 3
@@ -854,8 +856,7 @@ struct MixerGroup {
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 		vu.reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		paramWithCV = paFade->getValue();
 	}
 	
 	
@@ -863,6 +864,7 @@ struct MixerGroup {
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * process linked
+	//  * calc paramWithCV
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
 		// calc ** fadeGain **
@@ -885,18 +887,17 @@ struct MixerGroup {
 		// calc ** muteSoloGain **
 		muteSoloGain = fadeGain;// solo not actually in here but in groups
 		
+		// calc ** calc paramWithCV **
+		paramWithCV = paFade->getValue();
+		if (inVol->isConnected()) {
+			paramWithCV *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+		}
+		
 		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
 		
-		// fader
-		float slowGain = paFade->getValue();
-		
-		// fader CV (multiplying, pre-scaling)
-		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
-		}
-		
 		// ** process linked **
+		float slowGain = paramWithCV;
 		gInfo->processLinked(16 + groupNum, slowGain);
 		
 		// scaling
@@ -1096,6 +1097,7 @@ struct MixerTrack {
 	VuMeterAllDual vu;// use post[]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
+	float paramWithCV;
 	float target = -1.0f;
 
 	// no need to save, no reset
@@ -1168,6 +1170,7 @@ struct MixerTrack {
 		inGainSlewer.reset();
 		muteSoloGainSlewer.reset();
 		vu.reset();
+		paramWithCV = paFade->getValue();
 	}
 	
 	
@@ -1284,6 +1287,7 @@ struct MixerTrack {
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
 	//  * process linked
+	//  * calc paramWithCV
 	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
 		// ** update group usage **
@@ -1315,18 +1319,17 @@ struct MixerTrack {
 		// calc ** muteSoloGain **
 		muteSoloGain = calcSoloGain() * fadeGain;
 
+		// calc ** paramWithCV **
+		paramWithCV = paFade->getValue();
+		if (inVol->isConnected()) {
+			paramWithCV *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+		}
+		
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
 		
-		// fader
-		float slowGain = paFade->getValue();
-		
-		// fader CV (multiplying, pre-scaling)
-		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
-		}
-		
 		// ** process linked **
+		float slowGain = paramWithCV;
 		gInfo->processLinked(trackNum, slowGain);
 				
 		// scaling

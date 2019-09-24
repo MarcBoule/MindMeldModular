@@ -673,7 +673,7 @@ struct MixMasterWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/mixmaster.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/mixmaster.svg")));
 		panelBorder = findBorder(panel);		
 		
 		// Inserts and CVs
@@ -739,8 +739,10 @@ struct MixMasterWidget : ModuleWidget {
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerTrack *newFP = createWidgetCentered<FadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
+				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
+				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
+				newFP->dispColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				newFP->srcFadeRate = &(module->tracks[i].fadeRate);
 				addChild(newFP);				
@@ -821,8 +823,10 @@ struct MixMasterWidget : ModuleWidget {
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
-				FadePointerGroup *newFP = createWidgetCentered<FadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
+				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
+				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
+				newFP->dispColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				newFP->srcFadeRate = &(module->groups[i].fadeRate);
 				addChild(newFP);				
@@ -866,8 +870,10 @@ struct MixMasterWidget : ModuleWidget {
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			addChild(newVU);
 			// Fade pointer
-			FadePointerMaster *newFP = createWidgetCentered<FadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
+			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
+			newFP->srcParamWithCV = &(module->master.paramWithCV);
+			newFP->dispColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
 			newFP->srcFadeGain = &(module->master.fadeGain);
 			newFP->srcFadeRate = &(module->master.fadeRate);
 			addChild(newFP);				

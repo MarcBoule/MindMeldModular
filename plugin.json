@@ -1,10 +1,10 @@
 {
 	"slug": "MindMeldModular",
-	"name": "Mind Meld Modular",
+	"name": "MindMeld",
 	"version": "1.1.1",
-	"license": "BSD-3-Clause",
+	"license": "GPLv3",
 	"author": "S.Baker and M.Boul\u00e9 ",
-	"brand": "Mind Meld Modular",
+	"brand": "MindMeld",
 	"authorEmail": "",
 	"authorUrl": "",
 	"pluginUrl": "",

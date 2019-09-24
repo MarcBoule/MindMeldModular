@@ -14,6 +14,9 @@
 #include <time.h>
 
 
+static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
+
+
 // --------------------
 // VU meters
 // --------------------
@@ -321,12 +324,14 @@ struct VuMeterAux : VuMeterTrack {//
 // --------------------
 
 static const float prtHeight = 3.4f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
-static const NVGcolor POINTER_FILL = nvgRGB(255, 106, 31);
+static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
 
-struct FadePointerBase : OpaqueWidget {
+struct CvAndFadePointerBase : OpaqueWidget {
 	// instantiator must setup:
 	Param *srcParam;// to know where the fader is
-	float *srcFadeGain;// to know where to position the pointer
+	float *srcParamWithCV = NULL;// for cv pointer, NULL indicates when cv pointers are not used (no cases so far)
+	int8_t* dispColor;// cv pointers have same color as displays
+	float *srcFadeGain = NULL;// to know where to position the pointer, NULL indicates when fader pointers are not used (aux ret faders for example)
 	float *srcFadeRate;// mute when < minFadeRate, fade when >= minFadeRate
 
 	// derived class must setup:
@@ -345,27 +350,43 @@ struct FadePointerBase : OpaqueWidget {
 
 
 	void draw(const DrawArgs &args) override {
-		if (*srcFadeRate < minFadeRate || *srcFadeGain >= 1.0f) {
-			return;
+		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
+		if (srcFadeGain != NULL && *srcFadeRate >= minFadeRate && *srcFadeGain < 1.0f) {
+			float fadePosNormalized = srcParam->getValue() / maxTFader;
+			float vertPos = box.size.y - box.size.y * (*srcFadeGain) * fadePosNormalized ;// in px
+			nvgBeginPath(args.vg);
+			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
+			nvgLineTo(args.vg, box.size.x, vertPos);
+			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
+			nvgClosePath(args.vg);
+			nvgFillColor(args.vg, FADE_POINTER_FILL);
+			nvgFill(args.vg);
+			nvgStrokeColor(args.vg, SCHEME_BLACK);
+			nvgStrokeWidth(args.vg, mm2px(0.11f));
+			nvgStroke(args.vg);
 		}
-		float fadePosNormalized = srcParam->getValue() / maxTFader;
-		float vertPos = box.size.y - box.size.y * (*srcFadeGain) * fadePosNormalized ;// in px
-		nvgBeginPath(args.vg);
-		nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
-		nvgLineTo(args.vg, box.size.x, vertPos);
-		nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
-		nvgClosePath(args.vg);
-		nvgFillColor(args.vg, POINTER_FILL);
-		nvgFill(args.vg);
-		nvgStrokeColor(args.vg, SCHEME_BLACK);
-		nvgStrokeWidth(args.vg, mm2px(0.11f));
-		nvgStroke(args.vg);
+		// cv pointer (draw only when cv has en effect)
+		if (srcParamWithCV != NULL && *srcParamWithCV != srcParam->getValue()) {
+			float fadePosNormalized = srcParam->getValue() / maxTFader;
+			float vertPos = box.size.y - box.size.y * (*srcParamWithCV) * fadePosNormalized ;// in px
+			nvgBeginPath(args.vg);
+			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
+			nvgLineTo(args.vg, box.size.x, vertPos);
+			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
+			nvgClosePath(args.vg);
+			nvgFillColor(args.vg, DISP_COLORS[*dispColor]);
+			nvgFill(args.vg);
+			nvgStrokeColor(args.vg, SCHEME_BLACK);
+			nvgStrokeWidth(args.vg, mm2px(0.11f));
+			nvgStroke(args.vg);
+			
+		}
 	}	
 };
 
 
-struct FadePointerTrack : FadePointerBase {
-	FadePointerTrack() {
+struct CvAndFadePointerTrack : CvAndFadePointerBase {
+	CvAndFadePointerTrack() {
 		box.size = mm2px(math::Vec(2.8, 42));
 		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
@@ -373,8 +394,8 @@ struct FadePointerTrack : FadePointerBase {
 		prepareMaxFader();
 	}
 };
-struct FadePointerGroup : FadePointerBase {
-	FadePointerGroup() {
+struct CvAndFadePointerGroup : CvAndFadePointerBase {
+	CvAndFadePointerGroup() {
 		box.size = mm2px(math::Vec(2.8, 42));
 		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
@@ -382,8 +403,8 @@ struct FadePointerGroup : FadePointerBase {
 		prepareMaxFader();
 	}
 };
-struct FadePointerMaster : FadePointerBase {
-	FadePointerMaster() {
+struct CvAndFadePointerMaster : CvAndFadePointerBase {
+	CvAndFadePointerMaster() {
 		box.size = mm2px(math::Vec(2.8, 60));
 		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
 		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
@@ -451,7 +472,6 @@ struct MasterDisplay : OpaqueWidget {
 // Displays 
 // --------------------
 
-static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
 static const Vec DISP_SIZE = Vec(38, 16);
 static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 
@@ -460,7 +480,7 @@ static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	 int8_t* dispColor = NULL;
+	int8_t* dispColor = NULL;
 	
 	TrackAndGroupLabel() {
 		box.size = DISP_SIZE;

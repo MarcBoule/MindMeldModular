@@ -479,7 +479,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/auxspander.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/auxspander.svg")));
 		panelBorder = findBorder(panel);
 
 
