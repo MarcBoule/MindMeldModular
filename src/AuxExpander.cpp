@@ -183,7 +183,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++) {
 			vu[i].reset();
 			globalSends[i] = 0.0f;
-			paramWithCV[i] = params[GLOBAL_AUXRETURN_PARAMS + i].getValue();
+			paramWithCV[i] = -1.0f;
 		}
 		for (int i = 0; i < 20; i++) {
 			mutes[i] = 0.0f;
