@@ -350,6 +350,21 @@ struct CvAndFadePointerBase : OpaqueWidget {
 
 
 	void draw(const DrawArgs &args) override {
+		// cv pointer (draw only when cv has en effect)
+		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f) {// -1.0f indicates not to show cv pointer
+			float cvPosNormalized = *srcParamWithCV / maxTFader;
+			float vertPos = box.size.y - box.size.y * cvPosNormalized ;// in px
+			nvgBeginPath(args.vg);
+			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
+			nvgLineTo(args.vg, box.size.x, vertPos);
+			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
+			nvgClosePath(args.vg);
+			nvgFillColor(args.vg, DISP_COLORS[*dispColor]);
+			nvgFill(args.vg);
+			nvgStrokeColor(args.vg, SCHEME_BLACK);
+			nvgStrokeWidth(args.vg, mm2px(0.11f));
+			nvgStroke(args.vg);
+		}
 		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
 		if (srcFadeGain != NULL && *srcFadeRate >= minFadeRate && *srcFadeGain < 1.0f) {
 			float fadePosNormalized = srcParam->getValue() / maxTFader;
@@ -364,22 +379,6 @@ struct CvAndFadePointerBase : OpaqueWidget {
 			nvgStrokeColor(args.vg, SCHEME_BLACK);
 			nvgStrokeWidth(args.vg, mm2px(0.11f));
 			nvgStroke(args.vg);
-		}
-		// cv pointer (draw only when cv has en effect)
-		if (srcParamWithCV != NULL && *srcParamWithCV != srcParam->getValue()) {
-			float fadePosNormalized = *srcParamWithCV / maxTFader;
-			float vertPos = box.size.y - box.size.y * (*srcParamWithCV) * fadePosNormalized ;// in px
-			nvgBeginPath(args.vg);
-			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
-			nvgLineTo(args.vg, box.size.x, vertPos);
-			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
-			nvgClosePath(args.vg);
-			nvgFillColor(args.vg, DISP_COLORS[*dispColor]);
-			nvgFill(args.vg);
-			nvgStrokeColor(args.vg, SCHEME_BLACK);
-			nvgStrokeWidth(args.vg, mm2px(0.11f));
-			nvgStroke(args.vg);
-			
 		}
 	}	
 };
@@ -409,6 +408,15 @@ struct CvAndFadePointerMaster : CvAndFadePointerBase {
 		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
 		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
 		minFadeRate = MixerMaster::minFadeRate;
+		prepareMaxFader();
+	}
+};
+struct CvAndFadePointerAuxRet : CvAndFadePointerBase {
+	CvAndFadePointerAuxRet() {
+		box.size = mm2px(math::Vec(2.24, 30));
+		faderMaxLinearGain = GlobalInfo::globalAuxReturnMaxLinearGain;
+		faderScalingExponent = GlobalInfo::globalAuxReturnScalingExponent;
+		// minFadeRate = 0.0f;// fade pointer not used in aux return faders
 		prepareMaxFader();
 	}
 };

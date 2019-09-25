@@ -608,16 +608,21 @@ struct MixerMaster {
 		}	
 
 		// calc ** paramWithCV **
-		paramWithCV = params[MAIN_FADER_PARAM].getValue();
-		if (inVol->isConnected()) {
-			paramWithCV *= clamp(inVol->getVoltage() * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+		float slowGain = params[MAIN_FADER_PARAM].getValue();
+		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
+		if (volCv < 10.0f) {
+			slowGain *= clamp(volCv * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+			paramWithCV = slowGain;
+		}
+		else {
+			paramWithCV = -1.0f;// do not show cv pointer
 		}
 		
 		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
 		
 		// mute/fade
-		float slowGain = paramWithCV * fadeGain;
+		slowGain *= fadeGain;
 		
 		// scaling
 		slowGain = std::pow(slowGain, masterFaderScalingExponent);
@@ -888,16 +893,20 @@ struct MixerGroup {
 		muteSoloGain = fadeGain;// solo not actually in here but in groups
 		
 		// calc ** calc paramWithCV **
-		paramWithCV = paFade->getValue();
-		if (inVol->isConnected()) {
-			paramWithCV *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+		float slowGain = paFade->getValue();
+		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
+		if (volCv < 10.0f) {
+			slowGain *= clamp(volCv * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+			paramWithCV = slowGain;
+		}
+		else {
+			paramWithCV = -1.0f;// do not show cv pointer
 		}
 		
 		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
 		
 		// ** process linked **
-		float slowGain = paramWithCV;
 		gInfo->processLinked(16 + groupNum, slowGain);
 		
 		// scaling
@@ -1320,16 +1329,20 @@ struct MixerTrack {
 		muteSoloGain = calcSoloGain() * fadeGain;
 
 		// calc ** paramWithCV **
-		paramWithCV = paFade->getValue();
-		if (inVol->isConnected()) {
-			paramWithCV *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+		float slowGain = paFade->getValue();
+		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
+		if (volCv < 10.0f) {
+			slowGain *= clamp(volCv * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+			paramWithCV = slowGain;
+		}
+		else {
+			paramWithCV = -1.0f;
 		}
 		
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
 		
 		// ** process linked **
-		float slowGain = paramWithCV;
 		gInfo->processLinked(trackNum, slowGain);
 				
 		// scaling
