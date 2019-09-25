@@ -268,7 +268,7 @@ struct MixMaster : Module {
 			muteTrackWhenSoloAuxRetSlewer.reset();
 		}
 		
-/* slowest verion		
+/* slower verion	*/	
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
@@ -297,9 +297,9 @@ struct MixMaster : Module {
 			// }
 			
 		}// userInputs refresh
-*/
 
-/* faster verison */
+
+/* faster verison 
 		// Tracks (slow value updates)
 		tracks[refresh.refreshCounter & 0xF].updateSlowValues();// a given track gets updated at sampleRate / 16, which equates to refresh.processInputs()
 		// Groups (slow value updates)
@@ -329,7 +329,7 @@ struct MixMaster : Module {
 			// }
 			
 		}// userInputs refresh	
-		
+*/	
 		
 		
 		
