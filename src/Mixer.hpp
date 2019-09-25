@@ -892,8 +892,11 @@ struct MixerGroup {
 		// calc ** muteSoloGain **
 		muteSoloGain = fadeGain;// solo not actually in here but in groups
 		
-		// calc ** calc paramWithCV **
+		// ** process linked **
 		float slowGain = paFade->getValue();
+		gInfo->processLinked(16 + groupNum, slowGain);
+		
+		// calc ** calc paramWithCV **
 		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
 		if (volCv < 10.0f) {
 			slowGain *= clamp(volCv * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
@@ -905,9 +908,6 @@ struct MixerGroup {
 		
 		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
-		
-		// ** process linked **
-		gInfo->processLinked(16 + groupNum, slowGain);
 		
 		// scaling
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
@@ -1328,8 +1328,11 @@ struct MixerTrack {
 		// calc ** muteSoloGain **
 		muteSoloGain = calcSoloGain() * fadeGain;
 
-		// calc ** paramWithCV **
+		// ** process linked **
 		float slowGain = paFade->getValue();
+		gInfo->processLinked(trackNum, slowGain);
+		
+		// calc ** paramWithCV **
 		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
 		if (volCv < 10.0f) {
 			slowGain *= clamp(volCv * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
@@ -1342,9 +1345,6 @@ struct MixerTrack {
 		// calc gainMatrix
 		gainMatrix = simd::float_4::zero();
 		
-		// ** process linked **
-		gInfo->processLinked(trackNum, slowGain);
-				
 		// scaling
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 
