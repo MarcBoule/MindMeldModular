@@ -1353,8 +1353,6 @@ struct MixerTrack {
 
 		// ** process linked **
 		gInfo->processLinked(trackNum, paFade->getValue());
-		
-		calcPanMatrix();
 	}
 	
 	
