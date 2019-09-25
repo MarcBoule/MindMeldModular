@@ -268,26 +268,27 @@ struct MixMaster : Module {
 			muteTrackWhenSoloAuxRetSlewer.reset();
 		}
 		
-		
-		if (refresh.processInputs()) {
-			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
+
+		// Tracks (slow value updates)
+		tracks[refresh.refreshCounter & 0xF].updateSlowValues();// a given track gets updated at sampleRate / 16, which equates to refresh.processInputs()
+		// Groups (slow value updates)
+		if ((refresh.refreshCounter & 0x3) == 0) {
+			groups[((refresh.refreshCounter >> 2) & 0x3)].updateSlowValues();// a given group gets updated at sampleRate / 16, which equates to refresh.processInputs()
+		}
+		// Aux (slow value updates)
+		else if ((refresh.refreshCounter & 0x3) == 1 && auxExpanderPresent) {
+			aux[((refresh.refreshCounter >> 2) & 0x3)].updateSlowValues();// a given aux return gets updated at sampleRate / 16, which equates to refresh.processInputs()
+		}
+		//		
+		if (refresh.processInputs()) {// succeeds at sampleRate / 16
+			// solo bits
+			gInfo.updateSoloBitMask();
+			if (auxExpanderPresent) {
+				gInfo.updateReturnSoloBits();
+			}
 			
-			// Tracks
-			gInfo.updateSoloBit(trackToProcess);
-			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
-			// Groups/Aux
-			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
-				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
-				groups[trackToProcess >> 2].updateSlowValues();
-				if (auxExpanderPresent) {
-					gInfo.updateReturnSoloBits();
-					aux[trackToProcess >> 2].updateSlowValues();
-				}
-			}
 			// Master
-			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
-				master.updateSlowValues();
-			}
+			master.updateSlowValues();// master gets updated at sampleRate / 16
 			
 			// EQ Expander message bus test
 			// Message<Payload> *message = messages->receive("1");	
@@ -297,8 +298,8 @@ struct MixMaster : Module {
 			// }
 			
 		}// userInputs refresh
-		
-		
+
+	
 		
 		//********** Outputs **********
 

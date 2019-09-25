@@ -46,8 +46,8 @@ struct RefreshCounter {
 	// of module::process()
 	static const unsigned int displayRefreshStepSkips = 256;// 
 	static const unsigned int userInputsStepSkipMask = 0xF;// sub interval of displayRefreshStepSkips, since inputs should be more responsive than lights
-	// above value should make it such that inputs are sampled > 1kHz so as to not miss 1ms triggers
-	// 256, 0xF will give input sampled at 2756 Hz and lights at 172 Hz
+	// above values should make it such that inputs are sampled > 1kHz so as to not miss 1ms triggers
+	// values of 256 and 0xF respectively will give input sampled at 2756 Hz and lights at 172 Hz (when 44.1 kHz)
 	
 	unsigned int refreshCounter = (random::u32() % displayRefreshStepSkips);// stagger start values to avoid processing peaks when many Geo, MMM and Impromptu modules in the patch
 	
