@@ -281,6 +281,8 @@ struct MixMaster : Module {
 		}
 		//		
 		if (refresh.processInputs()) {// succeeds at sampleRate / 16
+			// Slow value refresh of tracks, groups and aux returns is done outside this block to spread the load
+			
 			// solo bits
 			gInfo.updateSoloBitMask();
 			if (auxExpanderPresent) {

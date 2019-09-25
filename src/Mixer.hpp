@@ -598,7 +598,7 @@ struct MixerMaster {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask)/* * 4.0f*/;// last value is sub refresh in master
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask);// last value is sub refresh in master
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -880,7 +880,7 @@ struct MixerGroup {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask)/* * 16.0f*/;// last value is sub refresh in master (same as tracks in this case)
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask);// last value is sub refresh in master
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -1316,7 +1316,7 @@ struct MixerTrack {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask)/* * 16.0f*/;// last value is sub refresh in master (number of tracks in this case)
+				float deltaX = (gInfo->sampleTime / fadeRate) * (float)(1 + RefreshCounter::userInputsStepSkipMask);// last value is sub refresh in master
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}

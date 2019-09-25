@@ -353,7 +353,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 		// cv pointer (draw only when cv has en effect)
 		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f) {// -1.0f indicates not to show cv pointer
 			float cvPosNormalized = *srcParamWithCV / maxTFader;
-			float vertPos = box.size.y - box.size.y * cvPosNormalized ;// in px
+			float vertPos = box.size.y - box.size.y * cvPosNormalized;// in px
 			nvgBeginPath(args.vg);
 			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
 			nvgLineTo(args.vg, box.size.x, vertPos);
@@ -367,8 +367,15 @@ struct CvAndFadePointerBase : OpaqueWidget {
 		}
 		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
 		if (srcFadeGain != NULL && *srcFadeRate >= minFadeRate && *srcFadeGain < 1.0f) {
-			float fadePosNormalized = srcParam->getValue() / maxTFader;
-			float vertPos = box.size.y - box.size.y * (*srcFadeGain) * fadePosNormalized ;// in px
+			float fadePosNormalized;
+			if (srcParamWithCV == NULL || *srcParamWithCV == -1.0f) {
+				fadePosNormalized = srcParam->getValue();
+			}
+			else {
+				fadePosNormalized = *srcParamWithCV;
+			}
+			fadePosNormalized /= maxTFader;
+			float vertPos = box.size.y - box.size.y * fadePosNormalized * (*srcFadeGain);// in px
 			nvgBeginPath(args.vg);
 			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
 			nvgLineTo(args.vg, box.size.x, vertPos);
