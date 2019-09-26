@@ -657,13 +657,13 @@ struct MixerMaster {
 		}
 		
 		// Calc master gain with slewer
-		simd::float_4 gains = gainMatrix * slowGain;
-		if (movemask(gains == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gains = gainMatrixSlewers.process(gInfo->sampleTime, gains);
+		simd::float_4 gainMatrixSlewed = gainMatrix * slowGain;
+		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
 		}
 		
-		// Test for all gains equal to 0
-		if (movemask(gains == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
+		// Test for all gainMatrixSlewed equal to 0
+		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
 			mix[0] = 0.0f;	
 			mix[1] = 0.0f;
 		}
@@ -678,9 +678,9 @@ struct MixerMaster {
 				}
 			}
 
-			// Apply gains
+			// Apply gainMatrixSlewed
 			simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
-			sigs = sigs * gains;
+			sigs = sigs * gainMatrixSlewed;
 			
 			// Set mix
 			mix[0] = sigs[0] + sigs[2];
@@ -974,7 +974,7 @@ struct MixerGroup {
 			taps[17] = sigs[1] + sigs[3];
 			
 			// Calc muteSoloGainSlewed
-			float muteSoloGainSlewed = fadeGain;// solo not actually in here but in groups
+			float muteSoloGainSlewed = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);// solo not actually in here but in groups
 			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
 				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
 			}
@@ -1505,7 +1505,7 @@ struct MixerTrack {
 			taps[65] = sigs[1] + sigs[3];
 
 			// Calc muteSoloGainSlewed
-			float muteSoloGainSlewed = calcSoloGain() * fadeGain;
+			float muteSoloGainSlewed = calcSoloGain() * std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
 				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
 			}
