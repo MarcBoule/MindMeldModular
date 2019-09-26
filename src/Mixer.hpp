@@ -583,23 +583,18 @@ struct MixerMaster {
 		setupDcBlocker();
 	}
 
-	void calcPanMatrix() {
+	// Contract: 
+	//  * calc gainMatrix
+	//  * calc chainGains
+	void updateSlowValues() {
 		// calc ** gainMatrix **
-		gainMatrix = simd::float_4::zero();
 		// mono
 		if ((params[MAIN_MONO_PARAM].getValue() + inMuteDimMono->getVoltage(10) * 0.1f) > 0.5f) {
 			gainMatrix = simd::float_4(0.5f);
 		}
 		else {
-			gainMatrix[0] = gainMatrix[1] = 1.0f;
+			gainMatrix = simd::float_4(1.0f, 1.0f, 0.0f, 0.0f);
 		}
-	}
-
-	// Contract: 
-	//  * calc gainMatrix
-	//  * calc chainGains
-	void updateSlowValues() {
-		calcPanMatrix();// this one can be in slow, since not a continuous value (so don't need audio rate in its computation)
 		
 		// calc ** chainGains **
 		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
@@ -610,10 +605,8 @@ struct MixerMaster {
 	// Contract: 
 	//  * calc fadeGain
 	//  * calc paramWithCV
-	//  * calc mix[] and vu
-	void process(float *mix) {// takes mix[0..1] and redeposits post in same place, since don't need pre
-		// no optimization of mix[0..1] == {0, 0}, since it could be a zero crossing of a mono source!
-		
+	//  * calc mix[0..1] and vu
+	void process(float *mix) {// takes mix[0..1] and redeposits post in same place
 		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
 		float gainsC[2] = {chainGains[0], chainGains[1]};
 		for (int i = 0; i < 2; i++) {
@@ -797,7 +790,6 @@ struct MixerGroup {
 
 	// no need to save, with reset
 	private:
-	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
 	public:
@@ -866,33 +858,6 @@ struct MixerGroup {
 	}
 	
 	
-	void calcPanMatrix() {
-		// calc ** gainMatrix **
-		gainMatrix = simd::float_4::zero();
-		// panning
-		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
-		if (pan == 0.5f) {
-			gainMatrix[1] = 1.0f;
-			gainMatrix[0] = 1.0f;
-		}
-		else {
-			pan = clamp(pan, 0.0f, 1.0f);
-			// implicitly stereo for groups
-			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
-			if (stereoBalance) {
-				// Stereo balance (+3dB), same as mono equal power
-				gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-				gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-			}
-			else {
-				// True panning, equal power
-				gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-				gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-				gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-				gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
-			}
-		}		
-	}
 	
 	// Contract: 
 	//  * process linked
@@ -957,9 +922,34 @@ struct MixerGroup {
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
 		
+		// panning
+		simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
+		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+		if (pan == 0.5f) {
+			gainMatrix[1] = slowGain;
+			gainMatrix[0] = slowGain;
+		}
+		else {
+			pan = clamp(pan, 0.0f, 1.0f);
+			// implicitly stereo for groups
+			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
+			if (stereoBalance) {
+				// Stereo balance (+3dB), same as mono equal power
+				gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+			}
+			else {
+				// True panning, equal power
+				gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+				gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+			}
+			gainMatrix *= slowGain;
+		}				
+		
 		// Calc group gains with slewer
-		calcPanMatrix(); // calcs gainMatrix
-		simd::float_4 gainMatrixSlewed = gainMatrix * slowGain;
+		simd::float_4 gainMatrixSlewed = gainMatrix;
 		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
 		}
@@ -1090,7 +1080,6 @@ struct MixerTrack {
 	// no need to save, with reset
 	private:
 	bool stereo;// pan coefficients use this, so set up first
-	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 	float inGain;
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter inGainSlewer;
@@ -1284,57 +1273,6 @@ struct MixerTrack {
 		setLPFCutoffFreq(lpfCutoffFreq);
 	}
 
-	void calcPanMatrix() {
-		// calc gainMatrix
-		gainMatrix = simd::float_4::zero();
-		// panning
-		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
-		if (pan == 0.5f) {
-			if (!stereo) gainMatrix[3] = 1.0f;
-			else gainMatrix[1] = 1.0f;
-			gainMatrix[0] = 1.0f;
-		}
-		else {
-			pan = clamp(pan, 0.0f, 1.0f);		
-			if (!stereo) {// mono
-				if (gInfo->panLawMono == 1) {
-					// Equal power panning law (+3dB boost)
-					gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
-					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-				}
-				else if (gInfo->panLawMono == 0) {
-					// No compensation (+0dB boost)
-					gainMatrix[3] = std::min(1.0f, pan * 2.0f);
-					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
-				}
-				else if (gInfo->panLawMono == 2) {
-					// Compromise (+4.5dB boost)
-					gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-					gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
-				}
-				else {
-					// Linear panning law (+6dB boost)
-					gainMatrix[3] = pan * 2.0f;
-					gainMatrix[0] = 2.0f - gainMatrix[3];
-				}
-			}
-			else {// stereo
-				bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
-				if (stereoBalance) {
-					// Stereo balance (+3dB), same as mono equal power
-					gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-				}
-				else {
-					// True panning, equal power
-					gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-					gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-					gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-					gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
-				}
-			}
-		}
-	}
 	
 	// Contract: 
 	//  * update group usage
@@ -1484,9 +1422,60 @@ struct MixerTrack {
 		// scaling
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		
+
+		// calc gainMatrix
+		simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)
+		// panning
+		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+		if (pan == 0.5f) {
+			if (!stereo) gainMatrix[3] = slowGain;
+			else gainMatrix[1] = slowGain;
+			gainMatrix[0] = slowGain;
+		}
+		else {
+			pan = clamp(pan, 0.0f, 1.0f);		
+			if (!stereo) {// mono
+				if (gInfo->panLawMono == 1) {
+					// Equal power panning law (+3dB boost)
+					gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
+					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				}
+				else if (gInfo->panLawMono == 0) {
+					// No compensation (+0dB boost)
+					gainMatrix[3] = std::min(1.0f, pan * 2.0f);
+					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+				}
+				else if (gInfo->panLawMono == 2) {
+					// Compromise (+4.5dB boost)
+					gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+					gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+				}
+				else {
+					// Linear panning law (+6dB boost)
+					gainMatrix[3] = pan * 2.0f;
+					gainMatrix[0] = 2.0f - gainMatrix[3];
+				}
+			}
+			else {// stereo
+				bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
+				if (stereoBalance) {
+					// Stereo balance (+3dB), same as mono equal power
+					gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				}
+				else {
+					// True panning, equal power
+					gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+					gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+					gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+					gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+				}
+			}
+			gainMatrix *= slowGain;
+		}
+
 		// Calc gainMatrixSlewed
-		calcPanMatrix(); // calcs gainMatrix
-		simd::float_4 gainMatrixSlewed = gainMatrix * slowGain;
+		simd::float_4 gainMatrixSlewed = gainMatrix;
 		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
 		}

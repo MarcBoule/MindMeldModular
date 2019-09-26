@@ -265,7 +265,7 @@ struct DynSmallKnobGrey : DynKnob {
 
 struct DynKnobWithArc : DynKnob {
 	NVGcolor arcColor;
-	static constexpr float arcThickness = 2.0f;
+	static constexpr float arcThickness = 1.6f;
 	static constexpr float a0 = 3.0f * M_PI / 2.0f;
 	
 	DynKnobWithArc() {
@@ -280,7 +280,7 @@ struct DynKnobWithArc : DynKnob {
 				if (normalizedParam != 0.5f) {
 					float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
 					Vec cVec = box.size.div(2.0f);
-					float r = box.size.x / 2.0f + 2.6f;// arc radius
+					float r = box.size.x / 2.0f + 2.25f;// arc radius
 					int dir = a0 < a1 ? NVG_CW : NVG_CCW;
 					nvgBeginPath(args.vg);
 					nvgLineCap(args.vg, NVG_ROUND);
@@ -295,7 +295,7 @@ struct DynKnobWithArc : DynKnob {
 					float aa0 = minAngle - M_PI_2;
 					float aa1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
 					Vec cVec = box.size.div(2.0f);
-					float r = box.size.x / 2.0f + 2.6f;// arc radius
+					float r = box.size.x / 2.0f + 2.25f;// arc radius
 					nvgBeginPath(args.vg);
 					nvgLineCap(args.vg, NVG_ROUND);
 					nvgArc(args.vg, cVec.x, cVec.y, r, aa0, aa1, NVG_CW);

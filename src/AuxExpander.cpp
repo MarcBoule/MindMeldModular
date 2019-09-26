@@ -612,8 +612,8 @@ struct AuxExpanderWidget : ModuleWidget {
 		}
 
 		// Right side (individual groups)
-		static constexpr float redO = 4.2f;
-		static constexpr float redOx = 0.55f;
+		static constexpr float redO = 3.85f;
+		static constexpr float redOx = 0.58f;
 		for (int i = 0; i < 2; i++) {
 			// Labels for groups 1 to 2
 			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 4.7))));
@@ -659,26 +659,28 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));
 		}
 		
+		static constexpr float cvx = 198.6f;
+		
 		// CV inputs A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 1)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 2)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 3)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 1)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 2)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 3)), true, module, AuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
 		
 		// CV input M
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 4)), true, module, AuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 4)), true, module, AuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input grp A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 5)), true, module, AuxExpander::POLY_GRPS_AD_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 5)), true, module, AuxExpander::POLY_GRPS_AD_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input M grp
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 6)), true, module, AuxExpander::POLY_GRPS_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), true, module, AuxExpander::POLY_GRPS_M_CV_INPUT, module ? &module->panelTheme : NULL));	
 		
 		// CV input bus send, pan, return
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 7)), true, module, AuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 7)), true, module, AuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 		// CV input bus mute, solo
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(204.62, 13.8 + 10.85 * 8)), true, module, AuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 8)), true, module, AuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 	}
 	

@@ -7,12 +7,12 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   viewBox="0 0 30.23622 30.23622"
+   viewBox="0 0 28.346456 28.346456"
    version="1.1"
    id="svg14"
    sodipodi:docname="knob-auxD.svg"
-   width="8mm"
-   height="8mm"
+   width="7.5mm"
+   height="7.5mm"
    inkscape:version="0.92.2 5c3e80d, 2017-08-06">
   <metadata
      id="metadata18">
@@ -42,7 +42,7 @@
      inkscape:document-units="mm"
      units="mm"
      inkscape:zoom="10.405644"
-     inkscape:cx="11.34"
+     inkscape:cx="-5.9583047"
      inkscape:cy="11.34"
      inkscape:window-x="0"
      inkscape:window-y="0"
@@ -58,7 +58,7 @@
   <g
      id="Layer_2"
      data-name="Layer 2"
-     transform="matrix(1.3331666,0,0,1.3331666,1.1688936e-4,-9.002861e-5)">
+     transform="matrix(1.2498437,0,0,1.2498437,8.7656068e-5,-6.8223498e-5)">
     <g
        id="Send_Knobs"
        data-name="Send Knobs">
