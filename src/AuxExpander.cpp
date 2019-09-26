@@ -363,14 +363,14 @@ struct AuxExpander : Module {
 			int refreshCounter20 = refreshCounter80 % 20;
 			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
 			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
-			if (refreshCounter20 < 4) {
+			if (refreshCounter20 < 4) {// TODO: no longer needed, remove from values20 !!!!!!!!!!!!!!!!!
 				// cv for pan
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
 					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;// Pan CV is a -5V to +5V input
 					val = clamp(val, 0.0f, 1.0f);
 				}
 			}
-			else if (refreshCounter20 < 8) {
+			else if (refreshCounter20 < 8) {// TODO: no longer needed, remove from values20 !!!!!!!!!!!!!!!!!
 				// cv for return fader
 				bool isConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
 						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (4 + refreshCounter20 + 1));
@@ -405,6 +405,36 @@ struct AuxExpander : Module {
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
 			memcpy(&messagesToMother[MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
 			memcpy(&messagesToMother[MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
+			
+			// aux return pan
+			for (int i = 0; i < 4; i++) {
+				val = params[GLOBAL_AUXPAN_PARAMS + i].getValue();
+				// cv for pan
+				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
+					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f;// Pan CV is a -5V to +5V input
+					val = clamp(val, 0.0f, 1.0f);
+				}
+				messagesToMother[MFA_AUX_RET_PAN + i] = val;
+			}
+			
+			// aux return fader
+			for (int i = 0; i < 4; i++) {
+				val = params[GLOBAL_AUXPAN_PARAMS + 4 + i].getValue();
+				// cv for return fader
+				bool isConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
+						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (8 + i + 1));
+				float volCv = isConnected ? inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) : 10.0f;
+				if (volCv < 10.0f) {
+					val *= clamp(volCv * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+					paramWithCV[i] = val;
+				}
+				else {
+					paramWithCV[i] = -1.0f;// do not show cv pointer
+				}
+				// scaling
+				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
+				messagesToMother[MFA_AUX_RET_FADER + i] = val;
+			}
 			
 			refreshCounter80++;
 			if (refreshCounter80 >= 80) {

@@ -46,6 +46,7 @@ struct MixMaster : Module {
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
+	float *auxRetFadePan;// index into correct page of messages from expander (avoid having separate buffers)
 	uint32_t auxSendMuteGroupedReturn;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
@@ -253,6 +254,7 @@ struct MixMaster : Module {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
 			auxReturns = &messagesFromExpander[MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			auxRetFadePan = &messagesFromExpander[MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
 			
 			int value80i = clamp((int)(messagesFromExpander[MFA_VALUE80_INDEX]), 0, 79);
 			values80[value80i] = messagesFromExpander[MFA_VALUE80];
@@ -351,7 +353,7 @@ struct MixMaster : Module {
 				int auxGroup = aux[i].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[i].process(&groupTaps[auxGroup << 1]);
+					aux[i].process(&groupTaps[auxGroup << 1], &auxRetFadePan[i]);
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
 						auxSendMuteGroupedReturn |= (0x1 << ((auxGroup << 2) + i));
 					}
@@ -378,7 +380,7 @@ struct MixMaster : Module {
 			// Aux returns when no group
 			for (int i = 0; i < 4; i++) {
 				if (aux[i].getAuxGroup() == 0) {
-					aux[i].process(mix);
+					aux[i].process(mix, &auxRetFadePan[i]);
 				}
 			}
 		}

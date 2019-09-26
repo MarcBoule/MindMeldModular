@@ -91,6 +91,8 @@ enum MotherFromAuxIds { // for expander messages from aux panel to main
 	MFA_VALUE20,
 	MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
 	MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
+	ENUMS(MFA_AUX_RET_FADER, 4),
+	ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
 	MFA_NUM_VALUES
 };
 
@@ -854,6 +856,8 @@ struct MixerGroup {
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 		vu.reset();
+		fadeGain = calcFadeGain();
+		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
 	}
 	
@@ -1092,7 +1096,6 @@ struct MixerTrack {
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float paramWithCV;
-	float target = -1.0f;
 
 	// no need to save, no reset
 	int trackNum;
@@ -1109,6 +1112,7 @@ struct MixerTrack {
 	Param *paSolo;
 	Param *paPan;
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+	float target = -1.0f;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
@@ -1164,7 +1168,10 @@ struct MixerTrack {
 		inGainSlewer.reset();
 		muteSoloGainSlewer.reset();
 		vu.reset();
+		fadeGain = calcFadeGain();
+		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
+		target = -1;
 	}
 	
 	
@@ -1625,7 +1632,6 @@ struct MixerAux {
 
 	// no need to save, with reset
 	private:
-	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
 	float muteSoloGain; // value of the mute/fade * solo_enable
@@ -1636,8 +1642,8 @@ struct MixerAux {
 	std::string ids;
 	GlobalInfo *gInfo;
 	Input *inInsert;
-	float *flPan;
-	float *flFade;
+	//float *flPan;
+	//float *flFade;
 	float *flMute;
 	float *flSolo0;
 	float *flGroup;
@@ -1653,8 +1659,8 @@ struct MixerAux {
 		ids = "id_a" + std::to_string(auxNum) + "_";
 		gInfo = _gInfo;
 		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-		flPan = &_val20[auxNum + 0];
-		flFade = &_val20[auxNum + 4];
+		//flPan = &_val20[auxNum + 0];
+		//flFade = &_val20[auxNum + 4];
 		flMute = &_val20[auxNum + 8];
 		flGroup = &_val20[auxNum + 16];
 		taps = _taps;
@@ -1677,7 +1683,6 @@ struct MixerAux {
 	
 	// Contract: 
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
-	//  * calc gainMatrix (computes fader-pan gain, for fader-pan block, quad float)
 	void updateSlowValues() {
 		// calc ** muteSoloGain **
 		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
@@ -1688,16 +1693,41 @@ struct MixerAux {
 			muteSoloGain = 0.0f;
 		}
 		
-		// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
-		float slowGain = *flFade; // TODO this needs to be done at sample rate
 		
 		// scaling 
 		// done in auxspander
-
+	}
+	
+	// Contract: 
+	//  * calc all but the first taps[], calc insertOuts[] and vu
+	//  * add final tap to mix[0..1]
+	void process(float *mix, float *auxRetFadePan) {
+		// Tap[0],[1]: pre-insert (aux inputs)
+		// nothing to do, already set up by the auxspander
+		// auxRetFadePan[0] points fader value, auxRetFadePan[0] points pan value, all indexed for a given aux
+		
+		// Insert outputs
+		insertOuts[0] = taps[0];
+		insertOuts[1] = taps[1];
+				
+		// Tap[8],[9]: pre-fader (post insert)
+		if (inInsert->isConnected()) {
+			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
+			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
+		}
+		else {
+			taps[8] = taps[0];
+			taps[9] = taps[1];
+		}
+		
+		// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
+		float slowGain = *auxRetFadePan; 
+		
+		
 		// calc ** gainMatrix **
-		gainMatrix = simd::float_4::zero();
+		simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)	
 		// panning
-		float pan = *flPan;// cv input and clamping already done in auxspander
+		float pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
@@ -1718,28 +1748,6 @@ struct MixerAux {
 				gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 			}
 			gainMatrix *= slowGain;
-		}
-	}
-	
-	// Contract: 
-	//  * calc all but the first taps[], calc insertOuts[] and vu
-	//  * add final tap to mix[0..1]
-	void process(float *mix) {
-		// Tap[0],[1]: pre-insert (aux inputs)
-		// nothing to do, already set up by the auxspander
-		
-		// Insert outputs
-		insertOuts[0] = taps[0];
-		insertOuts[1] = taps[1];
-				
-		// Tap[8],[9]: pre-fader (post insert)
-		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
-			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
-		}
-		else {
-			taps[8] = taps[0];
-			taps[9] = taps[1];
 		}
 		
 		// Calc group gains with slewer
