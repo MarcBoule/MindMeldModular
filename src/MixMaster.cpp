@@ -252,7 +252,7 @@ struct MixMaster : Module {
 			auxReturns = &messagesFromExpander[MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
 			auxRetFadePan = &messagesFromExpander[MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
 						
-			int value12i = clamp((int)(messagesFromExpander[MFA_VALUE12_INDEX]), 0, 19);
+			int value12i = clamp((int)(messagesFromExpander[MFA_VALUE12_INDEX]), 0, 11);// mute, solo, group for aux returns
 			values12[value12i] = messagesFromExpander[MFA_VALUE12];
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
@@ -354,7 +354,7 @@ struct MixMaster : Module {
 			}
 		}
 		
-		// Groups
+		// Groups (at this point, all groups's tap0 are setup and ready)
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
 		}
@@ -460,20 +460,25 @@ struct MixMaster : Module {
 		// Aux sends (send track and group audio (16+4 stereo signals) to auxspander
 		// auxSends[] has room for 16+4 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
-		// tracks
-		for (int trk = 0; trk < 16; trk++) {
-			//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should have aux sends even when grouped
-			int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : tracks[trk].auxSendsMode;
-			tapIndex <<= 5;
-			auxSends[(trk << 1) + 0] = trackTaps[tapIndex + (trk << 1) + 0];
-			auxSends[(trk << 1) + 1] = trackTaps[tapIndex + (trk << 1) + 1];
+		
+		if (gInfo.auxSendsMode < 4) {
+			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << 5], 32 * 4);
+			memcpy(&auxSends[32], &groupTaps[gInfo.auxSendsMode << 3], 8 * 4);
 		}
-		// groups
-		for (int grp = 0; grp < 4; grp++) {
-			int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : groups[grp].auxSendsMode;
-			tapIndex <<= 3;
-			auxSends[(grp << 1) + 32] = groupTaps[tapIndex + (grp << 1) + 0];
-			auxSends[(grp << 1) + 33] = groupTaps[tapIndex + (grp << 1) + 1];
+		else {
+			// tracks
+			for (int trk = 0; trk < 16; trk++) {
+				//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should have aux sends even when grouped
+				int tapIndex = (tracks[trk].auxSendsMode << 5);
+				auxSends[(trk << 1) + 0] = trackTaps[tapIndex + (trk << 1) + 0];
+				auxSends[(trk << 1) + 1] = trackTaps[tapIndex + (trk << 1) + 1];
+			}
+			// groups
+			for (int grp = 0; grp < 4; grp++) {
+				int tapIndex = (groups[grp].auxSendsMode << 3);
+				auxSends[(grp << 1) + 32] = groupTaps[tapIndex + (grp << 1) + 0];
+				auxSends[(grp << 1) + 33] = groupTaps[tapIndex + (grp << 1) + 1];
+			}
 		}
 	}
 	

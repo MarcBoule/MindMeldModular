@@ -1300,9 +1300,9 @@ struct MixerTrack {
 	
 	
 	// Contract: 
-	//  * calc taps[], insertOuts[] and vu
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
 	//  * calc paramWithCV
+	//  * calc taps[], insertOuts[] and vu
 	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
 	void process(float *mix) {
 		// calc ** fadeGain ** (does mute also) ALWAYS DO THIS even if no track connected
