@@ -636,13 +636,12 @@ struct MixerMaster {
 
 		// calc ** paramWithCV **
 		float slowGain = params[MAIN_FADER_PARAM].getValue();
-		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
-		if (volCv < 10.0f) {
-			slowGain *= clamp(volCv * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+		if (inVol->isConnected()) {
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
 			paramWithCV = slowGain;
 		}
 		else {
-			paramWithCV = -1.0f;// do not show cv pointer
+			paramWithCV = -1.0f;
 		}
 		
 		// mute/fade
@@ -910,15 +909,14 @@ struct MixerGroup {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
-		// calc ** calc paramWithCV **
+		// calc ** paramWithCV **
 		float slowGain = paFade->getValue();
-		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
-		if (volCv < 10.0f) {
-			slowGain *= clamp(volCv * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+		if (inVol->isConnected()) {
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
 			paramWithCV = slowGain;
 		}
 		else {
-			paramWithCV = -1.0f;// do not show cv pointer
+			paramWithCV = -1.0f;
 		}
 		
 		// scaling
@@ -1307,7 +1305,33 @@ struct MixerTrack {
 	//  * calc paramWithCV
 	//  * when track in use, add final tap to mix[] according to group
 	void process(float *mix) {
-		int insertPortIndex = trackNum >> 3;
+		// calc ** fadeGain ** (does mute also) ALWAYS DO THIS even if no track connected
+		if (fadeRate >= minFadeRate) {// if we are in fade mode
+			float newTarget = calcFadeGain();
+			if (!gInfo->symmetricalFade && newTarget != target) {
+				fadeGainX = 0.0f;
+			}
+			target = newTarget;
+			if (fadeGain != target) {
+				float deltaX = (gInfo->sampleTime / fadeRate);
+				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
+			}
+		}
+		else {// we are in mute mode
+			fadeGain = calcFadeGain();
+			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		}
+
+		// calc ** paramWithCV **
+		float slowGain = paFade->getValue();
+		if (inVol->isConnected()) {
+			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+			paramWithCV = slowGain;
+		}
+		else {
+			paramWithCV = -1.0f;
+		}
+
 
 		// optimize unused track
 		bool inUse = inSig[0].isConnected();
@@ -1339,6 +1363,8 @@ struct MixerTrack {
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
 		taps[0] = (inSig[0].getVoltage() * inGainSlewed);
 		taps[1] = stereo ? (inSig[1].getVoltage() * inGainSlewed) : taps[0];
+		
+		int insertPortIndex = trackNum >> 3;
 		
 		if (gInfo->filterPos == 1 || (gInfo->filterPos == 2 && filterPos == 1)) {
 			// Insert outputs
@@ -1397,34 +1423,6 @@ struct MixerTrack {
 			}
 		}// filterPos
 		
-		
-		// calc ** fadeGain ** (does mute also)
-		if (fadeRate >= minFadeRate) {// if we are in fade mode
-			float newTarget = calcFadeGain();
-			if (!gInfo->symmetricalFade && newTarget != target) {
-				fadeGainX = 0.0f;
-			}
-			target = newTarget;
-			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate);
-				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-			}
-		}
-		else {// we are in mute mode
-			fadeGain = calcFadeGain();
-			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		}
-
-		// calc ** paramWithCV **
-		float slowGain = paFade->getValue();
-		float volCv = inVol->isConnected() ? inVol->getVoltage() : 10.0f;
-		if (volCv < 10.0f) {
-			slowGain *= clamp(volCv * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-			paramWithCV = slowGain;
-		}
-		else {
-			paramWithCV = -1.0f;
-		}
 		
 		// scaling
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
