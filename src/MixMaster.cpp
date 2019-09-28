@@ -361,7 +361,7 @@ struct MixMaster : Module {
 		
 		// Aux
 		if (auxExpanderPresent) {
-			memcpy(auxTaps, auxReturns, 8 * 4);// TODO: change memory layout so that this is not necessary		
+			memcpy(auxTaps, auxReturns, 8 * 4);		
 			
 			// Mute tracks/groups when soloing aux returns
 			float newMuteTrackWhenSoloAuxRet = (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0) ? 0.0f : 1.0f;

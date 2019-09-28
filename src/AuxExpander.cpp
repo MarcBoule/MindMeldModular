@@ -12,7 +12,7 @@
 struct AuxExpander : Module {
 	enum ParamIds {
 		ENUMS(TRACK_AUXSEND_PARAMS, 16 * 4), // trk 1 aux A, trk 1 aux B, ... 
-		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// must be contiguous with TRACK_AUXSEND_PARAMS. Mapping: 1A, 2A, 3A, 4A, 1B, etc
+		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// Mapping: 1A, 2A, 3A, 4A, 1B, etc
 		ENUMS(TRACK_AUXMUTE_PARAMS, 16),
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
@@ -75,6 +75,9 @@ struct AuxExpander : Module {
 	float maxAGIndivSendFader;
 	float maxAGGlobSendFader;
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
+	//float values80[80];
+	float mutes[20];
+	float globalSends[4];
 
 	
 	AuxExpander() {
@@ -283,7 +286,6 @@ struct AuxExpander : Module {
 			
 			// Prepare values used to compute aux sends
 			//   Global aux send knobs (4 instances)
-			float globalSends[4];
 			for (int gi = 0; gi < 4; gi++) {
 				float val = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
@@ -295,7 +297,6 @@ struct AuxExpander : Module {
 				globalSends[gi] = val;
 			}
 			//   Indiv mute sends with cvs (20 instances)
-			float mutes[20];
 			for (int gi = 0; gi < 20; gi++) {
 				float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
 				if (gi < 16) {
@@ -319,38 +320,7 @@ struct AuxExpander : Module {
 					sendMuteSlewers[i].process(args.sampleTime, mutes[i]);
 				}
 			}
-			//   calc all 80 send values
-			float values80[80];
-			for (int i80 = 0; i80 < 80; i80++) {
-				float val = params[TRACK_AUXSEND_PARAMS + i80].getValue();
-				if (i80 < 64) {
-					// 64 individual track aux send knobs
-					int inputNum = POLY_AUX_AD_CV_INPUTS + (i80 &0x3);
-					if (inputs[inputNum].isConnected()) {
-						// Knob CV (adding, pre-scaling)
-						val += inputs[inputNum].getVoltage(i80 >> 2) * 0.1f * maxAGIndivSendFader;
-						val = clamp(val, 0.0f, maxAGIndivSendFader);
-					}
-				}
-				else {
-					// 16 individual group aux send knobs
-					if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-						// Knob CV (adding, pre-scaling)
-						int cvIndex = i80 & 0xF;
-						cvIndex = ((cvIndex >> 2) | ((cvIndex << 2) & 0xF));
-						val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
-						val = clamp(val, 0.0f, maxAGIndivSendFader);
-					}
-				}
-				val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-				val *= globalSends[i80 & 0x3] * sendMuteSlewers[i80 >> 2].out;
-				values80[i80] = val;
-			}
-
-
-
-			
-			
+	
 			
 			float* auxSendsTrkGrp = &messagesFromMother[AFM_AUX_SENDS];// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
 			// populate auxSends[0..7]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
@@ -358,16 +328,38 @@ struct AuxExpander : Module {
 			// accumulate tracks
 			for (int trk = 0; trk < 16; trk++) {
 				for (int auxi = 0; auxi < 4; auxi++) {
-					auxSends[(auxi << 1) + 0] += values80[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 0];
-					auxSends[(auxi << 1) + 1] += values80[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 1];
+					// 64 individual track aux send knobs
+					float val = params[TRACK_AUXSEND_PARAMS + (trk << 2) + auxi].getValue();
+					int inputNum = POLY_AUX_AD_CV_INPUTS + auxi;
+					if (inputs[inputNum].isConnected()) {
+						// Knob CV (adding, pre-scaling)
+						val += inputs[inputNum].getVoltage(trk) * 0.1f * maxAGIndivSendFader;
+						val = clamp(val, 0.0f, maxAGIndivSendFader);
+					}
+					val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
+					val *= globalSends[auxi] * sendMuteSlewers[trk].out;
+					// vca the aux send knob with the track's sound
+					auxSends[(auxi << 1) + 0] += val * auxSendsTrkGrp[(trk << 1) + 0];
+					auxSends[(auxi << 1) + 1] += val * auxSendsTrkGrp[(trk << 1) + 1];
 				}
 			}
 			// accumulate groups
 			for (int grp = 0; grp < 4; grp++) {
 				for (int auxi = 0; auxi < 4; auxi++) {
 					if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
-						auxSends[(auxi << 1) + 0] += values80[64 + (grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 32];
-						auxSends[(auxi << 1) + 1] += values80[64 + (grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 33];
+						// 16 individual group aux send knobs
+						float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
+						if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
+							// Knob CV (adding, pre-scaling)
+							int cvIndex = ((auxi << 2) + grp);// not the same order for the CVs
+							val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
+							val = clamp(val, 0.0f, maxAGIndivSendFader);
+						}
+						val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
+						val *= globalSends[auxi] * sendMuteSlewers[16 + grp].out;
+						// vca the aux send knob with the track's sound
+						auxSends[(auxi << 1) + 0] += val * auxSendsTrkGrp[(grp << 1) + 32];
+						auxSends[(auxi << 1) + 1] += val * auxSendsTrkGrp[(grp << 1) + 33];
 					}
 				}
 			}			
