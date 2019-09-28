@@ -337,7 +337,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 	// derived class must setup:
 	// box.size // inherited from OpaqueWidget, no need to declare
 	float faderMaxLinearGain;
-	float faderScalingExponent;
+	int faderScalingExponent;
 	float minFadeRate;
 	
 	// local 

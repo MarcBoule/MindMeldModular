@@ -234,13 +234,13 @@ union PackedBytes4 {
 struct GlobalInfo {
 	
 	// constants
-	static constexpr float trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static const int trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float individualAuxSendScalingExponent = 2.0f; // for example, 3.0f is x^3 scaling
+	static const int individualAuxSendScalingExponent = 2; // for example, 3 is x^3 scaling
 	static constexpr float individualAuxSendMaxLinearGain = 1.0f; // for example, 2.0f is +6 dB
-	static constexpr float globalAuxSendScalingExponent = 2.0f; // for example, 3.0f is x^3 scaling
+	static const int globalAuxSendScalingExponent = 2; // for example, 2 is x^2 scaling
 	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
-	static constexpr float globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static const int globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float antipopSlew = 150.0f;
 	
@@ -491,7 +491,7 @@ struct GlobalInfo {
 
 struct MixerMaster {
 	// Constants
-	static constexpr float masterFaderScalingExponent = 3.0f; 
+	static const int masterFaderScalingExponent = 3; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
 	static constexpr float minFadeRate = 0.1f;
 	

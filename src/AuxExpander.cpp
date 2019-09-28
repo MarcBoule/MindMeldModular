@@ -77,7 +77,7 @@ struct AuxExpander : Module {
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	//float values80[80];
 	float mutes[20];
-	float globalSends[4];
+	simd::float_4 globalSends;
 
 	
 	AuxExpander() {
@@ -287,15 +287,15 @@ struct AuxExpander : Module {
 			// Prepare values used to compute aux sends
 			//   Global aux send knobs (4 instances)
 			for (int gi = 0; gi < 4; gi++) {
-				float val = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
-				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-					// Knob CV (adding, pre-scaling)
-					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(gi) * 0.1f * maxAGGlobSendFader;
-					val = clamp(val, 0.0f, maxAGGlobSendFader);
-				}
-				val = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
-				globalSends[gi] = val;
+				globalSends[gi] = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
 			}
+			if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
+				// Knob CV (adding, pre-scaling)
+				globalSends += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0) * 0.1f * maxAGGlobSendFader;
+				globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
+			}
+			globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
+						
 			//   Indiv mute sends with cvs (20 instances)
 			for (int gi = 0; gi < 20; gi++) {
 				float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
