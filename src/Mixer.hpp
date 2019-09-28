@@ -1102,7 +1102,7 @@ struct MixerTrack {
 	Input *inVol;
 	Input *inPan;
 	Input *inMute;
-	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in mix[2*g..2*g+1]. Always use setter since need to update gInfo!
+	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in groupTaps[2*g..2*g+1]. Always use setter since need to update gInfo!
 	Param *paFade;
 	Param *paMute;
 	Param *paSolo;
@@ -1110,6 +1110,7 @@ struct MixerTrack {
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float target = -1.0f;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
+	float* groupTaps;// [0..1] tap 0 of group 1, [1..2] tap 0 of group 2, etc.
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
 
@@ -1118,7 +1119,7 @@ struct MixerTrack {
 	inline void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
 
-	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _insertOuts) {
+	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts) {
 		trackNum = _trackNum;
 		ids = "id_t" + std::to_string(trackNum) + "_";
 		gInfo = _gInfo;
@@ -1134,6 +1135,7 @@ struct MixerTrack {
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		trackName = _trackName;
 		taps = _taps;
+		groupTaps = _groupTaps;
 		insertOuts = _insertOuts;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		inGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
@@ -1301,7 +1303,7 @@ struct MixerTrack {
 	//  * calc taps[], insertOuts[] and vu
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
 	//  * calc paramWithCV
-	//  * when track in use, add final tap to mix[] according to group
+	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
 	void process(float *mix) {
 		// calc ** fadeGain ** (does mute also) ALWAYS DO THIS even if no track connected
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
@@ -1509,10 +1511,16 @@ struct MixerTrack {
 			taps[96] = taps[64] * muteSoloGainSlewed;
 			taps[97] = taps[65] * muteSoloGainSlewed;
 				
-			// Add to mix since gainMatrixSlewed non zero
-			int groupIndex = (int)(paGroup->getValue() + 0.5f);
-			mix[groupIndex * 2 + 0] += taps[96];
-			mix[groupIndex * 2 + 1] += taps[97];
+			// Add to mix since gainMatrixSlewed can be non zero
+			if (paGroup->getValue() < 0.5f) {
+				mix[0] += taps[96];
+				mix[1] += taps[97];
+			}
+			else {
+				int groupIndex = (int)(paGroup->getValue() - 0.5f);
+				groupTaps[(groupIndex << 1) + 0] += taps[96];
+				groupTaps[(groupIndex << 1) + 1] += taps[97];
+			}
 		}
 		
 		// VUs

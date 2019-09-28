@@ -105,7 +105,7 @@ struct MixMaster : Module {
 
 		gInfo.construct(&params[0], &inputs[0], values12);
 		for (int i = 0; i < 16; i++) {
-			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
+			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupAuxInsertOuts[i << 1]);
@@ -330,15 +330,15 @@ struct MixMaster : Module {
 		
 		//********** Outputs **********
 
-		float mix[10] = {0.0f};// room for main and groups
+		float mix[2] = {0.0f};// room for main (groups will automatically be stored into groups taps 0 by tracks)
+		for (int i = 0; i < 8; i++) {
+			groupTaps[i] = 0.0f;
+		}
 		
 		// Tracks
 		for (int trk = 0; trk < 16; trk++) {
 			tracks[trk].process(mix);
 		}
-		// At this point, mix[0..9] has content
-		memcpy(groupTaps, &mix[2], 8 * 4);// TODO: change memory layout so that this is not necessary
-
 		// Aux return when group
 		if (auxExpanderPresent) {
 			muteAuxSendWhenReturnGrouped = 0;
@@ -358,7 +358,6 @@ struct MixMaster : Module {
 		for (int i = 0; i < 4; i++) {
 			groups[i].process(mix);
 		}
-		// At this point, only mix[0..1] has content
 		
 		// Aux
 		if (auxExpanderPresent) {
