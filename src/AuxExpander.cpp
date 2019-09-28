@@ -17,8 +17,8 @@ struct AuxExpander : Module {
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
 		ENUMS(GLOBAL_AUXPAN_PARAMS, 4),
-		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),// must be contiguous with GLOBAL_AUXPAN_PARAMS
-		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),// must be contiguous with GLOBAL_AUXRETURN_PARAMS
+		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),
+		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),
 		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),// must be contiguous with GLOBAL_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),// must be contiguous with GLOBAL_AUXSOLO_PARAMS
 		NUM_PARAMS
@@ -60,10 +60,8 @@ struct AuxExpander : Module {
 	dsp::SlewLimiter sendMuteSlewers[20];
 	
 	// No need to save, with reset
-	int refreshCounter80;
+	int refreshCounter12;
 	VuMeterAllDual vu[4];
-	float globalSends[4];
-	float mutes[20];
 	float paramWithCV[4];// for cv pointers in aux retrun faders 
 	
 	
@@ -76,7 +74,7 @@ struct AuxExpander : Module {
 	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget	
 	float maxAGIndivSendFader;
 	float maxAGGlobSendFader;
-	uint32_t auxSendMuteGroupedReturn = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
+	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 
 	
 	AuxExpander() {
@@ -179,14 +177,12 @@ struct AuxExpander : Module {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
-		refreshCounter80 = 0;
+		refreshCounter12 = 0;
 		for (int i = 0; i < 4; i++) {
 			vu[i].reset();
-			globalSends[i] = 0.0f;
 			paramWithCV[i] = -1.0f;
 		}
 		for (int i = 0; i < 20; i++) {
-			mutes[i] = 0.0f;
 			sendMuteSlewers[i].reset();
 		}
 	}
@@ -270,9 +266,9 @@ struct AuxExpander : Module {
 					memcpy(&messagesFromMother[AFM_TRACK_MOVE], &tmp, 4);
 				}
 				// Aux send mute when grouped return lights
-				auxSendMuteGroupedReturn = (uint32_t)messagesFromMother[AFM_AUXSENDMUTE_GROUPED_RETURN];
+				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[AFM_AUXSENDMUTE_GROUPED_RETURN];
 				for (int i = 0; i < 16; i++) {
-					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((auxSendMuteGroupedReturn & (1 << i)) != 0 ? 1.0f : 0.0f);
+					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
 				}
 			}
 			
@@ -280,8 +276,105 @@ struct AuxExpander : Module {
 			// Vus handled below outside the block
 						
 			// Aux sends
+			
+			
+			
+			
+			
+			// Prepare values used to compute aux sends
+			//   Global aux send knobs (4 instances)
+			float globalSends[4];
+			for (int gi = 0; gi < 4; gi++) {
+				float val = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
+				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
+					// Knob CV (adding, pre-scaling)
+					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(gi) * 0.1f * maxAGGlobSendFader;
+					val = clamp(val, 0.0f, maxAGGlobSendFader);
+				}
+				val = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
+				globalSends[gi] = val;
+			}
+			//   Indiv mute sends with cvs (20 instances)
+			float mutes[20];
+			for (int gi = 0; gi < 20; gi++) {
+				float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
+				if (gi < 16) {
+					// cv for 16 track send mutes
+					if (inputs[POLY_AUX_M_CV_INPUT].isConnected()) {
+						val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(gi) * 0.1f;
+						// no clamp needed, will do a compare below
+					}
+				}
+				else {
+					// cv for 4 group send mutes
+					if (inputs[POLY_GRPS_M_CV_INPUT].isConnected()) {
+						val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(gi - 16) * 0.1f;
+						// no clamp needed, will do a compare below
+					}
+				}
+				mutes[gi] = (val > 0.5f ? 0.0f : 1.0f);
+			}
+			for (int i = 0; i < 20; i++) {
+				if (sendMuteSlewers[i].out != mutes[i]) {
+					sendMuteSlewers[i].process(args.sampleTime, mutes[i]);
+				}
+			}
+			//   calc all 80 send values
+			float values80[80];
+			for (int i80 = 0; i80 < 80; i80++) {
+				float val = params[TRACK_AUXSEND_PARAMS + i80].getValue();
+				if (i80 < 64) {
+					// 64 individual track aux send knobs
+					int inputNum = POLY_AUX_AD_CV_INPUTS + (i80 &0x3);
+					if (inputs[inputNum].isConnected()) {
+						// Knob CV (adding, pre-scaling)
+						val += inputs[inputNum].getVoltage(i80 >> 2) * 0.1f * maxAGIndivSendFader;
+						val = clamp(val, 0.0f, maxAGIndivSendFader);
+					}
+				}
+				else {
+					// 16 individual group aux send knobs
+					if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
+						// Knob CV (adding, pre-scaling)
+						int cvIndex = i80 & 0xF;
+						cvIndex = ((cvIndex >> 2) | ((cvIndex << 2) & 0xF));
+						val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
+						val = clamp(val, 0.0f, maxAGIndivSendFader);
+					}
+				}
+				val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
+				val *= globalSends[i80 & 0x3] * sendMuteSlewers[i80 >> 2].out;
+				values80[i80] = val;
+			}
+
+
+
+			
+			
+			
+			float* auxSendsTrkGrp = &messagesFromMother[AFM_AUX_SENDS];// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
+			// populate auxSends[0..7]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
+			float auxSends[8] = {0.0f};// send outputs (left A, right A, left B, right B, left C, right C, left D, right D)
+			// accumulate tracks
+			for (int trk = 0; trk < 16; trk++) {
+				for (int auxi = 0; auxi < 4; auxi++) {
+					auxSends[(auxi << 1) + 0] += values80[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 0];
+					auxSends[(auxi << 1) + 1] += values80[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 1];
+				}
+			}
+			// accumulate groups
+			for (int grp = 0; grp < 4; grp++) {
+				for (int auxi = 0; auxi < 4; auxi++) {
+					if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
+						auxSends[(auxi << 1) + 0] += values80[64 + (grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 32];
+						auxSends[(auxi << 1) + 1] += values80[64 + (grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 33];
+					}
+				}
+			}			
+			
+			// Aux send outputs
 			for (int i = 0; i < 8; i++) {
-				outputs[SEND_OUTPUTS + i].setVoltage(messagesFromMother[AFM_AUX_SENDS + i]);// left A, right A, left B, right B, left C, right C, left D, right D
+				outputs[SEND_OUTPUTS + i].setVoltage(auxSends[i]);
 			}			
 						
 			
@@ -295,112 +388,26 @@ struct AuxExpander : Module {
 				messagesToMother[MFA_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();// left A, right A, left B, right B, left C, right C, left D, right D
 			}
 			leftExpander.module->rightExpander.messageFlipRequested = true;
-
-			// values for sends, 80 such values (one at a time)
-			messagesToMother[MFA_VALUE80_INDEX] = (float)refreshCounter80;
-			//   Global aux send knobs (4 instances)
-			if (refreshCounter80 % 20 == 0) {
-				int global4i = refreshCounter80 / 20;
-				float val = params[GLOBAL_AUXSEND_PARAMS + global4i].getValue();
-				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-					// Knob CV (adding, pre-scaling)
-					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(global4i) * 0.1f * maxAGGlobSendFader;
-					val = clamp(val, 0.0f, maxAGGlobSendFader);
-				}
-				val = std::pow(val, GlobalInfo::globalAuxSendScalingExponent);
-				globalSends[global4i] = val;
-			}
-			//   Indiv mute sends with cvs (20 instances)
-			int global20i = (refreshCounter80 >> 2);
-			if (refreshCounter80 % 4 == 0) {
-				float val = params[TRACK_AUXMUTE_PARAMS + global20i].getValue();
-				if (global20i < 16) {
-					// cv for 16 track send mutes
-					if (inputs[POLY_AUX_M_CV_INPUT].isConnected()) {
-						val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(global20i) * 0.1f;
-						// no clamp needed, will do a compare below
-					}
-				}
-				else {
-					// cv for 4 group send mutes
-					if (inputs[POLY_GRPS_M_CV_INPUT].isConnected()) {
-						val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(global20i - 16) * 0.1f;
-						// no clamp needed, will do a compare below
-					}
-				}
-				mutes[global20i] = (val > 0.5f ? 0.0f : 1.0f);
-			}
-			for (int i = 0; i < 20; i++) {
-				if (sendMuteSlewers[i].out != mutes[i]) {
-					sendMuteSlewers[i].process(args.sampleTime, mutes[i]);
-				}
-			}
-			//   calc an 80 send value
-			float val = params[TRACK_AUXSEND_PARAMS + refreshCounter80].getValue();
-			if (refreshCounter80 < 64) {
-				// 64 individual track aux send knobs
-				int inputNum = POLY_AUX_AD_CV_INPUTS + (refreshCounter80 &0x3);
-				if (inputs[inputNum].isConnected()) {
-					// Knob CV (adding, pre-scaling)
-					val += inputs[inputNum].getVoltage(refreshCounter80 >> 2) * 0.1f * maxAGIndivSendFader;
-					val = clamp(val, 0.0f, maxAGIndivSendFader);
-				}
-			}
-			else {
-				// 16 individual group aux send knobs
-				if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-					// Knob CV (adding, pre-scaling)
-					val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(refreshCounter80 & 0xF) * 0.1f * maxAGIndivSendFader;
-					val = clamp(val, 0.0f, maxAGIndivSendFader);
-				}
-			}
-			val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-			// val *= globalSends[refreshCounter80 & 0x3] * mutes[global20i < 16 ? global20i : (16 + (refreshCounter80 & 0x3))];
-			val *= globalSends[refreshCounter80 & 0x3] * sendMuteSlewers[global20i < 16 ? global20i : (16 + (refreshCounter80 & 0x3))].out;
-			messagesToMother[MFA_VALUE80] = val;
 			
-			// values for returns, 20 such values (pan, fader, mute, solo, group) (one at a time)
-			int refreshCounter20 = refreshCounter80 % 20;
-			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
-			val = params[GLOBAL_AUXPAN_PARAMS + refreshCounter20].getValue();
-			if (refreshCounter20 < 4) {// TODO: no longer needed, remove from values20 !!!!!!!!!!!!!!!!!
-				// cv for pan
-				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) * 0.1f;// Pan CV is a -5V to +5V input
-					val = clamp(val, 0.0f, 1.0f);
-				}
-			}
-			else if (refreshCounter20 < 8) {// TODO: no longer needed, remove from values20 !!!!!!!!!!!!!!!!!
-				// cv for return fader
-				bool isConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
-						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (4 + refreshCounter20 + 1));
-				float volCv = isConnected ? inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + refreshCounter20) : 10.0f;
-				if (volCv < 10.0f) {
-					val *= clamp(volCv * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
-					paramWithCV[refreshCounter20 - 4] = val;
-				}
-				else {
-					paramWithCV[refreshCounter20 - 4] = -1.0f;// do not show cv pointer
-				}
-				// scaling
-				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
-			}
-			else if (refreshCounter20 < 12) {
+			// values for returns, 12 such values (mute, solo, group) (one at a time)
+			messagesToMother[MFA_VALUE12_INDEX] = (float)refreshCounter12;
+			float val = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter12].getValue();
+			if (refreshCounter12 < 4) {
 				//cv for return mute
 				if (inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(refreshCounter20 - 8) * 0.1f;
+					val += inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(refreshCounter12) * 0.1f;
 				}
 				val = (val > 0.5f ? 0.0f : 1.0f);
 			}
-			else if (refreshCounter20 < 16) {
+			else if (refreshCounter12 < 8) {
 				//cv for return solo
 				if (inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(refreshCounter20 - 8) * 0.1f;
+					val += inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(refreshCounter12) * 0.1f;
 				}
 				// no clamp nor compare needed here, will do a compare in GobalInfo::updateReturnSoloBits()
 			}
 			// no CV inputs for group
-			messagesToMother[MFA_VALUE20] = val;
+			messagesToMother[MFA_VALUE12] = val;
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
 			memcpy(&messagesToMother[MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
@@ -423,9 +430,8 @@ struct AuxExpander : Module {
 				// cv for return fader
 				bool isConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
 						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (8 + i + 1));
-				float volCv = isConnected ? inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) : 10.0f;
-				if (volCv < 10.0f) {
-					val *= clamp(volCv * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+				if (isConnected) {
+					val *= clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
 					paramWithCV[i] = val;
 				}
 				else {
@@ -436,9 +442,9 @@ struct AuxExpander : Module {
 				messagesToMother[MFA_AUX_RET_FADER + i] = val;
 			}
 			
-			refreshCounter80++;
-			if (refreshCounter80 >= 80) {
-				refreshCounter80 = 0;
+			refreshCounter12++;
+			if (refreshCounter12 >= 12) {
+				refreshCounter12 = 0;
 			}
 		}	
 		else {// if (motherPresent)
@@ -652,16 +658,16 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 0 + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 14 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 0));	
 			// aux B send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 4 + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 24.85 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 1));	
 			// aux C send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 8 + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 35.7 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 2));	
 			// aux D send for groups 1 to 2
-			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 12 + i, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 46.55 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 3));	
 			// mute for groups 1 to 2
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -674,16 +680,16 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 0 + i + 2, module ? &module->panelTheme : NULL));			
+			addParam(createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 0, module ? &module->panelTheme : NULL));			
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 74.5 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 0));	
 			// aux B send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 4 + i + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 1, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 85.35 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 1));	
 			// aux C send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 8 + i + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 2, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 96.2 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 2));	
 			// aux D send for groups 3 to 4
-			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_AUXSEND_PARAMS + 12 + i + 2, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 3, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 107.05 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 3));	
 			// mute for groups 3 to 4
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));

@@ -71,12 +71,12 @@ enum LightIds {
 // Fields in the float arrays
 
 enum AuxFromMotherIds { // for expander messages from main to aux panel
+	ENUMS(AFM_AUX_SENDS, 40), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
+	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
 	ENUMS(AFM_TRACK_GROUP_NAMES, 16 + 4),
 	AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
 	AFM_PANEL_THEME,
 	AFM_COLOR_AND_CLOAK,
-	ENUMS(AFM_AUX_SENDS, 8), // left A, B, C, D, right A, B, C, D
-	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
 	AFM_DIRECT_AND_PAN_MODES,
 	AFM_TRACK_MOVE,
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
@@ -85,10 +85,8 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 
 enum MotherFromAuxIds { // for expander messages from aux panel to main
 	ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	MFA_VALUE80_INDEX,// a send value, 80 of such values to bring back to main, one per sample
-	MFA_VALUE80,
-	MFA_VALUE20_INDEX,// a return value, 20 of such values to bring back to main, one per sample
-	MFA_VALUE20,
+	MFA_VALUE12_INDEX,// a return-related value, 12 of such values to bring back to main, one per sample
+	MFA_VALUE12,
 	MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
 	MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
 	ENUMS(MFA_AUX_RET_FADER, 4),
@@ -276,7 +274,7 @@ struct GlobalInfo {
 	Param *paFade;// all 20 faders are here (track and group)
 	Input *inTrackSolo;
 	Input *inGroupSolo;
-	float *values20;
+	float *values12;
 	float oldFaders[16 + 4] = {-100.0f};
 	float maxTGFader;
 
@@ -318,7 +316,7 @@ struct GlobalInfo {
 	inline void updateReturnSoloBits() {
 		int newReturnSoloBitMask = 0;
 		for (int aux = 0; aux < 4; aux++) {
-			if (values20[12 + aux] > 0.5f) {
+			if (values12[4 + aux] > 0.5f) {
 				newReturnSoloBitMask |= (1 << aux);
 			}
 		}
@@ -344,12 +342,12 @@ struct GlobalInfo {
 	}
 
 	
-	void construct(Param *_params, Input *_inputs, float* _values20) {
+	void construct(Param *_params, Input *_inputs, float* _values12) {
 		paSolo = &_params[TRACK_SOLO_PARAMS];
 		paFade = &_params[TRACK_FADER_PARAMS];
 		inTrackSolo = &_inputs[TRACK_SOLO_INPUT];
 		inGroupSolo = &_inputs[GRPM_MUTESOLO_INPUT];
-		values20 = _values20;
+		values12 = _values12;
 		maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
 	}
 	
@@ -1652,15 +1650,13 @@ struct MixerAux {
 	inline int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val20, float* _taps, float* _insertOuts, int8_t* _panLawStereoLocal) {
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val12, float* _taps, float* _insertOuts, int8_t* _panLawStereoLocal) {
 		auxNum = _auxNum;
 		ids = "id_a" + std::to_string(auxNum) + "_";
 		gInfo = _gInfo;
 		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-		//flPan = &_val20[auxNum + 0];
-		//flFade = &_val20[auxNum + 4];
-		flMute = &_val20[auxNum + 8];
-		flGroup = &_val20[auxNum + 16];
+		flMute = &_val12[auxNum];
+		flGroup = &_val12[auxNum + 8];
 		taps = _taps;
 		insertOuts = _insertOuts;
 		panLawStereoLocal = _panLawStereoLocal;

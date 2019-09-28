@@ -32,8 +32,7 @@ struct MixMaster : Module {
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
-	float values80[80];
-	float values20[20];
+	float values12[12];
 	dsp::SlewLimiter muteTrackWhenSoloAuxRetSlewer;
 
 	// No need to save, no reset
@@ -47,7 +46,7 @@ struct MixMaster : Module {
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxRetFadePan;// index into correct page of messages from expander (avoid having separate buffers)
-	uint32_t auxSendMuteGroupedReturn;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
+	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
 	// std::string busId;
@@ -104,13 +103,13 @@ struct MixMaster : Module {
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 
-		gInfo.construct(&params[0], &inputs[0], values20);
+		gInfo.construct(&params[0], &inputs[0], values12);
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupAuxInsertOuts[i << 1]);
-			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)], &stereoPanModeLocalAux.cc4[i]);
+			aux[i].construct(i, &gInfo, &inputs[0], values12, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second 
@@ -154,11 +153,8 @@ struct MixMaster : Module {
 			}
 			master.resetNonJson();
 		}
-		for (int i = 0; i < 80; i++) {
-			values80[i] = 0.0f;
-		}
-		for (int i = 0; i < 20; i++) {
-			values20[i] = 0.0f;
+		for (int i = 0; i < 12; i++) {
+			values12[i] = 0.0f;
 		}
 		muteTrackWhenSoloAuxRetSlewer.reset();
 	}
@@ -255,12 +251,9 @@ struct MixMaster : Module {
 			
 			auxReturns = &messagesFromExpander[MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
 			auxRetFadePan = &messagesFromExpander[MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
-			
-			int value80i = clamp((int)(messagesFromExpander[MFA_VALUE80_INDEX]), 0, 79);
-			values80[value80i] = messagesFromExpander[MFA_VALUE80];
-			
-			int value20i = clamp((int)(messagesFromExpander[MFA_VALUE20_INDEX]), 0, 19);
-			values20[value20i] = messagesFromExpander[MFA_VALUE20];
+						
+			int value12i = clamp((int)(messagesFromExpander[MFA_VALUE12_INDEX]), 0, 19);
+			values12[value12i] = messagesFromExpander[MFA_VALUE12];
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
 			memcpy(&directOutsModeLocalAux, &messagesFromExpander[MFA_AUX_DIR_OUTS], 4);
@@ -340,22 +333,22 @@ struct MixMaster : Module {
 		float mix[10] = {0.0f};// room for main and groups
 		
 		// Tracks
-		for (int i = 0; i < 16; i++) {
-			tracks[i].process(mix);
+		for (int trk = 0; trk < 16; trk++) {
+			tracks[trk].process(mix);
 		}
 		// At this point, mix[0..9] has content
 		memcpy(groupTaps, &mix[2], 8 * 4);// TODO: change memory layout so that this is not necessary
 
 		// Aux return when group
 		if (auxExpanderPresent) {
-			auxSendMuteGroupedReturn = 0;
-			for (int i = 0; i < 4; i++) {
-				int auxGroup = aux[i].getAuxGroup();
+			muteAuxSendWhenReturnGrouped = 0;
+			for (int auxi = 0; auxi < 4; auxi++) {
+				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[i].process(&groupTaps[auxGroup << 1], &auxRetFadePan[i]);
+					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi]);
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
-						auxSendMuteGroupedReturn |= (0x1 << ((auxGroup << 2) + i));
+						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
 				}
 			}
@@ -442,7 +435,7 @@ struct MixMaster : Module {
 				memcpy(&messageToExpander[AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
 				trackMoveInAuxRequest = 0;
 				// Aux send mute when grouped return lights
-				messageToExpander[AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(auxSendMuteGroupedReturn);
+				messageToExpander[AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
 			}
 			else {
 				*updateSlow = 0;
@@ -450,36 +443,7 @@ struct MixMaster : Module {
 			
 			// Fast
 			
-			// Aux sends
-			auxSends = &messageToExpander[AFM_AUX_SENDS];// room for 8 values of the sends to the aux panel (left A, right A, left B, right B ...)
-			// populate auxSends[0..7]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
-			for (int i = 0; i < 8; i++) {
-				auxSends[i] = 0.0f;
-			}
-			// accumulate tracks
-			for (int trk = 0; trk < 16; trk++) {
-				//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should have aux sends even when grouped
-				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : tracks[trk].auxSendsMode;
-				tapIndex <<= 5;
-				float valTap[2] = {trackTaps[tapIndex + (trk << 1) + 0], trackTaps[tapIndex + (trk << 1) + 1]};
-				for (int auxi = 0; auxi < 4; auxi++) {
-					auxSends[(auxi << 1) + 0] += values80[(trk << 2) + auxi] * valTap[0];
-					auxSends[(auxi << 1) + 1] += values80[(trk << 2) + auxi] * valTap[1];
-				}
-			}
-			// accumulate groups
-			for (int grp = 0; grp < 4; grp++) {
-				int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : groups[grp].auxSendsMode;
-				tapIndex <<= 3;
-				float valTap[2] = {groupTaps[tapIndex + (grp << 1) + 0], groupTaps[tapIndex + (grp << 1) + 1]};
-				for (int auxi = 0; auxi < 4; auxi++) {
-					if ((auxSendMuteGroupedReturn & (1 << ((grp << 2) + auxi))) == 0) {
-						auxSends[(auxi << 1) + 0] += values80[64 + (auxi << 2) + grp] * valTap[0];
-						auxSends[(auxi << 1) + 1] += values80[64 + (auxi << 2) + grp] * valTap[1];
-					}
-				}
-			}
-						
+			writeAuxSends(&messageToExpander[AFM_AUX_SENDS]);						
 			// Aux VUs
 			for (int i = 0; i < 4; i++) {
 				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];// send tap 4 of the aux return signal flows
@@ -487,10 +451,32 @@ struct MixMaster : Module {
 			}
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
-		}
+		}// if (auxExpanderPresent)
 
 		
 	}// process()
+	
+	
+	void writeAuxSends(float* auxSends) {
+		// Aux sends (send track and group audio (16+4 stereo signals) to auxspander
+		// auxSends[] has room for 16+4 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
+		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
+		// tracks
+		for (int trk = 0; trk < 16; trk++) {
+			//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should have aux sends even when grouped
+			int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : tracks[trk].auxSendsMode;
+			tapIndex <<= 5;
+			auxSends[(trk << 1) + 0] = trackTaps[tapIndex + (trk << 1) + 0];
+			auxSends[(trk << 1) + 1] = trackTaps[tapIndex + (trk << 1) + 1];
+		}
+		// groups
+		for (int grp = 0; grp < 4; grp++) {
+			int tapIndex = gInfo.auxSendsMode < 4 ? gInfo.auxSendsMode : groups[grp].auxSendsMode;
+			tapIndex <<= 3;
+			auxSends[(grp << 1) + 32] = groupTaps[tapIndex + (grp << 1) + 0];
+			auxSends[(grp << 1) + 33] = groupTaps[tapIndex + (grp << 1) + 1];
+		}
+	}
 	
 	
 	void SetDirectTrackOuts(const int base) {// base is 0 or 8
@@ -527,6 +513,7 @@ struct MixMaster : Module {
 			}
 		}
 	}
+	
 	
 	void SetDirectGroupAuxOuts() {
 		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
@@ -593,6 +580,7 @@ struct MixMaster : Module {
 			memcpy(outputs[INSERT_TRACK_OUTPUTS + outi].getVoltages(), &trackInsertOuts[(base << 1)], 4 * 16);
 		}
 	}
+
 
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
