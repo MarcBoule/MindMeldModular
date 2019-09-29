@@ -796,7 +796,8 @@ struct MixerGroup {
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float paramWithCV;
-
+	float pan;// Is WithCV implicitly
+	
 	// no need to save, no reset
 	int groupNum;// 0 to 3
 	std::string ids;
@@ -856,6 +857,7 @@ struct MixerGroup {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
+		pan = -1.0f;
 	}
 	
 	
@@ -924,13 +926,12 @@ struct MixerGroup {
 		
 		// panning
 		simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
-		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+		pan = clamp(paPan->getValue() + inPan->getVoltage() * 0.1f, 0.0f, 1.0f);// CV is a -5V to +5V input
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
 		}
 		else {
-			pan = clamp(pan, 0.0f, 1.0f);
 			// implicitly stereo for groups
 			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
 			if (stereoBalance) {
@@ -1092,6 +1093,7 @@ struct MixerTrack {
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float paramWithCV;
+	float pan;// is WithCV implicitly
 
 	// no need to save, no reset
 	int trackNum;
@@ -1169,6 +1171,7 @@ struct MixerTrack {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
+		pan = -1.0f;
 		target = -1;
 	}
 	
@@ -1301,7 +1304,7 @@ struct MixerTrack {
 	
 	// Contract: 
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
-	//  * calc paramWithCV
+	//  * calc paramWithCV and pan
 	//  * calc taps[], insertOuts[] and vu
 	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
 	void process(float *mix) {
@@ -1332,7 +1335,10 @@ struct MixerTrack {
 			paramWithCV = -1.0f;
 		}
 
-
+		// calc ** pan **
+		pan = clamp(paPan->getValue() + inPan->getVoltage() * 0.1f, 0.0f, 1.0f);// CV is a -5V to +5V input
+		
+		
 		// optimize unused track
 		bool inUse = inSig[0].isConnected();
 		if (!inUse) {
@@ -1431,14 +1437,12 @@ struct MixerTrack {
 		// calc gainMatrix
 		simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)
 		// panning
-		float pan = paPan->getValue() + inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
 		if (pan == 0.5f) {
 			if (!stereo) gainMatrix[3] = slowGain;
 			else gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
 		}
-		else {
-			pan = clamp(pan, 0.0f, 1.0f);		
+		else {		
 			if (!stereo) {// mono
 				if (gInfo->panLawMono == 1) {
 					// Equal power panning law (+3dB boost)

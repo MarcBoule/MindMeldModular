@@ -265,43 +265,98 @@ struct DynSmallKnobGrey : DynKnob {
 
 struct DynKnobWithArc : DynKnob {
 	NVGcolor arcColor;
+	NVGcolor arcColorCV;// arc color for CV indicator
 	static constexpr float arcThickness = 1.6f;
-	static constexpr float a0 = 3.0f * M_PI / 2.0f;
+	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
+	float* paramWithCV = NULL;
 	
 	DynKnobWithArc() {
 	}
+	
+	void calcArcColorCV(float scalingFactor) {
+		arcColorCV = arcColor;
+		arcColorCV.r *= scalingFactor;
+		arcColorCV.g *= scalingFactor;
+		arcColorCV.b *= scalingFactor;
+	}
+	
+	void drawTopCenteredArc(const DrawArgs &args, float normalizedValue, NVGcolor* color) {
+		if (normalizedValue != 0.5f) {
+			float a0 = TOP_ANGLE;
+			float a1 = math::rescale(normalizedValue, 0.f, 1.f, minAngle, maxAngle) + a0;
+			Vec cVec = box.size.div(2.0f);
+			float r = box.size.x / 2.0f + 2.25f;// arc radius
+			int dir = a0 < a1 ? NVG_CW : NVG_CCW;
+			nvgBeginPath(args.vg);
+			nvgLineCap(args.vg, NVG_ROUND);
+			nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
+			nvgStrokeWidth(args.vg, arcThickness);
+			nvgStrokeColor(args.vg, *color);
+			nvgStroke(args.vg);		
+		}
+	}
+	void drawLeftCenteredArc(const DrawArgs &args, float normalizedValue, NVGcolor* color) {
+		if (normalizedValue != 0.0f) {
+			float a0 = minAngle - M_PI_2;
+			float a1 = math::rescale(normalizedValue, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
+			Vec cVec = box.size.div(2.0f);
+			float r = box.size.x / 2.0f + 2.25f;// arc radius
+			nvgBeginPath(args.vg);
+			nvgLineCap(args.vg, NVG_ROUND);
+			nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, NVG_CW);
+			nvgStrokeWidth(args.vg, arcThickness);
+			nvgStrokeColor(args.vg, *color);
+			nvgStroke(args.vg);
+		}
+	}
+	
 	
 	void draw(const DrawArgs &args) override {
 		DynamicSVGKnob::draw(args);
 		if (paramQuantity) {
 			float normalizedParam = paramQuantity->getScaledValue();
 			if (paramQuantity->getDefaultValue() != 0.0f) {
-				// pan knob arc style
-				if (normalizedParam != 0.5f) {
-					float a1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) + a0;
-					Vec cVec = box.size.div(2.0f);
-					float r = box.size.x / 2.0f + 2.25f;// arc radius
-					int dir = a0 < a1 ? NVG_CW : NVG_CCW;
-					nvgBeginPath(args.vg);
-					nvgLineCap(args.vg, NVG_ROUND);
-					nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-					nvgStrokeWidth(args.vg, arcThickness);
-					nvgStrokeColor(args.vg, arcColor);
-					nvgStroke(args.vg);
+				// pan knob arc style (0 at top pos)
+				float normalizedCV = 0.5f;// default is no drawing
+				NVGcolor *adjustedArcColor = &arcColor;
+				bool drawCvArcLast = false;
+				if (paramWithCV && *paramWithCV != -1.0f) {
+					normalizedCV = math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), 0.f, 1.f);
+					if (normalizedParam > 0.5f) {
+						drawCvArcLast = normalizedCV > 0.5 && normalizedCV < normalizedParam;
+						if (normalizedCV < 0.5f) {
+							adjustedArcColor = &arcColorCV;
+						}
+					}
+					else {
+						drawCvArcLast = normalizedCV < 0.5 && normalizedCV > normalizedParam;
+						if (normalizedCV > 0.5f) {
+							adjustedArcColor = &arcColorCV;
+						}
+					}
+				}
+				if (drawCvArcLast) {
+					drawTopCenteredArc(args, normalizedParam, &arcColorCV);
+					drawTopCenteredArc(args, normalizedCV, &arcColor);
+				}
+				else {
+					drawTopCenteredArc(args, normalizedCV, &arcColorCV);
+					drawTopCenteredArc(args, normalizedParam, adjustedArcColor);
 				}
 			}
 			else {
-				if (normalizedParam != 0.0f) {
-					float aa0 = minAngle - M_PI_2;
-					float aa1 = math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle) - M_PI_2;
-					Vec cVec = box.size.div(2.0f);
-					float r = box.size.x / 2.0f + 2.25f;// arc radius
-					nvgBeginPath(args.vg);
-					nvgLineCap(args.vg, NVG_ROUND);
-					nvgArc(args.vg, cVec.x, cVec.y, r, aa0, aa1, NVG_CW);
-					nvgStrokeWidth(args.vg, arcThickness);
-					nvgStrokeColor(args.vg, arcColor);
-					nvgStroke(args.vg);
+				// individual aux send style (0 at leftmost pos)
+				float normalizedCV = 0.0f;// default is no drawing
+				if (paramWithCV && *paramWithCV != -1.0f) {
+					normalizedCV = math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), 0.f, 1.f);
+				}
+				if (normalizedCV > normalizedParam) {
+					drawLeftCenteredArc(args, normalizedCV, &arcColorCV);				
+					drawLeftCenteredArc(args, normalizedParam, &arcColor);
+				}
+				else {
+					drawLeftCenteredArc(args, normalizedParam, &arcColorCV);
+					drawLeftCenteredArc(args, normalizedCV, &arcColor);				
 				}
 			}
 		}
