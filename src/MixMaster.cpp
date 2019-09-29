@@ -751,7 +751,7 @@ struct MixMasterWidget : ModuleWidget {
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobTrack->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
-				panKnobTrack->paramWithCV = &(module->tracks[i].pan);
+				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
 			}
 			
 			// Faders
@@ -836,7 +836,7 @@ struct MixMasterWidget : ModuleWidget {
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobGroup->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
-				panKnobGroup->paramWithCV = &(module->groups[i].pan);
+				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
 			}
 			
 			// Faders

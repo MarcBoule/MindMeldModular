@@ -1115,7 +1115,7 @@ struct DynSmallFaderWithLink : DynSmallFader {
 
 // knobs with color theme arc
 // --------------------
-static constexpr float arcCvScale = 0.6f;
+static constexpr float arcCvScale = 0.7f;
 
 struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	int8_t* dispColorPtr = NULL;
@@ -1129,7 +1129,7 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	void draw(const DrawArgs &args) override {
 		if (dispColorPtr && *dispColorPtr != oldDispColor) {
 			arcColor = DISP_COLORS[*dispColorPtr];// arc color, same as displays
-			calcArcColorCV(arcCvScale);
+			calcArcColorDarker(arcCvScale);
 			oldDispColor = *dispColorPtr;
 		}
 		DynKnobWithArc::draw(args);
@@ -1141,7 +1141,7 @@ struct DynSmallKnobAuxAWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxA.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(219, 65, 85);
-		calcArcColorCV(arcCvScale);
+		calcArcColorDarker(arcCvScale);
 	}
 };
 struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
@@ -1149,7 +1149,7 @@ struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxB.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(255, 127, 42);
-		calcArcColorCV(arcCvScale);
+		calcArcColorDarker(arcCvScale);
 	}
 };
 struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
@@ -1157,7 +1157,7 @@ struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxC.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(113, 160, 255);
-		calcArcColorCV(arcCvScale);
+		calcArcColorDarker(arcCvScale);
 	}
 };
 struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
@@ -1165,7 +1165,7 @@ struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxD.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(163, 93, 209);
-		calcArcColorCV(arcCvScale);
+		calcArcColorDarker(arcCvScale);
 	}
 };
 

@@ -265,7 +265,7 @@ struct DynSmallKnobGrey : DynKnob {
 
 struct DynKnobWithArc : DynKnob {
 	NVGcolor arcColor;
-	NVGcolor arcColorCV;// arc color for CV indicator
+	NVGcolor arcColorDarker;
 	static constexpr float arcThickness = 1.6f;
 	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
 	float* paramWithCV = NULL;
@@ -273,11 +273,11 @@ struct DynKnobWithArc : DynKnob {
 	DynKnobWithArc() {
 	}
 	
-	void calcArcColorCV(float scalingFactor) {
-		arcColorCV = arcColor;
-		arcColorCV.r *= scalingFactor;
-		arcColorCV.g *= scalingFactor;
-		arcColorCV.b *= scalingFactor;
+	void calcArcColorDarker(float scalingFactor) {
+		arcColorDarker = arcColor;
+		arcColorDarker.r *= scalingFactor;
+		arcColorDarker.g *= scalingFactor;
+		arcColorDarker.b *= scalingFactor;
 	}
 	
 	void drawTopCenteredArc(const DrawArgs &args, float normalizedValue, NVGcolor* color) {
@@ -317,46 +317,42 @@ struct DynKnobWithArc : DynKnob {
 			float normalizedParam = paramQuantity->getScaledValue();
 			if (paramQuantity->getDefaultValue() != 0.0f) {
 				// pan knob arc style (0 at top pos)
-				float normalizedCV = 0.5f;// default is no drawing
-				NVGcolor *adjustedArcColor = &arcColor;
-				bool drawCvArcLast = false;
 				if (paramWithCV && *paramWithCV != -1.0f) {
-					normalizedCV = math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), 0.f, 1.f);
-					if (normalizedParam > 0.5f) {
-						drawCvArcLast = normalizedCV > 0.5 && normalizedCV < normalizedParam;
-						if (normalizedCV < 0.5f) {
-							adjustedArcColor = &arcColorCV;
-						}
+					float normalizedCV = math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), 0.f, 1.f);
+					if ((normalizedParam > 0.5f && normalizedCV > normalizedParam) || 
+						(normalizedParam < 0.5f && normalizedCV < normalizedParam)) {
+						drawTopCenteredArc(args, normalizedCV, &arcColor);
+						drawTopCenteredArc(args, normalizedParam, &arcColorDarker);
+					}
+					else if ((normalizedParam > 0.5f && normalizedCV > 0.5f) || 
+						(normalizedParam < 0.5f && normalizedCV < 0.5f)) {
+						drawTopCenteredArc(args, normalizedParam, &arcColor);
+						drawTopCenteredArc(args, normalizedCV, &arcColorDarker);
 					}
 					else {
-						drawCvArcLast = normalizedCV < 0.5 && normalizedCV > normalizedParam;
-						if (normalizedCV > 0.5f) {
-							adjustedArcColor = &arcColorCV;
-						}
-					}
-				}
-				if (drawCvArcLast) {
-					drawTopCenteredArc(args, normalizedParam, &arcColorCV);
-					drawTopCenteredArc(args, normalizedCV, &arcColor);
+						drawTopCenteredArc(args, normalizedParam, &arcColor);
+						drawTopCenteredArc(args, normalizedCV, &arcColor);
+					}					
 				}
 				else {
-					drawTopCenteredArc(args, normalizedCV, &arcColorCV);
-					drawTopCenteredArc(args, normalizedParam, adjustedArcColor);
+					drawTopCenteredArc(args, normalizedParam, &arcColorDarker);
 				}
 			}
 			else {
 				// individual aux send style (0 at leftmost pos)
-				float normalizedCV = 0.0f;// default is no drawing
 				if (paramWithCV && *paramWithCV != -1.0f) {
-					normalizedCV = math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), 0.f, 1.f);
-				}
-				if (normalizedCV > normalizedParam) {
-					drawLeftCenteredArc(args, normalizedCV, &arcColorCV);				
-					drawLeftCenteredArc(args, normalizedParam, &arcColor);
+					float normalizedCV = math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), 0.f, 1.f);
+					if (normalizedCV > normalizedParam) {
+						drawLeftCenteredArc(args, normalizedCV, &arcColor);				
+						drawLeftCenteredArc(args, normalizedParam, &arcColorDarker);
+					}
+					else {
+						drawLeftCenteredArc(args, normalizedParam, &arcColor);
+						drawLeftCenteredArc(args, normalizedCV, &arcColorDarker);				
+					}
 				}
 				else {
-					drawLeftCenteredArc(args, normalizedParam, &arcColorCV);
-					drawLeftCenteredArc(args, normalizedCV, &arcColor);				
+					drawLeftCenteredArc(args, normalizedParam, &arcColorDarker);
 				}
 			}
 		}

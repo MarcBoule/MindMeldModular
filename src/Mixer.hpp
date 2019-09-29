@@ -796,7 +796,7 @@ struct MixerGroup {
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float paramWithCV;
-	float pan;// Is WithCV implicitly
+	float panWithCV;
 	
 	// no need to save, no reset
 	int groupNum;// 0 to 3
@@ -857,7 +857,7 @@ struct MixerGroup {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
-		pan = -1.0f;
+		panWithCV = -1.0f;
 	}
 	
 	
@@ -872,7 +872,7 @@ struct MixerGroup {
 	// Contract: 
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
 	//  * calc all but the first taps[], insertOuts[] and vu
-	//  * calc paramWithCV
+	//  * calc paramWithCV, panWithCV
 	//  * add final tap to mix[0..1]
 	void process(float *mix) {
 		// Tap[0],[1]: pre-insert (group inputs)
@@ -918,6 +918,17 @@ struct MixerGroup {
 		else {
 			paramWithCV = -1.0f;
 		}
+
+		// calc ** panWithCV **
+		float pan = paPan->getValue();
+		if (inPan->isConnected()) {
+			pan += inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+			pan = clamp(pan, 0.0f, 1.0f);
+			panWithCV = pan;
+		}
+		else {
+			panWithCV = -1.0f;
+		}
 		
 		// scaling
 		if (slowGain != 1.0f) {// since unused groups are not optimized and are likely in their default state
@@ -926,7 +937,6 @@ struct MixerGroup {
 		
 		// panning
 		simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
-		pan = clamp(paPan->getValue() + inPan->getVoltage() * 0.1f, 0.0f, 1.0f);// CV is a -5V to +5V input
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
@@ -1093,7 +1103,7 @@ struct MixerTrack {
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float paramWithCV;
-	float pan;// is WithCV implicitly
+	float panWithCV;
 
 	// no need to save, no reset
 	int trackNum;
@@ -1171,7 +1181,7 @@ struct MixerTrack {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
-		pan = -1.0f;
+		panWithCV = -1.0f;
 		target = -1;
 	}
 	
@@ -1304,7 +1314,7 @@ struct MixerTrack {
 	
 	// Contract: 
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
-	//  * calc paramWithCV and pan
+	//  * calc paramWithCV and panWithCV
 	//  * calc taps[], insertOuts[] and vu
 	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
 	void process(float *mix) {
@@ -1335,9 +1345,16 @@ struct MixerTrack {
 			paramWithCV = -1.0f;
 		}
 
-		// calc ** pan **
-		pan = clamp(paPan->getValue() + inPan->getVoltage() * 0.1f, 0.0f, 1.0f);// CV is a -5V to +5V input
-		
+		// calc ** panWithCV **
+		float pan = paPan->getValue();
+		if (inPan->isConnected()) {
+			pan += inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+			pan = clamp(pan, 0.0f, 1.0f);
+			panWithCV = pan;
+		}
+		else {
+			panWithCV = -1.0f;
+		}
 		
 		// optimize unused track
 		bool inUse = inSig[0].isConnected();
