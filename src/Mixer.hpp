@@ -965,34 +965,25 @@ struct MixerGroup {
 			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
 		}
 		
-		// Test for all gainMatrixSlewed equal to 0
-		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
-			taps[16] = 0.0f;	
-			taps[17] = 0.0f;
-			taps[24] = 0.0f;	
-			taps[25] = 0.0f;
+		// Apply gainMatrixSlewed
+		simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
+		sigs = sigs * gainMatrixSlewed;
+		
+		taps[16] = sigs[0] + sigs[2];
+		taps[17] = sigs[1] + sigs[3];
+		
+		// Calc muteSoloGainSlewed
+		float muteSoloGainSlewed = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);// solo not actually in here but in groups
+		if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
+			muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
 		}
-		else {
-			// Apply gainMatrixSlewed
-			simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
-			sigs = sigs * gainMatrixSlewed;
+		
+		taps[24] = taps[16] * muteSoloGainSlewed;
+		taps[25] = taps[17] * muteSoloGainSlewed;
 			
-			taps[16] = sigs[0] + sigs[2];
-			taps[17] = sigs[1] + sigs[3];
-			
-			// Calc muteSoloGainSlewed
-			float muteSoloGainSlewed = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);// solo not actually in here but in groups
-			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
-				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
-			}
-			
-			taps[24] = taps[16] * muteSoloGainSlewed;
-			taps[25] = taps[17] * muteSoloGainSlewed;
-				
-			// Add to mix
-			mix[0] += taps[24];
-			mix[1] += taps[25];
-		}
+		// Add to mix
+		mix[0] += taps[24];
+		mix[1] += taps[25];
 		
 		// VUs
 		if (gInfo->colorAndCloak.cc4[cloakedMode]) {
@@ -1507,41 +1498,35 @@ struct MixerTrack {
 		}
 		
 		// Tap[64],[65]: post-fader
+
+		// Apply gainMatrixSlewed
+		simd::float_4 sigs(taps[32], taps[33], taps[33], taps[32]);
+		sigs = sigs * gainMatrixSlewed;
+		
+		taps[64] = sigs[0] + sigs[2];
+		taps[65] = sigs[1] + sigs[3];
+
+
 		// Tap[96],[97]: post-mute-solo
-		// Test for all gainMatrixSlewed equal to 0
-		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
-			taps[64] = 0.0f;	
-			taps[65] = 0.0f;
-			taps[96] = 0.0f;	
-			taps[97] = 0.0f;
+		
+		// Calc muteSoloGainSlewed
+		float muteSoloGainSlewed = calcSoloGain() * std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
+		if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
+			muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
+		}
+
+		taps[96] = taps[64] * muteSoloGainSlewed;
+		taps[97] = taps[65] * muteSoloGainSlewed;
+			
+		// Add to mix since gainMatrixSlewed can be non zero
+		if (paGroup->getValue() < 0.5f) {
+			mix[0] += taps[96];
+			mix[1] += taps[97];
 		}
 		else {
-			// Apply gainMatrixSlewed
-			simd::float_4 sigs(taps[32], taps[33], taps[33], taps[32]);
-			sigs = sigs * gainMatrixSlewed;
-			
-			taps[64] = sigs[0] + sigs[2];
-			taps[65] = sigs[1] + sigs[3];
-
-			// Calc muteSoloGainSlewed
-			float muteSoloGainSlewed = calcSoloGain() * std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
-				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
-			}
-
-			taps[96] = taps[64] * muteSoloGainSlewed;
-			taps[97] = taps[65] * muteSoloGainSlewed;
-				
-			// Add to mix since gainMatrixSlewed can be non zero
-			if (paGroup->getValue() < 0.5f) {
-				mix[0] += taps[96];
-				mix[1] += taps[97];
-			}
-			else {
-				int groupIndex = (int)(paGroup->getValue() - 0.5f);
-				groupTaps[(groupIndex << 1) + 0] += taps[96];
-				groupTaps[(groupIndex << 1) + 1] += taps[97];
-			}
+			int groupIndex = (int)(paGroup->getValue() - 0.5f);
+			groupTaps[(groupIndex << 1) + 0] += taps[96];
+			groupTaps[(groupIndex << 1) + 1] += taps[97];
 		}
 		
 		// VUs
