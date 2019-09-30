@@ -1116,7 +1116,7 @@ struct DynSmallFaderWithLink : DynSmallFader {
 // knobs with color theme arc
 // --------------------
 static constexpr float arcCvScale = 0.65f;
-static const int greyArc = 130;
+static const int greyArc = 120;
 
 struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	int8_t* dispColorPtr = NULL;
