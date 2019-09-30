@@ -15,12 +15,12 @@ struct AuxExpander : Module {
 		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// Mapping: 1A, 2A, 3A, 4A, 1B, etc
 		ENUMS(TRACK_AUXMUTE_PARAMS, 16),
 		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
+		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),// must be contiguous with GROUP_AUXMUTE_PARAMS
+		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),// must be contiguous with GLOBAL_AUXMUTE_PARAMS
+		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),// must be contiguous with GLOBAL_AUXSOLO_PARAMS
 		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
 		ENUMS(GLOBAL_AUXPAN_PARAMS, 4),
 		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),
-		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),
-		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),// must be contiguous with GLOBAL_AUXMUTE_PARAMS
-		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),// must be contiguous with GLOBAL_AUXSOLO_PARAMS
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -78,9 +78,9 @@ struct AuxExpander : Module {
 	float maxAGIndivSendFader;
 	float maxAGGlobSendFader;
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
-	//float values80[80];
-	float mutes[20];
 	simd::float_4 globalSends;
+	Trigger muteSoloCvTriggers[28];
+	int muteSoloCvTrigRefresh = 0;
 
 	
 	AuxExpander() {
@@ -253,7 +253,9 @@ struct AuxExpander : Module {
 	void process(const ProcessArgs &args) override {
 		motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster);
 		float *messagesFromMother = (float*)leftExpander.consumerMessage;
-		 
+		
+		processMuteSoloCvTriggers();
+		
 		if (motherPresent) {
 			// From Mother
 			// ***********
@@ -307,28 +309,12 @@ struct AuxExpander : Module {
 			}
 			globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
 						
-			//   Indiv mute sends with cvs (20 instances)
+			//   Indiv mute sends (20 instances)
 			for (int gi = 0; gi < 20; gi++) {
 				float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
-				if (gi < 16) {
-					// cv for 16 track send mutes
-					if (inputs[POLY_AUX_M_CV_INPUT].isConnected()) {
-						val += inputs[POLY_AUX_M_CV_INPUT].getVoltage(gi) * 0.1f;
-						// no clamp needed, will do a compare below
-					}
-				}
-				else {
-					// cv for 4 group send mutes
-					if (inputs[POLY_GRPS_M_CV_INPUT].isConnected()) {
-						val += inputs[POLY_GRPS_M_CV_INPUT].getVoltage(gi - 16) * 0.1f;
-						// no clamp needed, will do a compare below
-					}
-				}
-				mutes[gi] = (val > 0.5f ? 0.0f : 1.0f);
-			}
-			for (int i = 0; i < 20; i++) {
-				if (sendMuteSlewers[i].out != mutes[i]) {
-					sendMuteSlewers[i].process(args.sampleTime, mutes[i]);
+				val = (val > 0.5f ? 0.0f : 1.0f);
+				if (sendMuteSlewers[gi].out != val) {
+					sendMuteSlewers[gi].process(args.sampleTime, val);
 				}
 			}
 	
@@ -399,24 +385,19 @@ struct AuxExpander : Module {
 			}
 			leftExpander.module->rightExpander.messageFlipRequested = true;
 			
-			// values for returns, 12 such values (mute, solo, group) (one at a time)
+			// values for returns, 12 such values (mute, solo, group)
 			messagesToMother[MFA_VALUE12_INDEX] = (float)refreshCounter12;
 			float val = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter12].getValue();
+			//   return mutes
 			if (refreshCounter12 < 4) {
-				//cv for return mute
-				if (inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(refreshCounter12) * 0.1f;
-				}
 				val = (val > 0.5f ? 0.0f : 1.0f);
 			}
-			else if (refreshCounter12 < 8) {
-				//cv for return solo
-				if (inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(refreshCounter12) * 0.1f;
-				}
-				// no clamp nor compare needed here, will do a compare in GobalInfo::updateReturnSoloBits()
-			}
-			// no CV inputs for group
+			//   return solos
+			// else if (refreshCounter12 < 8)   
+			//    no compare needed here, will do a compare in GobalInfo::updateReturnSoloBits()
+			//   return group
+			// else 
+			//    nothing to do
 			messagesToMother[MFA_VALUE12] = val;
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
@@ -480,7 +461,8 @@ struct AuxExpander : Module {
 		}
 		
 	}// process()
-	
+
+
 	void writeTrackParams(int trk, float* bufDest) {
 		for (int aux = 0; aux < 4; aux++) {
 			bufDest[aux] = params[TRACK_AUXSEND_PARAMS + (trk << 2) + aux].getValue();
@@ -516,6 +498,38 @@ struct AuxExpander : Module {
 			}
 		}
 		readTrackParams(trackNumDest, buffer2);
+	}
+	
+	void processMuteSoloCvTriggers() {
+		// mute and solo cv triggers
+		bool toggle = false;
+		//   track send mutes
+		if (muteSoloCvTrigRefresh < 16) {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[POLY_AUX_M_CV_INPUT].getVoltage(muteSoloCvTrigRefresh))) {
+				toggle = true;
+			}
+		}
+		//   group send mutes
+		else if (muteSoloCvTrigRefresh < 20) {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[POLY_GRPS_M_CV_INPUT].getVoltage(muteSoloCvTrigRefresh - 16))) {
+				toggle = true;				
+			}
+		}
+		//   return mutes and solos
+		else {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(muteSoloCvTrigRefresh - 20))) {
+				toggle = true;				
+			}
+		}
+		if (toggle) {
+			float newParam = 1.0f - params[TRACK_AUXMUTE_PARAMS + muteSoloCvTrigRefresh].getValue();
+			params[TRACK_AUXMUTE_PARAMS + muteSoloCvTrigRefresh].setValue(newParam);
+		}
+		
+		muteSoloCvTrigRefresh++;
+		if (muteSoloCvTrigRefresh >= 28) {
+			muteSoloCvTrigRefresh = 0;
+		}
 	}
 };
 

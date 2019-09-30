@@ -49,7 +49,10 @@ struct MixMaster : Module {
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
+	Trigger muteSoloCvTriggers[43];// 16 trk mute, 4 grp mute, 16 trk solo, 4 grp solo, 3 mast (mute, dim, mono)
+	int muteSoloCvTrigRefresh = 0;
 	// std::string busId;
+	
 
 		
 	MixMaster() {
@@ -103,7 +106,7 @@ struct MixMaster : Module {
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 
-		gInfo.construct(&params[0], &inputs[0], values12);
+		gInfo.construct(&params[0], values12);
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
@@ -325,7 +328,7 @@ struct MixMaster : Module {
 			
 		}// userInputs refresh	
 */	
-		
+		processMuteSoloCvTriggers();
 		
 		
 		//********** Outputs **********
@@ -596,6 +599,51 @@ struct MixMaster : Module {
 				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(8);
 				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 8);
 			}
+		}
+	}
+
+
+	void processMuteSoloCvTriggers() {
+		// mute and solo cv triggers
+		bool toggle = false;
+		//   track mutes
+		if (muteSoloCvTrigRefresh < 16) {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[TRACK_MUTE_INPUT].getVoltage(muteSoloCvTrigRefresh))) {
+				toggle = true;
+			}
+		}
+		//   group mutes
+		else if (muteSoloCvTrigRefresh < 20) {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 16))) {
+				toggle = true;				
+			}
+		}		
+		//   track solos
+		else if (muteSoloCvTrigRefresh < 36) {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[TRACK_SOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 20))) {
+				toggle = true;
+			}
+		}
+		//   group solos
+		else if (muteSoloCvTrigRefresh < 40) {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 36 + 4))) {
+				toggle = true;				
+			}
+		}
+		//   master mute, dim, mono
+		else {
+			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 40 + 8))) {
+				toggle = true;				
+			}
+		}
+		if (toggle) {
+			float newParam = 1.0f - params[TRACK_MUTE_PARAMS + muteSoloCvTrigRefresh].getValue();
+			params[TRACK_MUTE_PARAMS + muteSoloCvTrigRefresh].setValue(newParam);
+		}
+		
+		muteSoloCvTrigRefresh++;
+		if (muteSoloCvTrigRefresh >= 43) {
+			muteSoloCvTrigRefresh = 0;
 		}
 	}
 

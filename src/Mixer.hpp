@@ -21,12 +21,12 @@ enum ParamIds {
 	ENUMS(GROUP_PAN_PARAMS, 4),
 	ENUMS(TRACK_MUTE_PARAMS, 16),
 	ENUMS(GROUP_MUTE_PARAMS, 4),// must follow TRACK_MUTE_PARAMS since code assumes contiguous
-	ENUMS(TRACK_SOLO_PARAMS, 16),
+	ENUMS(TRACK_SOLO_PARAMS, 16),// must follow GROUP_MUTE_PARAMS since code assumes contiguous
 	ENUMS(GROUP_SOLO_PARAMS, 4),// must follow TRACK_SOLO_PARAMS since code assumes contiguous
+	MAIN_MUTE_PARAM,// must follow GROUP_SOLO_PARAMS since code assumes contiguous
+	MAIN_DIM_PARAM,// must follow MAIN_MUTE_PARAM since code assumes contiguous
+	MAIN_MONO_PARAM,// must follow MAIN_DIM_PARAM since code assumes contiguous
 	MAIN_FADER_PARAM,
-	MAIN_MUTE_PARAM,
-	MAIN_DIM_PARAM,
-	MAIN_MONO_PARAM,
 	ENUMS(GROUP_SELECT_PARAMS, 16),
 	NUM_PARAMS
 }; 
@@ -272,8 +272,6 @@ struct GlobalInfo {
 	// no need to save, no reset
 	Param *paSolo;// all 20 solos are here (track and group)
 	Param *paFade;// all 20 faders are here (track and group)
-	Input *inTrackSolo;
-	Input *inGroupSolo;
 	float *values12;
 	float oldFaders[16 + 4] = {-100.0f};
 	float maxTGFader;
@@ -294,7 +292,7 @@ struct GlobalInfo {
 	}
 	void updateSoloBit(unsigned long trkOrGrp) {
 		if (trkOrGrp < 16) {
-			if ( (paSolo[trkOrGrp].getValue() + inTrackSolo->getVoltage(trkOrGrp) * 0.1f) > 0.5f) {
+			if (paSolo[trkOrGrp].getValue() > 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
 			else {
@@ -302,7 +300,7 @@ struct GlobalInfo {
 			}	
 		}
 		else {// trkOrGrp >= 16
-			if ( (paSolo[trkOrGrp].getValue() + inGroupSolo->getVoltage(-12 + trkOrGrp) * 0.1f) > 0.5f) {
+			if (paSolo[trkOrGrp].getValue() > 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
 			else {
@@ -342,11 +340,9 @@ struct GlobalInfo {
 	}
 
 	
-	void construct(Param *_params, Input *_inputs, float* _values12) {
+	void construct(Param *_params, float* _values12) {
 		paSolo = &_params[TRACK_SOLO_PARAMS];
 		paFade = &_params[TRACK_FADER_PARAMS];
-		inTrackSolo = &_inputs[TRACK_SOLO_INPUT];
-		inGroupSolo = &_inputs[GRPM_MUTESOLO_INPUT];
 		values12 = _values12;
 		maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
 	}
@@ -524,18 +520,16 @@ struct MixerMaster {
 	GlobalInfo *gInfo;
 	Param *params;
 	Input *inChain;
-	Input *inMuteDimMono;
 	Input *inVol;
 	float target = -1.0f;
 
-	inline float calcFadeGain() {return (params[MAIN_MUTE_PARAM].getValue() + inMuteDimMono->getVoltage(8) * 0.1f) > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
 	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
 		gInfo = _gInfo;
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
-		inMuteDimMono = &_inputs[GRPM_MUTESOLO_INPUT];
 		inVol = &_inputs[MASTER_CV_INPUT];
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
@@ -589,7 +583,7 @@ struct MixerMaster {
 	void updateSlowValues() {
 		// calc ** gainMatrix **
 		// mono
-		if ((params[MAIN_MONO_PARAM].getValue() + inMuteDimMono->getVoltage(10) * 0.1f) > 0.5f) {
+		if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
 			gainMatrix = simd::float_4(0.5f);
 		}
 		else {
@@ -649,7 +643,7 @@ struct MixerMaster {
 		slowGain = std::pow(slowGain, masterFaderScalingExponent);
 		
 		// dim
-		if ((params[MAIN_DIM_PARAM].getValue() + inMuteDimMono->getVoltage(9) * 0.1f) > 0.5f) {
+		if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
 			slowGain *= dimGainIntegerDB;
 		}
 		
@@ -805,17 +799,15 @@ struct MixerGroup {
 	Input *inInsert;
 	Input *inVol;
 	Input *inPan;
-	Input *inMuteSolo;
 	Param *paFade;
 	Param *paMute;
-	Param *paSolo;
 	Param *paPan;
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float target = -1.0f;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float *insertOuts;// [0][1]: insert outs for this track
 
-	inline float calcFadeGain() {return (paMute->getValue() + inMuteSolo->getVoltage(groupNum) * 0.1f) > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
@@ -827,10 +819,8 @@ struct MixerGroup {
 		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
 		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
 		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
-		inMuteSolo = &_inputs[GRPM_MUTESOLO_INPUT];
 		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
 		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
-		//paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 		groupName = _groupName;
 		taps = _taps;
@@ -1104,7 +1094,6 @@ struct MixerTrack {
 	Input *inInsert;
 	Input *inVol;
 	Input *inPan;
-	Input *inMute;
 	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in groupTaps[2*g..2*g+1]. Always use setter since need to update gInfo!
 	Param *paFade;
 	Param *paMute;
@@ -1117,7 +1106,7 @@ struct MixerTrack {
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
 
-	inline float calcFadeGain() {return (paMute->getValue() + inMute->getVoltage(trackNum) * 0.1f) > 0.5f ? 0.0f : 1.0f;}
+	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(trackNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
@@ -1130,7 +1119,6 @@ struct MixerTrack {
 		inInsert = &_inputs[INSERT_TRACK_INPUTS];
 		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
 		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
-		inMute = &_inputs[TRACK_MUTE_INPUT];
 		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
 		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
 		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
