@@ -98,6 +98,23 @@ enum MotherFromAuxIds { // for expander messages from aux panel to main
 
 //*****************************************************************************
 
+// Math
+
+// Calculate std::sin(theta) using MacLaurin series
+// Calculate std::cos(theta) using cos(x) = sin(Pi/2 - x)
+// Assumes: 0 <= theta <= Pi/2
+inline void sinCos(float *destSin, float *destCos, float theta) {
+	*destSin = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
+	theta = M_PI_2 - theta;
+	*destCos = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
+}
+inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
+	sinCos(destSin, destCos, theta);
+	*destSin *= M_SQRT2;
+	*destCos *= M_SQRT2;
+}
+
+
 // Utility
 
 inline float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade) {
@@ -936,15 +953,26 @@ struct MixerGroup {
 			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
 			if (stereoBalance) {
 				// Stereo balance (+3dB), same as mono equal power
-				gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-				gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
 			}
 			else {
 				// True panning, equal power
-				gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-				gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-				gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-				gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+				// gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				// gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+				// gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				// gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+				if (pan > 0.5f) {
+					gainMatrix[1] = 1.0f;
+					gainMatrix[2] = 0.0f;
+					sinCos(&gainMatrix[3], &gainMatrix[0], (pan - 0.5f) * M_PI);
+				}
+				else {// must be < (not <= since = 0.5 is caught at above)
+					sinCos(&gainMatrix[1], &gainMatrix[2], pan * M_PI);
+					gainMatrix[0] = 1.0f;
+					gainMatrix[3] = 0.0f;
+				}
 			}
 			gainMatrix *= slowGain;
 		}				
@@ -1442,8 +1470,9 @@ struct MixerTrack {
 			if (!stereo) {// mono
 				if (gInfo->panLawMono == 1) {
 					// Equal power panning law (+3dB boost)
-					gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
-					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
 				}
 				else if (gInfo->panLawMono == 0) {
 					// No compensation (+0dB boost)
@@ -1452,8 +1481,11 @@ struct MixerTrack {
 				}
 				else if (gInfo->panLawMono == 2) {
 					// Compromise (+4.5dB boost)
-					gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-					gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+					// gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+					// gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
+					gainMatrix[3] = std::sqrt( std::abs( gainMatrix[3] * (pan * 2.0f) ) );
+					gainMatrix[0] = std::sqrt( std::abs( gainMatrix[0] * (2.0f - pan * 2.0f) ) );
 				}
 				else {
 					// Linear panning law (+6dB boost)
@@ -1465,15 +1497,26 @@ struct MixerTrack {
 				bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
 				if (stereoBalance) {
 					// Stereo balance (+3dB), same as mono equal power
-					gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-					gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
 				}
 				else {
 					// True panning, equal power
-					gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-					gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-					gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-					gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+					// gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+					// gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+					// gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+					// gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+					if (pan > 0.5f) {
+						gainMatrix[1] = 1.0f;
+						gainMatrix[2] = 0.0f;
+						sinCos(&gainMatrix[3], &gainMatrix[0], (pan - 0.5f) * M_PI);
+					}
+					else {// must be < (not <= since = 0.5 is caught at above)
+						sinCos(&gainMatrix[1], &gainMatrix[2], pan * M_PI);
+						gainMatrix[0] = 1.0f;
+						gainMatrix[3] = 0.0f;
+					}
 				}
 			}
 			gainMatrix *= slowGain;
@@ -1733,15 +1776,26 @@ struct MixerAux {
 			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && *panLawStereoLocal == 0));			
 			if (stereoBalance) {
 				// Stereo balance (+3dB), same as mono equal power
-				gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-				gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+				// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+				sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
 			}
 			else {
 				// True panning, equal power
-				gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-				gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-				gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-				gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+				// gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+				// gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+				// gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+				// gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+				if (pan > 0.5f) {
+					gainMatrix[1] = 1.0f;
+					gainMatrix[2] = 0.0f;
+					sinCos(&gainMatrix[3], &gainMatrix[0], (pan - 0.5f) * M_PI);
+				}
+				else {// must be < (not <= since = 0.5 is caught at above)
+					sinCos(&gainMatrix[1], &gainMatrix[2], pan * M_PI);
+					gainMatrix[0] = 1.0f;
+					gainMatrix[3] = 0.0f;
+				}
 			}
 			gainMatrix *= slowGain;
 		}
