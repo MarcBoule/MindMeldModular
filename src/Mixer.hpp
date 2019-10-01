@@ -822,14 +822,13 @@ struct MixerGroup {
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float target = -1.0f;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
-	float *insertOuts;// [0][1]: insert outs for this track
 
 	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
 
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps, float* _insertOuts) {
+	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
 		groupNum = _groupNum;
 		ids = "id_g" + std::to_string(groupNum) + "_";
 		gInfo = _gInfo;
@@ -841,7 +840,6 @@ struct MixerGroup {
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 		groupName = _groupName;
 		taps = _taps;
-		insertOuts = _insertOuts;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 	}
@@ -878,16 +876,12 @@ struct MixerGroup {
 	
 	// Contract: 
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
-	//  * calc all but the first taps[], insertOuts[] and vu
+	//  * calc all but the first taps[] and vu
 	//  * calc paramWithCV, panWithCV
 	//  * add final tap to mix[0..1]
 	void process(float *mix) {
 		// Tap[0],[1]: pre-insert (group inputs)
 		// nothing to do, already set up by the mix master
-		
-		// Insert outputs
-		insertOuts[0] = taps[0];
-		insertOuts[1] = taps[1];
 		
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
@@ -1683,19 +1677,16 @@ struct MixerAux {
 	std::string ids;
 	GlobalInfo *gInfo;
 	Input *inInsert;
-	//float *flPan;
-	//float *flFade;
 	float *flMute;
 	float *flSolo0;
 	float *flGroup;
 	float *taps;
-	float *insertOuts;// [0][1]: insert outs for this track
 	int8_t* panLawStereoLocal;
 
 	inline int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val12, float* _taps, float* _insertOuts, int8_t* _panLawStereoLocal) {
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val12, float* _taps, int8_t* _panLawStereoLocal) {
 		auxNum = _auxNum;
 		ids = "id_a" + std::to_string(auxNum) + "_";
 		gInfo = _gInfo;
@@ -1703,7 +1694,6 @@ struct MixerAux {
 		flMute = &_val12[auxNum];
 		flGroup = &_val12[auxNum + 8];
 		taps = _taps;
-		insertOuts = _insertOuts;
 		panLawStereoLocal = _panLawStereoLocal;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
@@ -1738,17 +1728,13 @@ struct MixerAux {
 	}
 	
 	// Contract: 
-	//  * calc all but the first taps[], calc insertOuts[] and vu
+	//  * calc all but the first taps[] and vu
 	//  * add final tap to mix[0..1]
 	void process(float *mix, float *auxRetFadePan) {
 		// Tap[0],[1]: pre-insert (aux inputs)
 		// nothing to do, already set up by the auxspander
 		// auxRetFadePan[0] points fader value, auxRetFadePan[0] points pan value, all indexed for a given aux
 		
-		// Insert outputs
-		insertOuts[0] = taps[0];
-		insertOuts[1] = taps[1];
-				
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
 			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);

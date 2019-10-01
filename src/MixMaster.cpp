@@ -41,7 +41,6 @@ struct MixMaster : Module {
 	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
 	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
 	float groupTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo groups
-	float groupAuxInsertOuts[8 * 2];// room for 4 stereo group insert outs and 4 stereo aux insert outs
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
@@ -111,8 +110,8 @@ struct MixMaster : Module {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
-			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1], &groupAuxInsertOuts[i << 1]);
-			aux[i].construct(i, &gInfo, &inputs[0], values12, &auxTaps[i << 1], &groupAuxInsertOuts[8 + (i << 1)], &stereoPanModeLocalAux.cc4[i]);
+			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1]);
+			aux[i].construct(i, &gInfo, &inputs[0], values12, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second 
@@ -391,7 +390,7 @@ struct MixMaster : Module {
 		SetDirectTrackOuts(8);// 9-16
 		SetDirectGroupAuxOuts();
 				
-		// Insert outs (uses trackInsertOuts and groupAuxInsertOuts)
+		// Insert outs (uses trackInsertOuts and group tap0 and aux tap0)
 		SetInsertTrackOuts(0);// 1-8
 		SetInsertTrackOuts(8);// 9-16
 		SetInsertGroupAuxOuts();	
@@ -591,13 +590,10 @@ struct MixMaster : Module {
 
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
+			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(auxExpanderPresent ? numChannels16 : 8);
+			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupTaps, 4 * 8);// insert out for groups is directly tap0
 			if (auxExpanderPresent) {
-				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(numChannels16);
-				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 16);
-			}
-			else {
-				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(8);
-				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), &groupAuxInsertOuts[0], 4 * 8);
+				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(8), auxTaps, 4 * 8);// insert out for aux is directly tap0
 			}
 		}
 	}
