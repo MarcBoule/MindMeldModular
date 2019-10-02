@@ -31,9 +31,9 @@ struct PanLawMonoItem : MenuItem {
 
 		std::string panLawMonoNames[4] = {
 			"+0 dB (no compensation)", 
-			"+3 dB boost (equal power, default)", 
+			"+3 dB boost (equal power)", 
 			"+4.5 dB boost (compromise)", 
-			"+6 dB boost (linear)"
+			"+6 dB boost (linear, default)"
 		};
 			
 		for (int i = 0; i < 4; i++) {
@@ -63,13 +63,14 @@ struct PanLawStereoItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		std::string panLawStereoNames[3] = {
-			"Stereo balance (default)",
+		std::string panLawStereoNames[4] = {
+			"Stereo balance linear (default)",
+			"Stereo balance equal power",
 			"True panning",
 			"Set per track"
 		};
 		
-		for (int i = 0; i < (isGlobal ? 3 : 2); i++) {
+		for (int i = 0; i < (isGlobal ? 4 : 3); i++) {
 			PanLawStereoSubItem *lawStereoItem = createMenuItem<PanLawStereoSubItem>(panLawStereoNames[i], CHECKMARK(*panLawStereoSrc == i));
 			lawStereoItem->panLawStereoSrc = panLawStereoSrc;
 			lawStereoItem->setVal = i;

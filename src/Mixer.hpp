@@ -266,8 +266,8 @@ struct GlobalInfo {
 	// none
 	
 	// need to save, with reset
-	int panLawMono;// +0dB (no compensation),  +3 (equal power, default),  +4.5 (compromize),  +6dB (linear)
-	int8_t panLawStereo;// Stereo balance (+3dB boost since one channel lost, default),  True pan (linear redistribution but is not equal power), Per-track
+	int panLawMono;// +0dB (no compensation),  +3 (equal power),  +4.5 (compromize),  +6dB (linear, default)
+	int8_t panLawStereo;// Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
 	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int auxReturnsMutedWhenMainSolo;
@@ -366,7 +366,7 @@ struct GlobalInfo {
 	
 	
 	void onReset() {
-		panLawMono = 1;
+		panLawMono = 3;
 		panLawStereo = 0;
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
@@ -944,9 +944,14 @@ struct MixerGroup {
 		}
 		else {
 			// implicitly stereo for groups
-			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
-			if (stereoBalance) {
-				// Stereo balance (+3dB), same as mono equal power
+			int sterepPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo == 0);			
+			if (sterepPanMode == 0) {
+				// Stereo balance linear, (+0 dB), same as mono No compensation
+				gainMatrix[1] = std::min(1.0f, pan * 2.0f);
+				gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+			}
+			else if (sterepPanMode == 1) {
+				// Stereo balance equal power (+3dB), same as mono Equal power
 				// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
 				// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
 				sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
@@ -1462,18 +1467,23 @@ struct MixerTrack {
 		}
 		else {		
 			if (!stereo) {// mono
-				if (gInfo->panLawMono == 1) {
-					// Equal power panning law (+3dB boost)
-					// gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
-					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
+				if (gInfo->panLawMono == 3) {
+					// Linear panning law (+6dB boost)
+					gainMatrix[3] = pan * 2.0f;
+					gainMatrix[0] = 2.0f - gainMatrix[3];
 				}
 				else if (gInfo->panLawMono == 0) {
 					// No compensation (+0dB boost)
 					gainMatrix[3] = std::min(1.0f, pan * 2.0f);
 					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
 				}
-				else if (gInfo->panLawMono == 2) {
+				else if (gInfo->panLawMono == 1) {
+					// Equal power panning law (+3dB boost)
+					// gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
+				}
+				else {//if (gInfo->panLawMono == 2) {
 					// Compromise (+4.5dB boost)
 					// gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
 					// gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
@@ -1481,16 +1491,16 @@ struct MixerTrack {
 					gainMatrix[3] = std::sqrt( std::abs( gainMatrix[3] * (pan * 2.0f) ) );
 					gainMatrix[0] = std::sqrt( std::abs( gainMatrix[0] * (2.0f - pan * 2.0f) ) );
 				}
-				else {
-					// Linear panning law (+6dB boost)
-					gainMatrix[3] = pan * 2.0f;
-					gainMatrix[0] = 2.0f - gainMatrix[3];
-				}
 			}
 			else {// stereo
-				bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && panLawStereo == 0));			
-				if (stereoBalance) {
-					// Stereo balance (+3dB), same as mono equal power
+				int sterepPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo == 0);			
+				if (sterepPanMode == 0) {
+					// Stereo balance linear, (+0 dB), same as mono No compensation
+					gainMatrix[1] = std::min(1.0f, pan * 2.0f);
+					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+				}
+				else if (sterepPanMode == 1) {
+					// Stereo balance equal power (+3dB), same as mono Equal power
 					// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
 					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
 					sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
@@ -1759,9 +1769,14 @@ struct MixerAux {
 		}
 		else {
 			// implicitly stereo for aux
-			bool stereoBalance = (gInfo->panLawStereo == 0 || (gInfo->panLawStereo == 2 && *panLawStereoLocal == 0));			
-			if (stereoBalance) {
-				// Stereo balance (+3dB), same as mono equal power
+			int sterepPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : *panLawStereoLocal);			
+			if (sterepPanMode == 0) {
+				// Stereo balance linear, (+0 dB), same as mono No compensation
+				gainMatrix[1] = std::min(1.0f, pan * 2.0f);
+				gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+			}
+			else if (sterepPanMode == 1) {
+				// Stereo balance equal power (+3dB), same as mono Equal power
 				// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
 				// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
 				sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);

@@ -653,7 +653,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(auxSendsItem);
 			}
 
-			if (srcTrack->gInfo->panLawStereo >= 2) {
+			if (srcTrack->gInfo->panLawStereo >= 3) {
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = &(srcTrack->panLawStereo);
 				panLawStereoItem->isGlobal = false;
@@ -742,7 +742,7 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(auxSendsItem);
 			}
 
-			if (srcGroup->gInfo->panLawStereo >= 2) {
+			if (srcGroup->gInfo->panLawStereo >= 3) {
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
 				panLawStereoItem->isGlobal = false;
@@ -800,7 +800,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(directOutsItem);
 			}
 
-			if (*srcPanLawStereoGlobal >= 2) {
+			if (*srcPanLawStereoGlobal >= 3) {
 				isEmptyMenu = false;
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
