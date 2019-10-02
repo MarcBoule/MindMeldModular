@@ -330,7 +330,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 	// instantiator must setup:
 	Param *srcParam;// to know where the fader is
 	float *srcParamWithCV = NULL;// for cv pointer, NULL indicates when cv pointers are not used (no cases so far)
-	int8_t* dispColor;// cv pointers have same color as displays
+	PackedBytes4* colorAndCloak;// cv pointers have same color as displays
 	float *srcFadeGain = NULL;// to know where to position the pointer, NULL indicates when fader pointers are not used (aux ret faders for example)
 	float *srcFadeRate;// mute when < minFadeRate, fade when >= minFadeRate
 
@@ -351,7 +351,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 
 	void draw(const DrawArgs &args) override {
 		// cv pointer (draw only when cv has en effect)
-		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f) {// -1.0f indicates not to show cv pointer
+		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f && colorAndCloak->cc4[cloakedMode] == 0) {// -1.0f indicates not to show cv pointer
 			float cvPosNormalized = *srcParamWithCV / maxTFader;
 			float vertPos = box.size.y - box.size.y * cvPosNormalized;// in px
 			nvgBeginPath(args.vg);
@@ -359,14 +359,14 @@ struct CvAndFadePointerBase : OpaqueWidget {
 			nvgLineTo(args.vg, box.size.x, vertPos);
 			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
 			nvgClosePath(args.vg);
-			nvgFillColor(args.vg, DISP_COLORS[*dispColor]);
+			nvgFillColor(args.vg, DISP_COLORS[colorAndCloak->cc4[dispColor]]);
 			nvgFill(args.vg);
 			nvgStrokeColor(args.vg, SCHEME_BLACK);
 			nvgStrokeWidth(args.vg, mm2px(0.11f));
 			nvgStroke(args.vg);
 		}
 		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
-		if (srcFadeGain != NULL && *srcFadeRate >= minFadeRate && *srcFadeGain < 1.0f) {
+		if (srcFadeGain != NULL && *srcFadeRate >= minFadeRate && *srcFadeGain < 1.0f  && colorAndCloak->cc4[cloakedMode] == 0) {
 			float fadePosNormalized;
 			if (srcParamWithCV == NULL || *srcParamWithCV == -1.0f) {
 				fadePosNormalized = srcParam->getValue();

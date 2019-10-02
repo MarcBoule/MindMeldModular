@@ -818,7 +818,7 @@ struct MixMasterWidget : ModuleWidget {
 				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
-				newFP->dispColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				newFP->srcFadeRate = &(module->tracks[i].fadeRate);
 				addChild(newFP);				
@@ -903,7 +903,7 @@ struct MixMasterWidget : ModuleWidget {
 				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
-				newFP->dispColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				newFP->srcFadeRate = &(module->groups[i].fadeRate);
 				addChild(newFP);				
@@ -950,7 +950,7 @@ struct MixMasterWidget : ModuleWidget {
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
 			newFP->srcParamWithCV = &(module->master.paramWithCV);
-			newFP->dispColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+			newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 			newFP->srcFadeGain = &(module->master.fadeGain);
 			newFP->srcFadeRate = &(module->master.fadeRate);
 			addChild(newFP);				

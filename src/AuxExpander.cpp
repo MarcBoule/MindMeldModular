@@ -602,7 +602,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				CvAndFadePointerAuxRet *newFP = createWidgetCentered<CvAndFadePointerAuxRet>(mm2px(Vec(6.35 - 2.95 + 12.7 * i, 87.2)));
 				newFP->srcParam = &(module->params[AuxExpander::GLOBAL_AUXRETURN_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->paramRetFaderWithCv[i]);
-				newFP->dispColor = &(module->colorAndCloak.cc4[dispColor]);
+				newFP->colorAndCloak = &(module->colorAndCloak);
 				addChild(newFP);				
 			}				
 			
