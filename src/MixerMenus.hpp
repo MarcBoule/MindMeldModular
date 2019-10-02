@@ -233,7 +233,7 @@ struct AuxRetFbProtItem : MenuItem {
 struct CloakedModeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {
-		gInfo->colorAndCloak.cc4[cloakedMode] ^= 0x1;
+		gInfo->colorAndCloak.cc4[cloakedMode] ^= 0xFF;
 	}
 };
 
@@ -307,6 +307,39 @@ struct DispColorItem : MenuItem {
 			dispColItem->setVal = i;
 			menu->addChild(dispColItem);
 		}
+		
+		return menu;
+	}
+};
+
+struct KnobArcShowItem : MenuItem {
+	int8_t *srcKnobArcShow;
+
+	struct KnobArcShowSubItem : MenuItem {
+		int8_t *srcKnobArcShow;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			*srcKnobArcShow = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		KnobArcShowSubItem *arcShowItem0 = createMenuItem<KnobArcShowSubItem>("On", CHECKMARK(*srcKnobArcShow == 0x3));
+		arcShowItem0->srcKnobArcShow = srcKnobArcShow;
+		arcShowItem0->setVal = 0x3;
+		menu->addChild(arcShowItem0);
+		
+		KnobArcShowSubItem *arcShowItem1 = createMenuItem<KnobArcShowSubItem>("CV only", CHECKMARK(*srcKnobArcShow == 0x2));
+		arcShowItem1->srcKnobArcShow = srcKnobArcShow;
+		arcShowItem1->setVal = 0x2;
+		menu->addChild(arcShowItem1);
+		
+		KnobArcShowSubItem *arcShowItem2 = createMenuItem<KnobArcShowSubItem>("Off", CHECKMARK(*srcKnobArcShow == 0x0));
+		arcShowItem2->srcKnobArcShow = srcKnobArcShow;
+		arcShowItem2->setVal = 0x0;
+		menu->addChild(arcShowItem2);
 		
 		return menu;
 	}

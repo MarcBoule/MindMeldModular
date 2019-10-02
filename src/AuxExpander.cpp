@@ -196,7 +196,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 64; i++) {
 			indivTrackSendWithCv[i] = -1.0f;
 		}
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 16; i++) {
 			indivGroupSendWithCv[i] = -1.0f;
 		}
 	}
@@ -449,7 +449,7 @@ struct AuxExpander : Module {
 		}
 
 		// VUs
-		if (!motherPresent || colorAndCloak.cc4[cloakedMode]) {
+		if (!motherPresent || colorAndCloak.cc4[cloakedMode] != 0) {
 			for (int i = 0; i < 4; i++) {
 				vu[i].reset();
 			}
@@ -585,7 +585,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobAux;
 			addParam(panKnobAux = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(6.35 + 12.7 * i, 62.83)), module, AuxExpander::GLOBAL_AUXPAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobAux->dispColorPtr = &(module->colorAndCloak.cc4[dispColor]);
+				panKnobAux->colorAndCloakPtr = &(module->colorAndCloak);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
 			}
 			
@@ -641,6 +641,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		if (module) {
 			for (int k = 0; k < 4; k++) {
 				sendKnobs[k]->paramWithCV = &module->globalSendsWithCV[k];
+				sendKnobs[k]->colorAndCloakPtr = &(module->colorAndCloak);
 			}
 		}
 
@@ -655,16 +656,28 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 			// aux A send for tracks 1 to 8
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 0];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 0];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux B send for tracks 1 to 8
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 1];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 1];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux C send for tracks 1 to 8
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 2];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 2];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux D send for tracks 1 to 8
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 3];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 3];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// mute for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 55.7)), module, AuxExpander::TRACK_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			
@@ -677,16 +690,28 @@ struct AuxExpanderWidget : ModuleWidget {
 
 			// aux A send for tracks 9 to 16
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, AuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 0, module ? &module->panelTheme : NULL));			
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 0];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 0];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux B send for tracks 9 to 16
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, AuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 1, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 1];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 1];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux C send for tracks 9 to 16
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, AuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 2, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 2];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 2];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux D send for tracks 9 to 16
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, AuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 3, module ? &module->panelTheme : NULL));
-			if (module) newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 3];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 3];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// mute for tracks 1 to 8
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 116.1)), module, AuxExpander::TRACK_AUXMUTE_PARAMS + i + 8, module ? &module->panelTheme : NULL));
 		}
@@ -704,19 +729,31 @@ struct AuxExpanderWidget : ModuleWidget {
 			// aux A send for groups 1 to 2
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 14 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 0));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 0];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 0];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux B send for groups 1 to 2
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 24.85 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 1));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 1];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 1];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux C send for groups 1 to 2
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 35.7 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 2));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 2];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 2];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux D send for groups 1 to 2
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, AuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 46.55 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 3));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 3];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 3];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// mute for groups 1 to 2
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			
@@ -730,19 +767,31 @@ struct AuxExpanderWidget : ModuleWidget {
 			// aux A send for groups 3 to 4
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 0, module ? &module->panelTheme : NULL));			
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 74.5 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 0));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 0];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 0];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux B send for groups 3 to 4
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxBWithArc>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 1, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 85.35 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 1));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 1];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 1];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux C send for groups 3 to 4
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxCWithArc>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 2, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 96.2 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 2));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 2];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 2];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// aux D send for groups 3 to 4
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxDWithArc>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, AuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 3, module ? &module->panelTheme : NULL));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 107.05 + redO)), module, AuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 3));	
-			if (module) newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 3];
+			if (module) {
+				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 3];
+				newArcKnob->colorAndCloakPtr = &(module->colorAndCloak);		
+			}				
 			// mute for groups 3 to 4
 			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, AuxExpander::GROUP_AUXMUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));
 		}

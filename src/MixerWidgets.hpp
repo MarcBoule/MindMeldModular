@@ -1115,11 +1115,68 @@ struct DynSmallFaderWithLink : DynSmallFader {
 
 // knobs with color theme arc
 // --------------------
+
+
+struct DynKnobWithArc : DynKnob {
+	NVGcolor arcColor;
+	NVGcolor arcColorDarker;
+	static constexpr float arcThickness = 1.6f;
+	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
+	float* paramWithCV = NULL;
+	PackedBytes4* colorAndCloakPtr = NULL;
+	
+	DynKnobWithArc() {
+	}
+	
+	void calcArcColorDarker(float scalingFactor) {
+		arcColorDarker = arcColor;
+		arcColorDarker.r *= scalingFactor;
+		arcColorDarker.g *= scalingFactor;
+		arcColorDarker.b *= scalingFactor;
+	}
+	
+	void drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color) {
+		int dir = a1 > a0 ? NVG_CW : NVG_CCW;
+		Vec cVec = box.size.div(2.0f);
+		float r = box.size.x / 2.0f + 2.25f;// arc radius
+		nvgBeginPath(args.vg);
+		nvgLineCap(args.vg, NVG_ROUND);
+		nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
+		nvgStrokeWidth(args.vg, arcThickness);
+		nvgStrokeColor(args.vg, *color);
+		nvgStroke(args.vg);		
+	}
+	
+	void draw(const DrawArgs &args) override {
+		DynamicSVGKnob::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			float aParam = -10000.0f;
+			float aBase = TOP_ANGLE;
+			if (paramQuantity->getDefaultValue() == 0.0f) {
+				aBase += minAngle;
+			}
+			// param
+			if (normalizedParam != 0.5f && (colorAndCloakPtr->cc4[knobArcShow] & ~colorAndCloakPtr->cc4[cloakedMode]) == 0x3) {
+				aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
+				drawArc(args, aBase, aParam, &arcColorDarker);
+			}
+			// cv
+			if (paramWithCV && *paramWithCV != -1.0f && (colorAndCloakPtr->cc4[knobArcShow] & ~colorAndCloakPtr->cc4[cloakedMode]) != 0) {
+				if (aParam == -10000.0f) {
+					aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
+				}
+				float aCv = TOP_ANGLE + math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
+				drawArc(args, aParam, aCv, &arcColor);
+			}
+		}
+	}
+};
+
 static constexpr float arcCvScale = 0.65f;
 static const int greyArc = 120;
 
 struct DynSmallKnobGreyWithArc : DynKnobWithArc {
-	int8_t* dispColorPtr = NULL;
 	int oldDispColor = -1;
 	
 	DynSmallKnobGreyWithArc() {
@@ -1128,10 +1185,10 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	}
 	
 	void draw(const DrawArgs &args) override {
-		if (dispColorPtr && *dispColorPtr != oldDispColor) {
-			arcColor = DISP_COLORS[*dispColorPtr];// arc color, same as displays
+		if (colorAndCloakPtr && colorAndCloakPtr->cc4[dispColor] != oldDispColor) {
+			arcColor = DISP_COLORS[colorAndCloakPtr->cc4[dispColor]];// arc color, same as displays
 			arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
-			oldDispColor = *dispColorPtr;
+			oldDispColor = colorAndCloakPtr->cc4[dispColor];
 		}
 		DynKnobWithArc::draw(args);
 	}

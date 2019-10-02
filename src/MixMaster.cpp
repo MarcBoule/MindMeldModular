@@ -728,6 +728,10 @@ struct MixMasterWidget : ModuleWidget {
 		vuColItem->isGlobal = true;
 		menu->addChild(vuColItem);
 		
+		KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
+		knobArcShowItem->srcKnobArcShow = &(module->gInfo.colorAndCloak.cc4[knobArcShow]);
+		menu->addChild(knobArcShowItem);
+		
 		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
 		nightItem->gInfo = &(module->gInfo);
 		menu->addChild(nightItem);
@@ -794,7 +798,7 @@ struct MixMasterWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobTrack;
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobTrack->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+				panKnobTrack->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
 				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
 			}
 			
@@ -879,7 +883,7 @@ struct MixMasterWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobGroup;
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobGroup->dispColorPtr = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+				panKnobGroup->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
 				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
 			}
 			
