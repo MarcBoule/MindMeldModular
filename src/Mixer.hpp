@@ -613,7 +613,7 @@ struct MixerMaster {
 	
 	float clip(float inX) {// 0 = soft, 1 = hard
 		if (clipping == 1) {
-			return clamp(inX, 0.0f, 10.0f);
+			return clamp(inX, -10.0f, 10.0f);
 		}
 		// here clipping is 0, so do soft clip
 		if (inX <= 6.0f && inX >= -6.0f) {
