@@ -608,7 +608,7 @@ struct MixerMaster {
 	}
 	
 	float clipPoly(float inX) {
-		return 15.9596704794f + inX * (-6.6407357350f + inX * (1.3202683524f + inX * (-0.0958254927f + inX * 0.0023676999f)));
+		return 15.9445204794f + inX * (-6.6407357350f + inX * (1.3202683524f + inX * (-0.0958254927f + inX * 0.0023676999f)));
 	}
 	
 	float clip(float inX) {// 0 = soft, 1 = hard
