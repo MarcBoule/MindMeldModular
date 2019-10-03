@@ -117,6 +117,28 @@ struct TapModeItem : MenuItem {
 	}
 };
 
+struct TapModePlusItem : TapModeItem {
+	GlobalInfo* gInfo;
+
+	struct MuteTrkSendsWhenGrpMutedItem : MenuItem {
+		int* muteTrkSendsWhenGrpMutedPtr;
+		void onAction(const event::Action &e) override {
+			*muteTrkSendsWhenGrpMutedPtr ^= 0x1;
+		}
+	};
+
+
+	Menu *createChildMenu() override {
+		Menu *menu = TapModeItem::createChildMenu();
+
+		menu->addChild(new MenuLabel());// empty line	
+		MuteTrkSendsWhenGrpMutedItem *muteTwhenGItem = createMenuItem<MuteTrkSendsWhenGrpMutedItem>("Mute track sends when group is muted", CHECKMARK(gInfo->muteTrkSendsWhenGrpMuted != 0));
+		muteTwhenGItem->muteTrkSendsWhenGrpMutedPtr = &(gInfo->muteTrkSendsWhenGrpMuted);
+		menu->addChild(muteTwhenGItem);
+
+		return menu;
+	}
+};
 
 
 struct FilterPosItem : MenuItem {
@@ -779,28 +801,28 @@ struct DcBlockItem : MenuItem {
 };
 		
 		
-// voltageLimiter
-struct VoltLimitItem : MenuItem {
+// clipper
+struct ClippingItem : MenuItem {
 	MixerMaster *srcMaster;
 
-	struct VoltLimitSubItem : MenuItem {
+	struct ClippingSubItem : MenuItem {
 		MixerMaster *srcMaster;
-		float setVal = 10.0f;
+		int setVal = 0;
 		void onAction(const event::Action &e) override {
-			srcMaster->voltageLimiter = setVal;
+			srcMaster->clipping = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		VoltLimitSubItem *lim0Item = createMenuItem<VoltLimitSubItem>("±10 V (default)", CHECKMARK(srcMaster->voltageLimiter < 11.0f));
+		ClippingSubItem *lim0Item = createMenuItem<ClippingSubItem>("Soft (default)", CHECKMARK(srcMaster->clipping == 0));
 		lim0Item->srcMaster = srcMaster;
 		menu->addChild(lim0Item);
 
-		VoltLimitSubItem *lim1Item = createMenuItem<VoltLimitSubItem>("±20 V", CHECKMARK(srcMaster->voltageLimiter >= 11.0f));
+		ClippingSubItem *lim1Item = createMenuItem<ClippingSubItem>("Hard", CHECKMARK(srcMaster->clipping == 1));
 		lim1Item->srcMaster = srcMaster;
-		lim1Item->setVal = 20.0f;
+		lim1Item->setVal = 1;
 		menu->addChild(lim1Item);
 
 		return menu;

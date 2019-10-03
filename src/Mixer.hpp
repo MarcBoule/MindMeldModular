@@ -80,6 +80,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_DIRECT_AND_PAN_MODES,
 	AFM_TRACK_MOVE,
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
+	AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED,
 	AFM_NUM_VALUES
 };
 
@@ -271,6 +272,7 @@ struct GlobalInfo {
 	int8_t panLawStereo;// Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
 	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+	int muteTrkSendsWhenGrpMuted;//  0 = no, 1 = yes
 	int auxReturnsMutedWhenMainSolo;
 	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
@@ -371,6 +373,7 @@ struct GlobalInfo {
 		panLawStereo = 0;
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
+		muteTrkSendsWhenGrpMuted = 0;
 		auxReturnsMutedWhenMainSolo = 0;
 		auxReturnsSolosMuteDry = 0;
 		chainMode = 1;// post should be default
@@ -405,6 +408,9 @@ struct GlobalInfo {
 		
 		// auxSendsMode
 		json_object_set_new(rootJ, "auxSendsMode", json_integer(auxSendsMode));
+		
+		// muteTrkSendsWhenGrpMuted
+		json_object_set_new(rootJ, "muteTrkSendsWhenGrpMuted", json_integer(muteTrkSendsWhenGrpMuted));
 		
 		// auxReturnsMutedWhenMainSolo
 		json_object_set_new(rootJ, "auxReturnsMutedWhenMainSolo", json_integer(auxReturnsMutedWhenMainSolo));
@@ -453,6 +459,11 @@ struct GlobalInfo {
 		json_t *auxSendsModeJ = json_object_get(rootJ, "auxSendsMode");
 		if (auxSendsModeJ)
 			auxSendsMode = json_integer_value(auxSendsModeJ);
+		
+		// muteTrkSendsWhenGrpMuted
+		json_t *muteTrkSendsWhenGrpMutedJ = json_object_get(rootJ, "muteTrkSendsWhenGrpMuted");
+		if (muteTrkSendsWhenGrpMutedJ)
+			muteTrkSendsWhenGrpMuted = json_integer_value(muteTrkSendsWhenGrpMutedJ);
 		
 		// auxReturnsMutedWhenMainSolo
 		json_t *auxReturnsMutedWhenMainSoloJ = json_object_get(rootJ, "auxReturnsMutedWhenMainSolo");
@@ -515,7 +526,7 @@ struct MixerMaster {
 	
 	// need to save, with reset
 	bool dcBlock;
-	float voltageLimiter;
+	int clipping; // 0 is soft, 1 is hard
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int8_t vuColorThemeLocal;
@@ -558,7 +569,7 @@ struct MixerMaster {
 	
 	void onReset() {
 		dcBlock = false;
-		voltageLimiter = 10.0f;
+		clipping = 0;
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		vuColorThemeLocal = 0;
@@ -594,6 +605,25 @@ struct MixerMaster {
 	
 	void onSampleRateChange() {
 		setupDcBlocker();
+	}
+	
+	float clipPoly(float inX) {
+		return 15.9596704794f + inX * (-6.6407357350f + inX * (1.3202683524f + inX * (-0.0958254927f + inX * 0.0023676999f)));
+	}
+	
+	float clip(float inX) {// 0 = soft, 1 = hard
+		if (clipping == 1) {
+			return clamp(inX, 0.0f, 10.0f);
+		}
+		// here clipping is 0, so do soft clip
+		if (inX <= 6.0f && inX >= -6.0f) {
+			return inX;
+		}
+		if (inX > 12.0f) inX = 12.0f;
+		if (inX < -12.0f) inX = -12.0f;
+		if (inX >= 0.0f)
+			return clipPoly(inX);
+		return -clipPoly(-inX);
 	}
 
 	// Contract: 
@@ -716,9 +746,9 @@ struct MixerMaster {
 			mix[1] = dcBlocker[1].processHP(mix[1]);
 		}
 		
-		// Voltage limiter (post VU, so that we can see true range)
-		mix[0] = clamp(mix[0], -voltageLimiter, voltageLimiter);
-		mix[1] = clamp(mix[1], -voltageLimiter, voltageLimiter);
+		// Clipping (post VU, so that we can see true range)
+		mix[0] = clip(mix[0]);
+		mix[1] = clip(mix[1]);
 	}
 	
 	
@@ -726,8 +756,8 @@ struct MixerMaster {
 		// dcBlock
 		json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
 
-		// voltageLimiter
-		json_object_set_new(rootJ, "voltageLimiter", json_real(voltageLimiter));
+		// clipping
+		json_object_set_new(rootJ, "clipping", json_integer(clipping));
 		
 		// fadeRate
 		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
@@ -749,11 +779,11 @@ struct MixerMaster {
 		if (dcBlockJ)
 			dcBlock = json_is_true(dcBlockJ);
 		
-		// voltageLimiter
-		json_t *voltageLimiterJ = json_object_get(rootJ, "voltageLimiter");
-		if (voltageLimiterJ)
-			voltageLimiter = json_number_value(voltageLimiterJ);
-
+		// clipping
+		json_t *clippingJ = json_object_get(rootJ, "clipping");
+		if (clippingJ)
+			clipping = json_integer_value(clippingJ);
+		
 		// fadeRate
 		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
 		if (fadeRateJ)

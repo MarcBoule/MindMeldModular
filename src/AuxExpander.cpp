@@ -310,9 +310,14 @@ struct AuxExpander : Module {
 			globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
 						
 			//   Indiv mute sends (20 instances)
+			int32_t muteTrkAuxSendWhenTrkGrouped;
+			memcpy(&muteTrkAuxSendWhenTrkGrouped, &messagesFromMother[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], 4);
 			for (int gi = 0; gi < 20; gi++) {
 				float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
 				val = (val > 0.5f ? 0.0f : 1.0f);
+				if ( gi < 16 && (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0) {
+					val = 0.0f;
+				}
 				if (sendMuteSlewers[gi].out != val) {
 					sendMuteSlewers[gi].process(args.sampleTime, val);
 				}
@@ -545,7 +550,6 @@ struct AuxExpanderWidget : ModuleWidget {
 		ret[3] += aux;
 		return ret;
 	}
-
 
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);

@@ -463,9 +463,9 @@ struct MasterDisplay : OpaqueWidget {
 			dcItem->srcMaster = srcMaster;
 			menu->addChild(dcItem);
 			
-			VoltLimitItem *vLimitItem = createMenuItem<VoltLimitItem>("Voltage limiter", RIGHT_ARROW);
-			vLimitItem->srcMaster = srcMaster;
-			menu->addChild(vLimitItem);
+			ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
+			clipItem->srcMaster = srcMaster;
+			menu->addChild(clipItem);
 				
 			if (srcMaster->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);

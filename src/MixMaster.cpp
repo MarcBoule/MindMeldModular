@@ -444,12 +444,21 @@ struct MixMaster : Module {
 			
 			// Fast
 			
+			// 16+4 stereo signals to be used to make sends in aux expander
 			writeAuxSends(&messageToExpander[AFM_AUX_SENDS]);						
 			// Aux VUs
 			for (int i = 0; i < 4; i++) {
 				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];// send tap 4 of the aux return signal flows
 				messageToExpander[AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];// send tap 4 of the aux return signal flows
 			}
+			// mute aux send of track when it is grouped
+			int32_t mask = 0;
+			if (gInfo.muteTrkSendsWhenGrpMuted != 0) {
+				for (int i = 0; i < 4; i++) {
+					mask |= gInfo.groupUsage[i];
+				}
+			}
+			memcpy(&messageToExpander[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], &mask, 4);
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}// if (auxExpanderPresent)
@@ -685,9 +694,10 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(panLawStereoItem);
 		
 		if (module->auxExpanderPresent) {
-			TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
+			TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
 			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
 			auxSendsItem->isGlobal = true;
+			auxSendsItem->gInfo = &(module->gInfo);
 			menu->addChild(auxSendsItem);
 			
 			AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
