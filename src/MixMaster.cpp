@@ -729,8 +729,12 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(vuColItem);
 		
 		KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
-		knobArcShowItem->srcKnobArcShow = &(module->gInfo.colorAndCloak.cc4[knobArcShow]);
+		knobArcShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 		menu->addChild(knobArcShowItem);
+		
+		CvPointerShowItem *cvPointerShowItem = createMenuItem<CvPointerShowItem>("Fader CV pointers", RIGHT_ARROW);
+		cvPointerShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+		menu->addChild(cvPointerShowItem);
 		
 		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
 		nightItem->gInfo = &(module->gInfo);

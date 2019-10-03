@@ -351,7 +351,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 
 	void draw(const DrawArgs &args) override {
 		// cv pointer (draw only when cv has en effect)
-		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f && colorAndCloak->cc4[cloakedMode] == 0) {// -1.0f indicates not to show cv pointer
+		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
 			float cvPosNormalized = *srcParamWithCV / maxTFader;
 			float vertPos = box.size.y - box.size.y * cvPosNormalized;// in px
 			nvgBeginPath(args.vg);
@@ -1157,12 +1157,12 @@ struct DynKnobWithArc : DynKnob {
 				aBase += minAngle;
 			}
 			// param
-			if (normalizedParam != 0.5f && (colorAndCloakPtr->cc4[knobArcShow] & ~colorAndCloakPtr->cc4[cloakedMode]) == 0x3) {
+			if (normalizedParam != 0.5f && (colorAndCloakPtr->cc4[detailsShow] & ~colorAndCloakPtr->cc4[cloakedMode] & 0x3) == 0x3) {
 				aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
 				drawArc(args, aBase, aParam, &arcColorDarker);
 			}
 			// cv
-			if (paramWithCV && *paramWithCV != -1.0f && (colorAndCloakPtr->cc4[knobArcShow] & ~colorAndCloakPtr->cc4[cloakedMode]) != 0) {
+			if (paramWithCV && *paramWithCV != -1.0f && (colorAndCloakPtr->cc4[detailsShow] & ~colorAndCloakPtr->cc4[cloakedMode] & 0x3) != 0) {
 				if (aParam == -10000.0f) {
 					aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
 				}

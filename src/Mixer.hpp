@@ -241,7 +241,7 @@ enum ccIds {
 	cloakedMode, // turn off track VUs only, keep master VUs (also called "Cloaked mode"), this has only two values, 0x0 and 0xFF so that it can be used in bit mask operations
 	vuColorGlobal, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table, or else array overflow)
 	dispColor, // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray
-	knobArcShow // bit 0 is param arc, bit 1 is cv arc
+	detailsShow // bit 0 is knob param arc, bit 1 is knob cv arc, bit 2 is fader cv pointer
 };
 union PackedBytes4 {
 	int32_t cc1;
@@ -377,7 +377,7 @@ struct GlobalInfo {
 		colorAndCloak.cc4[cloakedMode] = 0;
 		colorAndCloak.cc4[vuColorGlobal] = 0;
 		colorAndCloak.cc4[dispColor] = 0;
-		colorAndCloak.cc4[knobArcShow] = 0x3;
+		colorAndCloak.cc4[detailsShow] = 0x7;
 		for (int i = 0; i < 4; i++) {
 			groupUsage[i] = 0;
 		}

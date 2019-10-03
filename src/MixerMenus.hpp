@@ -313,33 +313,59 @@ struct DispColorItem : MenuItem {
 };
 
 struct KnobArcShowItem : MenuItem {
-	int8_t *srcKnobArcShow;
+	int8_t *srcDetailsShow;
 
 	struct KnobArcShowSubItem : MenuItem {
-		int8_t *srcKnobArcShow;
+		int8_t *srcDetailsShow;
 		int setVal;
 		void onAction(const event::Action &e) override {
-			*srcKnobArcShow = setVal;
+			*srcDetailsShow &= ~0x3;
+			*srcDetailsShow |= setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		KnobArcShowSubItem *arcShowItem0 = createMenuItem<KnobArcShowSubItem>("On", CHECKMARK(*srcKnobArcShow == 0x3));
-		arcShowItem0->srcKnobArcShow = srcKnobArcShow;
+		KnobArcShowSubItem *arcShowItem0 = createMenuItem<KnobArcShowSubItem>("On", CHECKMARK((*srcDetailsShow & 0x3) == 0x3));
+		arcShowItem0->srcDetailsShow = srcDetailsShow;
 		arcShowItem0->setVal = 0x3;
 		menu->addChild(arcShowItem0);
 		
-		KnobArcShowSubItem *arcShowItem1 = createMenuItem<KnobArcShowSubItem>("CV only", CHECKMARK(*srcKnobArcShow == 0x2));
-		arcShowItem1->srcKnobArcShow = srcKnobArcShow;
+		KnobArcShowSubItem *arcShowItem1 = createMenuItem<KnobArcShowSubItem>("CV only", CHECKMARK((*srcDetailsShow & 0x3) == 0x2));
+		arcShowItem1->srcDetailsShow = srcDetailsShow;
 		arcShowItem1->setVal = 0x2;
 		menu->addChild(arcShowItem1);
 		
-		KnobArcShowSubItem *arcShowItem2 = createMenuItem<KnobArcShowSubItem>("Off", CHECKMARK(*srcKnobArcShow == 0x0));
-		arcShowItem2->srcKnobArcShow = srcKnobArcShow;
+		KnobArcShowSubItem *arcShowItem2 = createMenuItem<KnobArcShowSubItem>("Off", CHECKMARK((*srcDetailsShow & 0x3) == 0x0));
+		arcShowItem2->srcDetailsShow = srcDetailsShow;
 		arcShowItem2->setVal = 0x0;
 		menu->addChild(arcShowItem2);
+		
+		return menu;
+	}
+};
+
+struct CvPointerShowItem : MenuItem {
+	int8_t *srcDetailsShow;
+
+	struct CvPointerShowSubItem : MenuItem {
+		int8_t *srcDetailsShow;
+		void onAction(const event::Action &e) override {
+			*srcDetailsShow ^= 0x4;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		CvPointerShowSubItem *cvShowItem0 = createMenuItem<CvPointerShowSubItem>("On", CHECKMARK((*srcDetailsShow & 0x4) != 0));
+		cvShowItem0->srcDetailsShow = srcDetailsShow;
+		menu->addChild(cvShowItem0);
+		
+		CvPointerShowSubItem *cvShowItem1 = createMenuItem<CvPointerShowSubItem>("Off", CHECKMARK((*srcDetailsShow & 0x4) == 0));
+		cvShowItem1->srcDetailsShow = srcDetailsShow;
+		menu->addChild(cvShowItem1);
 		
 		return menu;
 	}
