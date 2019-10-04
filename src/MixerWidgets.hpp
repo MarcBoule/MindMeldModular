@@ -1192,11 +1192,13 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	}
 	
 	void draw(const DrawArgs &args) override {
-		int colorIndex = colorAndCloakPtr->cc4[dispColor] < 7 ? colorAndCloakPtr->cc4[dispColor] : *dispColorLocal;
-		if (colorAndCloakPtr && colorIndex != oldDispColor) {
-			arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
-			arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
-			oldDispColor = colorIndex;
+		if (colorAndCloakPtr) {
+			int colorIndex = colorAndCloakPtr->cc4[dispColor] < 7 ? colorAndCloakPtr->cc4[dispColor] : *dispColorLocal;
+			if (colorIndex != oldDispColor) {
+				arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
+				arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+				oldDispColor = colorIndex;
+			}
 		}
 		DynKnobWithArc::draw(args);
 	}

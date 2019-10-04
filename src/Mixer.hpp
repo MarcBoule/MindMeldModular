@@ -44,7 +44,6 @@ enum InputIds {
 	TRACK_MUTE_INPUT,
 	TRACK_SOLO_INPUT,
 	GRPM_MUTESOLO_INPUT,// 1-4 Group mutes, 5-8 Group solos, 9 Master Mute, 10 Master Dim, 11 Master Mono, 12 Master VOL
-	MASTER_CV_INPUT,
 	NUM_INPUTS
 };
 
@@ -560,7 +559,7 @@ struct MixerMaster {
 		gInfo = _gInfo;
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
-		inVol = &_inputs[MASTER_CV_INPUT];
+		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 		chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
@@ -677,8 +676,8 @@ struct MixerMaster {
 
 		// calc ** paramWithCV **
 		float slowGain = params[MAIN_FADER_PARAM].getValue();
-		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+		if (inVol->isConnected() && inVol->getChannels() >= 12) {
+			slowGain *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
 			paramWithCV = slowGain;
 		}
 		else {
