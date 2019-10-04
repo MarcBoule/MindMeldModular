@@ -795,6 +795,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);
 			}
 			// HPF lights
 			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TRACK_HPF_LIGHTS + i));	
@@ -814,6 +815,7 @@ struct MixMasterWidget : ModuleWidget {
 			if (module) {
 				panKnobTrack->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
 				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
+				panKnobTrack->dispColorLocal = &(module->tracks[i].dispColorLocal);
 			}
 			
 			// Faders
@@ -835,6 +837,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				newFP->srcFadeRate = &(module->tracks[i].fadeRate);
+				newFP->dispColorLocalPtr = &(module->tracks[i].dispColorLocal);
 				addChild(newFP);				
 			}
 			
@@ -887,6 +890,7 @@ struct MixMasterWidget : ModuleWidget {
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 			}
 			
 			// Volume inputs
@@ -899,6 +903,7 @@ struct MixMasterWidget : ModuleWidget {
 			if (module) {
 				panKnobGroup->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
 				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
+				panKnobGroup->dispColorLocal = &(module->groups[i].dispColorLocal);
 			}
 			
 			// Faders
@@ -920,6 +925,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				newFP->srcFadeRate = &(module->groups[i].fadeRate);
+				newFP->dispColorLocalPtr = &(module->groups[i].dispColorLocal);
 				addChild(newFP);				
 			}
 

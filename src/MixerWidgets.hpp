@@ -14,8 +14,8 @@
 #include <time.h>
 
 
-static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240)};// yellow, blue, green, light-gray
-
+static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240),// yellow, blue, green, light-gray,
+										nvgRGB(102, 245, 207), nvgRGB(102, 207, 245), nvgRGB(156, 107, 235)};// aqua, cyan, purple
 
 // --------------------
 // VU meters
@@ -333,7 +333,8 @@ struct CvAndFadePointerBase : OpaqueWidget {
 	PackedBytes4* colorAndCloak;// cv pointers have same color as displays
 	float *srcFadeGain = NULL;// to know where to position the pointer, NULL indicates when fader pointers are not used (aux ret faders for example)
 	float *srcFadeRate;// mute when < minFadeRate, fade when >= minFadeRate
-
+	int8_t* dispColorLocalPtr;
+	
 	// derived class must setup:
 	// box.size // inherited from OpaqueWidget, no need to declare
 	float faderMaxLinearGain;
@@ -359,7 +360,8 @@ struct CvAndFadePointerBase : OpaqueWidget {
 			nvgLineTo(args.vg, box.size.x, vertPos);
 			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
 			nvgClosePath(args.vg);
-			nvgFillColor(args.vg, DISP_COLORS[colorAndCloak->cc4[dispColor]]);
+			int colorIndex = (colorAndCloak->cc4[dispColor] < 7) ? colorAndCloak->cc4[dispColor] : (*dispColorLocalPtr);
+			nvgFillColor(args.vg, DISP_COLORS[colorIndex]);
 			nvgFill(args.vg);
 			nvgStrokeColor(args.vg, SCHEME_BLACK);
 			nvgStrokeWidth(args.vg, mm2px(0.11f));
@@ -491,11 +493,12 @@ static const Vec DISP_SIZE = Vec(38, 16);
 static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 
 
-// Non-Editable track and group
+// Non-Editable track and group (used by auxspander)
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
 	int8_t* dispColor = NULL;
+	int8_t* dispColorLocal;
 	
 	TrackAndGroupLabel() {
 		box.size = DISP_SIZE;
@@ -505,7 +508,8 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	
 	void draw(const DrawArgs &args) override {
 		if (dispColor) {
-			color = DISP_COLORS[*dispColor];
+			int colorIndex = *dispColor < 7 ? *dispColor : 0;//*dispColorLocal; // TODO: send per track/group dispColorLocal to aux pannel in slow data
+			color = DISP_COLORS[colorIndex];
 		}	
 		LedDisplayChoice::draw(args);
 	}
@@ -518,6 +522,7 @@ struct GroupTrackAuxDisplayBase : LedDisplayTextField {
 	bool doubleClick = false;
 	GlobalInfo *gInfo = NULL;
 	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use the base for Aux displays
+	int8_t* dispColorLocal;
 
 	GroupTrackAuxDisplayBase() {
 		box.size = DISP_SIZE;
@@ -528,7 +533,8 @@ struct GroupTrackAuxDisplayBase : LedDisplayTextField {
 	// don't want background so implement adapted version here
 	void draw(const DrawArgs &args) override {
 		if (colorAndCloak) {
-			color = DISP_COLORS[colorAndCloak->cc4[dispColor]];
+			int colorIndex = colorAndCloak->cc4[dispColor] < 7 ? colorAndCloak->cc4[dispColor] : *dispColorLocal;
+			color = DISP_COLORS[colorIndex];
 		}
 		if (cursor > 4) {
 			text.resize(4);
@@ -1178,6 +1184,7 @@ static const int greyArc = 120;
 
 struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	int oldDispColor = -1;
+	int8_t* dispColorLocal;
 	
 	DynSmallKnobGreyWithArc() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
@@ -1185,10 +1192,11 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	}
 	
 	void draw(const DrawArgs &args) override {
-		if (colorAndCloakPtr && colorAndCloakPtr->cc4[dispColor] != oldDispColor) {
-			arcColor = DISP_COLORS[colorAndCloakPtr->cc4[dispColor]];// arc color, same as displays
+		int colorIndex = colorAndCloakPtr->cc4[dispColor] < 7 ? colorAndCloakPtr->cc4[dispColor] : *dispColorLocal;
+		if (colorAndCloakPtr && colorIndex != oldDispColor) {
+			arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
 			arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
-			oldDispColor = colorAndCloakPtr->cc4[dispColor];
+			oldDispColor = colorIndex;
 		}
 		DynKnobWithArc::draw(args);
 	}

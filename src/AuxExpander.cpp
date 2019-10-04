@@ -57,8 +57,9 @@ struct AuxExpander : Module {
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice), no need to send back to main panel
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
-	dsp::SlewLimiter sendMuteSlewers[20];
-	
+	int8_t dispColorLocal[4]; // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
+	// TODO: in order to know to use these, main has to send over dispColor (i.e dispColorGlobal), so that we know to add to aux label menus and pan knobs will know to use dispColorLocal[])
+
 	// No need to save, with reset
 	int refreshCounter12;
 	VuMeterAllDual vu[4];
@@ -67,6 +68,7 @@ struct AuxExpander : Module {
 	float indivTrackSendWithCv[64];
 	float indivGroupSendWithCv[16];
 	float globalRetPansWithCV[4];
+	dsp::SlewLimiter sendMuteSlewers[20];
 	
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
@@ -177,7 +179,7 @@ struct AuxExpander : Module {
 			vuColorThemeLocal.cc4[i] = 0;
 			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
 			panLawStereoLocal.cc4[i] = 0;
-			
+			dispColorLocal[i] = 0;			
 		}
 		resetAuxLabelRequest = 1;
 		resetNonJson(false);
@@ -220,6 +222,13 @@ struct AuxExpander : Module {
 
 		// panLawStereoLocal
 		json_object_set_new(rootJ, "panLawStereoLocal", json_integer(panLawStereoLocal.cc1));
+
+		// dispColorLocal
+		json_t *dispColorLocalJ = json_array();
+		for (int c = 0; c < 4; c++)
+			json_array_insert_new(dispColorLocalJ, c, json_integer(dispColorLocal[c]));
+		json_object_set_new(rootJ, "dispColorLocal", dispColorLocalJ);
+
 		return rootJ;
 	}
 
@@ -245,6 +254,17 @@ struct AuxExpander : Module {
 		if (panLawStereoLocalJ)
 			panLawStereoLocal.cc1 = json_integer_value(panLawStereoLocalJ);
 
+		// dispColorLocal
+		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
+		if (dispColorLocalJ) {
+			for (int c = 0; c < 4; c++)
+			{
+				json_t *dispColorLocalArrayJ = json_array_get(dispColorLocalJ, c);
+				if (dispColorLocalArrayJ)
+					dispColorLocal[c] = json_integer_value(dispColorLocalArrayJ);
+			}
+		}
+		
 		resetNonJson(true);
 	}
 
@@ -572,6 +592,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
 				auxDisplays[i]->auxNumber = i;
 				auxDisplays[i]->text = getInitAuxLabel(i);
+				auxDisplays[i]->dispColorLocal = &(module->dispColorLocal[i]);
 			}
 			// Y is 4.7, same X as below
 			
@@ -591,6 +612,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				panKnobAux->colorAndCloakPtr = &(module->colorAndCloak);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
+				panKnobAux->dispColorLocal = &(module->dispColorLocal[i]);
 			}
 			
 			// Return faders
@@ -607,6 +629,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newFP->srcParam = &(module->params[AuxExpander::GLOBAL_AUXRETURN_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->paramRetFaderWithCv[i]);
 				newFP->colorAndCloak = &(module->colorAndCloak);
+				newFP->dispColorLocalPtr = &(module->dispColorLocal[i]);
 				addChild(newFP);				
 			}				
 			

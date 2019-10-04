@@ -241,7 +241,7 @@ struct TrackSettingsCpBuffer {
 enum ccIds {
 	cloakedMode, // turn off track VUs only, keep master VUs (also called "Cloaked mode"), this has only two values, 0x0 and 0xFF so that it can be used in bit mask operations
 	vuColorGlobal, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table, or else array overflow)
-	dispColor, // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray
+	dispColor, // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple, 7 is per track
 	detailsShow // bit 0 is knob param arc, bit 1 is knob cv arc, bit 2 is fader cv pointer
 };
 union PackedBytes4 {
@@ -612,13 +612,13 @@ struct MixerMaster {
 	}
 	
 	float clip(float inX) {// 0 = soft, 1 = hard
+		if (inX <= 6.0f && inX >= -6.0f) {
+			return inX;
+		}
 		if (clipping == 1) {
 			return clamp(inX, -10.0f, 10.0f);
 		}
 		// here clipping is 0, so do soft clip
-		if (inX <= 6.0f && inX >= -6.0f) {
-			return inX;
-		}
 		if (inX > 12.0f) inX = 12.0f;
 		if (inX < -12.0f) inX = -12.0f;
 		if (inX >= 0.0f)
@@ -829,6 +829,7 @@ struct MixerGroup {
 	int8_t auxSendsMode;// when per track
 	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
+	int8_t dispColorLocal;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
 
 	// no need to save, with reset
 	private:
@@ -884,6 +885,7 @@ struct MixerGroup {
 		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 0;
 		vuColorThemeLocal = 0;
+		dispColorLocal = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -1062,6 +1064,9 @@ struct MixerGroup {
 
 		// vuColorThemeLocal
 		json_object_set_new(rootJ, (ids + "vuColorThemeLocal").c_str(), json_integer(vuColorThemeLocal));
+
+		// dispColorLocal
+		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -1095,6 +1100,11 @@ struct MixerGroup {
 		if (vuColorThemeLocalJ)
 			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
 		
+		// dispColorLocal
+		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
+		if (dispColorLocalJ)
+			dispColorLocal = json_integer_value(dispColorLocalJ);
+		
 		// extern must call resetNonJson()
 	}
 };// struct MixerGroup
@@ -1127,6 +1137,8 @@ struct MixerTrack {
 	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
+	int8_t dispColorLocal;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
+
 
 	// no need to save, with reset
 	private:
@@ -1208,6 +1220,7 @@ struct MixerTrack {
 		panLawStereo = 0;
 		vuColorThemeLocal = 0;
 		filterPos = 1;// default is post-insert
+		dispColorLocal = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -1635,6 +1648,9 @@ struct MixerTrack {
 
 		// filterPos
 		json_object_set_new(rootJ, (ids + "filterPos").c_str(), json_integer(filterPos));
+
+		// dispColorLocal
+		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -1687,6 +1703,11 @@ struct MixerTrack {
 		json_t *filterPosJ = json_object_get(rootJ, (ids + "filterPos").c_str());
 		if (filterPosJ)
 			filterPos = json_integer_value(filterPosJ);
+		
+		// dispColorLocal
+		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
+		if (dispColorLocalJ)
+			dispColorLocal = json_integer_value(dispColorLocalJ);
 		
 		// extern must call resetNonJson()
 	}
