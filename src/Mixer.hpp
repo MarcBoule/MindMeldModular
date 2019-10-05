@@ -53,6 +53,7 @@ enum OutputIds {
 	ENUMS(MAIN_OUTPUTS, 2),
 	ENUMS(INSERT_TRACK_OUTPUTS, 2),
 	INSERT_GRP_AUX_OUTPUT,
+	FADE_CV_OUTPUT,
 	NUM_OUTPUTS
 };
 
@@ -241,7 +242,7 @@ struct TrackSettingsCpBuffer {
 enum ccIds {
 	cloakedMode, // turn off track VUs only, keep master VUs (also called "Cloaked mode"), this has only two values, 0x0 and 0xFF so that it can be used in bit mask operations
 	vuColorGlobal, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table, or else array overflow)
-	dispColor, // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple, 7 is per track
+	dispColor, // 0 is yellow, 1 is light-gray, 2 is green, 3 is aqua, 4 is cyan, 5 is blue, 6 is purple, 7 is per track
 	detailsShow // bit 0 is knob param arc, bit 1 is knob cv arc, bit 2 is fader cv pointer
 };
 union PackedBytes4 {
@@ -530,7 +531,7 @@ struct MixerMaster {
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int8_t vuColorThemeLocal;
-	int8_t dispColorLocal;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
+	int8_t dispColorLocal;
 	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	char masterLabel[7];
 	
@@ -849,7 +850,7 @@ struct MixerGroup {
 	int8_t auxSendsMode;// when per track
 	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
-	int8_t dispColorLocal;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
+	int8_t dispColorLocal;
 
 	// no need to save, with reset
 	private:
@@ -1157,7 +1158,7 @@ struct MixerTrack {
 	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
-	int8_t dispColorLocal;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
+	int8_t dispColorLocal;
 
 
 	// no need to save, with reset
@@ -1441,7 +1442,6 @@ struct MixerTrack {
 				gainMatrixSlewers.reset();
 				inGainSlewer.reset();
 				muteSoloGainSlewer.reset();
-				paramWithCV = -1.0f;
 				oldInUse = false;
 			}
 			return;

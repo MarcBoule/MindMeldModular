@@ -395,6 +395,7 @@ struct MixMaster : Module {
 		SetInsertTrackOuts(8);// 9-16
 		SetInsertGroupAuxOuts();	
 
+		setFadeCvOuts();
 
 
 		//********** Lights **********
@@ -484,6 +485,15 @@ struct MixMaster : Module {
 		
 	}// process()
 	
+	
+	void setFadeCvOuts() {
+		if (outputs[FADE_CV_OUTPUT].isConnected()) {
+			outputs[FADE_CV_OUTPUT].setChannels(numChannels16);
+			for (int trk = 0; trk < 16; trk++) {
+				outputs[FADE_CV_OUTPUT].setVoltage(tracks[trk].fadeGain * 10.0f, trk);
+			}
+		}
+	}
 	
 	void writeAuxSends(float* auxSends) {
 		// Aux sends (send track and group audio (16+4 stereo signals) to auxspander
@@ -901,7 +911,7 @@ struct MixMasterWidget : ModuleWidget {
 				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, DIRECT_OUTPUTS + i - 1, module ? &module->panelTheme : NULL));
 			}
 			else {
-				//addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * (0), 12.8)), true, module, MASTER_CV_INPUT, module ? &module->panelTheme : NULL));				
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), false, module, FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));				
 			}
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));

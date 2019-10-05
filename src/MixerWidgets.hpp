@@ -14,8 +14,15 @@
 #include <time.h>
 
 
-static const NVGcolor DISP_COLORS[] = {nvgRGB(0xff, 0xd7, 0x14), nvgRGB(102, 183, 245), nvgRGB(140, 235, 107), nvgRGB(240, 240, 240),// yellow, blue, green, light-gray,
-										nvgRGB(102, 245, 207), nvgRGB(102, 207, 245), nvgRGB(156, 107, 235)};// aqua, cyan, purple
+static const NVGcolor DISP_COLORS[] = {
+	nvgRGB(0xff, 0xd7, 0x14),// yellow
+	nvgRGB(240, 240, 240),// light-gray			
+	nvgRGB(140, 235, 107),// green
+	nvgRGB(102, 245, 207),// aqua
+	nvgRGB(102, 207, 245),// cyan
+	nvgRGB(102, 183, 245),// blue
+	nvgRGB(177, 107, 235)// purple
+};
 
 // --------------------
 // VU meters
@@ -605,7 +612,7 @@ struct MasterDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);		
 	}
 	void onChange(const event::Change &e) override {
-		snprintf(srcMaster->masterLabel, 7, text.c_str());
+		snprintf(srcMaster->masterLabel, 7, "%s", text.c_str());
 		EditableDisplayBase::onChange(e);
 	};
 };

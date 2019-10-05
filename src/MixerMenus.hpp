@@ -319,11 +319,11 @@ struct DispColorItem : MenuItem {
 
 		std::string dispColorNames[8] = {
 			"Yellow (default)",
-			"Blue",
-			"Green",
 			"Light-grey",
+			"Green",
 			"Aqua",
 			"Cyan",
+			"Blue",
 			"Purple",
 			"Set per track"
 		};

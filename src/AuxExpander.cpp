@@ -57,7 +57,7 @@ struct AuxExpander : Module {
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice), no need to send back to main panel
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
-	int8_t dispColorAuxLocal[4]; // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
+	int8_t dispColorAuxLocal[4];
 
 	// No need to save, with reset
 	int refreshCounter12;
