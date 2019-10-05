@@ -889,6 +889,8 @@ struct AuxDisplay : EditableDisplayBase {
 
 struct GroupSelectDisplay : ParamWidget {
 	PackedBytes4 *srcColor = NULL;
+	int8_t* srcColorLocal;
+	int oldDispColor = -1;
 	LedDisplayChoice ldc;
 	
 	GroupSelectDisplay() {
@@ -907,7 +909,13 @@ struct GroupSelectDisplay : ParamWidget {
 		ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
 		ldc.text[1] = 0;
 		if (srcColor) {
-			ldc.color = DISP_COLORS[srcColor->cc4[dispColor]];
+			int colorIndex = srcColor->cc4[dispColor] < 7 ? srcColor->cc4[dispColor] : *srcColorLocal;
+			if (colorIndex != oldDispColor) {
+				ldc.color = DISP_COLORS[colorIndex];
+				// arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
+				// arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+				oldDispColor = colorIndex;
+			}
 		}
 		ldc.draw(args);
 		ParamWidget::draw(args);

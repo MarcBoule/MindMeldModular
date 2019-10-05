@@ -904,6 +904,7 @@ struct MixMasterWidget : ModuleWidget {
 			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
+				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
 			}
 		}
 		

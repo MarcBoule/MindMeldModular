@@ -662,6 +662,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i - 0.1, 123.1)), module, AuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->colorAndCloak);
+				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
 			}
 		}
 
