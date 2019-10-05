@@ -559,7 +559,7 @@ struct MasterDisplay : EditableDisplayBase {
 	
 	MasterDisplay() {
 		numChars = 6;
-		box.size.x = mm2px(17.0);
+		box.size.x = mm2px(17.2);
 		textOffset.x = 2.4f;
 		text = "-0000-";
 	}
