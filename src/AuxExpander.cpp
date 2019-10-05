@@ -309,7 +309,8 @@ struct AuxExpander : Module {
 				for (int i = 0; i < 16; i++) {
 					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
 				}
-				memcpy(&trackDispColsLocal, &messagesFromMother[AFM_TRK_DISP_COL], 5 * 4);
+				// Display colors (when per track)
+				memcpy(trackDispColsLocal, &messagesFromMother[AFM_TRK_DISP_COL], 5 * 4);
 			}
 			
 			// Fast values from mother
@@ -684,8 +685,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for tracks 1 to 8
 			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 4.7))));
 			if (module) {
-				trackAndGroupLabels[i]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
-				trackAndGroupLabels[i]->dispColorLocal = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
+				trackAndGroupLabels[i]->dispColorPtr = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
 			}
 			// aux A send for tracks 1 to 8
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
@@ -718,8 +719,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for tracks 9 to 16
 			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 65.08))));
 			if (module) {
-				trackAndGroupLabels[i + 8]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
-				trackAndGroupLabels[i + 8]->dispColorLocal = &(module->trackDispColsLocal[(i + 8) >> 2].cc4[i & 0x3]);
+				trackAndGroupLabels[i + 8]->dispColorPtr = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i + 8]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 8) >> 2].cc4[i & 0x3]);
 			}
 
 			// aux A send for tracks 9 to 16
@@ -757,8 +758,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for groups 1 to 2
 			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 4.7))));
 			if (module) {
-				trackAndGroupLabels[i + 16]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
-				trackAndGroupLabels[i + 16]->dispColorLocal = &(module->trackDispColsLocal[(i + 16) >> 2].cc4[i & 0x3]);			
+				trackAndGroupLabels[i + 16]->dispColorPtr = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i + 16]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 16) >> 2].cc4[i & 0x3]);			
 			}
 
 			// aux A send for groups 1 to 2
@@ -796,8 +797,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for groups 3 to 4
 			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 65.08))));
 			if (module) {
-				trackAndGroupLabels[i + 18]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
-				trackAndGroupLabels[i + 18]->dispColorLocal = &(module->trackDispColsLocal[(i + 18) >> 2].cc4[(i + 18) & 0x3]);
+				trackAndGroupLabels[i + 18]->dispColorPtr = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i + 18]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 18) >> 2].cc4[(i + 18) & 0x3]);
 			}
 
 			// aux A send for groups 3 to 4

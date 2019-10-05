@@ -439,13 +439,20 @@ struct MixMaster : Module {
 				messageToExpander[AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
 				// Display colors (when per track)
 				PackedBytes4 tmpDispCols[5];
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 4; j++) {
-						tmpDispCols[i].cc4[j] = tracks[ (i << 2) + j ].dispColorLocal;
-					}	
+				if (gInfo.colorAndCloak.cc4[dispColor] < 7) {
+					for (int i = 0; i < 5; i++) {
+						tmpDispCols[i].cc1 = 0;
+					}
 				}
-				for (int j = 0; j < 4; j++) {
-					tmpDispCols[4].cc4[j] = groups[ j ].dispColorLocal;
+				else {
+					for (int i = 0; i < 4; i++) {
+						for (int j = 0; j < 4; j++) {
+							tmpDispCols[i].cc4[j] = tracks[ (i << 2) + j ].dispColorLocal;
+						}	
+					}
+					for (int j = 0; j < 4; j++) {
+						tmpDispCols[4].cc4[j] = groups[ j ].dispColorLocal;
+					}
 				}	
 				memcpy(&messageToExpander[AFM_TRK_DISP_COL], tmpDispCols, 5 * 4);
 			}
@@ -967,6 +974,8 @@ struct MixMasterWidget : ModuleWidget {
 		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 0.4, 128.5 - 97.0))));
 		if (module) {
 			masterDisplay->srcMaster = &(module->master);
+			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
 		}
 		
 		// Master fader

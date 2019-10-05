@@ -80,7 +80,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_TRACK_MOVE,
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
 	AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED,
-	ENUMS(AFM_TRK_DISP_COL, 4),// 4 tracks per dword
+	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
 	AFM_NUM_VALUES
 };
 

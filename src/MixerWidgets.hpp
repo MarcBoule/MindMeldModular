@@ -446,8 +446,8 @@ static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	int8_t* dispColor = NULL;
-	int8_t* dispColorLocal;
+	int8_t* dispColorPtr = NULL;
+	int8_t* dispColorLocalPtr;
 	
 	TrackAndGroupLabel() {
 		box.size = DISP_SIZE;
@@ -456,8 +456,8 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	};
 	
 	void draw(const DrawArgs &args) override {
-		if (dispColor) {
-			int colorIndex = *dispColor < 7 ? *dispColor : 0;//*dispColorLocal; // TODO: send per track/group dispColorLocal to aux pannel in slow data
+		if (dispColorPtr) {
+			int colorIndex = *dispColorPtr < 7 ? *dispColorPtr : *dispColorLocalPtr;
 			color = DISP_COLORS[colorIndex];
 		}	
 		LedDisplayChoice::draw(args);
