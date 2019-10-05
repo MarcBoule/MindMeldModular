@@ -57,8 +57,7 @@ struct AuxExpander : Module {
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice), no need to send back to main panel
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
-	int8_t dispColorLocal[4]; // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
-	// TODO: in order to know to use these, main has to send over dispColor (i.e dispColorGlobal), so that we know to add to aux label menus and pan knobs will know to use dispColorLocal[])
+	int8_t dispColorAuxLocal[4]; // 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
 
 	// No need to save, with reset
 	int refreshCounter12;
@@ -83,6 +82,7 @@ struct AuxExpander : Module {
 	simd::float_4 globalSends;
 	Trigger muteSoloCvTriggers[28];
 	int muteSoloCvTrigRefresh = 0;
+	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
 
 	
 	AuxExpander() {
@@ -164,6 +164,9 @@ struct AuxExpander : Module {
 
 		colorAndCloak.cc1 = 0;
 		directOutsAndStereoPanModes.cc1 = 0;
+		for (int i = 0; i < 5; i++) {
+			trackDispColsLocal[i].cc1 = 0;
+		}
 		for (int i = 0; i < 20; i++) {
 			sendMuteSlewers[i].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 		}
@@ -179,7 +182,7 @@ struct AuxExpander : Module {
 			vuColorThemeLocal.cc4[i] = 0;
 			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
 			panLawStereoLocal.cc4[i] = 0;
-			dispColorLocal[i] = 0;			
+			dispColorAuxLocal[i] = 0;			
 		}
 		resetAuxLabelRequest = 1;
 		resetNonJson(false);
@@ -223,11 +226,11 @@ struct AuxExpander : Module {
 		// panLawStereoLocal
 		json_object_set_new(rootJ, "panLawStereoLocal", json_integer(panLawStereoLocal.cc1));
 
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_array();
+		// dispColorAuxLocal
+		json_t *dispColorAuxLocalJ = json_array();
 		for (int c = 0; c < 4; c++)
-			json_array_insert_new(dispColorLocalJ, c, json_integer(dispColorLocal[c]));
-		json_object_set_new(rootJ, "dispColorLocal", dispColorLocalJ);
+			json_array_insert_new(dispColorAuxLocalJ, c, json_integer(dispColorAuxLocal[c]));
+		json_object_set_new(rootJ, "dispColorAuxLocal", dispColorAuxLocalJ);
 
 		return rootJ;
 	}
@@ -254,14 +257,14 @@ struct AuxExpander : Module {
 		if (panLawStereoLocalJ)
 			panLawStereoLocal.cc1 = json_integer_value(panLawStereoLocalJ);
 
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
-		if (dispColorLocalJ) {
+		// dispColorAuxLocal
+		json_t *dispColorAuxLocalJ = json_object_get(rootJ, "dispColorAuxLocal");
+		if (dispColorAuxLocalJ) {
 			for (int c = 0; c < 4; c++)
 			{
-				json_t *dispColorLocalArrayJ = json_array_get(dispColorLocalJ, c);
-				if (dispColorLocalArrayJ)
-					dispColorLocal[c] = json_integer_value(dispColorLocalArrayJ);
+				json_t *dispColorAuxLocalArrayJ = json_array_get(dispColorAuxLocalJ, c);
+				if (dispColorAuxLocalArrayJ)
+					dispColorAuxLocal[c] = json_integer_value(dispColorAuxLocalArrayJ);
 			}
 		}
 		
@@ -306,6 +309,7 @@ struct AuxExpander : Module {
 				for (int i = 0; i < 16; i++) {
 					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
 				}
+				memcpy(&trackDispColsLocal, &messagesFromMother[AFM_TRK_DISP_COL], 5 * 4);
 			}
 			
 			// Fast values from mother
@@ -585,14 +589,15 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
 			if (module) {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
-				auxDisplays[i]->srcColor = &(module->vuColorThemeLocal.cc4[i]);
+				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
+				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
 				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
 				auxDisplays[i]->auxNumber = i;
 				auxDisplays[i]->text = getInitAuxLabel(i);
-				auxDisplays[i]->dispColorLocal = &(module->dispColorLocal[i]);
+				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
 			}
 			// Y is 4.7, same X as below
 			
@@ -612,7 +617,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				panKnobAux->colorAndCloakPtr = &(module->colorAndCloak);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
-				panKnobAux->dispColorLocal = &(module->dispColorLocal[i]);
+				panKnobAux->dispColorLocal = &(module->dispColorAuxLocal[i]);
 			}
 			
 			// Return faders
@@ -629,7 +634,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newFP->srcParam = &(module->params[AuxExpander::GLOBAL_AUXRETURN_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->paramRetFaderWithCv[i]);
 				newFP->colorAndCloak = &(module->colorAndCloak);
-				newFP->dispColorLocalPtr = &(module->dispColorLocal[i]);
+				newFP->dispColorLocalPtr = &(module->dispColorAuxLocal[i]);
 				addChild(newFP);				
 			}				
 			
@@ -680,6 +685,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 4.7))));
 			if (module) {
 				trackAndGroupLabels[i]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i]->dispColorLocal = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
 			}
 			// aux A send for tracks 1 to 8
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobAuxAWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
@@ -713,6 +719,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 65.08))));
 			if (module) {
 				trackAndGroupLabels[i + 8]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i + 8]->dispColorLocal = &(module->trackDispColsLocal[(i + 8) >> 2].cc4[i & 0x3]);
 			}
 
 			// aux A send for tracks 9 to 16
@@ -751,6 +758,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 4.7))));
 			if (module) {
 				trackAndGroupLabels[i + 16]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i + 16]->dispColorLocal = &(module->trackDispColsLocal[(i + 16) >> 2].cc4[i & 0x3]);			
 			}
 
 			// aux A send for groups 1 to 2
@@ -789,6 +797,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 65.08))));
 			if (module) {
 				trackAndGroupLabels[i + 18]->dispColor = &(module->colorAndCloak.cc4[dispColor]);
+				trackAndGroupLabels[i + 18]->dispColorLocal = &(module->trackDispColsLocal[(i + 18) >> 2].cc4[(i + 18) & 0x3]);
 			}
 
 			// aux A send for groups 3 to 4

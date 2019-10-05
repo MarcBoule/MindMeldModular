@@ -80,6 +80,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_TRACK_MOVE,
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
 	AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED,
+	ENUMS(AFM_TRK_DISP_COL, 4),// 4 tracks per dword
 	AFM_NUM_VALUES
 };
 
@@ -529,7 +530,9 @@ struct MixerMaster {
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int8_t vuColorThemeLocal;
+	int8_t dispColorLocal;// 0 is yellow, 1 is blue, 2 is green, 3 is light-gray, 4 is aqua, 5 is cyan, 6 is purple
 	float dimGain;// slider uses this gain, but displays it in dB instead of linear
+	char masterLabel[7];
 	
 	// no need to save, with reset
 	private:
@@ -572,7 +575,9 @@ struct MixerMaster {
 		fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		vuColorThemeLocal = 0;
+		dispColorLocal = 0;
 		dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
+		snprintf(masterLabel, 7, "MASTER");
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -767,8 +772,14 @@ struct MixerMaster {
 		// vuColorThemeLocal
 		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal));
 		
+		// dispColorLocal
+		json_object_set_new(rootJ, "dispColorLocal", json_integer(dispColorLocal));
+		
 		// dimGain
 		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
+		
+		// masterLabel
+		json_object_set_new(rootJ, "masterLabel", json_string(masterLabel));
 	}
 
 	
@@ -798,10 +809,20 @@ struct MixerMaster {
 		if (vuColorThemeLocalJ)
 			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
 		
+		// dispColorLocal
+		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
+		if (dispColorLocalJ)
+			dispColorLocal = json_integer_value(dispColorLocalJ);
+		
 		// dimGain
 		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
 		if (dimGainJ)
 			dimGain = json_number_value(dimGainJ);
+
+		// masterLabel
+		json_t *textJ = json_object_get(rootJ, "masterLabel");
+		if (textJ)
+			snprintf(masterLabel, 7, "%s", json_string_value(textJ));
 		
 		// extern must call resetNonJson()
 	}

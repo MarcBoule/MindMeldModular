@@ -437,6 +437,17 @@ struct MixMaster : Module {
 				trackMoveInAuxRequest = 0;
 				// Aux send mute when grouped return lights
 				messageToExpander[AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
+				// Display colors (when per track)
+				PackedBytes4 tmpDispCols[5];
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 4; j++) {
+						tmpDispCols[i].cc4[j] = tracks[ (i << 2) + j ].dispColorLocal;
+					}	
+				}
+				for (int j = 0; j < 4; j++) {
+					tmpDispCols[4].cc4[j] = groups[ j ].dispColorLocal;
+				}	
+				memcpy(&messageToExpander[AFM_TRK_DISP_COL], tmpDispCols, 5 * 4);
 			}
 			else {
 				*updateSlow = 0;
@@ -657,6 +668,7 @@ struct MixMaster : Module {
 
 
 struct MixMasterWidget : ModuleWidget {
+	MasterDisplay* masterDisplay;
 	TrackDisplay* trackDisplays[16];
 	GroupDisplay* groupDisplays[4];
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
@@ -731,6 +743,7 @@ struct MixMasterWidget : ModuleWidget {
 		
 		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 		dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+		dispColItem->isGlobal = true;
 		menu->addChild(dispColItem);
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
@@ -951,10 +964,9 @@ struct MixMasterWidget : ModuleWidget {
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
-		MasterDisplay *mastLabel;
-		addChild(mastLabel = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.82, 128.5 - 97.2 + 0.2))));
+		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 0.4, 128.5 - 97.0))));
 		if (module) {
-			mastLabel->srcMaster = &(module->master);
+			masterDisplay->srcMaster = &(module->master);
 		}
 		
 		// Master fader
@@ -995,6 +1007,8 @@ struct MixMasterWidget : ModuleWidget {
 		if (moduleM) {
 			// Track labels (pull from module)
 			if (moduleM->updateTrackLabelRequest != 0) {// pull request from module
+				// master display
+				masterDisplay->text = std::string(&(moduleM->master.masterLabel[0]), 6);
 				// track displays
 				for (int trk = 0; trk < 16; trk++) {
 					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);

@@ -304,6 +304,7 @@ struct VuColorItem : MenuItem {
 
 struct DispColorItem : MenuItem {
 	int8_t *srcColor;
+	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
 
 	struct DispColorSubItem : MenuItem {
 		int8_t *srcColor;
@@ -316,15 +317,19 @@ struct DispColorItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		std::string vuColorNames[4] = {
+		std::string dispColorNames[8] = {
 			"Yellow (default)",
 			"Blue",
 			"Green",
-			"Light-grey"
+			"Light-grey",
+			"Aqua",
+			"Cyan",
+			"Purple",
+			"Set per track"
 		};
 		
-		for (int i = 0; i < 4; i++) {		
-			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(vuColorNames[i], CHECKMARK(*srcColor == i));
+		for (int i = 0; i < (isGlobal ? 8 : 7); i++) {		
+			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColor == i));
 			dispColItem->srcColor = srcColor;
 			dispColItem->setVal = i;
 			menu->addChild(dispColItem);

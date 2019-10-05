@@ -431,14 +431,130 @@ struct CvAndFadePointerAuxRet : CvAndFadePointerBase {
 };
 
 
-// Master invisible widget with menu
+
+	
+
+// --------------------
+// Displays 
 // --------------------
 
-struct MasterDisplay : OpaqueWidget {
+static const Vec DISP_SIZE = Vec(38, 16);
+static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
+
+
+// Non-Editable track and group (used by auxspander)
+// --------------------
+
+struct TrackAndGroupLabel : LedDisplayChoice {
+	int8_t* dispColor = NULL;
+	int8_t* dispColorLocal;
+	
+	TrackAndGroupLabel() {
+		box.size = DISP_SIZE;
+		textOffset = Vec(7.5, 12);
+		text = "-00-";
+	};
+	
+	void draw(const DrawArgs &args) override {
+		if (dispColor) {
+			int colorIndex = *dispColor < 7 ? *dispColor : 0;//*dispColorLocal; // TODO: send per track/group dispColorLocal to aux pannel in slow data
+			color = DISP_COLORS[colorIndex];
+		}	
+		LedDisplayChoice::draw(args);
+	}
+};
+
+// Editable track and group displays base struct
+// --------------------
+
+struct EditableDisplayBase : LedDisplayTextField {
+	int numChars = 4;
+	bool doubleClick = false;
+	GlobalInfo *gInfo = NULL;
+	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use EditableDisplayBase for Aux displays
+	int8_t* dispColorLocal;
+
+	EditableDisplayBase() {
+		box.size = DISP_SIZE;
+		textOffset = DISP_OFFSET;
+		text = "-00-";
+	};
+	
+	// don't want background so implement adapted version here
+	void draw(const DrawArgs &args) override {
+		if (colorAndCloak) {
+			int colorIndex = colorAndCloak->cc4[dispColor] < 7 ? colorAndCloak->cc4[dispColor] : *dispColorLocal;
+			color = DISP_COLORS[colorIndex];
+		}
+		if (cursor > numChars) {
+			text.resize(numChars);
+			cursor = numChars;
+			selection = numChars;
+		}
+		
+		// the code below is LedDisplayTextField.draw() without the background rect
+		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+		if (font->handle >= 0) {
+			bndSetFont(font->handle);
+
+			NVGcolor highlightColor = color;
+			highlightColor.a = 0.5;
+			int begin = std::min(cursor, selection);
+			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
+			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
+				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
+				-1, color, 12, text.c_str(), highlightColor, begin, end);
+
+			bndSetFont(APP->window->uiFont->handle);
+		}
+		nvgResetScissor(args.vg);
+	}
+	
+	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
+	void onSelectText(const event::SelectText &e) override {
+		if (e.codepoint < 128) {
+			char letter = (char) e.codepoint;
+			if (letter == 0x20) {// space
+				letter = 0x2D;// hyphen
+			}
+			std::string newText(1, letter);
+			insertText(newText);
+		}
+		e.consume(this);	
+		
+		if (text.length() > (unsigned)numChars) {
+			text = text.substr(0, numChars);
+		}
+	}
+	
+	void onDoubleClick(const event::DoubleClick& e) override {
+		doubleClick = true;
+	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_RELEASE) {
+			if (doubleClick) {
+				doubleClick = false;
+				selectAll();
+			}
+		}
+		LedDisplayTextField::onButton(e);
+	}
+
+}; 
+
+
+// Master display editable label with menu
+// --------------------
+
+struct MasterDisplay : EditableDisplayBase {
 	MixerMaster *srcMaster;
 	
 	MasterDisplay() {
-		box.size = mm2px(math::Vec(15.4, 5.1));
+		numChars = 6;
+		box.size.x = mm2px(16.7);
+		textOffset.x = 2.4f;
+		text = "-0000-";
 	}
 	
 	void onButton(const event::Button &e) override {
@@ -476,128 +592,30 @@ struct MasterDisplay : OpaqueWidget {
 				menu->addChild(vuColItem);
 			}
 			
+			if (srcMaster->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
+				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+				dispColItem->srcColor = &(srcMaster->dispColorLocal);
+				dispColItem->isGlobal = false;
+				menu->addChild(dispColItem);
+			}
+			
 			e.consume(this);
 			return;
 		}
-		OpaqueWidget::onButton(e);		
+		EditableDisplayBase::onButton(e);		
 	}
+	void onChange(const event::Change &e) override {
+		snprintf(srcMaster->masterLabel, 7, text.c_str());
+		EditableDisplayBase::onChange(e);
+	};
 };
 
-	
-
-// --------------------
-// Displays 
-// --------------------
-
-static const Vec DISP_SIZE = Vec(38, 16);
-static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
-
-
-// Non-Editable track and group (used by auxspander)
-// --------------------
-
-struct TrackAndGroupLabel : LedDisplayChoice {
-	int8_t* dispColor = NULL;
-	int8_t* dispColorLocal;
-	
-	TrackAndGroupLabel() {
-		box.size = DISP_SIZE;
-		textOffset = Vec(7.5, 12);
-		text = "-00-";
-	};
-	
-	void draw(const DrawArgs &args) override {
-		if (dispColor) {
-			int colorIndex = *dispColor < 7 ? *dispColor : 0;//*dispColorLocal; // TODO: send per track/group dispColorLocal to aux pannel in slow data
-			color = DISP_COLORS[colorIndex];
-		}	
-		LedDisplayChoice::draw(args);
-	}
-};
-
-// Editable track and group displays base struct
-// --------------------
-
-struct GroupTrackAuxDisplayBase : LedDisplayTextField {
-	bool doubleClick = false;
-	GlobalInfo *gInfo = NULL;
-	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use the base for Aux displays
-	int8_t* dispColorLocal;
-
-	GroupTrackAuxDisplayBase() {
-		box.size = DISP_SIZE;
-		textOffset = DISP_OFFSET;
-		text = "-00-";
-	};
-	
-	// don't want background so implement adapted version here
-	void draw(const DrawArgs &args) override {
-		if (colorAndCloak) {
-			int colorIndex = colorAndCloak->cc4[dispColor] < 7 ? colorAndCloak->cc4[dispColor] : *dispColorLocal;
-			color = DISP_COLORS[colorIndex];
-		}
-		if (cursor > 4) {
-			text.resize(4);
-			cursor = 4;
-			selection = 4;
-		}
-		
-		// the code below is LedDisplayTextField.draw() without the background rect
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			bndSetFont(font->handle);
-
-			NVGcolor highlightColor = color;
-			highlightColor.a = 0.5;
-			int begin = std::min(cursor, selection);
-			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
-				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
-				-1, color, 12, text.c_str(), highlightColor, begin, end);
-
-			bndSetFont(APP->window->uiFont->handle);
-		}
-		nvgResetScissor(args.vg);
-	}
-	
-	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
-	void onSelectText(const event::SelectText &e) override {
-		if (e.codepoint < 128) {
-			char letter = (char) e.codepoint;
-			if (letter == 0x20) {// space
-				letter = 0x2D;// hyphen
-			}
-			std::string newText(1, letter);
-			insertText(newText);
-		}
-		e.consume(this);	
-		
-		if (text.length() > 4) {
-			text = text.substr(0, 4);
-		}
-	}
-	
-	void onDoubleClick(const event::DoubleClick& e) override {
-		doubleClick = true;
-	}
-	
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_RELEASE) {
-			if (doubleClick) {
-				doubleClick = false;
-				selectAll();
-			}
-		}
-		LedDisplayTextField::onButton(e);
-	}
-
-}; 
 
 
 // Track display editable label with menu
 // --------------------
 
-struct TrackDisplay : GroupTrackAuxDisplayBase {
+struct TrackDisplay : EditableDisplayBase {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;
 	int *updateTrackLabelRequestPtr;
@@ -672,6 +690,13 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
+
+			if (srcTrack->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
+				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+				dispColItem->srcColor = &(srcTrack->dispColorLocal);
+				dispColItem->isGlobal = false;
+				menu->addChild(dispColItem);
+			}
 			
 			menu->addChild(new MenuLabel());// empty line
 
@@ -695,14 +720,14 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 			e.consume(this);
 			return;
 		}
-		GroupTrackAuxDisplayBase::onButton(e);
+		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			tracks[trackNumSrc].trackName[i] = text[i];
 		}
-		GroupTrackAuxDisplayBase::onChange(e);
+		EditableDisplayBase::onChange(e);
 	};
 };
 
@@ -710,7 +735,7 @@ struct TrackDisplay : GroupTrackAuxDisplayBase {
 // Group display editable label with menu
 // --------------------
 
-struct GroupDisplay : GroupTrackAuxDisplayBase {
+struct GroupDisplay : EditableDisplayBase {
 	MixerGroup *srcGroup = NULL;
 	bool *auxExpanderPresentPtr;
 
@@ -762,17 +787,24 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 				menu->addChild(vuColItem);
 			}
 			
+			if (srcGroup->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
+				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+				dispColItem->srcColor = &(srcGroup->dispColorLocal);
+				dispColItem->isGlobal = false;
+				menu->addChild(dispColItem);
+			}
+			
 			e.consume(this);
 			return;
 		}
-		GroupTrackAuxDisplayBase::onButton(e);
+		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
 		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
 			srcGroup->groupName[i] = text[i];
 		}
-		GroupTrackAuxDisplayBase::onChange(e);
+		EditableDisplayBase::onChange(e);
 	};
 };
 
@@ -780,8 +812,9 @@ struct GroupDisplay : GroupTrackAuxDisplayBase {
 // Aux display editable label with menu
 // --------------------
 
-struct AuxDisplay : GroupTrackAuxDisplayBase {
-	int8_t* srcColor = NULL;
+struct AuxDisplay : EditableDisplayBase {
+	int8_t* srcVuColor = NULL;
+	int8_t* srcDispColor = NULL;
 	int8_t* srcDirectOutsModeLocal = NULL;
 	int8_t* srcPanLawStereoLocal = NULL;
 	int8_t* srcDirectOutsModeGlobal = NULL;
@@ -817,11 +850,19 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
 				isEmptyMenu = false;
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = srcColor;
+				vuColItem->srcColor = srcVuColor;
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
 			
+			if (colorAndCloak->cc4[dispColor] >= 7) {
+				isEmptyMenu = false;
+				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+				dispColItem->srcColor = srcDispColor;
+				dispColItem->isGlobal = false;
+				menu->addChild(dispColItem);
+			}
+
 			if (isEmptyMenu) {
 				MenuLabel *auxNoneLabel = new MenuLabel();
 				auxNoneLabel->text = "(none)";
@@ -831,7 +872,7 @@ struct AuxDisplay : GroupTrackAuxDisplayBase {
 			e.consume(this);
 			return;
 		}
-		GroupTrackAuxDisplayBase::onButton(e);
+		EditableDisplayBase::onButton(e);
 	}
 };
 
