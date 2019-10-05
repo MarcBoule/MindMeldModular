@@ -490,7 +490,11 @@ struct MixMaster : Module {
 		if (outputs[FADE_CV_OUTPUT].isConnected()) {
 			outputs[FADE_CV_OUTPUT].setChannels(numChannels16);
 			for (int trk = 0; trk < 16; trk++) {
-				outputs[FADE_CV_OUTPUT].setVoltage(tracks[trk].fadeGain * 10.0f, trk);
+				float outV = tracks[trk].fadeGain * 10.0f;
+				if (gInfo.fadeCvOutsWithVolCv) {
+					outV *= tracks[trk].volCv;
+				}
+				outputs[FADE_CV_OUTPUT].setVoltage(outV, trk);
 			}
 		}
 	}
@@ -748,9 +752,9 @@ struct MixMasterWidget : ModuleWidget {
 		directOutsItem->isGlobal = true;
 		menu->addChild(directOutsItem);
 		
-		SymmetricalFadeItem *symItem = createMenuItem<SymmetricalFadeItem>("Symmetrical fade", CHECKMARK(module->gInfo.symmetricalFade));
-		symItem->gInfo = &(module->gInfo);
-		menu->addChild(symItem);
+		FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
+		fadItem->gInfo = &(module->gInfo);
+		menu->addChild(fadItem);
 		
 		menu->addChild(new MenuLabel());// empty line
 		

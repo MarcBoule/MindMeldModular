@@ -398,12 +398,39 @@ struct CvPointerShowItem : MenuItem {
 	}
 };
 
-struct SymmetricalFadeItem : MenuItem {
+
+struct FadeSettingsItem : MenuItem {
 	GlobalInfo *gInfo;
-	void onAction(const event::Action &e) override {
-		gInfo->symmetricalFade = !gInfo->symmetricalFade;
+
+	struct SymmetricalFadeItem : MenuItem {
+		GlobalInfo *gInfo;
+		void onAction(const event::Action &e) override {
+			gInfo->symmetricalFade = !gInfo->symmetricalFade;
+		}
+	};
+
+	struct FadeCvOutItem : MenuItem {
+		GlobalInfo *gInfo;
+		void onAction(const event::Action &e) override {
+			gInfo->fadeCvOutsWithVolCv = !gInfo->fadeCvOutsWithVolCv;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		SymmetricalFadeItem *symItem = createMenuItem<SymmetricalFadeItem>("Symmetrical", CHECKMARK(gInfo->symmetricalFade));
+		symItem->gInfo = gInfo;
+		menu->addChild(symItem);
+		
+		FadeCvOutItem *fadeCvItem = createMenuItem<FadeCvOutItem>("Include vol CV in fade CV out", CHECKMARK(gInfo->fadeCvOutsWithVolCv));
+		fadeCvItem->gInfo = gInfo;
+		menu->addChild(fadeCvItem);
+		
+		return menu;
 	}
 };
+
 
 
 // Track context menu

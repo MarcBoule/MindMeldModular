@@ -280,6 +280,7 @@ struct GlobalInfo {
 	PackedBytes4 colorAndCloak;// see enum above called ccIds for fields
 	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
+	bool fadeCvOutsWithVolCv;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
@@ -386,6 +387,7 @@ struct GlobalInfo {
 			groupUsage[i] = 0;
 		}
 		symmetricalFade = false;
+		fadeCvOutsWithVolCv = false;
 		linkBitMask = 0;
 		filterPos = 1;// default is post-insert
 		groupedAuxReturnFeedbackProtection = 1;// protection is on by default
@@ -429,6 +431,9 @@ struct GlobalInfo {
 		
 		// symmetricalFade
 		json_object_set_new(rootJ, "symmetricalFade", json_boolean(symmetricalFade));
+		
+		// fadeCvOutsWithVolCv
+		json_object_set_new(rootJ, "fadeCvOutsWithVolCv", json_boolean(fadeCvOutsWithVolCv));
 		
 		// linkBitMask
 		json_object_set_new(rootJ, "linkBitMask", json_integer(linkBitMask));
@@ -492,6 +497,11 @@ struct GlobalInfo {
 		json_t *symmetricalFadeJ = json_object_get(rootJ, "symmetricalFade");
 		if (symmetricalFadeJ)
 			symmetricalFade = json_is_true(symmetricalFadeJ);
+
+		// fadeCvOutsWithVolCv
+		json_t *fadeCvOutsWithVolCvJ = json_object_get(rootJ, "fadeCvOutsWithVolCv");
+		if (fadeCvOutsWithVolCvJ)
+			fadeCvOutsWithVolCv = json_is_true(fadeCvOutsWithVolCvJ);
 
 		// linkBitMask
 		json_t *linkBitMaskJ = json_object_get(rootJ, "linkBitMask");
@@ -1177,6 +1187,7 @@ struct MixerTrack {
 	float fadeGainX;
 	float paramWithCV;
 	float panWithCV;
+	float volCv;
 
 	// no need to save, no reset
 	int trackNum;
@@ -1254,6 +1265,7 @@ struct MixerTrack {
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
 		panWithCV = -1.0f;
+		volCv = 1.0f;
 		target = -1;
 	}
 	
@@ -1386,7 +1398,7 @@ struct MixerTrack {
 	
 	// Contract: 
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
-	//  * calc paramWithCV and panWithCV
+	//  * calc paramWithCV, volCv and panWithCV
 	//  * calc taps[], insertOuts[] and vu
 	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
 	void process(float *mix) {
@@ -1407,13 +1419,15 @@ struct MixerTrack {
 			fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		}
 
-		// calc ** paramWithCV **
+		// calc ** paramWithCV and volCv **
 		float slowGain = paFade->getValue();
 		if (inVol->isConnected()) {
-			slowGain *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+			volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+			slowGain *= volCv;
 			paramWithCV = slowGain;
 		}
 		else {
+			volCv = 1.0f;
 			paramWithCV = -1.0f;
 		}
 
