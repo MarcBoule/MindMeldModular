@@ -986,7 +986,7 @@ struct MixMasterWidget : ModuleWidget {
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
-		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 0.4, 128.5 - 97.0))));
+		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 0.45, 128.5 - 97.0))));
 		if (module) {
 			masterDisplay->srcMaster = &(module->master);
 			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
