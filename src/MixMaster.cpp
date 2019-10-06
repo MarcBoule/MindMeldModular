@@ -265,7 +265,7 @@ struct MixMaster : Module {
 			muteTrackWhenSoloAuxRetSlewer.reset();
 		}
 		
-/* slower verion	*/	
+/* slower verion	
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
@@ -294,18 +294,24 @@ struct MixMaster : Module {
 			// }
 			
 		}// userInputs refresh
+*/
 
-
-/* faster verison 
+/* faster verison */
 		// Tracks (slow value updates)
-		tracks[refresh.refreshCounter & 0xF].updateSlowValues();// a given track gets updated at sampleRate / 16, which equates to refresh.processInputs()
+		tracks[(refresh.refreshCounter & 0x3) + 0].updateSlowValues();
+		tracks[(refresh.refreshCounter & 0x3) + 4].updateSlowValues();
+		tracks[(refresh.refreshCounter & 0x3) + 8].updateSlowValues();
+		tracks[(refresh.refreshCounter & 0x3) + 12].updateSlowValues();
 		// Groups (slow value updates)
-		if ((refresh.refreshCounter & 0x3) == 0) {
-			groups[((refresh.refreshCounter >> 2) & 0x3)].updateSlowValues();// a given group gets updated at sampleRate / 16, which equates to refresh.processInputs()
-		}
+		groups[(refresh.refreshCounter & 0x3)].updateSlowValues();
 		// Aux (slow value updates)
-		else if ((refresh.refreshCounter & 0x3) == 1 && auxExpanderPresent) {
-			aux[((refresh.refreshCounter >> 2) & 0x3)].updateSlowValues();// a given aux return gets updated at sampleRate / 16, which equates to refresh.processInputs()
+		if (auxExpanderPresent) {
+			aux[(refresh.refreshCounter & 0x3)].updateSlowValues();
+		}
+		// Master and mute/solo cv triggers
+		if ((refresh.refreshCounter & 0x3) == 0) {
+			master.updateSlowValues();
+			processMuteSoloCvTriggers();
 		}
 		//		
 		if (refresh.processInputs()) {// succeeds at sampleRate / 16
@@ -314,10 +320,7 @@ struct MixMaster : Module {
 			if (auxExpanderPresent) {
 				gInfo.updateReturnSoloBits();
 			}
-			
-			// Master
-			master.updateSlowValues();// master gets updated at sampleRate / 16
-			
+					
 			// EQ Expander message bus test
 			// Message<Payload> *message = messages->receive("1");	
 			// if (message != NULL) {
@@ -326,8 +329,7 @@ struct MixMaster : Module {
 			// }
 			
 		}// userInputs refresh	
-*/	
-		processMuteSoloCvTriggers();
+
 		
 		
 		//********** Outputs **********

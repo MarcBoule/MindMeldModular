@@ -643,6 +643,8 @@ struct MixerMaster {
 
 	// Contract: 
 	//  * calc gainMatrix
+	//  * calc fadeGain
+	//  * calc paramWithCV
 	//  * calc chainGains
 	void updateSlowValues() {
 		// calc ** gainMatrix **
@@ -653,26 +655,7 @@ struct MixerMaster {
 		else {
 			gainMatrix = simd::float_4(1.0f, 1.0f, 0.0f, 0.0f);
 		}
-		
-		// calc ** chainGains **
-		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
-		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
-	}
-	
 
-	// Contract: 
-	//  * calc fadeGain
-	//  * calc paramWithCV
-	//  * calc mix[0..1] and vu
-	void process(float *mix) {// takes mix[0..1] and redeposits post in same place
-		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
-		float gainsC[2] = {chainGains[0], chainGains[1]};
-		for (int i = 0; i < 2; i++) {
-			if (gainsC[i] != chainGainSlewers[i].out) {
-				gainsC[i] = chainGainSlewers[i].process(gInfo->sampleTime, gainsC[i]);
-			}
-		}
-		
 		// calc ** fadeGain **
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
@@ -681,7 +664,7 @@ struct MixerMaster {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate);
+				float deltaX = (gInfo->sampleTime / fadeRate) * 4;// last value is sub refresh
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -711,36 +694,48 @@ struct MixerMaster {
 			slowGain *= dimGainIntegerDB;
 		}
 		
+		gainMatrix *= slowGain;
+		
+		// calc ** chainGains **
+		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
+		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
+	}
+	
+
+	// Contract: 
+	//  * calc mix[0..1] and vu
+	void process(float *mix) {// takes mix[0..1] and redeposits post in same place
+		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
+		float gainsC[2] = {chainGains[0], chainGains[1]};
+		for (int i = 0; i < 2; i++) {
+			if (gainsC[i] != chainGainSlewers[i].out) {
+				gainsC[i] = chainGainSlewers[i].process(gInfo->sampleTime, gainsC[i]);
+			}
+		}
+		
 		// Calc master gain with slewer
-		simd::float_4 gainMatrixSlewed = gainMatrix * slowGain;
+		simd::float_4 gainMatrixSlewed = gainMatrix;
 		if (movemask(gainMatrixSlewed == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
 		}
 		
-		// Test for all gainMatrixSlewed equal to 0
-		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
-			mix[0] = 0.0f;	
-			mix[1] = 0.0f;
-		}
-		else {
-			// Chain inputs when pre master
-			if (gInfo->chainMode == 0) {
-				if (gainsC[0] != 0.0f) {
-					mix[0] += inChain[0].getVoltage() * gainsC[0];
-				}
-				if (gainsC[1] != 0.0f) {
-					mix[1] += inChain[1].getVoltage() * gainsC[1];
-				}
+		// Chain inputs when pre master
+		if (gInfo->chainMode == 0) {
+			if (gainsC[0] != 0.0f) {
+				mix[0] += inChain[0].getVoltage() * gainsC[0];
 			}
-
-			// Apply gainMatrixSlewed
-			simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
-			sigs = sigs * gainMatrixSlewed;
-			
-			// Set mix
-			mix[0] = sigs[0] + sigs[2];
-			mix[1] = sigs[1] + sigs[3];
+			if (gainsC[1] != 0.0f) {
+				mix[1] += inChain[1].getVoltage() * gainsC[1];
+			}
 		}
+
+		// Apply gainMatrixSlewed
+		simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
+		sigs = sigs * gainMatrixSlewed;
+		
+		// Set mix
+		mix[0] = sigs[0] + sigs[2];
+		mix[1] = sigs[1] + sigs[3];
 		
 		// VUs (no cloaked mode for master, always on)
 		vu.process(gInfo->sampleTime, mix);
@@ -872,6 +867,7 @@ struct MixerGroup {
 	float fadeGainX;
 	float paramWithCV;
 	float panWithCV;
+	simd::float_4 gainMatrix;
 	
 	// no need to save, no reset
 	int groupNum;// 0 to 3
@@ -934,29 +930,11 @@ struct MixerGroup {
 	
 	// Contract: 
 	//  * process linked
+	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
+	//  * calc paramWithCV, panWithCV
 	void updateSlowValues() {
 		// ** process linked **
 		gInfo->processLinked(16 + groupNum, paFade->getValue());
-	}
-	
-	// Contract: 
-	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
-	//  * calc all but the first taps[] and vu
-	//  * calc paramWithCV, panWithCV
-	//  * add final tap to mix[0..1]
-	void process(float *mix) {
-		// Tap[0],[1]: pre-insert (group inputs)
-		// nothing to do, already set up by the mix master
-		
-		// Tap[8],[9]: pre-fader (post insert)
-		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((groupNum << 1) + 0);
-			taps[9] = inInsert->getVoltage((groupNum << 1) + 1);
-		}
-		else {
-			taps[8] = taps[0];
-			taps[9] = taps[1];
-		}
 		
 		// calc ** fadeGain **
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
@@ -966,7 +944,7 @@ struct MixerGroup {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate);
+				float deltaX = (gInfo->sampleTime / fadeRate) * 4;// last value is sub refresh
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -1002,7 +980,8 @@ struct MixerGroup {
 		}
 		
 		// panning
-		simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
+		gainMatrix = simd::float_4::zero();
+		// simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
@@ -1039,7 +1018,26 @@ struct MixerGroup {
 				}
 			}
 			gainMatrix *= slowGain;
-		}				
+		}		
+	}
+	
+	// Contract: 
+	//  * calc all but the first taps[] and vu
+	//  * add final tap to mix[0..1]
+	void process(float *mix) {
+		// Tap[0],[1]: pre-insert (group inputs)
+		// nothing to do, already set up by the mix master
+		
+		// Tap[8],[9]: pre-fader (post insert)
+		if (inInsert->isConnected()) {
+			taps[8] = inInsert->getVoltage((groupNum << 1) + 0);
+			taps[9] = inInsert->getVoltage((groupNum << 1) + 1);
+		}
+		else {
+			taps[8] = taps[0];
+			taps[9] = taps[1];
+		}
+				
 		
 		// Calc group gains with slewer
 		simd::float_4 gainMatrixSlewed = gainMatrix;
@@ -1188,6 +1186,7 @@ struct MixerTrack {
 	float paramWithCV;
 	float panWithCV;
 	float volCv;
+	simd::float_4 gainMatrix;
 
 	// no need to save, no reset
 	int trackNum;
@@ -1381,6 +1380,9 @@ struct MixerTrack {
 	//  * calc stereo
 	//  * calc inGain (computes gainAdjust with input presence, for gain-adjust block, single float)
 	//  * process linked
+	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
+	//  * calc paramWithCV, volCv and panWithCV
+	//  * calc gainMatrix
 	void updateSlowValues() {
 		// ** update group usage **
 		updateGroupUsage();
@@ -1393,15 +1395,7 @@ struct MixerTrack {
 
 		// ** process linked **
 		gInfo->processLinked(trackNum, paFade->getValue());
-	}
-	
-	
-	// Contract: 
-	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
-	//  * calc paramWithCV, volCv and panWithCV
-	//  * calc taps[], insertOuts[] and vu
-	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
-	void process(float *mix) {
+		
 		// calc ** fadeGain ** (does mute also) ALWAYS DO THIS even if no track connected
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
@@ -1410,7 +1404,7 @@ struct MixerTrack {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate);
+				float deltaX = (gInfo->sampleTime / fadeRate) * 4;// last value is sub refresh
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -1442,6 +1436,85 @@ struct MixerTrack {
 			panWithCV = -1.0f;
 		}
 		
+		// scaling
+		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
+
+		// calc gainMatrix
+		gainMatrix = simd::float_4::zero();
+		// simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)
+		// panning
+		if (pan == 0.5f) {
+			if (!stereo) gainMatrix[3] = slowGain;
+			else gainMatrix[1] = slowGain;
+			gainMatrix[0] = slowGain;
+		}
+		else {		
+			if (!stereo) {// mono
+				if (gInfo->panLawMono == 3) {
+					// Linear panning law (+6dB boost)
+					gainMatrix[3] = pan * 2.0f;
+					gainMatrix[0] = 2.0f - gainMatrix[3];
+				}
+				else if (gInfo->panLawMono == 0) {
+					// No compensation (+0dB boost)
+					gainMatrix[3] = std::min(1.0f, pan * 2.0f);
+					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+				}
+				else if (gInfo->panLawMono == 1) {
+					// Equal power panning law (+3dB boost)
+					// gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
+				}
+				else {//if (gInfo->panLawMono == 2) {
+					// Compromise (+4.5dB boost)
+					// gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
+					// gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
+					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
+					gainMatrix[3] = std::sqrt( std::abs( gainMatrix[3] * (pan * 2.0f) ) );
+					gainMatrix[0] = std::sqrt( std::abs( gainMatrix[0] * (2.0f - pan * 2.0f) ) );
+				}
+			}
+			else {// stereo
+				int sterepPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo == 0);			
+				if (sterepPanMode == 0) {
+					// Stereo balance linear, (+0 dB), same as mono No compensation
+					gainMatrix[1] = std::min(1.0f, pan * 2.0f);
+					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
+				}
+				else if (sterepPanMode == 1) {
+					// Stereo balance equal power (+3dB), same as mono Equal power
+					// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
+					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
+					sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
+				}
+				else {
+					// True panning, equal power
+					// gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
+					// gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
+					// gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
+					// gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
+					if (pan > 0.5f) {
+						gainMatrix[1] = 1.0f;
+						gainMatrix[2] = 0.0f;
+						sinCos(&gainMatrix[3], &gainMatrix[0], (pan - 0.5f) * M_PI);
+					}
+					else {// must be < (not <= since = 0.5 is caught at above)
+						sinCos(&gainMatrix[1], &gainMatrix[2], pan * M_PI);
+						gainMatrix[0] = 1.0f;
+						gainMatrix[3] = 0.0f;
+					}
+				}
+			}
+			gainMatrix *= slowGain;
+		}
+	}
+	
+	
+	// Contract: 
+	//  * calc taps[], insertOuts[] and vu
+	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
+	void process(float *mix) {
 		// optimize unused track
 		bool inUse = inSig[0].isConnected();
 		if (!inUse) {
@@ -1531,79 +1604,6 @@ struct MixerTrack {
 			}
 		}// filterPos
 		
-		
-		// scaling
-		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-		
-
-		// calc gainMatrix
-		simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)
-		// panning
-		if (pan == 0.5f) {
-			if (!stereo) gainMatrix[3] = slowGain;
-			else gainMatrix[1] = slowGain;
-			gainMatrix[0] = slowGain;
-		}
-		else {		
-			if (!stereo) {// mono
-				if (gInfo->panLawMono == 3) {
-					// Linear panning law (+6dB boost)
-					gainMatrix[3] = pan * 2.0f;
-					gainMatrix[0] = 2.0f - gainMatrix[3];
-				}
-				else if (gInfo->panLawMono == 0) {
-					// No compensation (+0dB boost)
-					gainMatrix[3] = std::min(1.0f, pan * 2.0f);
-					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
-				}
-				else if (gInfo->panLawMono == 1) {
-					// Equal power panning law (+3dB boost)
-					// gainMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
-					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
-				}
-				else {//if (gInfo->panLawMono == 2) {
-					// Compromise (+4.5dB boost)
-					// gainMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-					// gainMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
-					sinCosSqrt2(&gainMatrix[3], &gainMatrix[0], pan * M_PI_2);
-					gainMatrix[3] = std::sqrt( std::abs( gainMatrix[3] * (pan * 2.0f) ) );
-					gainMatrix[0] = std::sqrt( std::abs( gainMatrix[0] * (2.0f - pan * 2.0f) ) );
-				}
-			}
-			else {// stereo
-				int sterepPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo == 0);			
-				if (sterepPanMode == 0) {
-					// Stereo balance linear, (+0 dB), same as mono No compensation
-					gainMatrix[1] = std::min(1.0f, pan * 2.0f);
-					gainMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
-				}
-				else if (sterepPanMode == 1) {
-					// Stereo balance equal power (+3dB), same as mono Equal power
-					// gainMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-					// gainMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-					sinCosSqrt2(&gainMatrix[1], &gainMatrix[0], pan * M_PI_2);
-				}
-				else {
-					// True panning, equal power
-					// gainMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-					// gainMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-					// gainMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-					// gainMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
-					if (pan > 0.5f) {
-						gainMatrix[1] = 1.0f;
-						gainMatrix[2] = 0.0f;
-						sinCos(&gainMatrix[3], &gainMatrix[0], (pan - 0.5f) * M_PI);
-					}
-					else {// must be < (not <= since = 0.5 is caught at above)
-						sinCos(&gainMatrix[1], &gainMatrix[2], pan * M_PI);
-						gainMatrix[0] = 1.0f;
-						gainMatrix[3] = 0.0f;
-					}
-				}
-			}
-			gainMatrix *= slowGain;
-		}
 
 		// Calc gainMatrixSlewed
 		simd::float_4 gainMatrixSlewed = gainMatrix;
@@ -1894,33 +1894,24 @@ struct MixerAux {
 			gainMatrixSlewed = gainMatrixSlewers.process(gInfo->sampleTime, gainMatrixSlewed);
 		}
 		
-		// Test for all gainMatrixSlewed equal to 0
-		if (movemask(gainMatrixSlewed == simd::float_4::zero()) == 0xF) {// movemask returns 0xF when 4 floats are equal
-			taps[16] = 0.0f;	
-			taps[17] = 0.0f;
-			taps[24] = 0.0f;	
-			taps[25] = 0.0f;
+		// Apply gainMatrixSlewed
+		simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
+		sigs = sigs * gainMatrixSlewed;
+		
+		taps[16] = sigs[0] + sigs[2];
+		taps[17] = sigs[1] + sigs[3];
+		
+		// Calc muteSoloGainSlewed
+		float muteSoloGainSlewed = muteSoloGain;
+		if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
+			muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
 		}
-		else {
-			// Apply gainMatrixSlewed
-			simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
-			sigs = sigs * gainMatrixSlewed;
+		
+		taps[24] = taps[16] * muteSoloGainSlewed;
+		taps[25] = taps[17] * muteSoloGainSlewed;
 			
-			taps[16] = sigs[0] + sigs[2];
-			taps[17] = sigs[1] + sigs[3];
-			
-			// Calc muteSoloGainSlewed
-			float muteSoloGainSlewed = muteSoloGain;
-			if (muteSoloGainSlewed != muteSoloGainSlewer.out) {
-				muteSoloGainSlewed = muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGainSlewed);
-			}
-			
-			taps[24] = taps[16] * muteSoloGainSlewed;
-			taps[25] = taps[17] * muteSoloGainSlewed;
-				
-			mix[0] += taps[24];
-			mix[1] += taps[25];
-		}
+		mix[0] += taps[24];
+		mix[1] += taps[25];
 	}
 	
 	
