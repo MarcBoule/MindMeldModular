@@ -265,51 +265,43 @@ struct MixMaster : Module {
 			muteTrackWhenSoloAuxRetSlewer.reset();
 		}
 		
-/* slower verion	
-		if (refresh.processInputs()) {
-			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
-			
-			// Tracks
-			gInfo.updateSoloBit(trackToProcess);
-			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
-			// Groups/Aux
-			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
-				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
-				groups[trackToProcess >> 2].updateSlowValues();
-				if (auxExpanderPresent) {
-					gInfo.updateReturnSoloBits();
-					aux[trackToProcess >> 2].updateSlowValues();
+		// ecoCode: cycles from 0 to 3 in eco mode, stuck at 0 when full power mode
+		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo.ecoMode);
+		
+		if (gInfo.ecoMode != 0) {
+			// Tracks (slow value updates)
+			tracks[ecoCode + 0].updateSlowValues();
+			tracks[ecoCode + 4].updateSlowValues();
+			tracks[ecoCode + 8].updateSlowValues();
+			tracks[ecoCode + 12].updateSlowValues();
+			// Groups (slow value updates)
+			groups[ecoCode].updateSlowValues();
+			// Aux (slow value updates)
+			if (auxExpanderPresent) {
+				aux[ecoCode].updateSlowValues(&auxRetFadePan[ecoCode]);
+			}
+			// Master and mute/solo cv triggers
+			if (ecoCode == 0) {
+				master.updateSlowValues();
+				processMuteSoloCvTriggers();
+			}
+		}
+		else {
+			// Tracks 
+			for (int trk = 0; trk < 16; trk++) {
+				tracks[trk].updateSlowValues();
+			}
+			// Groups
+			for (int grp = 0; grp < 4; grp++) {
+				groups[grp].updateSlowValues();
+			}
+			// Aux
+			if (auxExpanderPresent) {
+				for (int auxi = 0; auxi < 4; auxi++) {
+					aux[auxi].updateSlowValues(&auxRetFadePan[auxi]);
 				}
 			}
-			// Master
-			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
-				master.updateSlowValues();
-			}
-			
-			// EQ Expander message bus test
-			// Message<Payload> *message = messages->receive("1");	
-			// if (message != NULL) {
-				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
-				// delete message;
-			// }
-			
-		}// userInputs refresh
-*/
-
-/* faster verison */
-		// Tracks (slow value updates)
-		tracks[(refresh.refreshCounter & 0x3) + 0].updateSlowValues();
-		tracks[(refresh.refreshCounter & 0x3) + 4].updateSlowValues();
-		tracks[(refresh.refreshCounter & 0x3) + 8].updateSlowValues();
-		tracks[(refresh.refreshCounter & 0x3) + 12].updateSlowValues();
-		// Groups (slow value updates)
-		groups[(refresh.refreshCounter & 0x3)].updateSlowValues();
-		// Aux (slow value updates)
-		if (auxExpanderPresent) {
-			aux[(refresh.refreshCounter & 0x3)].updateSlowValues();
-		}
-		// Master and mute/solo cv triggers
-		if ((refresh.refreshCounter & 0x3) == 0) {
+			// Master and mute/solo cv triggers
 			master.updateSlowValues();
 			processMuteSoloCvTriggers();
 		}
@@ -341,7 +333,7 @@ struct MixMaster : Module {
 		
 		// Tracks
 		for (int trk = 0; trk < 16; trk++) {
-			tracks[trk].process(mix);
+			tracks[trk].process(mix, ecoCode);
 		}
 		// Aux return when group
 		if (auxExpanderPresent) {
@@ -350,7 +342,7 @@ struct MixMaster : Module {
 				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi]);
+					aux[auxi].process(&groupTaps[auxGroup << 1]);
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
 						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
@@ -360,7 +352,7 @@ struct MixMaster : Module {
 		
 		// Groups (at this point, all groups's tap0 are setup and ready)
 		for (int i = 0; i < 4; i++) {
-			groups[i].process(mix);
+			groups[i].process(mix, ecoCode);
 		}
 		
 		// Aux
@@ -376,12 +368,12 @@ struct MixMaster : Module {
 			// Aux returns when no group
 			for (int i = 0; i < 4; i++) {
 				if (aux[i].getAuxGroup() == 0) {
-					aux[i].process(mix, &auxRetFadePan[i]);
+					aux[i].process(mix);
 				}
 			}
 		}
 		// Master
-		master.process(mix);
+		master.process(mix, ecoCode);
 		
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
@@ -757,6 +749,12 @@ struct MixMasterWidget : ModuleWidget {
 		FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
 		fadItem->gInfo = &(module->gInfo);
 		menu->addChild(fadItem);
+		
+		EcoItem *eco0Item = createMenuItem<EcoItem>("Eco mode", CHECKMARK(module->gInfo.ecoMode));
+		eco0Item->gInfo = &(module->gInfo);
+		menu->addChild(eco0Item);
+		
+		
 		
 		menu->addChild(new MenuLabel());// empty line
 		

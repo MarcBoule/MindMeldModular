@@ -431,6 +431,12 @@ struct FadeSettingsItem : MenuItem {
 	}
 };
 
+struct EcoItem : MenuItem {
+	GlobalInfo *gInfo;
+	void onAction(const event::Action &e) override {
+		gInfo->ecoMode = ~gInfo->ecoMode;
+	}
+};
 
 
 // Track context menu

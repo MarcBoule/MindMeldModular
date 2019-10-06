@@ -284,6 +284,7 @@ struct GlobalInfo {
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
+	uint16_t ecoMode;
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -391,6 +392,7 @@ struct GlobalInfo {
 		linkBitMask = 0;
 		filterPos = 1;// default is post-insert
 		groupedAuxReturnFeedbackProtection = 1;// protection is on by default
+		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -443,6 +445,9 @@ struct GlobalInfo {
 
 		// groupedAuxReturnFeedbackProtection
 		json_object_set_new(rootJ, "groupedAuxReturnFeedbackProtection", json_integer(groupedAuxReturnFeedbackProtection));
+
+		// ecoMode
+		json_object_set_new(rootJ, "ecoMode", json_integer(ecoMode));
 	}
 	
 	void dataFromJson(json_t *rootJ) {
@@ -517,6 +522,11 @@ struct GlobalInfo {
 		json_t *groupedAuxReturnFeedbackProtectionJ = json_object_get(rootJ, "groupedAuxReturnFeedbackProtection");
 		if (groupedAuxReturnFeedbackProtectionJ)
 			groupedAuxReturnFeedbackProtection = json_integer_value(groupedAuxReturnFeedbackProtectionJ);
+		
+		// ecoMode
+		json_t *ecoModeJ = json_object_get(rootJ, "ecoMode");
+		if (ecoModeJ)
+			ecoMode = json_integer_value(ecoModeJ);
 		
 		// extern must call resetNonJson()
 	}
@@ -664,7 +674,7 @@ struct MixerMaster {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * 4;// last value is sub refresh
+				float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -704,7 +714,7 @@ struct MixerMaster {
 
 	// Contract: 
 	//  * calc mix[0..1] and vu
-	void process(float *mix) {// takes mix[0..1] and redeposits post in same place
+	void process(float *mix, int eco) {// takes mix[0..1] and redeposits post in same place
 		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
 		float gainsC[2] = {chainGains[0], chainGains[1]};
 		for (int i = 0; i < 2; i++) {
@@ -738,7 +748,9 @@ struct MixerMaster {
 		mix[1] = sigs[1] + sigs[3];
 		
 		// VUs (no cloaked mode for master, always on)
-		vu.process(gInfo->sampleTime, mix);
+		if (eco == 0) {
+			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), mix);
+		}
 				
 		// Chain inputs when post master
 		if (gInfo->chainMode == 1) {
@@ -932,6 +944,7 @@ struct MixerGroup {
 	//  * process linked
 	//  * calc fadeGain (computes fade/mute gain, not used directly by mute-solo block, but used for muteSoloGain and fade pointer)
 	//  * calc paramWithCV, panWithCV
+	//  * calc gainMatrix
 	void updateSlowValues() {
 		// ** process linked **
 		gInfo->processLinked(16 + groupNum, paFade->getValue());
@@ -944,7 +957,7 @@ struct MixerGroup {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * 4;// last value is sub refresh
+				float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -979,6 +992,7 @@ struct MixerGroup {
 			slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 		}
 		
+		// calc ** gainMatrix **
 		// panning
 		gainMatrix = simd::float_4::zero();
 		// simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-pan block)
@@ -1024,7 +1038,7 @@ struct MixerGroup {
 	// Contract: 
 	//  * calc all but the first taps[] and vu
 	//  * add final tap to mix[0..1]
-	void process(float *mix) {
+	void process(float *mix, int eco) {
 		// Tap[0],[1]: pre-insert (group inputs)
 		// nothing to do, already set up by the mix master
 		
@@ -1069,8 +1083,8 @@ struct MixerGroup {
 		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
 			vu.reset();
 		}
-		else {
-			vu.process(gInfo->sampleTime, &taps[24]);
+		else if (eco == 0) {
+			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[24]);
 		}
 	}
 	
@@ -1396,7 +1410,7 @@ struct MixerTrack {
 		// ** process linked **
 		gInfo->processLinked(trackNum, paFade->getValue());
 		
-		// calc ** fadeGain ** (does mute also) ALWAYS DO THIS even if no track connected
+		// calc ** fadeGain **
 		if (fadeRate >= minFadeRate) {// if we are in fade mode
 			float newTarget = calcFadeGain();
 			if (!gInfo->symmetricalFade && newTarget != target) {
@@ -1404,7 +1418,7 @@ struct MixerTrack {
 			}
 			target = newTarget;
 			if (fadeGain != target) {
-				float deltaX = (gInfo->sampleTime / fadeRate) * 4;// last value is sub refresh
+				float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 				fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 			}
 		}
@@ -1439,7 +1453,7 @@ struct MixerTrack {
 		// scaling
 		slowGain = std::pow(slowGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 
-		// calc gainMatrix
+		// calc ** gainMatrix **
 		gainMatrix = simd::float_4::zero();
 		// simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)
 		// panning
@@ -1514,7 +1528,7 @@ struct MixerTrack {
 	// Contract: 
 	//  * calc taps[], insertOuts[] and vu
 	//  * when track in use, add final tap to mix[] or groupTaps[] according to group
-	void process(float *mix) {
+	void process(float *mix, int eco) {
 		// optimize unused track
 		bool inUse = inSig[0].isConnected();
 		if (!inUse) {
@@ -1647,8 +1661,8 @@ struct MixerTrack {
 		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
 			vu.reset();
 		}
-		else {
-			vu.process(gInfo->sampleTime, &taps[96]);
+		else if (eco == 0) {
+			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[96]);
 		}
 	}
 		
@@ -1767,6 +1781,7 @@ struct MixerAux {
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
 	float muteSoloGain; // value of the mute/fade * solo_enable
+	simd::float_4 gainMatrix;
 	public:
 
 	// no need to save, no reset
@@ -1801,7 +1816,7 @@ struct MixerAux {
 		resetNonJson();
 	}
 	void resetNonJson() {
-		updateSlowValues();
+		updateSlowValues(NULL);
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 	}
@@ -1809,7 +1824,7 @@ struct MixerAux {
 	
 	// Contract: 
 	//  * calc muteSoloGain (computes mute-solo gain, for mute-solo block, single float)
-	void updateSlowValues() {
+	void updateSlowValues(float *auxRetFadePan) {
 		// calc ** muteSoloGain **
 		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
 		muteSoloGain = *flMute * soloGain;
@@ -1818,38 +1833,21 @@ struct MixerAux {
 		if (gInfo->soloBitMask != 0 && gInfo->auxReturnsMutedWhenMainSolo) {
 			muteSoloGain = 0.0f;
 		}
-		
-		
+				
 		// scaling 
 		// done in auxspander
-	}
-	
-	// Contract: 
-	//  * calc all but the first taps[] and vu
-	//  * add final tap to mix[0..1]
-	void process(float *mix, float *auxRetFadePan) {
-		// Tap[0],[1]: pre-insert (aux inputs)
-		// nothing to do, already set up by the auxspander
-		// auxRetFadePan[0] points fader value, auxRetFadePan[0] points pan value, all indexed for a given aux
 		
-		// Tap[8],[9]: pre-fader (post insert)
-		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
-			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
+		float slowGain = 0.0f;
+		float pan = 0.5f;
+		if (auxRetFadePan) {
+			// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
+			slowGain = auxRetFadePan[0]; 
+			// panning
+			pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
 		}
-		else {
-			taps[8] = taps[0];
-			taps[9] = taps[1];
-		}
-		
-		// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
-		float slowGain = *auxRetFadePan; 
-		
 		
 		// calc ** gainMatrix **
-		simd::float_4 gainMatrix(0.0f);// L, R, RinL, LinR (used for fader-pan block)	
-		// panning
-		float pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
+		gainMatrix = simd::float_4::zero();// L, R, RinL, LinR (used for fader-pan block)	
 		if (pan == 0.5f) {
 			gainMatrix[1] = slowGain;
 			gainMatrix[0] = slowGain;
@@ -1886,6 +1884,25 @@ struct MixerAux {
 				}
 			}
 			gainMatrix *= slowGain;
+		}
+	}
+	
+	// Contract: 
+	//  * calc all but the first taps[] and vu
+	//  * add final tap to mix[0..1]
+	void process(float *mix) {
+		// Tap[0],[1]: pre-insert (aux inputs)
+		// nothing to do, already set up by the auxspander
+		// auxRetFadePan[0] points fader value, auxRetFadePan[0] points pan value, all indexed for a given aux
+		
+		// Tap[8],[9]: pre-fader (post insert)
+		if (inInsert->isConnected()) {
+			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
+			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
+		}
+		else {
+			taps[8] = taps[0];
+			taps[9] = taps[1];
 		}
 		
 		// Calc group gains with slewer

@@ -44,12 +44,12 @@ extern Model *modelEqExpander;
 struct RefreshCounter {
 	// Note: because of stagger, and asyncronous dataFromJson, should not assume this processInputs() will return true on first run
 	// of module::process()
-	static const unsigned int displayRefreshStepSkips = 256;// 
-	static const unsigned int userInputsStepSkipMask = 0xF;// sub interval of displayRefreshStepSkips, since inputs should be more responsive than lights
+	static const uint16_t displayRefreshStepSkips = 256;// 
+	static const uint16_t userInputsStepSkipMask = 0xF;// sub interval of displayRefreshStepSkips, since inputs should be more responsive than lights
 	// above values should make it such that inputs are sampled > 1kHz so as to not miss 1ms triggers
 	// values of 256 and 0xF respectively will give input sampled at 2756 Hz and lights at 172 Hz (when 44.1 kHz)
 	
-	unsigned int refreshCounter = (random::u32() % displayRefreshStepSkips);// stagger start values to avoid processing peaks when many Geo, MMM and Impromptu modules in the patch
+	uint16_t refreshCounter = (random::u32() % displayRefreshStepSkips);// stagger start values to avoid processing peaks when many Geo, MMM and Impromptu modules in the patch
 	
 	bool processInputs() {
 		return ((refreshCounter & userInputsStepSkipMask) == 0);
