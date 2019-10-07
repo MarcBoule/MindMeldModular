@@ -68,6 +68,8 @@ struct AuxExpander : Module {
 	float indivGroupSendWithCv[16];
 	float globalRetPansWithCV[4];
 	dsp::SlewLimiter sendMuteSlewers[20];
+	float trackSendVcaGains[64];
+	float groupSendVcaGains[16];
 	
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
@@ -83,6 +85,7 @@ struct AuxExpander : Module {
 	Trigger muteSoloCvTriggers[28];
 	int muteSoloCvTrigRefresh = 0;
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
+	uint16_t ecoMode;
 
 	
 	AuxExpander() {
@@ -170,6 +173,13 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 20; i++) {
 			sendMuteSlewers[i].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
 		}
+		for (int i = 0; i < 64; i++) {
+			trackSendVcaGains[i] = 0.0f;
+		}
+		for (int i = 0; i < 16; i++) {
+			groupSendVcaGains[i] = 0.0f;
+		}
+		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 		
 		onReset();
 
@@ -311,6 +321,9 @@ struct AuxExpander : Module {
 				}
 				// Display colors (when per track)
 				memcpy(trackDispColsLocal, &messagesFromMother[AFM_TRK_DISP_COL], 5 * 4);
+				// Eco mode
+				memcpy(&tmp, &messagesFromMother[AFM_ECO_MODE], 4);
+				ecoMode = (uint16_t)tmp;
 			}
 			
 			// Fast values from mother
@@ -320,31 +333,33 @@ struct AuxExpander : Module {
 
 			// Prepare values used to compute aux sends
 			//   Global aux send knobs (4 instances)
-			for (int gi = 0; gi < 4; gi++) {
-				globalSends[gi] = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
-			}
-			if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-				// Knob CV (adding, pre-scaling)
-				globalSends += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0) * 0.1f * maxAGGlobSendFader;
-				globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
-				globalSendsWithCV = globalSends;
-			}
-			else {
-				globalSendsWithCV = simd::float_4(-1.0f);
-			}
-			globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
-						
-			//   Indiv mute sends (20 instances)
-			int32_t muteTrkAuxSendWhenTrkGrouped;
-			memcpy(&muteTrkAuxSendWhenTrkGrouped, &messagesFromMother[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], 4);
-			for (int gi = 0; gi < 20; gi++) {
-				float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
-				val = (val > 0.5f ? 0.0f : 1.0f);
-				if ( gi < 16 && (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0) {
-					val = 0.0f;
+			if (ecoMode == 0 || (refreshCounter12 & 0x3) == 0) {// stagger 0
+				for (int gi = 0; gi < 4; gi++) {
+					globalSends[gi] = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
 				}
-				if (sendMuteSlewers[gi].out != val) {
-					sendMuteSlewers[gi].process(args.sampleTime, val);
+				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
+					// Knob CV (adding, pre-scaling)
+					globalSends += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0) * 0.1f * maxAGGlobSendFader;
+					globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
+					globalSendsWithCV = globalSends;
+				}
+				else {
+					globalSendsWithCV = simd::float_4(-1.0f);
+				}
+				globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
+			
+				//   Indiv mute sends (20 instances)
+				int32_t muteTrkAuxSendWhenTrkGrouped;
+				memcpy(&muteTrkAuxSendWhenTrkGrouped, &messagesFromMother[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], 4);
+				for (int gi = 0; gi < 20; gi++) {
+					float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
+					val = (val > 0.5f ? 0.0f : 1.0f);
+					if ( gi < 16 && (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0) {
+						val = 0.0f;
+					}
+					if (sendMuteSlewers[gi].out != val) {
+						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), val);
+					}
 				}
 			}
 	
@@ -356,22 +371,25 @@ struct AuxExpander : Module {
 			for (int trk = 0; trk < 16; trk++) {
 				for (int auxi = 0; auxi < 4; auxi++) {
 					// 64 individual track aux send knobs
-					float val = params[TRACK_AUXSEND_PARAMS + (trk << 2) + auxi].getValue();
-					int inputNum = POLY_AUX_AD_CV_INPUTS + auxi;
-					if (inputs[inputNum].isConnected()) {
-						// Knob CV (adding, pre-scaling)
-						val += inputs[inputNum].getVoltage(trk) * 0.1f * maxAGIndivSendFader;
-						val = clamp(val, 0.0f, maxAGIndivSendFader);
-						indivTrackSendWithCv[(trk << 2) + auxi] = val;
+					if (ecoMode == 0 || (refreshCounter12 & 0x3) == 1) {// stagger 1
+						float val = params[TRACK_AUXSEND_PARAMS + (trk << 2) + auxi].getValue();
+						int inputNum = POLY_AUX_AD_CV_INPUTS + auxi;
+						if (inputs[inputNum].isConnected()) {
+							// Knob CV (adding, pre-scaling)
+							val += inputs[inputNum].getVoltage(trk) * 0.1f * maxAGIndivSendFader;
+							val = clamp(val, 0.0f, maxAGIndivSendFader);
+							indivTrackSendWithCv[(trk << 2) + auxi] = val;
+						}
+						else {
+							indivTrackSendWithCv[(trk << 2) + auxi] = -1.0f;
+						}
+						val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
+						val *= globalSends[auxi] * sendMuteSlewers[trk].out;
+						trackSendVcaGains[(trk << 2) + auxi] = val;
 					}
-					else {
-						indivTrackSendWithCv[(trk << 2) + auxi] = -1.0f;
-					}
-					val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-					val *= globalSends[auxi] * sendMuteSlewers[trk].out;
 					// vca the aux send knob with the track's sound
-					auxSends[(auxi << 1) + 0] += val * auxSendsTrkGrp[(trk << 1) + 0];
-					auxSends[(auxi << 1) + 1] += val * auxSendsTrkGrp[(trk << 1) + 1];
+					auxSends[(auxi << 1) + 0] += trackSendVcaGains[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 0];
+					auxSends[(auxi << 1) + 1] += trackSendVcaGains[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 1];
 				}
 			}
 			// accumulate groups
@@ -379,22 +397,25 @@ struct AuxExpander : Module {
 				for (int auxi = 0; auxi < 4; auxi++) {
 					if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
 						// 16 individual group aux send knobs
-						float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
-						if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-							// Knob CV (adding, pre-scaling)
-							int cvIndex = ((auxi << 2) + grp);// not the same order for the CVs
-							val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
-							val = clamp(val, 0.0f, maxAGIndivSendFader);
-							indivGroupSendWithCv[(grp << 2) + auxi] = val;
+						if (ecoMode == 0 || (refreshCounter12 & 0x3) == 2) {// stagger 2
+							float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
+							if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
+								// Knob CV (adding, pre-scaling)
+								int cvIndex = ((auxi << 2) + grp);// not the same order for the CVs
+								val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
+								val = clamp(val, 0.0f, maxAGIndivSendFader);
+								indivGroupSendWithCv[(grp << 2) + auxi] = val;
+							}
+							else {
+								indivGroupSendWithCv[(grp << 2) + auxi] = -1.0f;							
+							}
+							val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
+							val *= globalSends[auxi] * sendMuteSlewers[16 + grp].out;
+							groupSendVcaGains[(grp << 2) + auxi] = val;
 						}
-						else {
-							indivGroupSendWithCv[(grp << 2) + auxi] = -1.0f;							
-						}
-						val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-						val *= globalSends[auxi] * sendMuteSlewers[16 + grp].out;
 						// vca the aux send knob with the track's sound
-						auxSends[(auxi << 1) + 0] += val * auxSendsTrkGrp[(grp << 1) + 32];
-						auxSends[(auxi << 1) + 1] += val * auxSendsTrkGrp[(grp << 1) + 33];
+						auxSends[(auxi << 1) + 0] += groupSendVcaGains[(grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 32];
+						auxSends[(auxi << 1) + 1] += groupSendVcaGains[(grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 33];
 					}
 				}
 			}			
@@ -417,18 +438,7 @@ struct AuxExpander : Module {
 			
 			// values for returns, 12 such values (mute, solo, group)
 			messagesToMother[MFA_VALUE12_INDEX] = (float)refreshCounter12;
-			float val = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter12].getValue();
-			//   return mutes
-			if (refreshCounter12 < 4) {
-				val = (val > 0.5f ? 0.0f : 1.0f);
-			}
-			//   return solos
-			// else if (refreshCounter12 < 8)   
-			//    no compare needed here, will do a compare in GobalInfo::updateReturnSoloBits()
-			//   return group
-			// else 
-			//    nothing to do
-			messagesToMother[MFA_VALUE12] = val;
+			messagesToMother[MFA_VALUE12] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter12].getValue();;
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
 			memcpy(&messagesToMother[MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
@@ -436,7 +446,7 @@ struct AuxExpander : Module {
 			
 			// aux return pan
 			for (int i = 0; i < 4; i++) {
-				val = params[GLOBAL_AUXPAN_PARAMS + i].getValue();
+				float val = params[GLOBAL_AUXPAN_PARAMS + i].getValue();
 				// cv for pan
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
 					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f;// Pan CV is a -5V to +5V input
@@ -451,7 +461,7 @@ struct AuxExpander : Module {
 			
 			// aux return fader
 			for (int i = 0; i < 4; i++) {
-				val = params[GLOBAL_AUXPAN_PARAMS + 4 + i].getValue();
+				float val = params[GLOBAL_AUXPAN_PARAMS + 4 + i].getValue();
 				// cv for return fader
 				bool isConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
 						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (8 + i + 1));
@@ -466,7 +476,7 @@ struct AuxExpander : Module {
 				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
 				messagesToMother[MFA_AUX_RET_FADER + i] = val;
 			}
-			
+						
 			refreshCounter12++;
 			if (refreshCounter12 >= 12) {
 				refreshCounter12 = 0;
@@ -476,6 +486,7 @@ struct AuxExpander : Module {
 			for (int i = 0; i < 16; i++) {
 				lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness(0.0f);
 			}
+			
 		}
 
 		// VUs
@@ -484,12 +495,13 @@ struct AuxExpander : Module {
 				vu[i].reset();
 			}
 		}
-		else {
-			for (int i = 0; i < 4; i++) { 
-				vu[i].process(args.sampleTime, &messagesFromMother[AFM_AUX_VUS + (i << 1) + 0]);
+		else {// here mother is present and we are not cloaked
+			if (ecoMode == 0 || (refreshCounter12 & 0x3) == 3) {// stagger 3
+				for (int i = 0; i < 4; i++) { 
+					vu[i].process(args.sampleTime, &messagesFromMother[AFM_AUX_VUS + (i << 1) + 0]);
+				}
 			}
 		}
-		
 	}// process()
 
 

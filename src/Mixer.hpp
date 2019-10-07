@@ -82,6 +82,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
 	AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED,
 	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
+	AFM_ECO_MODE,
 	AFM_NUM_VALUES
 };
 
@@ -1798,13 +1799,13 @@ struct MixerAux {
 	inline int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _val12, float* _taps, int8_t* _panLawStereoLocal) {
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values12, float* _taps, int8_t* _panLawStereoLocal) {
 		auxNum = _auxNum;
 		ids = "id_a" + std::to_string(auxNum) + "_";
 		gInfo = _gInfo;
 		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-		flMute = &_val12[auxNum];
-		flGroup = &_val12[auxNum + 8];
+		flMute = &_values12[auxNum];
+		flGroup = &_values12[auxNum + 8];
 		taps = _taps;
 		panLawStereoLocal = _panLawStereoLocal;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
@@ -1827,7 +1828,7 @@ struct MixerAux {
 	void updateSlowValues(float *auxRetFadePan) {
 		// calc ** muteSoloGain **
 		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
-		muteSoloGain = *flMute * soloGain;
+		muteSoloGain = (*flMute > 0.5f ? 0.0f : 1.0f) * soloGain;
 		// Handle "Mute aux returns when soloing track"
 		// i.e. add aux returns to mix when no solo, or when solo and don't want mutes aux returns
 		if (gInfo->soloBitMask != 0 && gInfo->auxReturnsMutedWhenMainSolo) {

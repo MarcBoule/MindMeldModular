@@ -450,6 +450,9 @@ struct MixMaster : Module {
 					}
 				}	
 				memcpy(&messageToExpander[AFM_TRK_DISP_COL], tmpDispCols, 5 * 4);
+				// Eco mode
+				tmp = gInfo.ecoMode;
+				memcpy(&messageToExpander[AFM_ECO_MODE], &tmp, 4);
 			}
 			else {
 				*updateSlow = 0;
