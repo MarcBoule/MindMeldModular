@@ -265,7 +265,6 @@ struct MixMaster : Module {
 			muteTrackWhenSoloAuxRetSlewer.reset();
 		}
 
-/* slower verion	*/	
 		if (refresh.processInputs()) {
 			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
@@ -303,63 +302,7 @@ struct MixMaster : Module {
 			processMuteSoloCvTriggers();
 		}
 		
-		
-/*		if (gInfo.ecoMode != 0) {
-			// Tracks (slow value updates)
-			tracks[ecoCode + 0].updateSlowValues();
-			tracks[ecoCode + 4].updateSlowValues();
-			tracks[ecoCode + 8].updateSlowValues();
-			tracks[ecoCode + 12].updateSlowValues();
-			// Groups (slow value updates)
-			groups[ecoCode].updateSlowValues();
-			// Aux (slow value updates)
-			if (auxExpanderPresent) {
-				aux[ecoCode].updateSlowValues(&auxRetFadePan[ecoCode]);
-			}
-			// Master and mute/solo cv triggers
-			if (ecoCode == 0) {
-				master.updateSlowValues();
-				processMuteSoloCvTriggers();
-			}
-		}
-		else {
-			// Tracks 
-			for (int trk = 0; trk < 16; trk++) {
-				tracks[trk].updateSlowValues();
-			}
-			// Groups
-			for (int grp = 0; grp < 4; grp++) {
-				groups[grp].updateSlowValues();
-			}
-			// Aux
-			if (auxExpanderPresent) {
-				for (int auxi = 0; auxi < 4; auxi++) {
-					aux[auxi].updateSlowValues(&auxRetFadePan[auxi]);
-				}
-			}
-			// Master and mute/solo cv triggers
-			master.updateSlowValues();
-			processMuteSoloCvTriggers();
-		}
-		//		
-		if (refresh.processInputs()) {// succeeds at sampleRate / 16
-			// solo bits
-			gInfo.updateSoloBitMask();
-			if (auxExpanderPresent) {
-				gInfo.updateReturnSoloBits();
-			}
-					
-			// EQ Expander message bus test
-			// Message<Payload> *message = messages->receive("1");	
-			// if (message != NULL) {
-				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
-				// delete message;
-			// }
-			
-		}// userInputs refresh	
-*/
-		
-		
+	
 		//********** Outputs **********
 
 		float mix[2] = {0.0f};// room for main (groups will automatically be stored into groups taps 0 by tracks)
