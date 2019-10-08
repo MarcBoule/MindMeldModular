@@ -1191,6 +1191,7 @@ struct MixerTrack {
 	private:
 	bool stereo;// pan coefficients use this, so set up first
 	float inGain;
+	simd::float_4 gainMatrix;
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter inGainSlewer;
 	dsp::SlewLimiter muteSoloGainSlewer;
@@ -1204,7 +1205,6 @@ struct MixerTrack {
 	float paramWithCV;
 	float panWithCV;
 	float volCv;
-	simd::float_4 gainMatrix;
 
 	// no need to save, no reset
 	int trackNum;
