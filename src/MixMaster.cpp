@@ -264,11 +264,47 @@ struct MixMaster : Module {
 		else {
 			muteTrackWhenSoloAuxRetSlewer.reset();
 		}
+
+/* slower verion	*/	
+		if (refresh.processInputs()) {
+			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
+			
+			// Tracks
+			gInfo.updateSoloBit(trackToProcess);
+			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
+			// Groups/Aux
+			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
+				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
+				groups[trackToProcess >> 2].updateSlowValues();
+				if (auxExpanderPresent) {
+					gInfo.updateReturnSoloBits();
+					aux[trackToProcess >> 2].updateSlowValues();
+				}
+			}
+			// Master
+			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
+				master.updateSlowValues();
+			}
+			
+			// EQ Expander message bus test
+			// Message<Payload> *message = messages->receive("1");	
+			// if (message != NULL) {
+				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
+				// delete message;
+			// }
+			
+		}// userInputs refresh
+		
 		
 		// ecoCode: cycles from 0 to 3 in eco mode, stuck at 0 when full power mode
 		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo.ecoMode);
 		
-		if (gInfo.ecoMode != 0) {
+		if (ecoCode == 0) {
+			processMuteSoloCvTriggers();
+		}
+		
+		
+/*		if (gInfo.ecoMode != 0) {
 			// Tracks (slow value updates)
 			tracks[ecoCode + 0].updateSlowValues();
 			tracks[ecoCode + 4].updateSlowValues();
@@ -321,7 +357,7 @@ struct MixMaster : Module {
 			// }
 			
 		}// userInputs refresh	
-
+*/
 		
 		
 		//********** Outputs **********
@@ -342,7 +378,7 @@ struct MixMaster : Module {
 				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[auxi].process(&groupTaps[auxGroup << 1]);
+					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi], ecoCode);
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
 						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
@@ -366,9 +402,9 @@ struct MixMaster : Module {
 			mix[1] *= muteTrackWhenSoloAuxRetSlewer.out;
 			
 			// Aux returns when no group
-			for (int i = 0; i < 4; i++) {
-				if (aux[i].getAuxGroup() == 0) {
-					aux[i].process(mix);
+			for (int auxi = 0; auxi < 4; auxi++) {
+				if (aux[auxi].getAuxGroup() == 0) {
+					aux[auxi].process(mix, &auxRetFadePan[auxi], ecoCode);
 				}
 			}
 		}
