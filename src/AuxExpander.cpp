@@ -86,7 +86,7 @@ struct AuxExpander : Module {
 	int muteSoloCvTrigRefresh = 0;
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
 	uint16_t ecoMode;
-
+	int32_t muteTrkAuxSendWhenTrkGrouped;
 	
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -180,6 +180,7 @@ struct AuxExpander : Module {
 			groupSendVcaGains[i] = 0.0f;
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
+		muteTrkAuxSendWhenTrkGrouped = 0;
 		
 		onReset();
 
@@ -324,6 +325,8 @@ struct AuxExpander : Module {
 				// Eco mode
 				memcpy(&tmp, &messagesFromMother[AFM_ECO_MODE], 4);
 				ecoMode = (uint16_t)tmp;
+				// mute aux send of track when it is grouped and that group is muted
+				memcpy(&muteTrkAuxSendWhenTrkGrouped, &messagesFromMother[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], 4);
 			}
 			
 			// Fast values from mother
@@ -348,14 +351,19 @@ struct AuxExpander : Module {
 				}
 				globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
 			
-				//   Indiv mute sends (20 instances)
-				int32_t muteTrkAuxSendWhenTrkGrouped;
-				memcpy(&muteTrkAuxSendWhenTrkGrouped, &messagesFromMother[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], 4);
+				//   Indiv mute sends (20 instances)				
 				for (int gi = 0; gi < 20; gi++) {
 					float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
-					val = (val > 0.5f ? 0.0f : 1.0f);
-					if ( gi < 16 && (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0) {
+					if (val > 0.5f) {
 						val = 0.0f;
+					}
+					else {
+						if ( gi < 16 && (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0) {
+							val = 0.0f;
+						}
+						else {
+							val = 1.0f;
+						}
 					}
 					if (sendMuteSlewers[gi].out != val) {
 						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), val);

@@ -432,6 +432,16 @@ struct MixMaster : Module {
 				// Eco mode
 				tmp = gInfo.ecoMode;
 				memcpy(&messageToExpander[AFM_ECO_MODE], &tmp, 4);
+				// mute aux send of track when it is grouped and that group is muted
+				int32_t mask = 0;
+				if (gInfo.muteTrkSendsWhenGrpMuted != 0) {
+					for (int i = 0; i < 4; i++) {
+						if (groups[i].paMute->getValue() > 0.5f) {
+							mask |= gInfo.groupUsage[i];
+						}
+					}
+				}
+				memcpy(&messageToExpander[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], &mask, 4);
 			}
 			else {
 				*updateSlow = 0;
@@ -446,14 +456,6 @@ struct MixMaster : Module {
 				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];// send tap 4 of the aux return signal flows
 				messageToExpander[AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];// send tap 4 of the aux return signal flows
 			}
-			// mute aux send of track when it is grouped
-			int32_t mask = 0;
-			if (gInfo.muteTrkSendsWhenGrpMuted != 0) {
-				for (int i = 0; i < 4; i++) {
-					mask |= gInfo.groupUsage[i];
-				}
-			}
-			memcpy(&messageToExpander[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], &mask, 4);
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}// if (auxExpanderPresent)
