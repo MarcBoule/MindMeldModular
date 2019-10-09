@@ -493,6 +493,7 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 
 struct EditableDisplayBase : LedDisplayTextField {
 	int numChars = 4;
+	int textSize = 12;
 	bool doubleClick = false;
 	GlobalInfo *gInfo = NULL;
 	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use EditableDisplayBase for Aux displays
@@ -527,7 +528,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
 			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
 				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
-				-1, color, 12, text.c_str(), highlightColor, begin, end);
+				-1, color, textSize, text.c_str(), highlightColor, begin, end);
 
 			bndSetFont(APP->window->uiFont->handle);
 		}
@@ -576,7 +577,8 @@ struct MasterDisplay : EditableDisplayBase {
 	
 	MasterDisplay() {
 		numChars = 6;
-		box.size.x = mm2px(17.5);
+		textSize = 14;
+		box.size.x = mm2px(19.5);
 		textOffset.x = 2.4f;
 		text = "-0000-";
 	}
