@@ -548,7 +548,7 @@ struct MixerMaster {
 	
 	// need to save, with reset
 	bool dcBlock;
-	int clipping; // 0 is soft, 1 is hard
+	int clipping; // 0 is soft, 1 is hard (must be single ls bit)
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int8_t vuColorThemeLocal;

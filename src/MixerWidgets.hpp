@@ -217,12 +217,17 @@ struct VuMeterTrack : VuMeterBase {//
 // --------------------
 
 struct VuMeterMaster : VuMeterBase {
+	int* clippingPtr;
+	int oldClipping = 1;
+	float hardRedVoltage;
+	
 	VuMeterMaster() {
 		gapX = mm2px(0.6);
 		barX = mm2px(1.6);
 		barY = mm2px(60.0);
 		box.size = Vec(barX * 2 + gapX, barY);
 		zeroDbVoltage = 10.0f;// V
+		hardRedVoltage = 10.0f;
 		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
 	
@@ -235,7 +240,7 @@ struct VuMeterMaster : VuMeterBase {
 			vuHeight *= barY;
 			
 			float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
-			if (vuHeight > redThreshold || peakHoldVal > 10.0f) {
+			if (vuHeight > redThreshold || peakHoldVal > hardRedVoltage) {
 				// Full red
 				nvgBeginPath(args.vg);
 				if (vuHeight > redThreshold) {
@@ -284,7 +289,7 @@ struct VuMeterMaster : VuMeterBase {
 			vuHeight *= barY;
 			
 			float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
-			if (vuHeight > redThreshold || peakHoldVal > 10.0f) {
+			if (vuHeight > redThreshold || peakHoldVal > hardRedVoltage) {
 				// Full red
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight - sepYmaster - peakHoldThick, barX, peakHoldThick);
@@ -309,7 +314,19 @@ struct VuMeterMaster : VuMeterBase {
 			}
 		}
 	}
-	
+	void step() override {
+		if (*clippingPtr != oldClipping) {
+			oldClipping = *clippingPtr;
+			if (*clippingPtr == 0) {// soft
+				prepareYellowAndRedThresholds(-4.43697499f, 1.58362492f);// dB (6V and 12V respectively)
+				hardRedVoltage = 12.0f;
+			}
+			else {// hard
+				prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB (5V and 0V respectively)
+				hardRedVoltage = 10.0f;
+			}
+		}
+	}
 };
 
 

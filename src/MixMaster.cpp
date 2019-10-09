@@ -392,6 +392,7 @@ struct MixMaster : Module {
 			// Slow
 			
 			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[AFM_UPDATE_SLOW]);
+			*updateSlow = 0;
 			if (slowExpander) {
 				// Track names
 				*updateSlow = 1;
@@ -443,9 +444,6 @@ struct MixMaster : Module {
 				}
 				memcpy(&messageToExpander[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], &mask, 4);
 			}
-			else {
-				*updateSlow = 0;
-			}
 			
 			// Fast
 			
@@ -453,8 +451,9 @@ struct MixMaster : Module {
 			writeAuxSends(&messageToExpander[AFM_AUX_SENDS]);						
 			// Aux VUs
 			for (int i = 0; i < 4; i++) {
-				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];// send tap 4 of the aux return signal flows
-				messageToExpander[AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];// send tap 4 of the aux return signal flows
+				// send tap 4 of the aux return signal flows
+				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];
+				messageToExpander[AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];
 			}
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
@@ -985,6 +984,7 @@ struct MixMasterWidget : ModuleWidget {
 			newVU->srcLevels = &(module->master.vu);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
+			newVU->clippingPtr = &(module->master.clipping);
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
