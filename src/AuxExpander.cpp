@@ -437,12 +437,19 @@ struct AuxExpander : Module {
 			// To Mother
 			// ***********
 			
-			// Aux returns
 			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
-			for (int i = 0; i < 8; i++) {
-				messagesToMother[MFA_AUX_RETURNS + i] = inputs[RETURN_INPUTS + i].getVoltage();// left A, right A, left B, right B, left C, right C, left D, right D
+			
+			// Aux returns
+			// left A, right A, left B, right B, left C, right C, left D, right D
+			for (int i = 0; i < 4; i++) {
+				int indexL = (i << 1) + 0;
+				int indexR = (i << 1) + 1;
+				float sampleL = inputs[RETURN_INPUTS + indexL].getVoltage();
+				float sampleR = inputs[RETURN_INPUTS + indexR].isConnected() ?
+								inputs[RETURN_INPUTS + indexR].getVoltage() : sampleL;
+				messagesToMother[MFA_AUX_RETURNS + indexL] = sampleL;
+				messagesToMother[MFA_AUX_RETURNS + indexR] = sampleR;
 			}
-			leftExpander.module->rightExpander.messageFlipRequested = true;
 			
 			// values for returns, 12 such values (mute, solo, group)
 			messagesToMother[MFA_VALUE12_INDEX] = (float)refreshCounter12;
@@ -489,6 +496,8 @@ struct AuxExpander : Module {
 			if (refreshCounter12 >= 12) {
 				refreshCounter12 = 0;
 			}
+			
+			leftExpander.module->rightExpander.messageFlipRequested = true;
 		}	
 		else {// if (motherPresent)
 			for (int i = 0; i < 16; i++) {
