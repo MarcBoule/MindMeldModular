@@ -233,6 +233,20 @@ struct VuMeterMaster : VuMeterBase {
 	
 	// used for RMS or PEAK
 	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override {
+	/*	if (posX == 0) { // draw only once per vu pair
+			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
+			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
+			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
+			vuHeight *= barY;
+			float ySep = barY - vuHeight - sepYmaster;
+			nvgBeginPath(args.vg);
+			nvgMoveTo(args.vg, 0 - 1, ySep);
+			nvgLineTo(args.vg, box.size.x + 1, ySep);
+			nvgStrokeColor(args.vg, nvgRGB(53, 53, 53));
+			nvgStrokeWidth(args.vg, mm2px(0.3));
+			nvgStroke(args.vg);
+		}*/
+
 		if (vuValue >= epsilon) {
 			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
 			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
@@ -245,6 +259,7 @@ struct VuMeterMaster : VuMeterBase {
 				nvgBeginPath(args.vg);
 				if (vuHeight > redThreshold) {
 					nvgRect(args.vg, posX, barY - vuHeight - sepYmaster, barX, vuHeight - redThreshold);
+					//INFO("%g, %g", barY - vuHeight - sepYmaster, vuHeight - redThreshold);
 					nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
 				}
 				else {
@@ -578,8 +593,8 @@ struct MasterDisplay : EditableDisplayBase {
 	MasterDisplay() {
 		numChars = 6;
 		textSize = 13;
-		box.size.x = mm2px(17.5f);
-		textOffset.x = 2.4f;
+		box.size.x = mm2px(18.3f);
+		textOffset.x = 1.4f;// 2.4f
 		text = "-0000-";
 	}
 	
