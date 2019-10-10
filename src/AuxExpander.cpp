@@ -67,7 +67,7 @@ struct AuxExpander : Module {
 	float indivTrackSendWithCv[64];
 	float indivGroupSendWithCv[16];
 	float globalRetPansWithCV[4];
-	dsp::SlewLimiter sendMuteSlewers[20];
+	dsp::TSlewLimiter<simd::float_4> sendMuteSlewers[5];
 	float trackSendVcaGains[64];
 	float groupSendVcaGains[16];
 	
@@ -82,6 +82,7 @@ struct AuxExpander : Module {
 	float maxAGGlobSendFader;
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	simd::float_4 globalSends;
+	simd::float_4 muteSends[5];
 	Trigger muteSoloCvTriggers[28];
 	int muteSoloCvTrigRefresh = 0;
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
@@ -169,9 +170,7 @@ struct AuxExpander : Module {
 		directOutsAndStereoPanModes.cc1 = 0;
 		for (int i = 0; i < 5; i++) {
 			trackDispColsLocal[i].cc1 = 0;
-		}
-		for (int i = 0; i < 20; i++) {
-			sendMuteSlewers[i].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		}
 		for (int i = 0; i < 64; i++) {
 			trackSendVcaGains[i] = 0.0f;
@@ -206,7 +205,7 @@ struct AuxExpander : Module {
 			globalSendsWithCV[i] = -1.0f;
 			globalRetPansWithCV[i] = -1.0f;
 		}
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 5; i++) {
 			sendMuteSlewers[i].reset();
 		}
 		for (int i = 0; i < 64; i++) {
@@ -352,21 +351,24 @@ struct AuxExpander : Module {
 				globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
 			
 				//   Indiv mute sends (20 instances)				
-				for (int gi = 0; gi < 20; gi++) {
+				for (int gi = 0; gi < 16; gi++) {
 					float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
 					if (val > 0.5f) {
 						val = 0.0f;
 					}
 					else {
-						if ( gi < 16 && (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0) {
-							val = 0.0f;
-						}
-						else {
-							val = 1.0f;
-						}
+						val = (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0 ? 0.0f : 1.0f;
 					}
-					if (sendMuteSlewers[gi].out != val) {
-						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), val);
+					muteSends[gi >> 2][gi & 0x3] = val;
+				}
+				for (int gi = 0; gi < 4; gi++) {
+					float val = params[GROUP_AUXMUTE_PARAMS + gi].getValue();
+					val = val > 0.5f ? 0.0f : 1.0f;
+					muteSends[4][gi] = val;
+				}	
+				for (int gi = 0; gi < 5; gi++) {
+					if (movemask(muteSends[gi] == sendMuteSlewers[gi].out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), muteSends[gi]);
 					}
 				}
 			}
@@ -392,7 +394,7 @@ struct AuxExpander : Module {
 							indivTrackSendWithCv[(trk << 2) + auxi] = -1.0f;
 						}
 						val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-						val *= globalSends[auxi] * sendMuteSlewers[trk].out;
+						val *= globalSends[auxi] * sendMuteSlewers[trk >> 2].out[trk & 0x3];
 						trackSendVcaGains[(trk << 2) + auxi] = val;
 					}
 					// vca the aux send knob with the track's sound
@@ -418,7 +420,7 @@ struct AuxExpander : Module {
 								indivGroupSendWithCv[(grp << 2) + auxi] = -1.0f;							
 							}
 							val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-							val *= globalSends[auxi] * sendMuteSlewers[16 + grp].out;
+							val *= globalSends[auxi] * sendMuteSlewers[4].out[grp];
 							groupSendVcaGains[(grp << 2) + auxi] = val;
 						}
 						// vca the aux send knob with the track's sound
@@ -487,8 +489,7 @@ struct AuxExpander : Module {
 				else {
 					paramRetFaderWithCv[i] = -1.0f;// do not show cv pointer
 				}
-				// scaling
-				val = std::pow(val, GlobalInfo::globalAuxReturnScalingExponent);
+				// scaling done in mother
 				messagesToMother[MFA_AUX_RET_FADER + i] = val;
 			}
 						
