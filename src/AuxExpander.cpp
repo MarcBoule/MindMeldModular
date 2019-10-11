@@ -54,12 +54,14 @@ struct AuxExpander : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
+	alignas(4) char auxLabels[4 * 4 + 1];// 4 chars per label, 4 aux labels, null terminate the end the whole array only
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice), no need to send back to main panel
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
 	int8_t dispColorAuxLocal[4];
 
 	// No need to save, with reset
+	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int refreshCounter12;
 	VuMeterAllDual vu[4];
 	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
@@ -77,7 +79,6 @@ struct AuxExpander : Module {
 	PackedBytes4 colorAndCloak;
 	PackedBytes4 directOutsAndStereoPanModes;// cc1[0] is direct out mode, cc1[1] is stereo pan mode
 	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
-	int resetAuxLabelRequest = 0;// 0 when nothing to do, 1 for reset names in widget	
 	float maxAGIndivSendFader;
 	float maxAGGlobSendFader;
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
@@ -188,16 +189,17 @@ struct AuxExpander : Module {
 	}
   
 	void onReset() override {
+		snprintf(auxLabels, 4 * 4 + 1, "AUXAAUXBAUXCAUXD");	
 		for (int i = 0; i < 4; i++) {
 			vuColorThemeLocal.cc4[i] = 0;
 			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
 			panLawStereoLocal.cc4[i] = 0;
 			dispColorAuxLocal[i] = 0;			
 		}
-		resetAuxLabelRequest = 1;
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
+		updateAuxLabelRequest = 1;
 		refreshCounter12 = 0;
 		for (int i = 0; i < 4; i++) {
 			vu[i].reset();
@@ -242,6 +244,9 @@ struct AuxExpander : Module {
 			json_array_insert_new(dispColorAuxLocalJ, c, json_integer(dispColorAuxLocal[c]));
 		json_object_set_new(rootJ, "dispColorAuxLocal", dispColorAuxLocalJ);
 
+		// auxLabels
+		json_object_set_new(rootJ, "auxLabels", json_string(auxLabels));
+		
 		return rootJ;
 	}
 
@@ -278,6 +283,12 @@ struct AuxExpander : Module {
 			}
 		}
 		
+		// auxLabels
+		json_t *textJ = json_object_get(rootJ, "auxLabels");
+		if (textJ) {
+			snprintf(auxLabels, 4 * 4 + 1, "%s", json_string_value(textJ));
+		}
+
 		resetNonJson(true);
 	}
 
@@ -600,12 +611,6 @@ struct AuxExpanderWidget : ModuleWidget {
 	TrackAndGroupLabel* trackAndGroupLabels[20];
 	AuxDisplay* auxDisplays[4];
 
-	std::string getInitAuxLabel(int aux) {
-		std::string ret = "AUXA";
-		ret[3] += aux;
-		return ret;
-	}
-
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);
 
@@ -617,7 +622,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
 			// Labels
-			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
+			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
@@ -626,8 +631,8 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
 				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
+				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
 				auxDisplays[i]->auxNumber = i;
-				auxDisplays[i]->text = getInitAuxLabel(i);
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
 			}
 			// Y is 4.7, same X as below
@@ -888,61 +893,18 @@ struct AuxExpanderWidget : ModuleWidget {
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 8)), true, module, AuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT, module ? &module->panelTheme : NULL));	
 	
 	}
-	
-	
-	json_t* toJson() override {
-		json_t* rootJ = ModuleWidget::toJson();
-
-		// aux0 label
-		json_object_set_new(rootJ, "aux0label", json_string(auxDisplays[0]->text.c_str()));
-		// aux1 label
-		json_object_set_new(rootJ, "aux1label", json_string(auxDisplays[1]->text.c_str()));
-		// aux2 label
-		json_object_set_new(rootJ, "aux2label", json_string(auxDisplays[2]->text.c_str()));
-		// aux3 label
-		json_object_set_new(rootJ, "aux3label", json_string(auxDisplays[3]->text.c_str()));
-
-		return rootJ;
-	}
-
-	void fromJson(json_t* rootJ) override {
-		ModuleWidget::fromJson(rootJ);
-
-		// aux0 label
-		json_t* aux0J = json_object_get(rootJ, "aux0label");
-		if (aux0J)
-			auxDisplays[0]->text = json_string_value(aux0J);
-		
-		// aux1 label
-		json_t* aux1J = json_object_get(rootJ, "aux1label");
-		if (aux1J)
-			auxDisplays[1]->text = json_string_value(aux1J);
-
-		// aux2 label
-		json_t* aux2J = json_object_get(rootJ, "aux2label");
-		if (aux2J)
-			auxDisplays[2]->text = json_string_value(aux2J);
-		
-		// aux3 label
-		json_t* aux3J = json_object_get(rootJ, "aux3label");
-		if (aux3J)
-			auxDisplays[3]->text = json_string_value(aux3J);
-	}
-
-
 
 	void step() override {
 		if (module) {
 			AuxExpander* moduleA = (AuxExpander*)module;
 			
 			// Labels (pull from module)
-			if (moduleA->resetAuxLabelRequest != 0) {
-				// aux labels
+			if (moduleA->updateAuxLabelRequest != 0) {// pull request from module
+				// aux displays
 				for (int aux = 0; aux < 4; aux++) {
-					auxDisplays[aux]->text = getInitAuxLabel(aux);
+					auxDisplays[aux]->text = std::string(&(moduleA->auxLabels[aux * 4]), 4);
 				}
-				
-				moduleA->resetAuxLabelRequest = 0;
+				moduleA->updateAuxLabelRequest = 0;// all done pulling
 			}
 			if (moduleA->updateTrackLabelRequest != 0) {// pull request from module
 				// track and group labels

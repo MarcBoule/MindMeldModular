@@ -852,6 +852,7 @@ struct AuxDisplay : EditableDisplayBase {
 	int8_t* srcPanLawStereoLocal = NULL;
 	int8_t* srcDirectOutsModeGlobal = NULL;
 	int8_t* srcPanLawStereoGlobal = NULL;
+	char* auxName;
 	int auxNumber = 0;
 	
 	void onButton(const event::Button &e) override {
@@ -907,6 +908,13 @@ struct AuxDisplay : EditableDisplayBase {
 		}
 		EditableDisplayBase::onButton(e);
 	}
+	void onChange(const event::Change &e) override {
+		(*((uint32_t*)(auxName))) = 0x20202020;
+		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
+			auxName[i] = text[i];
+		}
+		EditableDisplayBase::onChange(e);
+	};
 };
 
 
