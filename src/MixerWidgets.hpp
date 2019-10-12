@@ -669,11 +669,11 @@ struct TrackDisplay : EditableDisplayBase {
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			
-			HPFCutoffSlider *trackHPFAdjustSlider = new HPFCutoffSlider(srcTrack);
+			HPFCutoffSlider<MixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<MixerTrack>(srcTrack);
 			trackHPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackHPFAdjustSlider);
 			
-			LPFCutoffSlider *trackLPFAdjustSlider = new LPFCutoffSlider(srcTrack);
+			LPFCutoffSlider<MixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<MixerTrack>(srcTrack);
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
@@ -846,6 +846,7 @@ struct GroupDisplay : EditableDisplayBase {
 // --------------------
 
 struct AuxDisplay : EditableDisplayBase {
+	AuxspanderAux *srcAux = NULL;
 	int8_t* srcVuColor = NULL;
 	int8_t* srcDispColor = NULL;
 	int8_t* srcDirectOutsModeLocal = NULL;
@@ -863,10 +864,16 @@ struct AuxDisplay : EditableDisplayBase {
 			auxSetLabel->text = "Aux settings: " + text;
 			menu->addChild(auxSetLabel);
 			
-			bool isEmptyMenu = true;
+			HPFCutoffSlider<AuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<AuxspanderAux>(srcAux);
+			auxHPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(auxHPFAdjustSlider);
+			
+			LPFCutoffSlider<AuxspanderAux> *auxLPFAdjustSlider = new LPFCutoffSlider<AuxspanderAux>(srcAux);
+			auxLPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(auxLPFAdjustSlider);
+			
 			
 			if (*srcDirectOutsModeGlobal >= 4) {
-				isEmptyMenu = false;
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
 				directOutsItem->isGlobal = false;
@@ -874,7 +881,6 @@ struct AuxDisplay : EditableDisplayBase {
 			}
 
 			if (*srcPanLawStereoGlobal >= 3) {
-				isEmptyMenu = false;
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
 				panLawStereoItem->isGlobal = false;
@@ -882,7 +888,6 @@ struct AuxDisplay : EditableDisplayBase {
 			}
 
 			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
-				isEmptyMenu = false;
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = srcVuColor;
 				vuColItem->isGlobal = false;
@@ -890,17 +895,10 @@ struct AuxDisplay : EditableDisplayBase {
 			}
 			
 			if (colorAndCloak->cc4[dispColor] >= 7) {
-				isEmptyMenu = false;
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = srcDispColor;
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
-			}
-
-			if (isEmptyMenu) {
-				MenuLabel *auxNoneLabel = new MenuLabel();
-				auxNoneLabel->text = "(none)";
-				menu->addChild(auxNoneLabel);
 			}
 			
 			e.consume(this);

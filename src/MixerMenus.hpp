@@ -484,17 +484,18 @@ struct GainAdjustSlider : ui::Slider {
 
 // HPF filter cutoff menu item
 
+template <typename TrackOrAux>
 struct HPFCutoffQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
+	TrackOrAux *srcTrackOrAux = NULL;
 	
-	HPFCutoffQuantity(MixerTrack *_srcTrack) {
-		srcTrack = _srcTrack;
+	HPFCutoffQuantity(TrackOrAux *_srcTrackOrAux) {
+		srcTrackOrAux = _srcTrackOrAux;
 	}
 	void setValue(float value) override {
-		srcTrack->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
+		srcTrackOrAux->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
 	}
 	float getValue() override {
-		return srcTrack->getHPFCutoffFreq();
+		return srcTrackOrAux->getHPFCutoffFreq();
 	}
 	float getMinValue() override {return 13.0f;}
 	float getMaxValue() override {return 1000.0f;}
@@ -502,7 +503,7 @@ struct HPFCutoffQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut >= MixerTrack::minHPFCutoffFreq) {
+		if (valCut >= TrackOrAux::minHPFCutoffFreq) {
 			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
 		}
 		else {
@@ -512,7 +513,7 @@ struct HPFCutoffQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "HPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= MixerTrack::minHPFCutoffFreq) {
+		if (getDisplayValue() >= TrackOrAux::minHPFCutoffFreq) {
 			return " Hz";
 		}
 		else {
@@ -521,9 +522,10 @@ struct HPFCutoffQuantity : Quantity {
 	}
 };
 
+template <typename TrackOrAux>
 struct HPFCutoffSlider : ui::Slider {
-	HPFCutoffSlider(MixerTrack *srcTrack) {
-		quantity = new HPFCutoffQuantity(srcTrack);
+	HPFCutoffSlider(TrackOrAux *srcTrackOrAux) {
+		quantity = new HPFCutoffQuantity<TrackOrAux>(srcTrackOrAux);
 	}
 	~HPFCutoffSlider() {
 		delete quantity;
@@ -534,10 +536,11 @@ struct HPFCutoffSlider : ui::Slider {
 
 // LPF filter cutoff menu item
 
+template <typename TrackOrAux>
 struct LPFCutoffQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
+	TrackOrAux *srcTrack = NULL;
 	
-	LPFCutoffQuantity(MixerTrack *_srcTrack) {
+	LPFCutoffQuantity(TrackOrAux *_srcTrack) {
 		srcTrack = _srcTrack;
 	}
 	void setValue(float value) override {
@@ -552,7 +555,7 @@ struct LPFCutoffQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut <= MixerTrack::maxLPFCutoffFreq) {
+		if (valCut <= TrackOrAux::maxLPFCutoffFreq) {
 			valCut =  std::round(valCut / 100.0f);
 			return string::f("%g", math::normalizeZero(valCut / 10.0f));
 		}
@@ -563,7 +566,7 @@ struct LPFCutoffQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "LPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() <= MixerTrack::maxLPFCutoffFreq) {
+		if (getDisplayValue() <= TrackOrAux::maxLPFCutoffFreq) {
 			return " kHz";
 		}
 		else {
@@ -572,9 +575,10 @@ struct LPFCutoffQuantity : Quantity {
 	}
 };
 
+template <typename TrackOrAux>
 struct LPFCutoffSlider : ui::Slider {
-	LPFCutoffSlider(MixerTrack *srcTrack) {
-		quantity = new LPFCutoffQuantity(srcTrack);
+	LPFCutoffSlider(TrackOrAux *srcTrack) {
+		quantity = new LPFCutoffQuantity<TrackOrAux>(srcTrack);
 	}
 	~LPFCutoffSlider() {
 		delete quantity;

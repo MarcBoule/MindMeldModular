@@ -24,7 +24,7 @@ struct AuxExpander : Module {
 		NUM_PARAMS
 	};
 	enum InputIds {
-		ENUMS(RETURN_INPUTS, 2 * 4),
+		ENUMS(RETURN_INPUTS, 2 * 4),// must be first element (see AuxspanderAux.construct()). Mapping: left A, right A, left B, right B, left C, right C, left D, right D
 		ENUMS(POLY_AUX_AD_CV_INPUTS, 4),
 		POLY_AUX_M_CV_INPUT,
 		POLY_GRPS_AD_CV_INPUT,// Mapping: 1A, 2A, 3A, 4A, 1B, etc
@@ -59,6 +59,7 @@ struct AuxExpander : Module {
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
 	int8_t dispColorAuxLocal[4];
+	AuxspanderAux aux[4];
 
 	// No need to save, with reset
 	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -179,6 +180,9 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 16; i++) {
 			groupSendVcaGains[i] = 0.0f;
 		}
+		for (int i = 0; i < 4; i++) {
+			aux[i].construct(i, &inputs[0]);
+		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 		muteTrkAuxSendWhenTrkGrouped = 0;
 		
@@ -194,7 +198,8 @@ struct AuxExpander : Module {
 			vuColorThemeLocal.cc4[i] = 0;
 			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
 			panLawStereoLocal.cc4[i] = 0;
-			dispColorAuxLocal[i] = 0;			
+			dispColorAuxLocal[i] = 0;	
+			aux[i].onReset();
 		}
 		resetNonJson(false);
 	}
@@ -206,6 +211,7 @@ struct AuxExpander : Module {
 			paramRetFaderWithCv[i] = -1.0f;
 			globalSendsWithCV[i] = -1.0f;
 			globalRetPansWithCV[i] = -1.0f;
+			aux[i].resetNonJson();
 		}
 		for (int i = 0; i < 5; i++) {
 			sendMuteSlewers[i].reset();
@@ -247,6 +253,11 @@ struct AuxExpander : Module {
 		// auxLabels
 		json_object_set_new(rootJ, "auxLabels", json_string(auxLabels));
 		
+		// aux
+		for (int i = 0; i < 4; i++) {
+			aux[i].dataToJson(rootJ);
+		}
+
 		return rootJ;
 	}
 
@@ -287,6 +298,11 @@ struct AuxExpander : Module {
 		json_t *textJ = json_object_get(rootJ, "auxLabels");
 		if (textJ) {
 			snprintf(auxLabels, 4 * 4 + 1, "%s", json_string_value(textJ));
+		}
+
+		// aux
+		for (int i = 0; i < 4; i++) {
+			aux[i].dataFromJson(rootJ);
 		}
 
 		resetNonJson(true);
@@ -455,13 +471,7 @@ struct AuxExpander : Module {
 			// Aux returns
 			// left A, right A, left B, right B, left C, right C, left D, right D
 			for (int i = 0; i < 4; i++) {
-				int indexL = (i << 1) + 0;
-				int indexR = (i << 1) + 1;
-				float sampleL = inputs[RETURN_INPUTS + indexL].getVoltage();
-				float sampleR = inputs[RETURN_INPUTS + indexR].isConnected() ?
-								inputs[RETURN_INPUTS + indexR].getVoltage() : sampleL;
-				messagesToMother[MFA_AUX_RETURNS + indexL] = sampleL;
-				messagesToMother[MFA_AUX_RETURNS + indexR] = sampleR;
+				aux[i].process(&messagesToMother[MFA_AUX_RETURNS + (i << 1)]);
 			}
 			
 			// values for returns, 12 such values (mute, solo, group)
@@ -624,6 +634,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
+				auxDisplays[i]->srcAux = &(module->aux[i]);
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
 				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal[i]);
