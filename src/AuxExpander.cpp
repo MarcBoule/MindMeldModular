@@ -379,20 +379,13 @@ struct AuxExpander : Module {
 			
 				//   Indiv mute sends (20 instances)				
 				for (int gi = 0; gi < 16; gi++) {
-					float val = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
-					if (val > 0.5f) {
-						val = 0.0f;
-					}
-					else {
-						val = (muteTrkAuxSendWhenTrkGrouped & (1 << gi)) != 0 ? 0.0f : 1.0f;
-					}
-					muteSends[gi >> 2][gi & 0x3] = val;
+					muteSends[gi >> 2][gi & 0x3] = ( ((muteTrkAuxSendWhenTrkGrouped & (1 << gi)) == 0) && 
+													 (params[TRACK_AUXMUTE_PARAMS + gi].getValue() < 0.5f) ? 1.0f : 0.0f );
 				}
 				for (int gi = 0; gi < 4; gi++) {
-					float val = params[GROUP_AUXMUTE_PARAMS + gi].getValue();
-					val = val > 0.5f ? 0.0f : 1.0f;
-					muteSends[4][gi] = val;
+					muteSends[4][gi] = params[GROUP_AUXMUTE_PARAMS + gi].getValue();
 				}	
+				muteSends[4] = simd::ifelse(muteSends[4] > 0.5f, 0.0f, 1.0f);
 				for (int gi = 0; gi < 5; gi++) {
 					if (movemask(muteSends[gi] == sendMuteSlewers[gi].out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), muteSends[gi]);
