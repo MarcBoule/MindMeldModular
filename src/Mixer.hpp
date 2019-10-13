@@ -643,12 +643,11 @@ struct MixerMaster {
 		if (inX <= 6.0f && inX >= -6.0f) {
 			return inX;
 		}
-		if (clipping == 1) {
+		if (clipping == 1) {// hard clip
 			return clamp(inX, -10.0f, 10.0f);
 		}
 		// here clipping is 0, so do soft clip
-		if (inX > 12.0f) inX = 12.0f;
-		if (inX < -12.0f) inX = -12.0f;
+		inX = clamp(inX, -12.0f, 12.0f);
 		if (inX >= 0.0f)
 			return clipPoly(inX);
 		return -clipPoly(-inX);
