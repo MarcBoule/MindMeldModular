@@ -34,7 +34,7 @@ struct AuxExpander : Module {
 		NUM_INPUTS
 	};
 	enum OutputIds {
-		ENUMS(SEND_OUTPUTS, 2 * 4),
+		ENUMS(SEND_OUTPUTS, 2 * 4),// A left, B left, C left, D left, A right, B right, C right, D right
 		NUM_OUTPUTS
 	};
 	enum LightIds {
@@ -71,8 +71,8 @@ struct AuxExpander : Module {
 	float indivGroupSendWithCv[16];
 	float globalRetPansWithCV[4];
 	dsp::TSlewLimiter<simd::float_4> sendMuteSlewers[5];
-	float trackSendVcaGains[64];
-	float groupSendVcaGains[16];
+	simd::float_4 trackSendVcaGains[16];
+	simd::float_4 groupSendVcaGains[4];
 	
 	// No need to save, no reset
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
@@ -174,13 +174,11 @@ struct AuxExpander : Module {
 			trackDispColsLocal[i].cc1 = 0;
 			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
 		}
-		for (int i = 0; i < 64; i++) {
-			trackSendVcaGains[i] = 0.0f;
-		}
 		for (int i = 0; i < 16; i++) {
-			groupSendVcaGains[i] = 0.0f;
+			trackSendVcaGains[i] = simd::float_4::zero();
 		}
 		for (int i = 0; i < 4; i++) {
+			groupSendVcaGains[i] = simd::float_4::zero();
 			aux[i].construct(i, &inputs[0]);
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
@@ -395,13 +393,13 @@ struct AuxExpander : Module {
 	
 			// Aux send VCAs
 			float* auxSendsTrkGrp = &messagesFromMother[AFM_AUX_SENDS];// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
-			// populate auxSends[0..7]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option) and combine with the 80 send floats to form the 4 stereo sends
-			float auxSends[8] = {0.0f};// send outputs (left A, right A, left B, right B, left C, right C, left D, right D)
+			simd::float_4 auxSends[2] = {simd::float_4::zero(), simd::float_4::zero()};// [0] = ABCD left, [1] = ABCD right
 			// accumulate tracks
-			for (int trk = 0; trk < 16; trk++) {
-				for (int auxi = 0; auxi < 4; auxi++) {
+			for (int trk = 0; trk < 16; trk++) {		
+				// prepare trackSendVcaGains when needed
+				if (ecoMode == 0 || (refreshCounter12 & 0x3) == 1) {// stagger 1			
+					for (int auxi = 0; auxi < 4; auxi++) {
 					// 64 individual track aux send knobs
-					if (ecoMode == 0 || (refreshCounter12 & 0x3) == 1) {// stagger 1
 						float val = params[TRACK_AUXSEND_PARAMS + (trk << 2) + auxi].getValue();
 						int inputNum = POLY_AUX_AD_CV_INPUTS + auxi;
 						if (inputs[inputNum].isConnected()) {
@@ -413,21 +411,22 @@ struct AuxExpander : Module {
 						else {
 							indivTrackSendWithCv[(trk << 2) + auxi] = -1.0f;
 						}
-						val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-						val *= globalSends[auxi] * sendMuteSlewers[trk >> 2].out[trk & 0x3];
-						trackSendVcaGains[(trk << 2) + auxi] = val;
+						trackSendVcaGains[trk][auxi] = val;
 					}
-					// vca the aux send knob with the track's sound
-					auxSends[(auxi << 1) + 0] += trackSendVcaGains[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 0];
-					auxSends[(auxi << 1) + 1] += trackSendVcaGains[(trk << 2) + auxi] * auxSendsTrkGrp[(trk << 1) + 1];
+					trackSendVcaGains[trk] = simd::pow<simd::float_4>(trackSendVcaGains[trk], GlobalInfo::individualAuxSendScalingExponent);
+					trackSendVcaGains[trk] *= globalSends * simd::float_4(sendMuteSlewers[trk >> 2].out[trk & 0x3]);
 				}
+				// vca the aux send knobs with the track's sound
+				auxSends[0] += trackSendVcaGains[trk] * simd::float_4(auxSendsTrkGrp[(trk << 1) + 0]);// L
+				auxSends[1] += trackSendVcaGains[trk] * simd::float_4(auxSendsTrkGrp[(trk << 1) + 1]);// R				
 			}
 			// accumulate groups
 			for (int grp = 0; grp < 4; grp++) {
-				for (int auxi = 0; auxi < 4; auxi++) {
-					if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
+				// prepare groupSendVcaGains when needed
+				if (ecoMode == 0 || (refreshCounter12 & 0x3) == 2) {// stagger 2
+					for (int auxi = 0; auxi < 4; auxi++) {
+						if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
 						// 16 individual group aux send knobs
-						if (ecoMode == 0 || (refreshCounter12 & 0x3) == 2) {// stagger 2
 							float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
 							if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
 								// Knob CV (adding, pre-scaling)
@@ -439,19 +438,23 @@ struct AuxExpander : Module {
 							else {
 								indivGroupSendWithCv[(grp << 2) + auxi] = -1.0f;							
 							}
-							val = std::pow(val, GlobalInfo::individualAuxSendScalingExponent);
-							val *= globalSends[auxi] * sendMuteSlewers[4].out[grp];
-							groupSendVcaGains[(grp << 2) + auxi] = val;
+							groupSendVcaGains[grp][auxi] = val;
 						}
-						// vca the aux send knob with the track's sound
-						auxSends[(auxi << 1) + 0] += groupSendVcaGains[(grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 32];
-						auxSends[(auxi << 1) + 1] += groupSendVcaGains[(grp << 2) + auxi] * auxSendsTrkGrp[(grp << 1) + 33];
+						else {
+							groupSendVcaGains[grp][auxi] = 0.0f;
+						}
 					}
+					groupSendVcaGains[grp] = simd::pow<simd::float_4>(groupSendVcaGains[grp], GlobalInfo::individualAuxSendScalingExponent);
+					groupSendVcaGains[grp] *= globalSends * simd::float_4(sendMuteSlewers[4].out[grp]);
 				}
+				// vca the aux send knobs with the group's sound
+				auxSends[0] += groupSendVcaGains[grp] * simd::float_4(auxSendsTrkGrp[(grp << 1) + 32]);// L
+				auxSends[1] += groupSendVcaGains[grp] * simd::float_4(auxSendsTrkGrp[(grp << 1) + 33]);// R				
 			}			
 			// Aux send outputs
-			for (int i = 0; i < 8; i++) {
-				outputs[SEND_OUTPUTS + i].setVoltage(auxSends[i]);
+			for (int i = 0; i < 4; i++) {
+				outputs[SEND_OUTPUTS + i + 0].setVoltage(auxSends[0][i]);// L ABCD
+				outputs[SEND_OUTPUTS + i + 4].setVoltage(auxSends[1][i]);// R ABCD
 			}			
 						
 			
@@ -642,9 +645,9 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 4.7, same X as below
 			
 			// Left sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), false, module, AuxExpander::SEND_OUTPUTS + i * 2 + 0, module ? &module->panelTheme : NULL));			
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), false, module, AuxExpander::SEND_OUTPUTS + i + 0, module ? &module->panelTheme : NULL));			
 			// Right sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, AuxExpander::SEND_OUTPUTS + i * 2 + 1, module ? &module->panelTheme : NULL));
+			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, AuxExpander::SEND_OUTPUTS + i + 4, module ? &module->panelTheme : NULL));
 
 			// Left returns
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), true, module, AuxExpander::RETURN_INPUTS + i * 2 + 0, module ? &module->panelTheme : NULL));			
