@@ -809,130 +809,18 @@ struct MixerTrack {
 	void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
 
-	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts) {
-		trackNum = _trackNum;
-		ids = "id_t" + std::to_string(trackNum) + "_";
-		gInfo = _gInfo;
-		inSig = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 0];
-		inInsert = &_inputs[INSERT_TRACK_INPUTS];
-		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
-		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
-		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
-		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
-		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
-		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
-		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
-		trackName = _trackName;
-		taps = _taps;
-		groupTaps = _groupTaps;
-		insertOuts = _insertOuts;
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-		inGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-		for (int i = 0; i < 2; i++) {
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
-			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
-		}
-	}
-	
-	
-	void onReset() {
-		gainAdjust = 1.0f;
-		fadeRate = 0.0f;
-		fadeProfile = 0.0f;
-		setHPFCutoffFreq(13.0f);// off
-		setLPFCutoffFreq(20010.0f);// off
-		directOutsMode = 3;// post-solo should be default
-		auxSendsMode = 3;// post-solo should be default
-		panLawStereo = 1;
-		vuColorThemeLocal = 0;
-		filterPos = 1;// default is post-insert
-		dispColorLocal = 0;
-		resetNonJson();
-	}
-	void resetNonJson() {
-		stereo = false;
-		inGain = 0.0f;
-		panMatrix = simd::float_4::zero();
-		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
-		gainMatrixSlewers.reset();
-		inGainSlewer.reset();
-		muteSoloGainSlewer.reset();
-		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].reset();
-			hpFilter[i].reset();
-			lpFilter[i].reset();
-		}
-		oldPan = -10.0f;
-		oldFader = -10.0f;
-		oldPanSignature.cc1 = 0xFFFFFFFF;
-		vu.reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
-		paramWithCV = -1.0f;
-		panWithCV = -1.0f;
-		volCv = 1.0f;
-		target = -1.0f;
-	}
-	
-	
+	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts);
+	void onReset();
+	void resetNonJson();
+	void dataToJson(json_t *rootJ);
+	void dataFromJson(json_t *rootJ);
+		
 	// level 1 read and write
-	void write(TrackSettingsCpBuffer *dest) {
-		dest->gainAdjust = gainAdjust;
-		dest->fadeRate = fadeRate;
-		dest->fadeProfile = fadeProfile;
-		dest->hpfCutoffFreq = hpfCutoffFreq;
-		dest->lpfCutoffFreq = lpfCutoffFreq;	
-		dest->directOutsMode = directOutsMode;
-		dest->auxSendsMode = auxSendsMode;
-		dest->panLawStereo = panLawStereo;
-		dest->vuColorThemeLocal = vuColorThemeLocal;
-		dest->linkedFader = gInfo->isLinked(trackNum);
-	}
-	void read(TrackSettingsCpBuffer *src) {
-		gainAdjust = src->gainAdjust;
-		fadeRate = src->fadeRate;
-		fadeProfile = src->fadeProfile;
-		setHPFCutoffFreq(src->hpfCutoffFreq);
-		setLPFCutoffFreq(src->lpfCutoffFreq);	
-		directOutsMode = src->directOutsMode;
-		auxSendsMode = src->auxSendsMode;
-		panLawStereo = src->panLawStereo;
-		vuColorThemeLocal = src->vuColorThemeLocal;
-		gInfo->setLinked(trackNum, src->linkedFader);
-	}
-	
+	void write(TrackSettingsCpBuffer *dest);
+	void read(TrackSettingsCpBuffer *src);
 	// level 2 read and write
-	void write2(TrackSettingsCpBuffer *dest) {
-		write(dest);
-		dest->paGroup = paGroup->getValue();;
-		dest->paFade = paFade->getValue();
-		dest->paMute = paMute->getValue();
-		dest->paSolo = paSolo->getValue();
-		dest->paPan = paPan->getValue();
-		for (int chr = 0; chr < 4; chr++) {
-			dest->trackName[chr] = trackName[chr];
-		}
-		dest->fadeGain = fadeGain;
-		dest->fadeGainX = fadeGainX;
-		// fadeGainScaled not really needed
-	}
-	void read2(TrackSettingsCpBuffer *src) {
-		read(src);
-		paGroup->setValue(src->paGroup);
-		paFade->setValue(src->paFade);
-		paMute->setValue(src->paMute);
-		paSolo->setValue(src->paSolo);
-		paPan->setValue(src->paPan);
-		for (int chr = 0; chr < 4; chr++) {
-			trackName[chr] = src->trackName[chr];
-		}
-		fadeGain = src->fadeGain;
-		fadeGainX = src->fadeGainX;
-		// fadeGainScaled not really needed
-	}
+	void write2(TrackSettingsCpBuffer *dest);
+	void read2(TrackSettingsCpBuffer *src);
 	
 	
 	void updateGroupUsage() {
@@ -1284,102 +1172,6 @@ struct MixerTrack {
 			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[96]);
 		}
 	}
-		
-		
-	void dataToJson(json_t *rootJ) {
-		// gainAdjust
-		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
-		
-		// fadeRate
-		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
-
-		// fadeProfile
-		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
-		
-		// hpfCutoffFreq
-		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
-		
-		// lpfCutoffFreq
-		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
-		
-		// directOutsMode
-		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
-		
-		// auxSendsMode
-		json_object_set_new(rootJ, (ids + "auxSendsMode").c_str(), json_integer(auxSendsMode));
-		
-		// panLawStereo
-		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
-
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, (ids + "vuColorThemeLocal").c_str(), json_integer(vuColorThemeLocal));
-
-		// filterPos
-		json_object_set_new(rootJ, (ids + "filterPos").c_str(), json_integer(filterPos));
-
-		// dispColorLocal
-		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
-	}
-	
-	
-	void dataFromJson(json_t *rootJ) {
-		// gainAdjust
-		json_t *gainAdjustJ = json_object_get(rootJ, (ids + "gainAdjust").c_str());
-		if (gainAdjustJ)
-			gainAdjust = json_number_value(gainAdjustJ);
-		
-		// fadeRate
-		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
-		if (fadeRateJ)
-			fadeRate = json_number_value(fadeRateJ);
-		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-
-		// hpfCutoffFreq
-		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
-		if (hpfCutoffFreqJ)
-			setHPFCutoffFreq(json_number_value(hpfCutoffFreqJ));
-		
-		// lpfCutoffFreq
-		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
-		if (lpfCutoffFreqJ)
-			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
-		
-		// directOutsMode
-		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
-		if (directOutsModeJ)
-			directOutsMode = json_integer_value(directOutsModeJ);
-		
-		// auxSendsMode
-		json_t *auxSendsModeJ = json_object_get(rootJ, (ids + "auxSendsMode").c_str());
-		if (auxSendsModeJ)
-			auxSendsMode = json_integer_value(auxSendsModeJ);
-		
-		// panLawStereo
-		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
-		if (panLawStereoJ)
-			panLawStereo = json_integer_value(panLawStereoJ);
-		
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, (ids + "vuColorThemeLocal").c_str());
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
-		
-		// filterPos
-		json_t *filterPosJ = json_object_get(rootJ, (ids + "filterPos").c_str());
-		if (filterPosJ)
-			filterPos = json_integer_value(filterPosJ);
-		
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
-		if (dispColorLocalJ)
-			dispColorLocal = json_integer_value(dispColorLocalJ);
-		
-		// extern must call resetNonJson()
-	}
 };// struct MixerTrack
 
 
@@ -1424,34 +1216,11 @@ struct MixerAux {
 	int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values12, float* _taps, int8_t* _panLawStereoLocal) {
-		auxNum = _auxNum;
-		ids = "id_a" + std::to_string(auxNum) + "_";
-		gInfo = _gInfo;
-		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-		flMute = &_values12[auxNum];
-		flGroup = &_values12[auxNum + 8];
-		taps = _taps;
-		panLawStereoLocal = _panLawStereoLocal;
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	}
-	
-	
-	void onReset() {
-		resetNonJson();
-	}
-	void resetNonJson() {
-		panMatrix = simd::float_4::zero();
-		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
-		gainMatrixSlewers.reset();
-		muteSoloGainSlewer.reset();
-		muteSoloGain = 0.0f;
-		oldPan = -10.0f;
-		oldFader = -10.0f;
-		oldPanSignature.cc1 = 0xFFFFFFFF;
-	}
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values12, float* _taps, int8_t* _panLawStereoLocal);
+	void onReset();
+	void resetNonJson();
+	void dataToJson(json_t *rootJ) {}
+	void dataFromJson(json_t *rootJ) {}
 	
 	
 	void updateSlowValues() {
@@ -1571,17 +1340,6 @@ struct MixerAux {
 		mix[0] += taps[24];
 		mix[1] += taps[25];
 	}
-	
-	
-	void dataToJson(json_t *rootJ) {
-		// none
-	}
-	
-	void dataFromJson(json_t *rootJ) {
-		// none
-		
-		// extern must call resetNonJson()
-	}
 };// struct MixerAux
 
 
@@ -1617,24 +1375,11 @@ struct AuxspanderAux {
 	Input *inSig;
 
 
-	void construct(int _auxNum, Input *_inputs) {
-		auxNum = _auxNum;
-		ids = "id_x" + std::to_string(auxNum) + "_";
-		inSig = &_inputs[0 + 2 * auxNum + 0];
-		for (int i = 0; i < 2; i++) {
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
-			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
-		}
-	}
-	
-	
-	void onReset() {
-		setHPFCutoffFreq(13.0f);// off
-		setLPFCutoffFreq(20010.0f);// off
-		resetNonJson();
-	}
-	void resetNonJson() {
-	}
+	void construct(int _auxNum, Input *_inputs);
+	void onReset();
+	void resetNonJson() {}
+	void dataToJson(json_t *rootJ);
+	void dataFromJson(json_t *rootJ);
 	
 
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
@@ -1681,28 +1426,6 @@ struct AuxspanderAux {
 			mix[0] = lpFilter[0].process(mix[0]);
 			mix[1] = inSig[1].isConnected() ? lpFilter[1].process(mix[1]) : mix[0];
 		}
-	}
-		
-	void dataToJson(json_t *rootJ) {
-		// hpfCutoffFreq
-		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
-		
-		// lpfCutoffFreq
-		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
-	}
-	
-	void dataFromJson(json_t *rootJ) {
-		// hpfCutoffFreq
-		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
-		if (hpfCutoffFreqJ)
-			setHPFCutoffFreq(json_number_value(hpfCutoffFreqJ));
-		
-		// lpfCutoffFreq
-		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
-		if (lpfCutoffFreqJ)
-			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
-
-		// extern must call resetNonJson()
 	}
 };// struct AuxspanderAux
 

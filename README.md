@@ -1,5 +1,4 @@
 # MindMeld Modular
-![IM](res/img/Blank.jpg)
 
 Modules for [VCV Rack](https://vcvrack.com), available soon in the [plugin manager](https://vcvrack.com/plugins.html). 
 
@@ -30,7 +29,7 @@ The MixMaster beams the following features into your Rack for your demanding mix
 * Editable track labels (scribble strips)
 * Gain adjustment (trim) on every track 
 * Hi Pass Filter (HPF) on every track (18 dB/oct.)
-* Low Pass Filter (LPF) on every track (12 dB.oct.)
+* Low Pass Filter (LPF) on every track (12 dB/oct.)
 * Fade automation with lin/log/exp curves
 * Track re-ordering and copy/paste settings
 * User selectable pan law
@@ -52,3 +51,7 @@ The MixMaster beams the following features into your Rack for your demanding mix
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
+
+## Blank panel
+
+![IM](res/img/Blank.jpg)
