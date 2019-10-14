@@ -666,7 +666,8 @@ struct MixerMaster {
 	}
 	
 	
-	void process(float *mix, int eco) {// takes mix[0..1] and redeposits post in same place
+	void process(float *mix, bool eco) {// master
+		// takes mix[0..1] and redeposits post in same place
 		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
 		for (int i = 0; i < 2; i++) {
 			if (chainGains[i] != chainGainSlewers[i].out) {
@@ -674,7 +675,7 @@ struct MixerMaster {
 			}
 		}
 		
-		if (eco == 0) {
+		if (eco) {
 			// calc ** fader, paramWithCV **
 			float fader = params[MAIN_FADER_PARAM].getValue();
 			if (inVol->isConnected() && inVol->getChannels() >= 12) {
@@ -700,13 +701,13 @@ struct MixerMaster {
 			}
 			else {// we are in mute mode
 				//fadeGain = calcFadeGain(); // do manually below to optimized fader mult
-				if (params[MAIN_MUTE_PARAM].getValue() > 0.5f) {
-					fadeGain = 0.0f;
-					fader = 0.0f;
-				}
-				else {
+				if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
 					fadeGain = 1.0f;
 					//fader = fader;
+				}
+				else {
+					fadeGain = 0.0f;
+					fader = 0.0f;
 				}
 				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 			}	
@@ -757,7 +758,7 @@ struct MixerMaster {
 		mix[1] = sigs[1] + sigs[3];
 		
 		// VUs (no cloaked mode for master, always on)
-		if (eco == 0) {
+		if (eco) {
 			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), mix);
 		}
 				
@@ -978,7 +979,7 @@ struct MixerGroup {
 	}
 	
 
-	void process(float *mix, int eco) {
+	void process(float *mix, bool eco) {// group
 		// Tap[0],[1]: pre-insert (group inputs)
 		// nothing to do, already set up by the mix master
 		
@@ -992,7 +993,7 @@ struct MixerGroup {
 			taps[9] = taps[1];
 		}
 
-		if (eco == 0) {	
+		if (eco) {	
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
@@ -1113,7 +1114,7 @@ struct MixerGroup {
 		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
 			vu.reset();
 		}
-		else if (eco == 0) {
+		else if (eco) {
 			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[24]);
 		}
 	}
@@ -1257,8 +1258,8 @@ struct MixerTrack {
 	float* groupTaps;// [0..1] tap 0 of group 1, [1..2] tap 0 of group 2, etc.
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
-	float fader = 0.0f;// this is set only in process() when eco == 0, and also used only when eco == 0 in another section of this method
-	float pan = 0.5f;// this is set only in process() when eco == 0, and also used only when eco == 0 in another section of this method
+	float fader = 0.0f;// this is set only in process() when eco, and also used only when eco in another section of this method
+	float pan = 0.5f;// this is set only in process() when eco, and also used only when eco in another section of this method
 
 
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
@@ -1473,8 +1474,8 @@ struct MixerTrack {
 	}
 	
 	
-	void process(float *mix, int eco) {		
-		if (eco == 0) {
+	void process(float *mix, bool eco) {// track		
+		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
@@ -1608,7 +1609,7 @@ struct MixerTrack {
 			}
 		}// filterPos
 		
-		if (eco == 0) {
+		if (eco) {
 			// calc ** panMatrix **
 			if (pan != oldPan) {
 				panMatrix = simd::float_4::zero();// L, R, RinL, LinR (used for fader-pan block)
@@ -1729,7 +1730,7 @@ struct MixerTrack {
 		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
 			vu.reset();
 		}
-		else if (eco == 0) {
+		else if (eco) {
 			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[96]);
 		}
 	}
@@ -1926,7 +1927,7 @@ struct MixerAux {
 		
 	}
 	
-	void process(float *mix, float *auxRetFadePan, int eco) {
+	void process(float *mix, float *auxRetFadePan, bool eco) {// mixer aux
 		// auxRetFadePan[0] points fader value, auxRetFadePan[4] points pan value, all indexed for a given aux
 		
 		// Tap[0],[1]: pre-insert (aux inputs)
@@ -1942,7 +1943,7 @@ struct MixerAux {
 			taps[9] = taps[1];
 		}
 		
-		if (eco == 0) {
+		if (eco) {
 			// calc ** panMatrix **
 			float pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
 			if (pan != oldPan) {
@@ -2105,13 +2106,13 @@ struct AuxspanderAux {
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 
-
 	void onSampleRateChange() {
 		setHPFCutoffFreq(hpfCutoffFreq);
 		setLPFCutoffFreq(lpfCutoffFreq);
 	}
 
-	void process(float *mix) {		
+
+	void process(float *mix) {// auxspander aux	
 		// optimize unused aux
 		if (!inSig[0].isConnected()) {
 			mix[0] = mix[1] = 0.0f;

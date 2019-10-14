@@ -298,7 +298,7 @@ struct MixMaster : Module {
 		// ecoCode: cycles from 0 to 3 in eco mode, stuck at 0 when full power mode
 		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo.ecoMode);
 		
-		if (ecoCode == 0) {
+		if (ecoCode == 3) {// stagger 4
 			processMuteSoloCvTriggers();
 		}
 		
@@ -312,7 +312,7 @@ struct MixMaster : Module {
 		
 		// Tracks
 		for (int trk = 0; trk < 16; trk++) {
-			tracks[trk].process(mix, ecoCode);
+			tracks[trk].process(mix, ecoCode == 0);// stagger 1
 		}
 		// Aux return when group
 		if (auxExpanderPresent) {
@@ -321,7 +321,7 @@ struct MixMaster : Module {
 				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi], ecoCode);
+					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi], ecoCode == 2);// stagger 3
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
 						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
@@ -331,7 +331,7 @@ struct MixMaster : Module {
 		
 		// Groups (at this point, all groups's tap0 are setup and ready)
 		for (int i = 0; i < 4; i++) {
-			groups[i].process(mix, ecoCode);
+			groups[i].process(mix, ecoCode == 1);// stagger 2
 		}
 		
 		// Aux
@@ -347,12 +347,12 @@ struct MixMaster : Module {
 			// Aux returns when no group
 			for (int auxi = 0; auxi < 4; auxi++) {
 				if (aux[auxi].getAuxGroup() == 0) {
-					aux[auxi].process(mix, &auxRetFadePan[auxi], ecoCode);
+					aux[auxi].process(mix, &auxRetFadePan[auxi], ecoCode == 2);// stagger 3
 				}
 			}
 		}
 		// Master
-		master.process(mix, ecoCode);
+		master.process(mix, ecoCode == 3);// stagger 4
 		
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
@@ -383,7 +383,7 @@ struct MixMaster : Module {
 		}
 		
 		
-		//********** Expanders **********
+		//********** Expander **********
 		
 		// To Aux-Expander
 		if (auxExpanderPresent) {
