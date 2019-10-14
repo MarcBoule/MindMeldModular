@@ -285,7 +285,7 @@ struct GlobalInfo {
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
-	uint16_t ecoMode;
+	uint16_t ecoMode;// all 1's means yes, 0 means no
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -715,6 +715,7 @@ struct MixerMaster {
 			// scaling
 			if (fader != oldFader) {
 				oldFader = fader;
+				INFO("%g", fader);
 				faderGain = std::pow(fader, masterFaderScalingExponent);
 			}
 			
