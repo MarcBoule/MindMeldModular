@@ -5,288 +5,289 @@
 //See ./LICENSE.txt for all licenses
 //***********************************************************************************************
 
-#ifndef MMM_MIXER_HPP
-#define MMM_MIXER_HPP
 
-
-#include "MindMeldModular.hpp"
-#include "dsp/OnePole.hpp"
-#include "dsp/VuMeterAll.hpp"
-
-
-enum ParamIds {
-	ENUMS(TRACK_FADER_PARAMS, 16),
-	ENUMS(GROUP_FADER_PARAMS, 4),// must follow TRACK_FADER_PARAMS since code assumes contiguous
-	ENUMS(TRACK_PAN_PARAMS, 16),
-	ENUMS(GROUP_PAN_PARAMS, 4),
-	ENUMS(TRACK_MUTE_PARAMS, 16),
-	ENUMS(GROUP_MUTE_PARAMS, 4),// must follow TRACK_MUTE_PARAMS since code assumes contiguous
-	ENUMS(TRACK_SOLO_PARAMS, 16),// must follow GROUP_MUTE_PARAMS since code assumes contiguous
-	ENUMS(GROUP_SOLO_PARAMS, 4),// must follow TRACK_SOLO_PARAMS since code assumes contiguous
-	MAIN_MUTE_PARAM,// must follow GROUP_SOLO_PARAMS since code assumes contiguous
-	MAIN_DIM_PARAM,// must follow MAIN_MUTE_PARAM since code assumes contiguous
-	MAIN_MONO_PARAM,// must follow MAIN_DIM_PARAM since code assumes contiguous
-	MAIN_FADER_PARAM,
-	ENUMS(GROUP_SELECT_PARAMS, 16),
-	NUM_PARAMS
-}; 
-
-
-enum InputIds {
-	ENUMS(TRACK_SIGNAL_INPUTS, 16 * 2), // Track 0: 0 = L, 1 = R, Track 1: 2 = L, 3 = R, etc...
-	ENUMS(TRACK_VOL_INPUTS, 16),
-	ENUMS(GROUP_VOL_INPUTS, 4),
-	ENUMS(TRACK_PAN_INPUTS, 16), 
-	ENUMS(GROUP_PAN_INPUTS, 4), 
-	ENUMS(CHAIN_INPUTS, 2),
-	ENUMS(INSERT_TRACK_INPUTS, 2),
-	INSERT_GRP_AUX_INPUT,
-	TRACK_MUTE_INPUT,
-	TRACK_SOLO_INPUT,
-	GRPM_MUTESOLO_INPUT,// 1-4 Group mutes, 5-8 Group solos, 9 Master Mute, 10 Master Dim, 11 Master Mono, 12 Master VOL
-	NUM_INPUTS
-};
-
-
-enum OutputIds {
-	ENUMS(DIRECT_OUTPUTS, 3), // Track 1-8, Track 9-16, Groups and Aux
-	ENUMS(MAIN_OUTPUTS, 2),
-	ENUMS(INSERT_TRACK_OUTPUTS, 2),
-	INSERT_GRP_AUX_OUTPUT,
-	FADE_CV_OUTPUT,
-	NUM_OUTPUTS
-};
-
-
-enum LightIds {
-	ENUMS(TRACK_HPF_LIGHTS, 16),
-	ENUMS(TRACK_LPF_LIGHTS, 16),
-	NUM_LIGHTS
-};
+#include "Mixer.hpp"
 
 
 //*****************************************************************************
 
-// Communications between mixer and auxspander
-// Fields in the float arrays
-
-enum AuxFromMotherIds { // for expander messages from main to aux panel
-	ENUMS(AFM_AUX_SENDS, 40), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
-	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
-	ENUMS(AFM_TRACK_GROUP_NAMES, 16 + 4),
-	AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
-	AFM_PANEL_THEME,
-	AFM_COLOR_AND_CLOAK,
-	AFM_DIRECT_AND_PAN_MODES,
-	AFM_TRACK_MOVE,
-	AFM_AUXSENDMUTE_GROUPED_RETURN,
-	AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED,// mute aux send of track when it is grouped and that group is muted
-	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
-	AFM_ECO_MODE,
-	AFM_NUM_VALUES
-};
-
-enum MotherFromAuxIds { // for expander messages from aux panel to main
-	ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	MFA_VALUE12_INDEX,// a return-related value, 12 of such values to bring back to main, one per sample
-	MFA_VALUE12,
-	MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
-	MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
-	ENUMS(MFA_AUX_RET_FADER, 4),
-	ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
-	MFA_NUM_VALUES
-};
-
-
-
-//*****************************************************************************
 
 // Math
-
-// Calculate std::sin(theta) using MacLaurin series
-// Calculate std::cos(theta) using cos(x) = sin(Pi/2 - x)
-// Assumes: 0 <= theta <= Pi/2
-static inline void sinCos(float *destSin, float *destCos, float theta) {
-	*destSin = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
-	theta = M_PI_2 - theta;
-	*destCos = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
-}
-static inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
-	sinCos(destSin, destCos, theta);
-	*destSin *= M_SQRT2;
-	*destCos *= M_SQRT2;
-}
+// none
 
 
 // Utility
-
-float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade);
-
-
-struct TrackSettingsCpBuffer {
-	// first level of copy paste (copy copy-paste of track settings)
-	float gainAdjust;
-	float fadeRate;
-	float fadeProfile;
-	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
-	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
-	int8_t directOutsMode;
-	int8_t auxSendsMode;
-	int8_t panLawStereo;
-	int8_t vuColorThemeLocal;
-	bool linkedFader;
-
-	// second level of copy paste (for track re-ordering)
-	float paGroup;
-	float paFade;
-	float paMute;
-	float paSolo;
-	float paPan;
-	char trackName[4];// track names are not null terminated in MixerTracks
-	float fadeGain;
-	float fadeGainX;
+float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade) {
+	static const float A = 4.0f;
+	static const float E_A_M1 = (std::exp(A) - 1.0f);// e^A - 1
 	
-	void reset();
-};
-
-
-//*****************************************************************************
-
-
-enum ccIds {
-	cloakedMode, // turn off track VUs only, keep master VUs (also called "Cloaked mode"), this has only two values, 0x0 and 0xFF so that it can be used in bit mask operations
-	vuColorGlobal, // 0 is green, 1 is blue, 2 is purple, 3 is individual colors for each track/group/master (every user of vuColor must first test for != 3 before using as index into color table, or else array overflow)
-	dispColor, // 0 is yellow, 1 is light-gray, 2 is green, 3 is aqua, 4 is cyan, 5 is blue, 6 is purple, 7 is per track
-	detailsShow // bit 0 is knob param arc, bit 1 is knob cv arc, bit 2 is fader cv pointer
-};
-union PackedBytes4 {
-	int32_t cc1;
-	int8_t cc4[4];
-};
-
-// managed by Mixer, not by tracks (tracks read only)
-struct GlobalInfo {
+	float newFadeGain;
 	
-	// constants
-	static const int trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static const int individualAuxSendScalingExponent = 2; // for example, 3 is x^3 scaling
-	static constexpr float individualAuxSendMaxLinearGain = 1.0f; // for example, 2.0f is +6 dB
-	static const int globalAuxSendScalingExponent = 2; // for example, 2 is x^2 scaling
-	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
-	static const int globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float antipopSlew = 150.0f;
-	
-	
-	// need to save, no reset
-	// none
-	
-	// need to save, with reset
-	int panLawMono;// +0dB (no compensation),  +3 (equal power),  +4.5 (compromize),  +6dB (linear, default)
-	int8_t panLawStereo;// Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
-	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
-	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
-	int muteTrkSendsWhenGrpMuted;//  0 = no, 1 = yes
-	int auxReturnsMutedWhenMainSolo;
-	int auxReturnsSolosMuteDry;
-	int chainMode;// 0 is pre-master, 1 is post-master
-	PackedBytes4 colorAndCloak;// see enum above called ccIds for fields
-	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
-	bool symmetricalFade;
-	bool fadeCvOutsWithVolCv;
-	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
-	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
-	int8_t groupedAuxReturnFeedbackProtection;
-	uint16_t ecoMode;// all 1's means yes, 0 means no
-
-	// no need to save, with reset
-	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
-	int returnSoloBitMask;
-
-	float sampleTime;
-
-	// no need to save, no reset
-	Param *paSolo;// all 20 solos are here (track and group)
-	Param *paFade;// all 20 faders are here (track and group)
-	float *values12;
-	float oldFaders[16 + 4] = {-100.0f};
-	float maxTGFader;
-
-	
-	bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
-	void clearLinked(int index) {linkBitMask &= ~(1 << index);}
-	void setLinked(int index) {linkBitMask |= (1 << index);}
-	void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
-	void toggleLinked(int index) {linkBitMask ^= (1 << index);}
-	
-	// track and group solos
-	void updateSoloBitMask() {
-		soloBitMask = 0ul;
-		for (unsigned long trkOrGrp = 0; trkOrGrp < 20; trkOrGrp++) {
-			updateSoloBit(trkOrGrp);
-		}
-	}
-	void updateSoloBit(unsigned long trkOrGrp) {
-		if (trkOrGrp < 16) {
-			if (paSolo[trkOrGrp].getValue() > 0.5f) {
-				soloBitMask |= (1 << trkOrGrp);
-			}
-			else {
-				soloBitMask &= ~(1 << trkOrGrp);
-			}	
-		}
-		else {// trkOrGrp >= 16
-			if (paSolo[trkOrGrp].getValue() > 0.5f) {
-				soloBitMask |= (1 << trkOrGrp);
-			}
-			else {
-				soloBitMask &= ~(1 << trkOrGrp);
+	if (symmetricalFade) {
+		// in here, target is intepreted as a targetX, which is same levels as a target on fadeGain (Y) since both are 0.0f or 1.0f
+		// in here, fadeGain is not used since we compute a new fadeGain directly, as opposed to a delta
+		if (target < *fadeGainX) {
+			*fadeGainX -= timeStepX;
+			if (*fadeGainX < target) {
+				*fadeGainX = target;
 			}
 		}
-	}		
-			
-	
-	// aux return solos
-	void updateReturnSoloBits() {
-		int newReturnSoloBitMask = 0;
-		for (int aux = 0; aux < 4; aux++) {
-			if (values12[4 + aux] > 0.5f) {
-				newReturnSoloBitMask |= (1 << aux);
+		else if (target > *fadeGainX) {
+			*fadeGainX += timeStepX;
+			if (*fadeGainX > target) {
+				*fadeGainX = target;
 			}
 		}
-		returnSoloBitMask = newReturnSoloBitMask;
-	}
 		
-	// linked faders
-	void processLinked(int trgOrGrpNum, float slowGain) {
-		if (slowGain != oldFaders[trgOrGrpNum]) {
-			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
-				float delta = slowGain - oldFaders[trgOrGrpNum];
-				for (int i = 0; i < 20; i++) {
-					if (isLinked(i) && i != trgOrGrpNum) {
-						float newValue = paFade[i].getValue() + delta;
-						newValue = clamp(newValue, 0.0f, maxTGFader);
-						paFade[i].setValue(newValue);
-						oldFaders[i] = newValue;// so that the other fader doesn't trigger a link propagation 
-					}
-				}
+		newFadeGain = *fadeGainX;// linear
+		if (*fadeGainX != target) {
+			if (shape > 0.0f) {	
+				float expY = (std::exp(A * *fadeGainX) - 1.0f)/E_A_M1;
+				newFadeGain = crossfade(newFadeGain, expY, shape);
 			}
-			oldFaders[trgOrGrpNum] = slowGain;
+			else if (shape < 0.0f) {
+				float logY = std::log(*fadeGainX * E_A_M1 + 1.0f) / A;
+				newFadeGain = crossfade(newFadeGain, logY, -1.0f * shape);		
+			}
 		}
 	}
+	else {// asymmetrical fade
+		float fadeGainDelta = timeStepX;// linear
+		
+		if (shape > 0.0f) {	
+			float fadeGainDeltaExp = (std::exp(A * (*fadeGainX + timeStepX)) - std::exp(A * (*fadeGainX))) / E_A_M1;
+			fadeGainDelta = crossfade(fadeGainDelta, fadeGainDeltaExp, shape);
+		}
+		else if (shape < 0.0f) {
+			float fadeGainDeltaLog = (std::log((*fadeGainX + timeStepX) * E_A_M1 + 1.0f) - std::log((*fadeGainX) * E_A_M1 + 1.0f)) / A;
+			fadeGainDelta = crossfade(fadeGainDelta, fadeGainDeltaLog, -1.0f * shape);		
+		}
+		
+		newFadeGain = fadeGain;
+		if (target > fadeGain) {
+			newFadeGain += fadeGainDelta;
+		}
+		else if (target < fadeGain) {
+			newFadeGain -= fadeGainDelta;
+		}	
 
+		if (target > fadeGain && target < newFadeGain) {
+			newFadeGain = target;
+		}
+		else if (target < fadeGain && target > newFadeGain) {
+			newFadeGain = target;
+		}
+		else {
+			*fadeGainX += timeStepX;
+		}
+	}
 	
-	void construct(Param *_params, float* _values12);
-	void onReset();
-	void resetNonJson();
-	void dataToJson(json_t *rootJ);
-	void dataFromJson(json_t *rootJ);
-};// struct GlobalInfo
+	return newFadeGain;
+}
+
+
+void TrackSettingsCpBuffer::reset() {
+	// first level
+	gainAdjust = 1.0f;
+	fadeRate = 0.0f;
+	fadeProfile = 0.0f;
+	hpfCutoffFreq = 13.0f;// !! user must call filters' setCutoffs manually when copy pasting these
+	lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
+	directOutsMode = 3;
+	auxSendsMode = 3;
+	panLawStereo = 1;
+	vuColorThemeLocal = 0;
+	linkedFader = false;
+	
+	// second level
+	paGroup = 0.0f;
+	paFade = 1.0f;
+	paMute = 0.0f;
+	paSolo = 0.0f;
+	paPan = 0.5f;
+	trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
+	fadeGain = 1.0f;
+	fadeGainX = 0.0f;
+}
+
 
 
 //*****************************************************************************
 
+
+//struct GlobalInfo
+	
+void GlobalInfo::construct(Param *_params, float* _values12) {
+	paSolo = &_params[TRACK_SOLO_PARAMS];
+	paFade = &_params[TRACK_FADER_PARAMS];
+	values12 = _values12;
+	maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
+}
+
+
+void GlobalInfo::onReset() {
+	panLawMono = 1;
+	panLawStereo = 1;
+	directOutsMode = 3;// post-solo should be default
+	auxSendsMode = 3;// post-solo should be default
+	muteTrkSendsWhenGrpMuted = 0;
+	auxReturnsMutedWhenMainSolo = 0;
+	auxReturnsSolosMuteDry = 0;
+	chainMode = 1;// post should be default
+	colorAndCloak.cc4[cloakedMode] = 0;
+	colorAndCloak.cc4[vuColorGlobal] = 0;
+	colorAndCloak.cc4[dispColor] = 0;
+	colorAndCloak.cc4[detailsShow] = 0x7;
+	for (int i = 0; i < 4; i++) {
+		groupUsage[i] = 0;
+	}
+	symmetricalFade = false;
+	fadeCvOutsWithVolCv = false;
+	linkBitMask = 0;
+	filterPos = 1;// default is post-insert
+	groupedAuxReturnFeedbackProtection = 1;// protection is on by default
+	ecoMode = 0xFFFF;// all 1's means yes, 0 means no
+	resetNonJson();
+}
+void GlobalInfo::resetNonJson() {
+	updateSoloBitMask();
+	updateReturnSoloBits();
+	sampleTime = APP->engine->getSampleTime();
+}
+
+void GlobalInfo::dataToJson(json_t *rootJ) {
+	// panLawMono 
+	json_object_set_new(rootJ, "panLawMono", json_integer(panLawMono));
+
+	// panLawStereo
+	json_object_set_new(rootJ, "panLawStereo", json_integer(panLawStereo));
+
+	// directOutsMode
+	json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
+	
+	// auxSendsMode
+	json_object_set_new(rootJ, "auxSendsMode", json_integer(auxSendsMode));
+	
+	// muteTrkSendsWhenGrpMuted
+	json_object_set_new(rootJ, "muteTrkSendsWhenGrpMuted", json_integer(muteTrkSendsWhenGrpMuted));
+	
+	// auxReturnsMutedWhenMainSolo
+	json_object_set_new(rootJ, "auxReturnsMutedWhenMainSolo", json_integer(auxReturnsMutedWhenMainSolo));
+	
+	// auxReturnsSolosMuteDry
+	json_object_set_new(rootJ, "auxReturnsSolosMuteDry", json_integer(auxReturnsSolosMuteDry));
+	
+	// chainMode
+	json_object_set_new(rootJ, "chainMode", json_integer(chainMode));
+	
+	// colorAndCloak
+	json_object_set_new(rootJ, "colorAndCloak", json_integer(colorAndCloak.cc1));
+	
+	// groupUsage does not need to be saved here, it is computed indirectly in MixerTrack::dataFromJson();
+	
+	// symmetricalFade
+	json_object_set_new(rootJ, "symmetricalFade", json_boolean(symmetricalFade));
+	
+	// fadeCvOutsWithVolCv
+	json_object_set_new(rootJ, "fadeCvOutsWithVolCv", json_boolean(fadeCvOutsWithVolCv));
+	
+	// linkBitMask
+	json_object_set_new(rootJ, "linkBitMask", json_integer(linkBitMask));
+
+	// filterPos
+	json_object_set_new(rootJ, "filterPos", json_integer(filterPos));
+
+	// groupedAuxReturnFeedbackProtection
+	json_object_set_new(rootJ, "groupedAuxReturnFeedbackProtection", json_integer(groupedAuxReturnFeedbackProtection));
+
+	// ecoMode
+	json_object_set_new(rootJ, "ecoMode", json_integer(ecoMode));
+}
+
+void GlobalInfo::dataFromJson(json_t *rootJ) {
+	// panLawMono
+	json_t *panLawMonoJ = json_object_get(rootJ, "panLawMono");
+	if (panLawMonoJ)
+		panLawMono = json_integer_value(panLawMonoJ);
+	
+	// panLawStereo
+	json_t *panLawStereoJ = json_object_get(rootJ, "panLawStereo");
+	if (panLawStereoJ)
+		panLawStereo = json_integer_value(panLawStereoJ);
+	
+	// directOutsMode
+	json_t *directOutsModeJ = json_object_get(rootJ, "directOutsMode");
+	if (directOutsModeJ)
+		directOutsMode = json_integer_value(directOutsModeJ);
+	
+	// auxSendsMode
+	json_t *auxSendsModeJ = json_object_get(rootJ, "auxSendsMode");
+	if (auxSendsModeJ)
+		auxSendsMode = json_integer_value(auxSendsModeJ);
+	
+	// muteTrkSendsWhenGrpMuted
+	json_t *muteTrkSendsWhenGrpMutedJ = json_object_get(rootJ, "muteTrkSendsWhenGrpMuted");
+	if (muteTrkSendsWhenGrpMutedJ)
+		muteTrkSendsWhenGrpMuted = json_integer_value(muteTrkSendsWhenGrpMutedJ);
+	
+	// auxReturnsMutedWhenMainSolo
+	json_t *auxReturnsMutedWhenMainSoloJ = json_object_get(rootJ, "auxReturnsMutedWhenMainSolo");
+	if (auxReturnsMutedWhenMainSoloJ)
+		auxReturnsMutedWhenMainSolo = json_integer_value(auxReturnsMutedWhenMainSoloJ);
+	
+	// auxReturnsSolosMuteDry
+	json_t *auxReturnsSolosMuteDryJ = json_object_get(rootJ, "auxReturnsSolosMuteDry");
+	if (auxReturnsSolosMuteDryJ)
+		auxReturnsSolosMuteDry = json_integer_value(auxReturnsSolosMuteDryJ);
+	
+	// chainMode
+	json_t *chainModeJ = json_object_get(rootJ, "chainMode");
+	if (chainModeJ)
+		chainMode = json_integer_value(chainModeJ);
+	
+	// colorAndCloak
+	json_t *colorAndCloakJ = json_object_get(rootJ, "colorAndCloak");
+	if (colorAndCloakJ)
+		colorAndCloak.cc1 = json_integer_value(colorAndCloakJ);
+	
+	// groupUsage does not need to be loaded here, it is computed indirectly in MixerTrack::dataFromJson();
+	
+	// symmetricalFade
+	json_t *symmetricalFadeJ = json_object_get(rootJ, "symmetricalFade");
+	if (symmetricalFadeJ)
+		symmetricalFade = json_is_true(symmetricalFadeJ);
+
+	// fadeCvOutsWithVolCv
+	json_t *fadeCvOutsWithVolCvJ = json_object_get(rootJ, "fadeCvOutsWithVolCv");
+	if (fadeCvOutsWithVolCvJ)
+		fadeCvOutsWithVolCv = json_is_true(fadeCvOutsWithVolCvJ);
+
+	// linkBitMask
+	json_t *linkBitMaskJ = json_object_get(rootJ, "linkBitMask");
+	if (linkBitMaskJ)
+		linkBitMask = json_integer_value(linkBitMaskJ);
+	
+	// filterPos
+	json_t *filterPosJ = json_object_get(rootJ, "filterPos");
+	if (filterPosJ)
+		filterPos = json_integer_value(filterPosJ);
+	
+	// groupedAuxReturnFeedbackProtection
+	json_t *groupedAuxReturnFeedbackProtectionJ = json_object_get(rootJ, "groupedAuxReturnFeedbackProtection");
+	if (groupedAuxReturnFeedbackProtectionJ)
+		groupedAuxReturnFeedbackProtection = json_integer_value(groupedAuxReturnFeedbackProtectionJ);
+	
+	// ecoMode
+	json_t *ecoModeJ = json_object_get(rootJ, "ecoMode");
+	if (ecoModeJ)
+		ecoMode = json_integer_value(ecoModeJ);
+	
+	// extern must call resetNonJson()
+}
+
+
+//*****************************************************************************
+/*
 
 struct MixerMaster {
 	// Constants
@@ -1915,5 +1916,4 @@ struct AuxspanderAux {
 	}
 };// struct AuxspanderAux
 
-
-#endif
+*/
