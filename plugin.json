@@ -5,7 +5,7 @@
 	"license": "GPLv3",
 	"author": "S.Baker and M.Boul\u00e9 ",
 	"brand": "MindMeld",
-	"authorEmail": "",
+	"authorEmail": "steve@spirit-level.co.uk",
 	"authorUrl": "",
 	"pluginUrl": "",
 	"manualUrl": "https://github.com/MarcBoule/MindMeldModular/blob/master/README.md",
@@ -22,7 +22,7 @@
 		{
 			"slug": "AuxExpander",
 			"name": "AuxSpander",
-			"description": "4 Aux FX Bus Expander for MixMaster",
+			"description": "4-aux FX bus expander for MixMaster",
 			"tags": ["Mixer", "Expander"]
 		},
 		{
