@@ -91,8 +91,6 @@ struct VuMeterBase : OpaqueWidget {
 	}
 	
 	
-	// Contract: 
-	//  * calc peakHold[]
 	void processPeakHold() {
 		long newTime = time(0);
 		if ( (newTime != oldTime) && ((newTime & 0x1) == 0) ) {

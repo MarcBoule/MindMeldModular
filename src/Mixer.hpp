@@ -106,12 +106,12 @@ enum MotherFromAuxIds { // for expander messages from aux panel to main
 // Calculate std::sin(theta) using MacLaurin series
 // Calculate std::cos(theta) using cos(x) = sin(Pi/2 - x)
 // Assumes: 0 <= theta <= Pi/2
-inline void sinCos(float *destSin, float *destCos, float theta) {
+static inline void sinCos(float *destSin, float *destCos, float theta) {
 	*destSin = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
 	theta = M_PI_2 - theta;
 	*destCos = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
 }
-inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
+static inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
 	sinCos(destSin, destCos, theta);
 	*destSin *= M_SQRT2;
 	*destCos *= M_SQRT2;
@@ -120,7 +120,7 @@ inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
 
 // Utility
 
-inline float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade) {
+static float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade) {
 	static const float A = 4.0f;
 	static const float E_A_M1 = (std::exp(A) - 1.0f);// e^A - 1
 	
@@ -301,11 +301,11 @@ struct GlobalInfo {
 	float maxTGFader;
 
 	
-	inline bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
-	inline void clearLinked(int index) {linkBitMask &= ~(1 << index);}
-	inline void setLinked(int index) {linkBitMask |= (1 << index);}
-	inline void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
-	inline void toggleLinked(int index) {linkBitMask ^= (1 << index);}
+	bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
+	void clearLinked(int index) {linkBitMask &= ~(1 << index);}
+	void setLinked(int index) {linkBitMask |= (1 << index);}
+	void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
+	void toggleLinked(int index) {linkBitMask ^= (1 << index);}
 	
 	// track and group solos
 	void updateSoloBitMask() {
@@ -335,7 +335,7 @@ struct GlobalInfo {
 			
 	
 	// aux return solos
-	inline void updateReturnSoloBits() {
+	void updateReturnSoloBits() {
 		int newReturnSoloBitMask = 0;
 		for (int aux = 0; aux < 4; aux++) {
 			if (values12[4 + aux] > 0.5f) {
@@ -346,7 +346,7 @@ struct GlobalInfo {
 	}
 		
 	// linked faders
-	inline void processLinked(int trgOrGrpNum, float slowGain) {
+	void processLinked(int trgOrGrpNum, float slowGain) {
 		if (slowGain != oldFaders[trgOrGrpNum]) {
 			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
 				float delta = slowGain - oldFaders[trgOrGrpNum];
@@ -558,27 +558,26 @@ struct MixerMaster {
 	
 	// no need to save, with reset
 	private:
-	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	float chainGains[2];// L, R
+	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter chainGainSlewers[2];
 	OnePoleFilter dcBlocker[2];// 6dB/oct
-	float slowGain;
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float paramWithCV;
 	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
+	float target;
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
 	Param *params;
 	Input *inChain;
 	Input *inVol;
-	float target = -1.0f;
 
-	inline float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
+	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
 	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
@@ -604,7 +603,9 @@ struct MixerMaster {
 		resetNonJson();
 	}
 	void resetNonJson() {
-		updateSlowValues();
+		chainGains[0] = 0.0f;
+		chainGains[1] = 0.0f;
+		gainMatrix = simd::float_4::zero();
 		gainMatrixSlewers.reset();
 		chainGainSlewers[0].reset();
 		chainGainSlewers[1].reset();
@@ -613,8 +614,8 @@ struct MixerMaster {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		paramWithCV = -1.0f;
-		slowGain = 0.0f;
 		updateDimGainIntegerDB();
+		target = -1.0f;
 	}
 	
 	
@@ -653,20 +654,14 @@ struct MixerMaster {
 		return -clipPoly(-inX);
 	}
 
-	// Contract: 
-	//  * calc gainMatrix
-	//  * calc fadeGain
-	//  * calc paramWithCV
-	//  * calc chainGains
+
 	void updateSlowValues() {		
 		// calc ** chainGains **
 		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
 		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
 	}
 	
-
-	// Contract: 
-	//  * calc mix[0..1] and vu
+	
 	void process(float *mix, int eco) {// takes mix[0..1] and redeposits post in same place
 		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
 		for (int i = 0; i < 2; i++) {
@@ -676,7 +671,7 @@ struct MixerMaster {
 		}
 		
 		if (eco == 0) {
-			// calc ** fadeGain **
+			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
 				if (!gInfo->symmetricalFade && newTarget != target) {
@@ -693,34 +688,34 @@ struct MixerMaster {
 				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 			}	
 
-			// calc ** paramWithCV **
-			slowGain = params[MAIN_FADER_PARAM].getValue();
+			// calc ** fader, paramWithCV **
+			float fader = params[MAIN_FADER_PARAM].getValue();
 			if (inVol->isConnected() && inVol->getChannels() >= 12) {
-				slowGain *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				paramWithCV = slowGain;
+				fader *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+				paramWithCV = fader;
 			}
 			else {
 				paramWithCV = -1.0f;
 			}
 			
 			// mute/fade
-			slowGain *= fadeGain;
+			fader *= fadeGain;
 			
 			// scaling
-			slowGain = std::pow(slowGain, masterFaderScalingExponent);
+			fader = std::pow(fader, masterFaderScalingExponent);
 			
 			// dim
 			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-				slowGain *= dimGainIntegerDB;
+				fader *= dimGainIntegerDB;
 			}
 			
 			// calc ** gainMatrix **
 			// mono
 			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
-				gainMatrix = simd::float_4(0.5f * slowGain);
+				gainMatrix = simd::float_4(0.5f * fader);
 			}
 			else {
-				gainMatrix = simd::float_4(slowGain, slowGain, 0.0f, 0.0f);
+				gainMatrix = simd::float_4(fader, fader, 0.0f, 0.0f);
 			}
 		}
 		
@@ -901,9 +896,9 @@ struct MixerGroup {
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 
-	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
-	inline bool isLinked() {return gInfo->isLinked(16 + groupNum);}
-	inline void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
+	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	bool isLinked() {return gInfo->isLinked(16 + groupNum);}
+	void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
@@ -984,7 +979,7 @@ struct MixerGroup {
 		}
 
 		if (eco == 0) {	
-			// calc ** fadeGain **
+			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
 				if (!gInfo->symmetricalFade && newTarget != target) {
@@ -1003,7 +998,7 @@ struct MixerGroup {
 				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}
 
-			// calc ** fader, paramWithCV, volCv **
+			// calc ** fader, paramWithCV **
 			float fader = paFade->getValue();
 			if (inVol->isConnected()) {
 				fader *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
@@ -1248,10 +1243,13 @@ struct MixerTrack {
 	float* groupTaps;// [0..1] tap 0 of group 1, [1..2] tap 0 of group 2, etc.
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
+	float fader = 0.0f;// this is set only in process() when eco == 0, and also used only when eco == 0 in another section of this method
+	float pan = 0.5f;// this is set only in process() when eco == 0, and also used only when eco == 0 in another section of this method
 
-	inline float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
-	inline bool isLinked() {return gInfo->isLinked(trackNum);}
-	inline void toggleLinked() {gInfo->toggleLinked(trackNum);}
+
+	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	bool isLinked() {return gInfo->isLinked(trackNum);}
+	void toggleLinked() {gInfo->toggleLinked(trackNum);}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts) {
@@ -1461,10 +1459,7 @@ struct MixerTrack {
 	}
 	
 	
-	void process(float *mix, int eco) {
-		float fader = 0.0f;// this is set only when eco == 0, and also used only when eco == 0 in another section of this method
-		float pan = 0.5f;// this is set only when eco == 0, and also used only when eco == 0 in another section of this method
-		
+	void process(float *mix, int eco) {		
 		if (eco == 0) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
@@ -1861,7 +1856,7 @@ struct MixerAux {
 	float *taps;
 	int8_t* panLawStereoLocal;
 
-	inline int getAuxGroup() {return (int)(*flGroup + 0.5f);}
+	int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 
 
 	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values12, float* _taps, int8_t* _panLawStereoLocal) {
