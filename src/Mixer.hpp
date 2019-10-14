@@ -1425,11 +1425,19 @@ struct MixerTrack {
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 	float calcSoloGain() {// returns 1.0f when the check for solo means this track should play, 0.0f otherwise
-		if (gInfo->soloBitMask == 0ul || (gInfo->soloBitMask & (1 << trackNum)) != 0) {
+		if (gInfo->soloBitMask == 0ul) {// no track nor groups are soloed 
 			return 1.0f;
 		}
-		// here solo is off for this track and there is at least one track or group that has their solo on.
+		// here at least one track or group is soloed
 		int group = (int)(paGroup->getValue() + 0.5f);
+		if ( ((gInfo->soloBitMask & (1 << trackNum)) != 0) ) {// if this track is soloed
+			if (group == 0 || ((gInfo->soloBitMask & 0xF0000) == 0)) {// not grouped, or grouped but no groups are soloed, play
+				return 1.0f;
+			}
+			// grouped and at least one group is soloed, so play only if its group is itself soloed
+			return ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ? 1.0f : 0.0f);
+		}
+		// here this track is not soloed
 		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {// if going through soloed group  
 			// check all solos of all tracks mapped to group, and return true if all those solos are off
 			return ((gInfo->groupUsage[group - 1] & gInfo->soloBitMask) == 0) ? 1.0f : 0.0f;
