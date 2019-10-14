@@ -31,9 +31,9 @@ struct PanLawMonoItem : MenuItem {
 
 		std::string panLawMonoNames[4] = {
 			"+0 dB (no compensation)", 
-			"+3 dB boost (equal power)", 
+			"+3 dB boost (equal power, default)", 
 			"+4.5 dB boost (compromise)", 
-			"+6 dB boost (linear, default)"
+			"+6 dB boost (linear)"
 		};
 			
 		for (int i = 0; i < 4; i++) {
@@ -64,8 +64,8 @@ struct PanLawStereoItem : MenuItem {
 		Menu *menu = new Menu;
 
 		std::string panLawStereoNames[4] = {
-			"Stereo balance linear (default)",
-			"Stereo balance equal power",
+			"Stereo balance linear",
+			"Stereo balance equal power (default)",
 			"True panning",
 			"Set per track"
 		};

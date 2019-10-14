@@ -8,7 +8,12 @@ struct OnePoleFilter {
     float b1 = 0.0f;
 	float lowout = 0.0f;
 	
-    void setCutoff(float Fc) {
+    void reset() {
+		b1 = 0.0f;
+		lowout = 0.0f;
+	}
+	
+	void setCutoff(float Fc) {
 		b1 = std::exp(-2.0f * M_PI * Fc);
 	}
     float processLP(float in) {

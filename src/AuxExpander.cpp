@@ -195,7 +195,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++) {
 			vuColorThemeLocal.cc4[i] = 0;
 			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
-			panLawStereoLocal.cc4[i] = 0;
+			panLawStereoLocal.cc4[i] = 1;
 			dispColorAuxLocal[i] = 0;	
 			aux[i].onReset();
 		}
