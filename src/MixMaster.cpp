@@ -318,11 +318,12 @@ struct MixMaster : Module {
 		// Aux return when group
 		if (auxExpanderPresent) {
 			muteAuxSendWhenReturnGrouped = 0;
+			bool ecoStagger3 = (gInfo.ecoMode == 0 || ecoCode == 2);
 			for (int auxi = 0; auxi < 4; auxi++) {
 				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi], gInfo.ecoMode == 0 || ecoCode == 2);// stagger 3
+					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi], ecoStagger3);// stagger 3
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
 						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
@@ -347,9 +348,10 @@ struct MixMaster : Module {
 			mix[1] *= muteTrackWhenSoloAuxRetSlewer.out;
 			
 			// Aux returns when no group
+			bool ecoStagger3 = (gInfo.ecoMode == 0 || ecoCode == 2);
 			for (int auxi = 0; auxi < 4; auxi++) {
 				if (aux[auxi].getAuxGroup() == 0) {
-					aux[auxi].process(mix, &auxRetFadePan[auxi], gInfo.ecoMode == 0 || ecoCode == 2);// stagger 3
+					aux[auxi].process(mix, &auxRetFadePan[auxi], ecoStagger3);// stagger 3
 				}
 			}
 		}
