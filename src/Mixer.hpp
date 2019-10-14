@@ -560,50 +560,11 @@ struct MixerGroup {
 	void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 
 
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
-		groupNum = _groupNum;
-		ids = "id_g" + std::to_string(groupNum) + "_";
-		gInfo = _gInfo;
-		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
-		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
-		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
-		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
-		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
-		groupName = _groupName;
-		taps = _taps;
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	}
-	
-	
-	void onReset() {
-		fadeRate = 0.0f;
-		fadeProfile = 0.0f;
-		directOutsMode = 3;// post-solo should be default
-		auxSendsMode = 3;// post-solo should be default
-		panLawStereo = 1;
-		vuColorThemeLocal = 0;
-		dispColorLocal = 0;
-		resetNonJson();
-	}
-	void resetNonJson() {
-		panMatrix = simd::float_4::zero();
-		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
-		gainMatrixSlewers.reset();
-		muteSoloGainSlewer.reset();
-		oldPan = -10.0f;
-		oldFader = -10.0f;
-		oldPanSignature.cc1 = 0xFFFFFFFF;
-		vu.reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
-		paramWithCV = -1.0f;
-		panWithCV = -1.0f;
-		target = -1.0f;
-	}
+	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps);
+	void onReset();
+	void resetNonJson();
+	void dataToJson(json_t *rootJ);
+	void dataFromJson(json_t *rootJ);
 	
 	
 	void updateSlowValues() {
@@ -761,69 +722,6 @@ struct MixerGroup {
 		else if (eco) {
 			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[24]);
 		}
-	}
-	
-	
-	void dataToJson(json_t *rootJ) {
-		// fadeRate
-		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
-		
-		// fadeProfile
-		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
-		
-		// directOutsMode
-		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
-		
-		// auxSendsMode
-		json_object_set_new(rootJ, (ids + "auxSendsMode").c_str(), json_integer(auxSendsMode));
-		
-		// panLawStereo
-		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
-
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, (ids + "vuColorThemeLocal").c_str(), json_integer(vuColorThemeLocal));
-
-		// dispColorLocal
-		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
-	}
-	
-	void dataFromJson(json_t *rootJ) {
-		// fadeRate
-		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
-		if (fadeRateJ)
-			fadeRate = json_number_value(fadeRateJ);
-		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-
-		// directOutsMode
-		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
-		if (directOutsModeJ)
-			directOutsMode = json_integer_value(directOutsModeJ);
-		
-		// auxSendsMode
-		json_t *auxSendsModeJ = json_object_get(rootJ, (ids + "auxSendsMode").c_str());
-		if (auxSendsModeJ)
-			auxSendsMode = json_integer_value(auxSendsModeJ);
-		
-		// panLawStereo
-		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
-		if (panLawStereoJ)
-			panLawStereo = json_integer_value(panLawStereoJ);
-		
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, (ids + "vuColorThemeLocal").c_str());
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
-		
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
-		if (dispColorLocalJ)
-			dispColorLocal = json_integer_value(dispColorLocalJ);
-		
-		// extern must call resetNonJson()
 	}
 };// struct MixerGroup
 

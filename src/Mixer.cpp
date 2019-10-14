@@ -415,332 +415,124 @@ void MixerMaster::dataFromJson(json_t *rootJ) {
 
 //*****************************************************************************
 
-/*
 
-struct MixerGroup {
-	// Constants
-	static constexpr float minFadeRate = 0.1f;
+// struct MixerGroup
+
+void MixerGroup::construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
+	groupNum = _groupNum;
+	ids = "id_g" + std::to_string(groupNum) + "_";
+	gInfo = _gInfo;
+	inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
+	inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
+	inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
+	paFade = &_params[GROUP_FADER_PARAMS + groupNum];
+	paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
+	paPan = &_params[GROUP_PAN_PARAMS + groupNum];
+	groupName = _groupName;
+	taps = _taps;
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+}
+
+
+void MixerGroup::onReset() {
+	fadeRate = 0.0f;
+	fadeProfile = 0.0f;
+	directOutsMode = 3;// post-solo should be default
+	auxSendsMode = 3;// post-solo should be default
+	panLawStereo = 1;
+	vuColorThemeLocal = 0;
+	dispColorLocal = 0;
+	resetNonJson();
+}
+
+
+void MixerGroup::resetNonJson() {
+	panMatrix = simd::float_4::zero();
+	faderGain = 0.0f;
+	gainMatrix = simd::float_4::zero();
+	gainMatrixSlewers.reset();
+	muteSoloGainSlewer.reset();
+	oldPan = -10.0f;
+	oldFader = -10.0f;
+	oldPanSignature.cc1 = 0xFFFFFFFF;
+	vu.reset();
+	fadeGain = calcFadeGain();
+	fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+	fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+	paramWithCV = -1.0f;
+	panWithCV = -1.0f;
+	target = -1.0f;
+}
+
+
+void MixerGroup::dataToJson(json_t *rootJ) {
+	// fadeRate
+	json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
 	
-	// need to save, no reset
-	// none
+	// fadeProfile
+	json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
 	
-	// need to save, with reset
-	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile; // exp when +100, lin when 0, log when -100
-	int8_t directOutsMode;// when per track
-	int8_t auxSendsMode;// when per track
-	int8_t panLawStereo;// when per track
-	int8_t vuColorThemeLocal;
-	int8_t dispColorLocal;
-
-	// no need to save, with reset
-	private:
-	simd::float_4 panMatrix;
-	float faderGain;
-	simd::float_4 gainMatrix;	
-	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
-	dsp::SlewLimiter muteSoloGainSlewer;
-	float oldPan;
-	float oldFader;
-	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
-	public:
-	VuMeterAllDual vu;// use post[]
-	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float fadeGainX;
-	float fadeGainScaled;
-	float paramWithCV;
-	float panWithCV;
-	float target = -1.0f;
+	// directOutsMode
+	json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 	
-	// no need to save, no reset
-	int groupNum;// 0 to 3
-	std::string ids;
-	GlobalInfo *gInfo;
-	Input *inInsert;
-	Input *inVol;
-	Input *inPan;
-	Param *paFade;
-	Param *paMute;
-	Param *paPan;
-	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
-	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
-
-	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
-	bool isLinked() {return gInfo->isLinked(16 + groupNum);}
-	void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
-
-
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
-		groupNum = _groupNum;
-		ids = "id_g" + std::to_string(groupNum) + "_";
-		gInfo = _gInfo;
-		inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-		inVol = &_inputs[GROUP_VOL_INPUTS + groupNum];
-		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
-		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
-		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
-		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
-		groupName = _groupName;
-		taps = _taps;
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	}
+	// auxSendsMode
+	json_object_set_new(rootJ, (ids + "auxSendsMode").c_str(), json_integer(auxSendsMode));
 	
-	
-	void onReset() {
-		fadeRate = 0.0f;
-		fadeProfile = 0.0f;
-		directOutsMode = 3;// post-solo should be default
-		auxSendsMode = 3;// post-solo should be default
-		panLawStereo = 1;
-		vuColorThemeLocal = 0;
-		dispColorLocal = 0;
-		resetNonJson();
-	}
-	void resetNonJson() {
-		panMatrix = simd::float_4::zero();
-		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
-		gainMatrixSlewers.reset();
-		muteSoloGainSlewer.reset();
-		oldPan = -10.0f;
-		oldFader = -10.0f;
-		oldPanSignature.cc1 = 0xFFFFFFFF;
-		vu.reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
-		paramWithCV = -1.0f;
-		panWithCV = -1.0f;
-		target = -1.0f;
-	}
-	
-	
-	void updateSlowValues() {
-		// ** process linked **
-		gInfo->processLinked(16 + groupNum, paFade->getValue());
-		
-		// ** detect pan mode change ** (and trigger recalc of panMatrix)
-		PackedBytes4 newPanSig;
-		newPanSig.cc4[0] = panLawStereo;
-		newPanSig.cc4[1] = gInfo->panLawStereo;
-		newPanSig.cc4[2] = gInfo->panLawMono;
-		newPanSig.cc4[3] = 0xFF;
-		if (newPanSig.cc1 != oldPanSignature.cc1) {
-			oldPan = -10.0f;
-			oldPanSignature.cc1 = newPanSig.cc1;
-		}
-	}
-	
+	// panLawStereo
+	json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
 
-	void process(float *mix, bool eco) {// group
-		// Tap[0],[1]: pre-insert (group inputs)
-		// nothing to do, already set up by the mix master
-		
-		// Tap[8],[9]: pre-fader (post insert)
-		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((groupNum << 1) + 0);
-			taps[9] = inInsert->getVoltage((groupNum << 1) + 1);
-		}
-		else {
-			taps[8] = taps[0];
-			taps[9] = taps[1];
-		}
+	// vuColorThemeLocal
+	json_object_set_new(rootJ, (ids + "vuColorThemeLocal").c_str(), json_integer(vuColorThemeLocal));
 
-		if (eco) {	
-			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (fadeRate >= minFadeRate) {// if we are in fade mode
-				float newTarget = calcFadeGain();
-				if (!gInfo->symmetricalFade && newTarget != target) {
-					fadeGainX = 0.0f;
-				}
-				target = newTarget;
-				if (fadeGain != target) {
-					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-					fadeGainScaled = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
-				}
-			}
-			else {// we are in mute mode
-				fadeGain = calcFadeGain();
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
-			}
+	// dispColorLocal
+	json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
+}
 
-			// calc ** fader, paramWithCV **
-			float fader = paFade->getValue();
-			if (inVol->isConnected()) {
-				fader *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				paramWithCV = fader;
-			}
-			else {
-				paramWithCV = -1.0f;
-			}
 
-			// calc ** pan, panWithCV **
-			float pan = paPan->getValue();
-			if (inPan->isConnected()) {
-				pan += inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
-				pan = clamp(pan, 0.0f, 1.0f);
-				panWithCV = pan;
-			}
-			else {
-				panWithCV = -1.0f;
-			}
-
-			// calc ** panMatrix **
-			if (pan != oldPan) {
-				panMatrix = simd::float_4::zero();// L, R, RinL, LinR (used for fader-pan block)
-				if (pan == 0.5f) {
-					panMatrix[1] = 1.0f;
-					panMatrix[0] = 1.0f;
-				}
-				else {		
-					// implicitly stereo for groups
-					int stereoPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo);
-					if (stereoPanMode == 0) {
-						// Stereo balance linear, (+0 dB), same as mono No compensation
-						panMatrix[1] = std::min(1.0f, pan * 2.0f);
-						panMatrix[0] = std::min(1.0f, 2.0f - pan * 2.0f);
-					}
-					else if (stereoPanMode == 1) {
-						// Stereo balance equal power (+3dB), same as mono Equal power
-						// panMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-						// panMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-						sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * M_PI_2);
-					}
-					else {
-						// True panning, equal power
-						// panMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-						// panMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-						// panMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-						// panMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
-						if (pan > 0.5f) {
-							panMatrix[1] = 1.0f;
-							panMatrix[2] = 0.0f;
-							sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * M_PI);
-						}
-						else {// must be < (not <= since = 0.5 is caught at above)
-							sinCos(&panMatrix[1], &panMatrix[2], pan * M_PI);
-							panMatrix[0] = 1.0f;
-							panMatrix[3] = 0.0f;
-						}
-					}
-				}
-			}
-			// calc ** faderGain **
-			if (fader != oldFader) {
-				faderGain = std::pow(fader, GlobalInfo::trkAndGrpFaderScalingExponent);// scaling
-			}
-			// calc ** gainMatrix **
-			if (fader != oldFader || pan != oldPan) {
-				oldFader = fader;
-				oldPan = pan;	
-				gainMatrix = panMatrix * faderGain;
-			}
-		}
+void MixerGroup::dataFromJson(json_t *rootJ) {
+	// fadeRate
+	json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
+	if (fadeRateJ)
+		fadeRate = json_number_value(fadeRateJ);
 	
-		// Calc group gains with slewer
-		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
-		}
-		
-		// Apply gainMatrixSlewed
-		simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
-		sigs = sigs * gainMatrixSlewers.out;
-		
-		taps[16] = sigs[0] + sigs[2];
-		taps[17] = sigs[1] + sigs[3];
-		
-		// Calc muteSoloGainSlewed (solo not actually in here but in groups)
-		if (fadeGainScaled != muteSoloGainSlewer.out) {
-			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaled);
-		}
-		
-		taps[24] = taps[16] * muteSoloGainSlewer.out;
-		taps[25] = taps[17] * muteSoloGainSlewer.out;
-			
-		// Add to mix
-		mix[0] += taps[24];
-		mix[1] += taps[25];
-		
-		// VUs
-		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
-			vu.reset();
-		}
-		else if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[24]);
-		}
-	}
-	
-	
-	void dataToJson(json_t *rootJ) {
-		// fadeRate
-		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
-		
-		// fadeProfile
-		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
-		
-		// directOutsMode
-		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
-		
-		// auxSendsMode
-		json_object_set_new(rootJ, (ids + "auxSendsMode").c_str(), json_integer(auxSendsMode));
-		
-		// panLawStereo
-		json_object_set_new(rootJ, (ids + "panLawStereo").c_str(), json_integer(panLawStereo));
+	// fadeProfile
+	json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
+	if (fadeProfileJ)
+		fadeProfile = json_number_value(fadeProfileJ);
 
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, (ids + "vuColorThemeLocal").c_str(), json_integer(vuColorThemeLocal));
-
-		// dispColorLocal
-		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
-	}
+	// directOutsMode
+	json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
+	if (directOutsModeJ)
+		directOutsMode = json_integer_value(directOutsModeJ);
 	
-	void dataFromJson(json_t *rootJ) {
-		// fadeRate
-		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
-		if (fadeRateJ)
-			fadeRate = json_number_value(fadeRateJ);
-		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-
-		// directOutsMode
-		json_t *directOutsModeJ = json_object_get(rootJ, (ids + "directOutsMode").c_str());
-		if (directOutsModeJ)
-			directOutsMode = json_integer_value(directOutsModeJ);
-		
-		// auxSendsMode
-		json_t *auxSendsModeJ = json_object_get(rootJ, (ids + "auxSendsMode").c_str());
-		if (auxSendsModeJ)
-			auxSendsMode = json_integer_value(auxSendsModeJ);
-		
-		// panLawStereo
-		json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
-		if (panLawStereoJ)
-			panLawStereo = json_integer_value(panLawStereoJ);
-		
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, (ids + "vuColorThemeLocal").c_str());
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
-		
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
-		if (dispColorLocalJ)
-			dispColorLocal = json_integer_value(dispColorLocalJ);
-		
-		// extern must call resetNonJson()
-	}
-};// struct MixerGroup
+	// auxSendsMode
+	json_t *auxSendsModeJ = json_object_get(rootJ, (ids + "auxSendsMode").c_str());
+	if (auxSendsModeJ)
+		auxSendsMode = json_integer_value(auxSendsModeJ);
+	
+	// panLawStereo
+	json_t *panLawStereoJ = json_object_get(rootJ, (ids + "panLawStereo").c_str());
+	if (panLawStereoJ)
+		panLawStereo = json_integer_value(panLawStereoJ);
+	
+	// vuColorThemeLocal
+	json_t *vuColorThemeLocalJ = json_object_get(rootJ, (ids + "vuColorThemeLocal").c_str());
+	if (vuColorThemeLocalJ)
+		vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
+	
+	// dispColorLocal
+	json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
+	if (dispColorLocalJ)
+		dispColorLocal = json_integer_value(dispColorLocalJ);
+	
+	// extern must call resetNonJson()
+}
 
 
 
 //*****************************************************************************
-
+/*
 
 struct MixerTrack {
 	// Constants
