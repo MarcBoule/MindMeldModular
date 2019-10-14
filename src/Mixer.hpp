@@ -715,7 +715,6 @@ struct MixerMaster {
 			// scaling
 			if (fader != oldFader) {
 				oldFader = fader;
-				INFO("%g", fader);
 				faderGain = std::pow(fader, masterFaderScalingExponent);
 			}
 			
