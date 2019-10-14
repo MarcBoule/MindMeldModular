@@ -333,45 +333,11 @@ struct MixerMaster {
 	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
-	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
-		gInfo = _gInfo;
-		params = _params;
-		inChain = &_inputs[CHAIN_INPUTS];
-		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-		chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-		chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	}
-	
-	
-	void onReset() {
-		dcBlock = false;
-		clipping = 0;
-		fadeRate = 0.0f;
-		fadeProfile = 0.0f;
-		vuColorThemeLocal = 0;
-		dispColorLocal = 0;
-		dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
-		snprintf(masterLabel, 7, "MASTER");
-		resetNonJson();
-	}
-	void resetNonJson() {
-		chainGains[0] = 0.0f;
-		chainGains[1] = 0.0f;
-		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
-		gainMatrixSlewers.reset();
-		chainGainSlewers[0].reset();
-		chainGainSlewers[1].reset();
-		setupDcBlocker();
-		oldFader = -10.0f;
-		vu.reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		paramWithCV = -1.0f;
-		updateDimGainIntegerDB();
-		target = -1.0f;
-	}
+	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs);
+	void onReset();
+	void resetNonJson();
+	void dataToJson(json_t *rootJ);
+	void dataFromJson(json_t *rootJ);
 	
 	
 	void setupDcBlocker() {
@@ -532,80 +498,7 @@ struct MixerMaster {
 		// Clipping (post VU, so that we can see true range)
 		mix[0] = clip(mix[0]);
 		mix[1] = clip(mix[1]);
-	}
-	
-	
-	void dataToJson(json_t *rootJ) {
-		// dcBlock
-		json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
-
-		// clipping
-		json_object_set_new(rootJ, "clipping", json_integer(clipping));
-		
-		// fadeRate
-		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
-		
-		// fadeProfile
-		json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
-		
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal));
-		
-		// dispColorLocal
-		json_object_set_new(rootJ, "dispColorLocal", json_integer(dispColorLocal));
-		
-		// dimGain
-		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
-		
-		// masterLabel
-		json_object_set_new(rootJ, "masterLabel", json_string(masterLabel));
-	}
-
-	
-	void dataFromJson(json_t *rootJ) {
-		// dcBlock
-		json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
-		if (dcBlockJ)
-			dcBlock = json_is_true(dcBlockJ);
-		
-		// clipping
-		json_t *clippingJ = json_object_get(rootJ, "clipping");
-		if (clippingJ)
-			clipping = json_integer_value(clippingJ);
-		
-		// fadeRate
-		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
-		if (fadeRateJ)
-			fadeRate = json_number_value(fadeRateJ);
-		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-		
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
-		
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
-		if (dispColorLocalJ)
-			dispColorLocal = json_integer_value(dispColorLocalJ);
-		
-		// dimGain
-		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
-		if (dimGainJ)
-			dimGain = json_number_value(dimGainJ);
-
-		// masterLabel
-		json_t *textJ = json_object_get(rootJ, "masterLabel");
-		if (textJ)
-			snprintf(masterLabel, 7, "%s", json_string_value(textJ));
-		
-		// extern must call resetNonJson()
-	}
-		
+	}		
 };// struct MixerMaster
 
 

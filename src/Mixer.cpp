@@ -13,10 +13,12 @@
 
 
 // Math
+
 // none
 
 
 // Utility
+
 float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade) {
 	static const float A = 4.0f;
 	static const float E_A_M1 = (std::exp(A) - 1.0f);// e^A - 1
@@ -149,11 +151,14 @@ void GlobalInfo::onReset() {
 	ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 	resetNonJson();
 }
+
+
 void GlobalInfo::resetNonJson() {
 	updateSoloBitMask();
 	updateReturnSoloBits();
 	sampleTime = APP->engine->getSampleTime();
 }
+
 
 void GlobalInfo::dataToJson(json_t *rootJ) {
 	// panLawMono 
@@ -203,6 +208,7 @@ void GlobalInfo::dataToJson(json_t *rootJ) {
 	// ecoMode
 	json_object_set_new(rootJ, "ecoMode", json_integer(ecoMode));
 }
+
 
 void GlobalInfo::dataFromJson(json_t *rootJ) {
 	// panLawMono
@@ -287,333 +293,129 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 
 
 //*****************************************************************************
-/*
-
-struct MixerMaster {
-	// Constants
-	static const int masterFaderScalingExponent = 3; 
-	static constexpr float masterFaderMaxLinearGain = 2.0f;
-	static constexpr float minFadeRate = 0.1f;
-	
-	// need to save, no reset
-	// none
-	
-	// need to save, with reset
-	bool dcBlock;
-	int clipping; // 0 is soft, 1 is hard (must be single ls bit)
-	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile; // exp when +100, lin when 0, log when -100
-	int8_t vuColorThemeLocal;
-	int8_t dispColorLocal;
-	float dimGain;// slider uses this gain, but displays it in dB instead of linear
-	char masterLabel[7];
-	
-	// no need to save, with reset
-	private:
-	float chainGains[2];// L, R
-	float faderGain;
-	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
-	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
-	dsp::SlewLimiter chainGainSlewers[2];
-	OnePoleFilter dcBlocker[2];// 6dB/oct
-	float oldFader;
-	public:
-	VuMeterAllDual vu;// use mix[0..1]
-	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float fadeGainX;
-	float paramWithCV;
-	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
-	float target;
-
-	// no need to save, no reset
-	GlobalInfo *gInfo;
-	Param *params;
-	Input *inChain;
-	Input *inVol;
-
-	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
 
 
-	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
-		gInfo = _gInfo;
-		params = _params;
-		inChain = &_inputs[CHAIN_INPUTS];
-		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-		chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-		chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	}
-	
-	
-	void onReset() {
-		dcBlock = false;
-		clipping = 0;
-		fadeRate = 0.0f;
-		fadeProfile = 0.0f;
-		vuColorThemeLocal = 0;
-		dispColorLocal = 0;
-		dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
-		snprintf(masterLabel, 7, "MASTER");
-		resetNonJson();
-	}
-	void resetNonJson() {
-		chainGains[0] = 0.0f;
-		chainGains[1] = 0.0f;
-		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
-		gainMatrixSlewers.reset();
-		chainGainSlewers[0].reset();
-		chainGainSlewers[1].reset();
-		setupDcBlocker();
-		oldFader = -10.0f;
-		vu.reset();
-		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-		paramWithCV = -1.0f;
-		updateDimGainIntegerDB();
-		target = -1.0f;
-	}
-	
-	
-	void setupDcBlocker() {
-		float dcCutoffFreq = 10.0f;// Hz
-		dcCutoffFreq *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		dcBlocker[0].setCutoff(dcCutoffFreq);
-		dcBlocker[1].setCutoff(dcCutoffFreq);
-	}
-	
-	void updateDimGainIntegerDB() {
-		float integerDB = std::round(20.0f * std::log10(dimGain));
-		dimGainIntegerDB = std::pow(10.0f, integerDB / 20.0f);
-	}
-	
-	
-	void onSampleRateChange() {
-		setupDcBlocker();
-	}
-	
-	float clipPoly(float inX) {
-		return 15.9445204794f + inX * (-6.6407357350f + inX * (1.3202683524f + inX * (-0.0958254927f + inX * 0.0023676999f)));
-	}
-	
-	float clip(float inX) {// 0 = soft, 1 = hard
-		if (inX <= 6.0f && inX >= -6.0f) {
-			return inX;
-		}
-		if (clipping == 1) {// hard clip
-			return clamp(inX, -10.0f, 10.0f);
-		}
-		// here clipping is 0, so do soft clip
-		inX = clamp(inX, -12.0f, 12.0f);
-		if (inX >= 0.0f)
-			return clipPoly(inX);
-		return -clipPoly(-inX);
-	}
+// struct MixerMaster 
+
+void MixerMaster::construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
+	gInfo = _gInfo;
+	params = _params;
+	inChain = &_inputs[CHAIN_INPUTS];
+	inVol = &_inputs[GRPM_MUTESOLO_INPUT];
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+	chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+	chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+}
 
 
-	void updateSlowValues() {		
-		// calc ** chainGains **
-		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
-		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
-	}
-	
-	
-	void process(float *mix, bool eco) {// master
-		// takes mix[0..1] and redeposits post in same place
-		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
-		for (int i = 0; i < 2; i++) {
-			if (chainGains[i] != chainGainSlewers[i].out) {
-				chainGainSlewers[i].process(gInfo->sampleTime, chainGains[i]);
-			}
-		}
-		
-		if (eco) {
-			// calc ** fader, paramWithCV **
-			float fader = params[MAIN_FADER_PARAM].getValue();
-			if (inVol->isConnected() && inVol->getChannels() >= 12) {
-				fader *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				paramWithCV = fader;
-			}
-			else {
-				paramWithCV = -1.0f;
-			}
-			
-			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (fadeRate >= minFadeRate) {// if we are in fade mode
-				float newTarget = calcFadeGain();
-				if (!gInfo->symmetricalFade && newTarget != target) {
-					fadeGainX = 0.0f;
-				}
-				target = newTarget;
-				if (fadeGain != target) {
-					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-				}
-				fader *= fadeGain;
-			}
-			else {// we are in mute mode
-				//fadeGain = calcFadeGain(); // do manually below to optimized fader mult
-				if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
-					fadeGain = 1.0f;
-					//fader = fader;
-				}
-				else {
-					fadeGain = 0.0f;
-					fader = 0.0f;
-				}
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-			}	
+void MixerMaster::onReset() {
+	dcBlock = false;
+	clipping = 0;
+	fadeRate = 0.0f;
+	fadeProfile = 0.0f;
+	vuColorThemeLocal = 0;
+	dispColorLocal = 0;
+	dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
+	snprintf(masterLabel, 7, "MASTER");
+	resetNonJson();
+}
 
-			// scaling
-			if (fader != oldFader) {
-				oldFader = fader;
-				faderGain = std::pow(fader, masterFaderScalingExponent);
-			}
-			
-			// dim
-			float faderGainDimmed = faderGain;
-			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-				faderGainDimmed *= dimGainIntegerDB;
-			}
-			
-			// calc ** gainMatrix **
-			// mono
-			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
-				gainMatrix = simd::float_4(0.5f * faderGainDimmed);
-			}
-			else {
-				gainMatrix = simd::float_4(faderGainDimmed, faderGainDimmed, 0.0f, 0.0f);
-			}
-		}
-		
-		// Calc master gain with slewer
-		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
-		}
-		
-		// Chain inputs when pre master
-		if (gInfo->chainMode == 0) {
-			if (chainGainSlewers[0].out != 0.0f) {
-				mix[0] += inChain[0].getVoltage() * chainGainSlewers[0].out;
-			}
-			if (chainGainSlewers[1].out != 0.0f) {
-				mix[1] += inChain[1].getVoltage() * chainGainSlewers[1].out;
-			}
-		}
 
-		// Apply gainMatrixSlewed
-		simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
-		sigs = sigs * gainMatrixSlewers.out;
-		
-		// Set mix
-		mix[0] = sigs[0] + sigs[2];
-		mix[1] = sigs[1] + sigs[3];
-		
-		// VUs (no cloaked mode for master, always on)
-		if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), mix);
-		}
-				
-		// Chain inputs when post master
-		if (gInfo->chainMode == 1) {
-			if (chainGainSlewers[0].out != 0.0f) {
-				mix[0] += inChain[0].getVoltage() * chainGainSlewers[0].out;
-			}
-			if (chainGainSlewers[1].out != 0.0f) {
-				mix[1] += inChain[1].getVoltage() * chainGainSlewers[1].out;
-			}
-		}
-		
-		// DC blocker (post VU)
-		if (dcBlock) {
-			mix[0] = dcBlocker[0].processHP(mix[0]);
-			mix[1] = dcBlocker[1].processHP(mix[1]);
-		}
-		
-		// Clipping (post VU, so that we can see true range)
-		mix[0] = clip(mix[0]);
-		mix[1] = clip(mix[1]);
-	}
+void MixerMaster::resetNonJson() {
+	chainGains[0] = 0.0f;
+	chainGains[1] = 0.0f;
+	faderGain = 0.0f;
+	gainMatrix = simd::float_4::zero();
+	gainMatrixSlewers.reset();
+	chainGainSlewers[0].reset();
+	chainGainSlewers[1].reset();
+	setupDcBlocker();
+	oldFader = -10.0f;
+	vu.reset();
+	fadeGain = calcFadeGain();
+	fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+	paramWithCV = -1.0f;
+	updateDimGainIntegerDB();
+	target = -1.0f;
+}
+
+
+void MixerMaster::dataToJson(json_t *rootJ) {
+	// dcBlock
+	json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
+
+	// clipping
+	json_object_set_new(rootJ, "clipping", json_integer(clipping));
 	
+	// fadeRate
+	json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
 	
-	void dataToJson(json_t *rootJ) {
-		// dcBlock
-		json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
-
-		// clipping
-		json_object_set_new(rootJ, "clipping", json_integer(clipping));
-		
-		// fadeRate
-		json_object_set_new(rootJ, "fadeRate", json_real(fadeRate));
-		
-		// fadeProfile
-		json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
-		
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal));
-		
-		// dispColorLocal
-		json_object_set_new(rootJ, "dispColorLocal", json_integer(dispColorLocal));
-		
-		// dimGain
-		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
-		
-		// masterLabel
-		json_object_set_new(rootJ, "masterLabel", json_string(masterLabel));
-	}
-
+	// fadeProfile
+	json_object_set_new(rootJ, "fadeProfile", json_real(fadeProfile));
 	
-	void dataFromJson(json_t *rootJ) {
-		// dcBlock
-		json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
-		if (dcBlockJ)
-			dcBlock = json_is_true(dcBlockJ);
-		
-		// clipping
-		json_t *clippingJ = json_object_get(rootJ, "clipping");
-		if (clippingJ)
-			clipping = json_integer_value(clippingJ);
-		
-		// fadeRate
-		json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
-		if (fadeRateJ)
-			fadeRate = json_number_value(fadeRateJ);
-		
-		// fadeProfile
-		json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
-		if (fadeProfileJ)
-			fadeProfile = json_number_value(fadeProfileJ);
-		
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
-		
-		// dispColorLocal
-		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
-		if (dispColorLocalJ)
-			dispColorLocal = json_integer_value(dispColorLocalJ);
-		
-		// dimGain
-		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
-		if (dimGainJ)
-			dimGain = json_number_value(dimGainJ);
+	// vuColorThemeLocal
+	json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal));
+	
+	// dispColorLocal
+	json_object_set_new(rootJ, "dispColorLocal", json_integer(dispColorLocal));
+	
+	// dimGain
+	json_object_set_new(rootJ, "dimGain", json_real(dimGain));
+	
+	// masterLabel
+	json_object_set_new(rootJ, "masterLabel", json_string(masterLabel));
+}
 
-		// masterLabel
-		json_t *textJ = json_object_get(rootJ, "masterLabel");
-		if (textJ)
-			snprintf(masterLabel, 7, "%s", json_string_value(textJ));
-		
-		// extern must call resetNonJson()
-	}
-		
-};// struct MixerMaster
+
+void MixerMaster::dataFromJson(json_t *rootJ) {
+	// dcBlock
+	json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
+	if (dcBlockJ)
+		dcBlock = json_is_true(dcBlockJ);
+	
+	// clipping
+	json_t *clippingJ = json_object_get(rootJ, "clipping");
+	if (clippingJ)
+		clipping = json_integer_value(clippingJ);
+	
+	// fadeRate
+	json_t *fadeRateJ = json_object_get(rootJ, "fadeRate");
+	if (fadeRateJ)
+		fadeRate = json_number_value(fadeRateJ);
+	
+	// fadeProfile
+	json_t *fadeProfileJ = json_object_get(rootJ, "fadeProfile");
+	if (fadeProfileJ)
+		fadeProfile = json_number_value(fadeProfileJ);
+	
+	// vuColorThemeLocal
+	json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
+	if (vuColorThemeLocalJ)
+		vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
+	
+	// dispColorLocal
+	json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
+	if (dispColorLocalJ)
+		dispColorLocal = json_integer_value(dispColorLocalJ);
+	
+	// dimGain
+	json_t *dimGainJ = json_object_get(rootJ, "dimGain");
+	if (dimGainJ)
+		dimGain = json_number_value(dimGainJ);
+
+	// masterLabel
+	json_t *textJ = json_object_get(rootJ, "masterLabel");
+	if (textJ)
+		snprintf(masterLabel, 7, "%s", json_string_value(textJ));
+	
+	// extern must call resetNonJson()
+}		
 
 
 
 //*****************************************************************************
 
-
+/*
 
 struct MixerGroup {
 	// Constants
