@@ -14,9 +14,9 @@ Version 1.1.1
 
 The following modules are part of the MindMeld module pack.
 
-* [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses.
+* [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses. Manual: (coming soon)
 
-* [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster.
+* [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster. Manual: (see MixMaster manual)
 
 
 ## MixMaster <a id="mixmaster"></a>
