@@ -357,8 +357,32 @@ struct MixerMaster {
 		setupDcBlocker();
 	}
 	
+	
+	// Soft-clipping polynomial function
+	// piecewise portion that handles inputs between 6 and 12 V
+	// unipolar only, caller must take care of signs
+	// assumes that 6 <= x <= 12
+	// assumes f(x) := x  when x < 6
+	// assumes f(x) := 12  when x > 12
+	//
+	// Chosen polynomial:
+	// f(x) := a + b*x + c*x^2 + d*x^3
+	//
+	// Coefficient solving constraints:
+	// f(6) = 6
+	// f(12) = 10
+	// f'(6) = 1
+	// f'(12) = 0
+	// where:
+	// f'(x) := b + 2*c*x + 3*d*x^2
+	// 
+	// solve(system(f(6)=6,f(12)=10,f'(6)=1,f'(12)=0),{a,b,c,d})
+	// 
+	// solution:
+	// a=2 and b=0 and c=(1/6) and d=(?1/108)
+	
 	float clipPoly(float inX) {
-		return 15.9445204794f + inX * (-6.6407357350f + inX * (1.3202683524f + inX * (-0.0958254927f + inX * 0.0023676999f)));
+		return 2.0f + inX * inX * (1.0f/6.0f - inX * (1.0f/108.0f));
 	}
 	
 	float clip(float inX) {// 0 = soft, 1 = hard
