@@ -371,15 +371,15 @@ struct MixerMaster {
 	// Coefficient solving constraints:
 	// f(6) = 6
 	// f(12) = 10
-	// f'(6) = 1
-	// f'(12) = 0
+	// f'(6) = 1 (unity slope at 6V)
+	// f'(12) = 0 (horizontal at 12V)
 	// where:
 	// f'(x) := b + 2*c*x + 3*d*x^2
 	// 
 	// solve(system(f(6)=6,f(12)=10,f'(6)=1,f'(12)=0),{a,b,c,d})
 	// 
 	// solution:
-	// a=2 and b=0 and c=(1/6) and d=(?1/108)
+	// a=2 and b=0 and c=(1/6) and d=(-1/108)
 	
 	float clipPoly(float inX) {
 		return 2.0f + inX * inX * (1.0f/6.0f - inX * (1.0f/108.0f));
@@ -1009,8 +1009,8 @@ struct MixerTrack {
 		}
 		
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
-		taps[0] = (inSig[0].getVoltage() * inGainSlewer.out);
-		taps[1] = stereo ? (inSig[1].getVoltage() * inGainSlewer.out) : taps[0];
+		taps[0] = (inSig[0].getVoltageSum() * inGainSlewer.out);
+		taps[1] = stereo ? (inSig[1].getVoltageSum() * inGainSlewer.out) : taps[0];
 		
 		int insertPortIndex = trackNum >> 3;
 		
