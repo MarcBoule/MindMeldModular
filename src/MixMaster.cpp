@@ -102,7 +102,7 @@ struct MixMaster : Module {
 		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
 		// Dim
 		configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "Master dim");
-		// Solo
+		// Mono
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 
@@ -1069,29 +1069,34 @@ struct MixMasterWidget : ModuleWidget {
 					moduleM->paramQuantities[GROUP_SELECT_PARAMS + i]->label = strBuf;
 				}
 				// Group
-/*				for (int i = 0; i < 4; i++) {
+				for (int i = 0; i < 4; i++) {
+					std::string groupLabel = std::string(&(moduleM->trackLabels[(16 + i) * 4]), 4);
 					// Pan
-					snprintf(strBuf, 32, "Group #%i pan", i + 1);
-					configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
+					snprintf(strBuf, 32, "%s: pan", groupLabel.c_str());
+					moduleM->paramQuantities[GROUP_PAN_PARAMS + i]->label = strBuf;
 					// Fader
-					snprintf(strBuf, 32, "Group #%i level", i + 1);
-					configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
+					snprintf(strBuf, 32, "%s: level", groupLabel.c_str());
+					moduleM->paramQuantities[GROUP_FADER_PARAMS + i]->label = strBuf;
 					// Mute
-					snprintf(strBuf, 32, "Group #%i mute", i + 1);
-					configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
+					moduleM->paramQuantities[GROUP_MUTE_PARAMS + i]->label = strBuf;
 					// Solo
-					snprintf(strBuf, 32, "Group #%i solo", i + 1);
-					configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
+					moduleM->paramQuantities[GROUP_SOLO_PARAMS + i]->label = strBuf;
 				}
-				float maxMFader = std::pow(MixerMaster::masterFaderMaxLinearGain, 1.0f / MixerMaster::masterFaderScalingExponent);
-				configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * MixerMaster::masterFaderScalingExponent);
+				std::string masterLabel = std::string(moduleM->master.masterLabel, 6);
+				// Fader
+				snprintf(strBuf, 32, "%s: level", masterLabel.c_str());
+				moduleM->paramQuantities[MAIN_FADER_PARAM]->label = strBuf;
 				// Mute
-				configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
+				snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
+				moduleM->paramQuantities[MAIN_MUTE_PARAM]->label = strBuf;
 				// Dim
-				configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "Master dim");
-				// Solo
-				configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
-				*/
+				snprintf(strBuf, 32, "%s: dim", masterLabel.c_str());
+				moduleM->paramQuantities[MAIN_DIM_PARAM]->label = strBuf;
+				// Mono
+				snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
+				moduleM->paramQuantities[MAIN_MONO_PARAM]->label = strBuf;
 			}
 			
 			// Resizing to hide inspander
