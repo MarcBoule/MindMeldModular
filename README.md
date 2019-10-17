@@ -27,7 +27,7 @@ The MixMaster beams the following features into your Rack for your demanding mix
 * 16 mono/stereo tracks
 * 4 aux busses (requires [AuxSpander](#auxspander)) and 4 group busses
 * Editable track labels (scribble strips)
-* Gain adjustment (trim) on every track 
+* Gain adjustment (trim) on every track (±20 dB)
 * Hi Pass Filter (HPF) on every track (18 dB/oct.)
 * Low Pass Filter (LPF) on every track (12 dB/oct.)
 * Fade automation with lin/log/exp curves
@@ -44,6 +44,8 @@ The MixMaster beams the following features into your Rack for your demanding mix
 * CV visualisation
 * CV control over just about everything...
 
+Many labels contain separate menus, different from the module's menu, that can be accessed by right-clicking the labels.
+
 
 ## AuxSpander <a id="auxspander"></a>
 
@@ -53,5 +55,7 @@ The MixMaster beams the following features into your Rack for your demanding mix
 
 
 ## Blank panel
+
+(to be completed)
 
 ![IM](res/img/Blank.jpg)
