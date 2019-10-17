@@ -679,6 +679,7 @@ struct MixMasterWidget : ModuleWidget {
 	bool oldAuxExpanderPresent = false;
 	int oldExpansion = -1;// for hiding 4HP cvs at left side of main panel
 	DynamicSVGPort* inspanderPorts[9];
+	time_t oldTime = 0;
 
 
 	// Module's context menu
@@ -1047,8 +1048,11 @@ struct MixMasterWidget : ModuleWidget {
 				}
 				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 			}
-
-			if (time(0) & 0x1) {// update param tooltips
+			
+			// Update param tooltips at 1Hz
+			time_t currentTime = time(0);
+			if (currentTime != oldTime) {
+				oldTime = currentTime;
 				char strBuf[32];
 				for (int i = 0; i < 16; i++) {
 					std::string trackLabel = std::string(&(moduleM->trackLabels[i * 4]), 4);

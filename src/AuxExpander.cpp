@@ -616,6 +616,7 @@ struct AuxExpanderWidget : ModuleWidget {
 	bool oldMotherPresent = false;
 	TrackAndGroupLabel* trackAndGroupLabels[20];
 	AuxDisplay* auxDisplays[4];
+	time_t oldTime = 0;
 
 	AuxExpanderWidget(AuxExpander *module) {
 		setModule(module);
@@ -933,6 +934,60 @@ struct AuxExpanderWidget : ModuleWidget {
 					panelBorder->box.size.x = box.size.x;
 				}
 				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			}
+			
+			// Update param tooltips at 1Hz
+			time_t currentTime = time(0);
+			if (currentTime != oldTime) {
+				oldTime = currentTime;
+				char strBuf[32];
+				std::string auxLabels[4];
+				for (int i = 0; i < 4; i++) {
+					auxLabels[i] = std::string(&(moduleA->auxLabels[i * 4]), 4);
+				}
+				
+				// Track and group indiv sends
+				for (int i = 0; i < 20; i++) {
+					std::string trackLabel = std::string(&(moduleA->trackLabels[i * 4]), 4);
+					// Aux A-D
+					for (int auxi = 0; auxi < 4; auxi++) {
+						snprintf(strBuf, 32, "%s: send %s", trackLabel.c_str(), auxLabels[auxi].c_str());
+						moduleA->paramQuantities[AuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + auxi]->label = strBuf;
+					}
+					// Mutes
+					snprintf(strBuf, 32, "%s: aux mute", trackLabel.c_str());
+					moduleA->paramQuantities[AuxExpander::TRACK_AUXMUTE_PARAMS + i]->label = strBuf;
+				}
+
+				// Global send aux A-D
+				for (int auxi = 0; auxi < 4; auxi++) {
+					snprintf(strBuf, 32, "%s: global send", auxLabels[auxi].c_str());
+					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXSEND_PARAMS + auxi]->label = strBuf;
+				}
+
+				// Global pan return aux A-D
+				for (int auxi = 0; auxi < 4; auxi++) {
+					snprintf(strBuf, 32, "%s: return pan", auxLabels[auxi].c_str());
+					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXPAN_PARAMS + auxi]->label = strBuf;
+				}
+
+				// Global return aux A-D
+				for (int auxi = 0; auxi < 4; auxi++) {
+					snprintf(strBuf, 32, "%s: return level", auxLabels[auxi].c_str());
+					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXRETURN_PARAMS + auxi]->label = strBuf;
+				}
+
+				// Global mute
+				for (int auxi = 0; auxi < 4; auxi++) {
+					snprintf(strBuf, 32, "%s: return mute", auxLabels[auxi].c_str());
+					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXMUTE_PARAMS + auxi]->label = strBuf;
+				}
+
+				// Global solo
+				for (int auxi = 0; auxi < 4; auxi++) {
+					snprintf(strBuf, 32, "%s: return solo", auxLabels[auxi].c_str());
+					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXSOLO_PARAMS + auxi]->label = strBuf;
+				}
 			}
 		}
 		Widget::step();
