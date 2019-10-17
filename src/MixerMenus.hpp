@@ -890,7 +890,7 @@ struct DimGainQuantity : Quantity {
 	}
 	float getMinValue() override {return -30.0f;}
 	float getMaxValue() override {return -1.0f;}
-	float getDefaultValue() override {return -20.0f;}
+	float getDefaultValue() override {return -12.0f;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valGain = getDisplayValue();
