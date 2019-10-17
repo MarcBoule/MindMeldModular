@@ -6,6 +6,7 @@
 //***********************************************************************************************
 
 
+#include <time.h>
 #include "MixerWidgets.hpp"
 
 
@@ -1047,6 +1048,50 @@ struct MixMasterWidget : ModuleWidget {
 				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 			}
 
+			if (time(0) & 0x1) {// update param tooltips
+				/*for (int i = 0; i < 16; i++) {
+					// Pan
+					snprintf(strBuf, 32, "Track #%i pan", i + 1);
+					configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
+					// Fader
+					snprintf(strBuf, 32, "Track #%i level", i + 1);
+					configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
+					// Mute
+					snprintf(strBuf, 32, "Track #%i mute", i + 1);
+					configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					// Solo
+					snprintf(strBuf, 32, "Track #%i solo", i + 1);
+					configParam(TRACK_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					// Group select
+					snprintf(strBuf, 32, "Track #%i group", i + 1);
+					configParam(GROUP_SELECT_PARAMS + i, 0.0f, 4.0f, 0.0f, strBuf);
+				}
+				// Group
+				for (int i = 0; i < 4; i++) {
+					// Pan
+					snprintf(strBuf, 32, "Group #%i pan", i + 1);
+					configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
+					// Fader
+					snprintf(strBuf, 32, "Group #%i level", i + 1);
+					configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
+					// Mute
+					snprintf(strBuf, 32, "Group #%i mute", i + 1);
+					configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					// Solo
+					snprintf(strBuf, 32, "Group #%i solo", i + 1);
+					configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+				}
+				float maxMFader = std::pow(MixerMaster::masterFaderMaxLinearGain, 1.0f / MixerMaster::masterFaderScalingExponent);
+				configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * MixerMaster::masterFaderScalingExponent);
+				// Mute
+				configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
+				// Dim
+				configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "Master dim");
+				// Solo
+				configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
+				*/
+			}
+			
 			// Resizing to hide inspander
 			/*if(moduleM->expansion != oldExpansion) {
 				if (oldExpansion != -1 && moduleM->expansion == 0) {// if just removed expansion panel, disconnect wires to those jacks
