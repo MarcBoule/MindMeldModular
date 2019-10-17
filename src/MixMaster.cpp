@@ -1049,25 +1049,27 @@ struct MixMasterWidget : ModuleWidget {
 			}
 
 			if (time(0) & 0x1) {// update param tooltips
-				/*for (int i = 0; i < 16; i++) {
+				char strBuf[32];
+				for (int i = 0; i < 16; i++) {
+					std::string trackLabel = std::string(&(moduleM->trackLabels[i * 4]), 4);
 					// Pan
-					snprintf(strBuf, 32, "Track #%i pan", i + 1);
-					configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
+					snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
+					moduleM->paramQuantities[TRACK_PAN_PARAMS + i]->label = strBuf;
 					// Fader
-					snprintf(strBuf, 32, "Track #%i level", i + 1);
-					configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
+					snprintf(strBuf, 32, "%s: level", trackLabel.c_str());
+					moduleM->paramQuantities[TRACK_FADER_PARAMS + i]->label = strBuf;
 					// Mute
-					snprintf(strBuf, 32, "Track #%i mute", i + 1);
-					configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
+					moduleM->paramQuantities[TRACK_MUTE_PARAMS + i]->label = strBuf;
 					// Solo
-					snprintf(strBuf, 32, "Track #%i solo", i + 1);
-					configParam(TRACK_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+					snprintf(strBuf, 32, "%s: solo", trackLabel.c_str());
+					moduleM->paramQuantities[TRACK_SOLO_PARAMS + i]->label = strBuf;
 					// Group select
-					snprintf(strBuf, 32, "Track #%i group", i + 1);
-					configParam(GROUP_SELECT_PARAMS + i, 0.0f, 4.0f, 0.0f, strBuf);
+					snprintf(strBuf, 32, "%s: group", trackLabel.c_str());
+					moduleM->paramQuantities[GROUP_SELECT_PARAMS + i]->label = strBuf;
 				}
 				// Group
-				for (int i = 0; i < 4; i++) {
+/*				for (int i = 0; i < 4; i++) {
 					// Pan
 					snprintf(strBuf, 32, "Group #%i pan", i + 1);
 					configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
