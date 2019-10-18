@@ -331,6 +331,7 @@ void MixerMaster::resetNonJson() {
 	vu.reset();
 	fadeGain = calcFadeGain();
 	fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+	fadeGainScaled = fadeGain;
 	paramWithCV = -1.0f;
 	updateDimGainIntegerDB();
 	target = -1.0f;

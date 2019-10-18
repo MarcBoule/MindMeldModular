@@ -321,6 +321,7 @@ struct MixerMaster {
 	VuMeterAllDual vu;// use mix[0..1]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
+	float fadeGainScaled;
 	float paramWithCV;
 	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
 	float target;
@@ -412,16 +413,6 @@ struct MixerMaster {
 		// takes mix[0..1] and redeposits post in same place
 		
 		if (eco) {
-			// calc ** fader, paramWithCV **
-			float fader = params[MAIN_FADER_PARAM].getValue();
-			if (inVol->isConnected() && inVol->getChannels() >= 12) {
-				fader *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				paramWithCV = fader;
-			}
-			else {
-				paramWithCV = -1.0f;
-			}
-			
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
@@ -432,21 +423,29 @@ struct MixerMaster {
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGainScaled = std::pow(fadeGain, masterFaderScalingExponent);
 				}
-				fader *= fadeGain;
 			}
 			else {// we are in mute mode
-				//fadeGain = calcFadeGain(); // do manually below to optimized fader mult
-				if (params[MAIN_MUTE_PARAM].getValue() < 0.5f) {
-					fadeGain = 1.0f;
-					//fader = fader;
-				}
-				else {
-					fadeGain = 0.0f;
-					fader = 0.0f;
-				}
+				fadeGain = calcFadeGain(); // do manually below to optimized fader mult
 				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}	
+			// dim (this affects fadeGainScaled only, so treated like a partial mute, but no effect on fade pointers or other just effect on sound
+			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+				fadeGainScaled *= dimGainIntegerDB;
+			}
+			chainGainsAndMute[2] = fadeGainScaled;
+			
+			// calc ** fader, paramWithCV **
+			float fader = params[MAIN_FADER_PARAM].getValue();
+			if (inVol->isConnected() && inVol->getChannels() >= 12) {
+				fader *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+				paramWithCV = fader;
+			}
+			else {
+				paramWithCV = -1.0f;
+			}
 
 			// scaling
 			if (fader != oldFader) {
@@ -454,19 +453,13 @@ struct MixerMaster {
 				faderGain = std::pow(fader, masterFaderScalingExponent);
 			}
 			
-			// dim
-			float faderGainDimmed = faderGain;
-			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-				faderGainDimmed *= dimGainIntegerDB;
-			}
-			
 			// calc ** gainMatrix **
 			// mono
 			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
-				gainMatrix = simd::float_4(0.5f * faderGainDimmed);
+				gainMatrix = simd::float_4(0.5f * faderGain);
 			}
 			else {
-				gainMatrix = simd::float_4(faderGainDimmed, faderGainDimmed, 0.0f, 0.0f);
+				gainMatrix = simd::float_4(faderGain, faderGain, 0.0f, 0.0f);
 			}
 		}
 		
@@ -479,7 +472,6 @@ struct MixerMaster {
 		if (movemask(chainGainsAndMute == chainGainAndMuteSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			chainGainAndMuteSlewers.process(gInfo->sampleTime, chainGainsAndMute);
 		}
-
 		
 		// Chain inputs when pre master
 		if (gInfo->chainMode == 0) {
@@ -493,7 +485,7 @@ struct MixerMaster {
 
 		// Apply gainMatrixSlewed
 		simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
-		sigs = sigs * gainMatrixSlewers.out;
+		sigs = sigs * gainMatrixSlewers.out * chainGainAndMuteSlewers.out[2];
 		
 		// Set mix
 		mix[0] = sigs[0] + sigs[2];
