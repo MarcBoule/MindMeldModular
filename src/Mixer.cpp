@@ -303,8 +303,7 @@ void MixerMaster::construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) 
 	inChain = &_inputs[CHAIN_INPUTS];
 	inVol = &_inputs[GRPM_MUTESOLO_INPUT];
 	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
-	chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
-	chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewFast), simd::float_4(GlobalInfo::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 }
 
 
@@ -322,13 +321,11 @@ void MixerMaster::onReset() {
 
 
 void MixerMaster::resetNonJson() {
-	chainGains[0] = 0.0f;
-	chainGains[1] = 0.0f;
+	chainGainsAndMute = simd::float_4::zero();
 	faderGain = 0.0f;
 	gainMatrix = simd::float_4::zero();
 	gainMatrixSlewers.reset();
-	chainGainSlewers[0].reset();
-	chainGainSlewers[1].reset();
+	chainGainAndMuteSlewers.reset();
 	setupDcBlocker();
 	oldFader = -10.0f;
 	vu.reset();

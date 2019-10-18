@@ -310,11 +310,11 @@ struct MixerMaster {
 	
 	// no need to save, with reset
 	private:
-	float chainGains[2];// L, R
+	simd::float_4 chainGainsAndMute;// 0=L, 1=R, 2=mute
 	float faderGain;
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
-	dsp::SlewLimiter chainGainSlewers[2];
+	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	float oldFader;
 	public:
@@ -403,19 +403,13 @@ struct MixerMaster {
 
 	void updateSlowValues() {		
 		// calc ** chainGains **
-		chainGains[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
-		chainGains[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
+		chainGainsAndMute[0] = inChain[0].isConnected() ? 1.0f : 0.0f;
+		chainGainsAndMute[1] = inChain[1].isConnected() ? 1.0f : 0.0f;
 	}
 	
 	
 	void process(float *mix, bool eco) {// master
 		// takes mix[0..1] and redeposits post in same place
-		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
-		for (int i = 0; i < 2; i++) {
-			if (chainGains[i] != chainGainSlewers[i].out) {
-				chainGainSlewers[i].process(gInfo->sampleTime, chainGains[i]);
-			}
-		}
 		
 		if (eco) {
 			// calc ** fader, paramWithCV **
@@ -480,14 +474,20 @@ struct MixerMaster {
 		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
 		}
+
+		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
+		if (movemask(chainGainsAndMute == chainGainAndMuteSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			chainGainAndMuteSlewers.process(gInfo->sampleTime, chainGainsAndMute);
+		}
+
 		
 		// Chain inputs when pre master
 		if (gInfo->chainMode == 0) {
-			if (chainGainSlewers[0].out != 0.0f) {
-				mix[0] += inChain[0].getVoltage() * chainGainSlewers[0].out;
+			if (chainGainAndMuteSlewers.out[0] != 0.0f) {
+				mix[0] += inChain[0].getVoltage() * chainGainAndMuteSlewers.out[0];
 			}
-			if (chainGainSlewers[1].out != 0.0f) {
-				mix[1] += inChain[1].getVoltage() * chainGainSlewers[1].out;
+			if (chainGainAndMuteSlewers.out[1] != 0.0f) {
+				mix[1] += inChain[1].getVoltage() * chainGainAndMuteSlewers.out[1];
 			}
 		}
 
@@ -506,11 +506,11 @@ struct MixerMaster {
 				
 		// Chain inputs when post master
 		if (gInfo->chainMode == 1) {
-			if (chainGainSlewers[0].out != 0.0f) {
-				mix[0] += inChain[0].getVoltage() * chainGainSlewers[0].out;
+			if (chainGainAndMuteSlewers.out[0] != 0.0f) {
+				mix[0] += inChain[0].getVoltage() * chainGainAndMuteSlewers.out[0];
 			}
-			if (chainGainSlewers[1].out != 0.0f) {
-				mix[1] += inChain[1].getVoltage() * chainGainSlewers[1].out;
+			if (chainGainAndMuteSlewers.out[1] != 0.0f) {
+				mix[1] += inChain[1].getVoltage() * chainGainAndMuteSlewers.out[1];
 			}
 		}
 		
