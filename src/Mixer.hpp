@@ -176,7 +176,7 @@ struct GlobalInfo {
 	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
 	static const int globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float antipopSlew = 50.0f;
+	static constexpr float antipopSlew = 25.0f;
 	
 	
 	// need to save, no reset
