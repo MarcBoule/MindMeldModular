@@ -302,9 +302,9 @@ void MixerMaster::construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) 
 	params = _params;
 	inChain = &_inputs[CHAIN_INPUTS];
 	inVol = &_inputs[GRPM_MUTESOLO_INPUT];
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-	chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	chainGainSlewers[0].setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	chainGainSlewers[1].setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 }
 
 
@@ -430,8 +430,8 @@ void MixerGroup::construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 	paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 	groupName = _groupName;
 	taps = _taps;
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 }
 
 
@@ -553,9 +553,9 @@ void MixerTrack::construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 	taps = _taps;
 	groupTaps = _groupTaps;
 	insertOuts = _insertOuts;
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-	inGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
-	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	inGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	for (int i = 0; i < 2; i++) {
 		hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 		lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
@@ -776,8 +776,8 @@ void MixerAux::construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float*
 	flGroup = &_values12[auxNum + 8];
 	taps = _taps;
 	panLawStereoLocal = _panLawStereoLocal;
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
-	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 }
 
 

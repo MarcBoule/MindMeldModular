@@ -115,7 +115,7 @@ struct MixMaster : Module {
 			aux[i].construct(i, &gInfo, &inputs[0], values12, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
-		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlew, GlobalInfo::antipopSlew); // slew rate is in input-units per second 
+		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);

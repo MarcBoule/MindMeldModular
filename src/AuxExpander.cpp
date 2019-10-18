@@ -172,7 +172,7 @@ struct AuxExpander : Module {
 		directOutsAndStereoPanModes.cc1 = 0;
 		for (int i = 0; i < 5; i++) {
 			trackDispColsLocal[i].cc1 = 0;
-			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalInfo::antipopSlew), simd::float_4(GlobalInfo::antipopSlew)); // slew rate is in input-units per second (ex: V/s)
+			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalInfo::antipopSlewFast), simd::float_4(GlobalInfo::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 		}
 		for (int i = 0; i < 16; i++) {
 			trackSendVcaGains[i] = simd::float_4::zero();
