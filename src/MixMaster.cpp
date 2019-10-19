@@ -20,7 +20,7 @@ struct MixMaster : Module {
 
 	// Need to save, no reset
 	int panelTheme;
-	int expansion;
+	// int expansion;
 	
 	// Need to save, with reset
 	alignas(4) char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
@@ -119,7 +119,7 @@ struct MixMaster : Module {
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
-		expansion = 1;
+		// expansion = 1;
 		
 		// busId = messages->registerMember();
 	}
@@ -174,7 +174,7 @@ struct MixMaster : Module {
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 
 		// expansion
-		json_object_set_new(rootJ, "expansion", json_integer(expansion));
+		// json_object_set_new(rootJ, "expansion", json_integer(expansion));
 
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
@@ -205,9 +205,9 @@ struct MixMaster : Module {
 			panelTheme = json_integer_value(panelThemeJ);
 
 		// expansion
-		json_t *expansionJ = json_object_get(rootJ, "expansion");
-		if (expansionJ)
-			expansion = json_integer_value(expansionJ);
+		// json_t *expansionJ = json_object_get(rootJ, "expansion");
+		// if (expansionJ)
+			// expansion = json_integer_value(expansionJ);
 
 		// trackLabels
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
@@ -286,7 +286,7 @@ struct MixMaster : Module {
 				master.updateSlowValues();
 			}
 			
-			// EQ Expander message bus test
+			// Message bus test
 			// Message<Payload> *message = messages->receive("1");	
 			// if (message != NULL) {
 				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
@@ -677,7 +677,7 @@ struct MixMasterWidget : ModuleWidget {
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
-	int oldExpansion = -1;// for hiding 4HP cvs at left side of main panel
+	// int oldExpansion = -1;// for hiding 4HP cvs at left side of main panel
 	DynamicSVGPort* inspanderPorts[9];
 	time_t oldTime = 0;
 

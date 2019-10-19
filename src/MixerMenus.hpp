@@ -259,12 +259,12 @@ struct CloakedModeItem : MenuItem {
 	}
 };
 
-struct ExpansionItem : MenuItem {
-	int *expansionPtr;
-	void onAction(const event::Action &e) override {
-		*expansionPtr ^= 0x1;
-	}
-};
+// struct ExpansionItem : MenuItem {
+	// int *expansionPtr;
+	// void onAction(const event::Action &e) override {
+		// *expansionPtr ^= 0x1;
+	// }
+// };
 
 struct VuColorItem : MenuItem {
 	int8_t *srcColor;

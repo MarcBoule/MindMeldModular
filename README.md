@@ -53,9 +53,3 @@ Many labels contain separate menus, different from the module's menu, that can b
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
-
-## Blank panel
-
-(to be completed)
-
-![IM](res/img/Blank.jpg)
