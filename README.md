@@ -38,6 +38,7 @@ The MixMaster beams the following features into your Rack for your demanding mix
 * Inserts on every track and bus
 * Direct outs for every track and bus
 * Chain input
+* Flexible signal routing options
 * Dim and fold to mono on the Master
 * CV visualisation
 * CV control over just about everything...
