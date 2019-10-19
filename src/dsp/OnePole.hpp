@@ -9,7 +9,6 @@ struct OnePoleFilter {
 	float lowout = 0.0f;
 	
     void reset() {
-		b1 = 0.0f;
 		lowout = 0.0f;
 	}
 	

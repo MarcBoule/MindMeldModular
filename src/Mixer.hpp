@@ -1007,7 +1007,7 @@ struct MixerTrack {
 		
 		int insertPortIndex = trackNum >> 3;
 		
-		if (gInfo->filterPos == 1 || (gInfo->filterPos == 2 && filterPos == 1)) {
+		if (gInfo->filterPos == 1 || (gInfo->filterPos == 2 && filterPos == 1)) {// if filters post insert
 			// Insert outputs
 			insertOuts[0] = taps[0];
 			insertOuts[1] = stereo ? taps[1] : 0.0f;// don't send to R of insert outs when mono
