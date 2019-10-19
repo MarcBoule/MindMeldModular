@@ -1,6 +1,6 @@
 # MindMeld Modular
 
-Modules for [VCV Rack](https://vcvrack.com), available soon in the [plugin manager](https://vcvrack.com/plugins.html). 
+Modules for [VCV Rack](https://vcvrack.com), available soon in the [plugin manager](https://vcvrack.com/plugins.html). Preview builds are now available in the _Releases_ section in this repository.
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
