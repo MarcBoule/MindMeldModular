@@ -24,13 +24,6 @@
 			"name": "AuxSpander",
 			"description": "4-aux FX bus expander for MixMaster",
 			"tags": ["Mixer", "Expander"]
-		},
-		{
-			"slug": "EQ-Expander",
-			"name": "EQ-Expander",
-			"description": "EQ Expander for MixMaster",
-			"tags": ["Expander"],
-			"disabled": true
 		}
 	]
 }

@@ -6,8 +6,6 @@ Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Sp
 
 Version 1.1.1
 
-[//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   120% Zoom for jpgs)
-
 
 # Modules <a id="modules"></a>
 
@@ -44,7 +42,7 @@ The MixMaster beams the following features into your Rack for your demanding mix
 * CV visualisation
 * CV control over just about everything...
 
-Many labels contain separate menus, different from the module's menu, that can be accessed by right-clicking the labels.
+Many labels contain separate menus that are different from the module's main menu; these can be accessed by right-clicking the labels.
 
 
 ## AuxSpander <a id="auxspander"></a>

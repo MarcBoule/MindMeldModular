@@ -30,7 +30,6 @@ extern Plugin *pluginInstance;
 // All modules that are part of pluginInstance go here
 extern Model *modelMixMaster;
 extern Model *modelAuxExpander;
-extern Model *modelEqExpander;
 
 
 
