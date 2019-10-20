@@ -204,14 +204,14 @@ struct GlobalInfo {
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
 	int returnSoloBitMask;
-
 	float sampleTime;
+	float oldFaders[16 + 4];
 
 	// no need to save, no reset
+	Param *paMute;// all 20 solos are here (track and group)
 	Param *paSolo;// all 20 solos are here (track and group)
 	Param *paFade;// all 20 faders are here (track and group)
 	float *values12;
-	float oldFaders[16 + 4] = {-100.0f};
 	float maxTGFader;
 
 	
@@ -264,7 +264,7 @@ struct GlobalInfo {
 		if (slowGain != oldFaders[trgOrGrpNum]) {
 			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
 				float delta = slowGain - oldFaders[trgOrGrpNum];
-				for (int i = 0; i < 20; i++) {
+				for (int i = 0; i < 16 + 4; i++) {
 					if (isLinked(i) && i != trgOrGrpNum) {
 						float newValue = paFade[i].getValue() + delta;
 						newValue = clamp(newValue, 0.0f, maxTGFader);
@@ -277,6 +277,22 @@ struct GlobalInfo {
 		}
 	}
 
+
+	void fadeOtherLinkedTracks(int trkOrGrpNum, float newTarget) {
+		if ((linkBitMask == 0l) || !isLinked(trkOrGrpNum)) {
+			return;
+		}
+		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+			if (trkOrGrp != trkOrGrpNum && isLinked(trkOrGrp)) {
+				if (newTarget > 0.5f && paMute[trkOrGrp].getValue() > 0.5f) {
+					paMute[trkOrGrp].setValue(0.0f);
+				}
+				if (newTarget < 0.5f && paMute[trkOrGrp].getValue() < 0.5f) {
+					paMute[trkOrGrp].setValue(1.0f);
+				}
+			}
+		}		
+	}
 	
 	void construct(Param *_params, float* _values12);
 	void onReset();
@@ -934,10 +950,13 @@ struct MixerTrack {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (fadeRate >= minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
-				if (!gInfo->symmetricalFade && newTarget != target) {
-					fadeGainX = 0.0f;
+				if (newTarget != target) {
+					if (!gInfo->symmetricalFade) {
+						fadeGainX = 0.0f;
+					}
+					gInfo->fadeOtherLinkedTracks(trackNum, newTarget);
+					target = newTarget;
 				}
-				target = newTarget;
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);

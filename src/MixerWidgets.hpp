@@ -683,7 +683,7 @@ struct TrackDisplay : EditableDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem<MixerTrack> *linkFadItem = createMenuItem<LinkFaderItem<MixerTrack>>("Link fader", CHECKMARK(srcTrack->isLinked()));
+			LinkFaderItem<MixerTrack> *linkFadItem = createMenuItem<LinkFaderItem<MixerTrack>>("Link fader and fade", CHECKMARK(srcTrack->isLinked()));
 			linkFadItem->srcTrkGrp = srcTrack;
 			menu->addChild(linkFadItem);
 			
@@ -786,7 +786,7 @@ struct GroupDisplay : EditableDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Link fader", CHECKMARK(srcGroup->isLinked()));
+			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Link fader and fade", CHECKMARK(srcGroup->isLinked()));
 			linkFadItem->srcTrkGrp = srcGroup;
 			menu->addChild(linkFadItem);
 			

@@ -120,6 +120,7 @@ void TrackSettingsCpBuffer::reset() {
 //struct GlobalInfo
 	
 void GlobalInfo::construct(Param *_params, float* _values12) {
+	paMute = &_params[TRACK_MUTE_PARAMS];
 	paSolo = &_params[TRACK_SOLO_PARAMS];
 	paFade = &_params[TRACK_FADER_PARAMS];
 	values12 = _values12;
@@ -157,6 +158,9 @@ void GlobalInfo::resetNonJson() {
 	updateSoloBitMask();
 	updateReturnSoloBits();
 	sampleTime = APP->engine->getSampleTime();
+	for (int i = 0; i < 16 + 4; i++) {
+		oldFaders[i] = paFade->getValue();
+	}
 }
 
 
