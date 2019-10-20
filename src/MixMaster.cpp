@@ -859,7 +859,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
 				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
-				newFP->srcFadeRate = &(module->tracks[i].fadeRate);
+				newFP->srcFadeRate = module->tracks[i].fadeRate;
 				newFP->dispColorLocalPtr = &(module->tracks[i].dispColorLocal);
 				addChild(newFP);				
 			}
@@ -869,7 +869,7 @@ struct MixMasterWidget : ModuleWidget {
 			DynMuteFadeButtonWithClear* newMuteFade;
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				newMuteFade->type = &(module->tracks[i].fadeRate);
+				newMuteFade->type = module->tracks[i].fadeRate;
 				newMuteFade->muteParams = &module->params[TRACK_MUTE_PARAMS];
 			}
 			// Solos
@@ -948,7 +948,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
 				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
-				newFP->srcFadeRate = &(module->groups[i].fadeRate);
+				newFP->srcFadeRate = module->groups[i].fadeRate;
 				newFP->dispColorLocalPtr = &(module->groups[i].dispColorLocal);
 				addChild(newFP);				
 			}
@@ -957,7 +957,7 @@ struct MixMasterWidget : ModuleWidget {
 			DynMuteFadeButtonWithClear* newMuteFade;
 			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				newMuteFade->type = &(module->groups[i].fadeRate);
+				newMuteFade->type = module->groups[i].fadeRate;
 				newMuteFade->muteParams = &module->params[TRACK_MUTE_PARAMS];
 			}
 			// Solos

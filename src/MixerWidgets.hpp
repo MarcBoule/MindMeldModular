@@ -368,7 +368,6 @@ struct CvAndFadePointerBase : OpaqueWidget {
 	// box.size // inherited from OpaqueWidget, no need to declare
 	float faderMaxLinearGain;
 	int faderScalingExponent;
-	float minFadeRate;
 	
 	// local 
 	float maxTFader;
@@ -397,7 +396,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 			nvgStroke(args.vg);
 		}
 		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
-		if (srcFadeGain != NULL && *srcFadeRate >= minFadeRate && *srcFadeGain < 1.0f  && colorAndCloak->cc4[cloakedMode] == 0) {
+		if (srcFadeGain != NULL && *srcFadeRate >= GlobalInfo::minFadeRate && *srcFadeGain < 1.0f  && colorAndCloak->cc4[cloakedMode] == 0) {
 			float fadePosNormalized;
 			if (srcParamWithCV == NULL || *srcParamWithCV == -1.0f) {
 				fadePosNormalized = srcParam->getValue();
@@ -427,7 +426,6 @@ struct CvAndFadePointerTrack : CvAndFadePointerBase {
 		box.size = mm2px(math::Vec(2.24, 42));
 		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
-		minFadeRate = MixerTrack::minFadeRate;
 		prepareMaxFader();
 	}
 };
@@ -436,7 +434,6 @@ struct CvAndFadePointerGroup : CvAndFadePointerBase {
 		box.size = mm2px(math::Vec(2.24, 42));
 		faderMaxLinearGain = GlobalInfo::trkAndGrpFaderMaxLinearGain;
 		faderScalingExponent = GlobalInfo::trkAndGrpFaderScalingExponent;
-		minFadeRate = MixerGroup::minFadeRate;
 		prepareMaxFader();
 	}
 };
@@ -445,7 +442,6 @@ struct CvAndFadePointerMaster : CvAndFadePointerBase {
 		box.size = mm2px(math::Vec(2.24, 60));
 		faderMaxLinearGain = MixerMaster::masterFaderMaxLinearGain;
 		faderScalingExponent = MixerMaster::masterFaderScalingExponent;
-		minFadeRate = MixerMaster::minFadeRate;
 		prepareMaxFader();
 	}
 };
@@ -454,7 +450,6 @@ struct CvAndFadePointerAuxRet : CvAndFadePointerBase {
 		box.size = mm2px(math::Vec(2.24, 30));
 		faderMaxLinearGain = GlobalInfo::globalAuxReturnMaxLinearGain;
 		faderScalingExponent = GlobalInfo::globalAuxReturnScalingExponent;
-		// minFadeRate = 0.0f;// fade pointer not used in aux return faders
 		prepareMaxFader();
 	}
 };
@@ -596,7 +591,7 @@ struct MasterDisplay : EditableDisplayBase {
 			mastSetLabel->text = "Master settings: ";
 			menu->addChild(mastSetLabel);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate), MixerMaster::minFadeRate);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate));
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
@@ -675,7 +670,7 @@ struct TrackDisplay : EditableDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcTrack->fadeRate), MixerTrack::minFadeRate);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack->fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
@@ -778,7 +773,7 @@ struct GroupDisplay : EditableDisplayBase {
 			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
 			menu->addChild(grpSetLabel);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcGroup->fadeRate), MixerGroup::minFadeRate);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcGroup->fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
@@ -1114,7 +1109,7 @@ struct DynamicSVGSwitchDual : SvgSwitch {
 				}
 				frameAltNames.clear();
 			}
-			int typeOffset = (*type < MixerTrack::minFadeRate ? 0 : 2);
+			int typeOffset = (*type < GlobalInfo::minFadeRate ? 0 : 2);
 			frames[0]=framesAll[(*mode) * 4 + typeOffset + 0];
 			frames[1]=framesAll[(*mode) * 4 + typeOffset + 1];
 			oldMode = *mode;

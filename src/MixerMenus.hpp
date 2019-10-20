@@ -591,11 +591,9 @@ struct LPFCutoffSlider : ui::Slider {
 
 struct FadeRateQuantity : Quantity {
 	float *srcFadeRate = NULL;
-	float minFadeRate;
 	  
-	FadeRateQuantity(float *_srcFadeRate, float _minFadeRate) {
+	FadeRateQuantity(float *_srcFadeRate) {
 		srcFadeRate = _srcFadeRate;
-		minFadeRate = _minFadeRate;
 	}
 	void setValue(float value) override {
 		*srcFadeRate = math::clamp(value, getMinValue(), getMaxValue());
@@ -609,7 +607,7 @@ struct FadeRateQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut >= minFadeRate) {
+		if (valCut >= GlobalInfo::minFadeRate) {
 			return string::f("%.1f", valCut);
 		}
 		else {
@@ -619,7 +617,7 @@ struct FadeRateQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "Fade";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= minFadeRate) {
+		if (getDisplayValue() >= GlobalInfo::minFadeRate) {
 			return " s";
 		}
 		else {
@@ -628,8 +626,8 @@ struct FadeRateQuantity : Quantity {
 	}};
 
 struct FadeRateSlider : ui::Slider {
-	FadeRateSlider(float *_srcFadeRate, float _minFadeRate) {
-		quantity = new FadeRateQuantity(_srcFadeRate, _minFadeRate);
+	FadeRateSlider(float *_srcFadeRate) {
+		quantity = new FadeRateQuantity(_srcFadeRate);
 	}
 	~FadeRateSlider() {
 		delete quantity;

@@ -432,13 +432,14 @@ void MixerGroup::construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 	paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 	groupName = _groupName;
 	taps = _taps;
+	fadeRate = &(_gInfo->fadeRates[16 + groupNum]);
 	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 }
 
 
 void MixerGroup::onReset() {
-	fadeRate = 0.0f;
+	*fadeRate = 0.0f;
 	fadeProfile = 0.0f;
 	directOutsMode = 3;// post-solo should be default
 	auxSendsMode = 3;// post-solo should be default
@@ -470,7 +471,7 @@ void MixerGroup::resetNonJson() {
 
 void MixerGroup::dataToJson(json_t *rootJ) {
 	// fadeRate
-	json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
+	json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(*fadeRate));
 	
 	// fadeProfile
 	json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
@@ -496,7 +497,7 @@ void MixerGroup::dataFromJson(json_t *rootJ) {
 	// fadeRate
 	json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
 	if (fadeRateJ)
-		fadeRate = json_number_value(fadeRateJ);
+		*fadeRate = json_number_value(fadeRateJ);
 	
 	// fadeProfile
 	json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
@@ -555,6 +556,7 @@ void MixerTrack::construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 	taps = _taps;
 	groupTaps = _groupTaps;
 	insertOuts = _insertOuts;
+	fadeRate = &(_gInfo->fadeRates[trackNum]);
 	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 	inGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
@@ -567,7 +569,7 @@ void MixerTrack::construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 
 void MixerTrack::onReset() {
 	gainAdjust = 1.0f;
-	fadeRate = 0.0f;
+	*fadeRate = 0.0f;
 	fadeProfile = 0.0f;
 	setHPFCutoffFreq(13.0f);// off
 	setLPFCutoffFreq(20010.0f);// off
@@ -614,7 +616,7 @@ void MixerTrack::dataToJson(json_t *rootJ) {
 	json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 	
 	// fadeRate
-	json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(fadeRate));
+	json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(*fadeRate));
 
 	// fadeProfile
 	json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
@@ -654,7 +656,7 @@ void MixerTrack::dataFromJson(json_t *rootJ) {
 	// fadeRate
 	json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
 	if (fadeRateJ)
-		fadeRate = json_number_value(fadeRateJ);
+		*fadeRate = json_number_value(fadeRateJ);
 	
 	// fadeProfile
 	json_t *fadeProfileJ = json_object_get(rootJ, (ids + "fadeProfile").c_str());
@@ -708,7 +710,7 @@ void MixerTrack::dataFromJson(json_t *rootJ) {
 // level 1 read and write
 void MixerTrack::write(TrackSettingsCpBuffer *dest) {
 	dest->gainAdjust = gainAdjust;
-	dest->fadeRate = fadeRate;
+	dest->fadeRate = *fadeRate;
 	dest->fadeProfile = fadeProfile;
 	dest->hpfCutoffFreq = hpfCutoffFreq;
 	dest->lpfCutoffFreq = lpfCutoffFreq;	
@@ -720,7 +722,7 @@ void MixerTrack::write(TrackSettingsCpBuffer *dest) {
 }
 void MixerTrack::read(TrackSettingsCpBuffer *src) {
 	gainAdjust = src->gainAdjust;
-	fadeRate = src->fadeRate;
+	*fadeRate = src->fadeRate;
 	fadeProfile = src->fadeProfile;
 	setHPFCutoffFreq(src->hpfCutoffFreq);
 	setLPFCutoffFreq(src->lpfCutoffFreq);	

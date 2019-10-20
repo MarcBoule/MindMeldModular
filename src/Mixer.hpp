@@ -178,6 +178,7 @@ struct GlobalInfo {
 	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static constexpr float antipopSlewFast = 125.0f;// for mute/solo
 	static constexpr float antipopSlewSlow = 25.0f;// for pan/fader
+	static constexpr float minFadeRate = 0.1f;
 	
 	
 	// need to save, no reset
@@ -213,6 +214,7 @@ struct GlobalInfo {
 	Param *paFade;// all 20 faders are here (track and group)
 	float *values12;
 	float maxTGFader;
+	float fadeRates[16 + 4];// reset and json done in tracks and groups. fade rates for tracks and groups
 
 	
 	bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
@@ -277,13 +279,13 @@ struct GlobalInfo {
 		}
 	}
 
-
+	// linked fade
 	void fadeOtherLinkedTracks(int trkOrGrpNum, float newTarget) {
 		if ((linkBitMask == 0l) || !isLinked(trkOrGrpNum)) {
 			return;
 		}
 		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
-			if (trkOrGrp != trkOrGrpNum && isLinked(trkOrGrp)) {
+			if (trkOrGrp != trkOrGrpNum && isLinked(trkOrGrp) && fadeRates[trkOrGrp] >= minFadeRate) {
 				if (newTarget > 0.5f && paMute[trkOrGrp].getValue() > 0.5f) {
 					paMute[trkOrGrp].setValue(0.0f);
 				}
@@ -309,7 +311,6 @@ struct MixerMaster {
 	// Constants
 	static const int masterFaderScalingExponent = 3; 
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
-	static constexpr float minFadeRate = 0.1f;
 	
 	// need to save, no reset
 	// none
@@ -430,7 +431,7 @@ struct MixerMaster {
 		
 		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (fadeRate >= minFadeRate) {// if we are in fade mode
+			if (fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
 				if (!gInfo->symmetricalFade && newTarget != target) {
 					fadeGainX = 0.0f;
@@ -542,13 +543,13 @@ struct MixerMaster {
 
 struct MixerGroup {
 	// Constants
-	static constexpr float minFadeRate = 0.1f;
+	// none
 	
 	// need to save, no reset
 	// none
 	
 	// need to save, with reset
-	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	int8_t directOutsMode;// when per track
 	int8_t auxSendsMode;// when per track
@@ -633,14 +634,14 @@ struct MixerGroup {
 
 		if (eco) {	
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (fadeRate >= minFadeRate) {// if we are in fade mode
+			if (*fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
 				if (!gInfo->symmetricalFade && newTarget != target) {
 					fadeGainX = 0.0f;
 				}
 				target = newTarget;
 				if (fadeGain != target) {
-					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
+					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 				}
@@ -767,7 +768,6 @@ struct MixerTrack {
 	// Constants
 	static constexpr float minHPFCutoffFreq = 20.0f;
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
-	static constexpr float minFadeRate = 0.1f;
 	static constexpr float hpfBiquadQ = 1.0f;// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
 	
 	// need to save, no reset
@@ -775,7 +775,7 @@ struct MixerTrack {
 	
 	// need to save, with reset
 	float gainAdjust;// this is a gain here (not dB)
-	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
 	private:
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
@@ -948,7 +948,7 @@ struct MixerTrack {
 	void process(float *mix, bool eco) {// track		
 		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (fadeRate >= minFadeRate) {// if we are in fade mode
+			if (*fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
 				if (newTarget != target) {
 					if (!gInfo->symmetricalFade) {
@@ -958,7 +958,7 @@ struct MixerTrack {
 					target = newTarget;
 				}
 				if (fadeGain != target) {
-					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
+					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
 				}
