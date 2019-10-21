@@ -147,6 +147,9 @@ void GlobalInfo::onReset() {
 	symmetricalFade = false;
 	fadeCvOutsWithVolCv = false;
 	linkBitMask = 0;
+	for (int i = 0; i < 16 + 4; i++) {
+		paFade[i].setValue(1.0f);// this is needed since asynchronous onReset will reset the faders before any of the plugin's reset code executes, so faders continue to be link processed, and so they will not all necessarily be at proper levels.
+	}
 	filterPos = 1;// default is post-insert
 	groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 	ecoMode = 0xFFFF;// all 1's means yes, 0 means no

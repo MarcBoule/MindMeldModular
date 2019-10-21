@@ -636,10 +636,13 @@ struct MixerGroup {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (*fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
 				float newTarget = calcFadeGain();
-				if (!gInfo->symmetricalFade && newTarget != target) {
-					fadeGainX = 0.0f;
+				if (newTarget != target) {
+					if (!gInfo->symmetricalFade) {
+						fadeGainX = 0.0f;
+					}
+					gInfo->fadeOtherLinkedTracks(groupNum + 16, newTarget);
+					target = newTarget;
 				}
-				target = newTarget;
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
