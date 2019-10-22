@@ -201,11 +201,13 @@ struct GlobalInfo {
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
+	float linkedFaderReloadValues[16 + 4];
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
 	int returnSoloBitMask;
 	float sampleTime;
+	bool requestLinkedFaderReload;
 	float oldFaders[16 + 4];
 
 	// no need to save, no reset
@@ -294,6 +296,17 @@ struct GlobalInfo {
 				}
 			}
 		}		
+	}
+	
+	
+	void process() {// GlobalInfo
+		if (requestLinkedFaderReload) {
+			for (int i = 0; i < 16 + 4; i++) {
+				oldFaders[i] = linkedFaderReloadValues[i];
+				paFade[i].setValue(linkedFaderReloadValues[i]);
+			}
+			requestLinkedFaderReload = false;
+		}
 	}
 	
 	void construct(Param *_params, float* _values12);

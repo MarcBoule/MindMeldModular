@@ -147,12 +147,12 @@ void GlobalInfo::onReset() {
 	symmetricalFade = false;
 	fadeCvOutsWithVolCv = false;
 	linkBitMask = 0;
-	for (int i = 0; i < 16 + 4; i++) {
-		paFade[i].setValue(1.0f);// this is needed since asynchronous onReset will reset the faders before any of the plugin's reset code executes, so faders continue to be link processed, and so they will not all necessarily be at proper levels.
-	}
 	filterPos = 1;// default is post-insert
 	groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 	ecoMode = 0xFFFF;// all 1's means yes, 0 means no
+	for (int i = 0; i < 16 + 4; i++) {
+		linkedFaderReloadValues[i] = 1.0f;
+	}
 	resetNonJson();
 }
 
@@ -161,9 +161,8 @@ void GlobalInfo::resetNonJson() {
 	updateSoloBitMask();
 	updateReturnSoloBits();
 	sampleTime = APP->engine->getSampleTime();
-	for (int i = 0; i < 16 + 4; i++) {
-		oldFaders[i] = paFade->getValue();
-	}
+	requestLinkedFaderReload = true;// whether comming from onReset() or dataFromJson(), we need a synchronous fader reload of linked faders, and at this point we assume that the linkedFaderReloadValues[] have been setup.
+	// oldFaders[] not done here since done synchronously by "requestLinkedFaderReload = true" above
 }
 
 
@@ -214,6 +213,13 @@ void GlobalInfo::dataToJson(json_t *rootJ) {
 
 	// ecoMode
 	json_object_set_new(rootJ, "ecoMode", json_integer(ecoMode));
+	
+	// faders (extra copy for linkedFaderReloadValues that will be populated in dataFromJson())
+	json_t *fadersJ = json_array();
+	for (int i = 0; i < 16 + 4; i++) {
+		json_array_insert_new(fadersJ, i, json_real(paFade[TRACK_FADER_PARAMS + i].getValue()));
+	}
+	json_object_set_new(rootJ, "faders", fadersJ);		
 }
 
 
@@ -294,6 +300,16 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 	json_t *ecoModeJ = json_object_get(rootJ, "ecoMode");
 	if (ecoModeJ)
 		ecoMode = json_integer_value(ecoModeJ);
+	
+	// faders (populate linkedFaderReloadValues)
+	json_t *fadersJ = json_object_get(rootJ, "faders");
+	if (fadersJ) {
+		for (int i = 0; i < 16 + 4; i++) {
+			json_t *fadersArrayJ = json_array_get(fadersJ, i);
+			if (fadersArrayJ)
+				linkedFaderReloadValues[i] = json_number_value(fadersArrayJ);
+		}
+	}
 	
 	// extern must call resetNonJson()
 }

@@ -178,7 +178,7 @@ struct MixMaster : Module {
 
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
-
+		
 		// gInfo
 		gInfo.dataToJson(rootJ);
 
@@ -312,6 +312,9 @@ struct MixMaster : Module {
 		for (int i = 0; i < 8; i++) {
 			groupTaps[i] = 0.0f;
 		}
+		
+		// GlobalInfo
+		gInfo.process();
 		
 		// Tracks
 		for (int trk = 0; trk < 16; trk++) {
