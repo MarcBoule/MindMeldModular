@@ -246,6 +246,7 @@ struct MixMaster : Module {
 		
 		auxExpanderPresent = (rightExpander.module && rightExpander.module->model == modelAuxExpander);
 		
+		
 		//********** Inputs **********
 		
 		// From Aux-Expander
@@ -1062,8 +1063,13 @@ struct MixMasterWidget : ModuleWidget {
 					// Fader
 					snprintf(strBuf, 32, "%s: level", trackLabel.c_str());
 					moduleM->paramQuantities[TRACK_FADER_PARAMS + i]->label = strBuf;
-					// Mute
-					snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
+					// Mute/fade
+					if (moduleM->tracks[i].isFadeMode()) {
+						snprintf(strBuf, 32, "%s: fade", trackLabel.c_str());
+					}
+					else {
+						snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
+					}
 					moduleM->paramQuantities[TRACK_MUTE_PARAMS + i]->label = strBuf;
 					// Solo
 					snprintf(strBuf, 32, "%s: solo", trackLabel.c_str());
@@ -1081,8 +1087,13 @@ struct MixMasterWidget : ModuleWidget {
 					// Fader
 					snprintf(strBuf, 32, "%s: level", groupLabel.c_str());
 					moduleM->paramQuantities[GROUP_FADER_PARAMS + i]->label = strBuf;
-					// Mute
-					snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
+					// Mute/fade
+					if (moduleM->groups[i].isFadeMode()) {
+						snprintf(strBuf, 32, "%s: fade", groupLabel.c_str());
+					}
+					else {
+						snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
+					}
 					moduleM->paramQuantities[GROUP_MUTE_PARAMS + i]->label = strBuf;
 					// Solo
 					snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
@@ -1092,8 +1103,13 @@ struct MixMasterWidget : ModuleWidget {
 				// Fader
 				snprintf(strBuf, 32, "%s: level", masterLabel.c_str());
 				moduleM->paramQuantities[MAIN_FADER_PARAM]->label = strBuf;
-				// Mute
-				snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
+				// Mute/fade
+				if (moduleM->master.isFadeMode()) {
+					snprintf(strBuf, 32, "%s: fade", masterLabel.c_str());
+				}
+				else {
+					snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
+				}
 				moduleM->paramQuantities[MAIN_MUTE_PARAM]->label = strBuf;
 				// Dim
 				snprintf(strBuf, 32, "%s: dim", masterLabel.c_str());

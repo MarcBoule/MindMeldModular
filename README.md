@@ -52,3 +52,8 @@ Many labels contain separate menus that are different from the module's main men
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
+
+# Videos <a id="auxspander"></a>
+
+* Eurikon (Latif), [MindMeld Modular - Mixmaster for VCV Rack](https://www.youtube.com/watch?v=8g_BwxgEuSw)
+* Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)

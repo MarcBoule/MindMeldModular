@@ -262,10 +262,10 @@ struct GlobalInfo {
 	}
 		
 	// linked faders
-	void processLinked(int trgOrGrpNum, float slowGain) {
-		if (slowGain != oldFaders[trgOrGrpNum]) {
+	void processLinked(int trgOrGrpNum, float newFader) {
+		if (newFader != oldFaders[trgOrGrpNum]) {
 			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
-				float delta = slowGain - oldFaders[trgOrGrpNum];
+				float delta = newFader - oldFaders[trgOrGrpNum];
 				for (int i = 0; i < 16 + 4; i++) {
 					if (isLinked(i) && i != trgOrGrpNum) {
 						float newValue = paFade[i].getValue() + delta;
@@ -275,7 +275,7 @@ struct GlobalInfo {
 					}
 				}
 			}
-			oldFaders[trgOrGrpNum] = slowGain;
+			oldFaders[trgOrGrpNum] = newFader;
 		}
 	}
 
@@ -350,7 +350,7 @@ struct MixerMaster {
 	Input *inVol;
 
 	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
-
+	bool isFadeMode() {return fadeRate >= GlobalInfo::minFadeRate;}
 
 	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs);
 	void onReset();
@@ -431,7 +431,7 @@ struct MixerMaster {
 		
 		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
+			if (isFadeMode()) {
 				float newTarget = calcFadeGain();
 				if (!gInfo->symmetricalFade && newTarget != target) {
 					fadeGainX = 0.0f;
@@ -592,7 +592,7 @@ struct MixerGroup {
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
-
+	bool isFadeMode() {return *fadeRate >= GlobalInfo::minFadeRate;}
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps);
 	void onReset();
@@ -634,7 +634,7 @@ struct MixerGroup {
 
 		if (eco) {	
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (*fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
+			if (isFadeMode()) {
 				float newTarget = calcFadeGain();
 				if (newTarget != target) {
 					if (!gInfo->symmetricalFade) {
@@ -843,6 +843,7 @@ struct MixerTrack {
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	bool isLinked() {return gInfo->isLinked(trackNum);}
 	void toggleLinked() {gInfo->toggleLinked(trackNum);}
+	bool isFadeMode() {return *fadeRate >= GlobalInfo::minFadeRate;}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts);
@@ -951,7 +952,7 @@ struct MixerTrack {
 	void process(float *mix, bool eco) {// track		
 		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (*fadeRate >= GlobalInfo::minFadeRate) {// if we are in fade mode
+			if (isFadeMode()) {
 				float newTarget = calcFadeGain();
 				if (newTarget != target) {
 					if (!gInfo->symmetricalFade) {
