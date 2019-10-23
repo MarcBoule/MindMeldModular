@@ -623,6 +623,7 @@ void MixerTrack::resetNonJson() {
 	fadeGain = calcFadeGain();
 	fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 	fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+	fadeGainScaledWithSolo = fadeGainScaled;
 	paramWithCV = -1.0f;
 	panWithCV = -1.0f;
 	volCv = 1.0f;

@@ -462,10 +462,10 @@ struct MixerMaster {
 				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}	
 			// dim (this affects fadeGainScaled only, so treated like a partial mute, but no effect on fade pointers or other just effect on sound
-			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
-				fadeGainScaled *= dimGainIntegerDB;
-			}
 			chainGainsAndMute[2] = fadeGainScaled;
+			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+				chainGainsAndMute[2] *= dimGainIntegerDB;
+			}
 			
 			// calc ** fader, paramWithCV **
 			float fader = params[MAIN_FADER_PARAM].getValue();
@@ -826,6 +826,7 @@ struct MixerTrack {
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float fadeGainScaled;
+	float fadeGainScaledWithSolo;
 	float paramWithCV;
 	float panWithCV;
 	float volCv;
@@ -985,7 +986,7 @@ struct MixerTrack {
 				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}
-			fadeGainScaled *= calcSoloGain();
+			fadeGainScaledWithSolo = fadeGainScaled * calcSoloGain();
 
 			// calc ** fader, paramWithCV, volCv **
 			fader = paFade->getValue();
@@ -1199,8 +1200,8 @@ struct MixerTrack {
 		// Tap[96],[97]: post-mute-solo
 		
 		// Calc muteSoloGainSlewed
-		if (fadeGainScaled != muteSoloGainSlewer.out) {
-			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaled);
+		if (fadeGainScaledWithSolo != muteSoloGainSlewer.out) {
+			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaledWithSolo);
 		}
 
 		taps[96] = taps[64] * muteSoloGainSlewer.out;
