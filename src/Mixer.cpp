@@ -310,6 +310,11 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 				linkedFaderReloadValues[i] = json_number_value(fadersArrayJ);
 		}
 	}
+	else {// legacy
+		for (int i = 0; i < 16 + 4; i++) {
+			linkedFaderReloadValues[i] = paFade[i].getValue();
+		}
+	}
 	
 	// extern must call resetNonJson()
 }
