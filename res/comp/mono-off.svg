@@ -42,10 +42,10 @@
      inkscape:document-units="mm"
      units="mm"
      inkscape:zoom="10.530164"
-     inkscape:cx="13.675"
+     inkscape:cx="18.113971"
      inkscape:cy="7.085"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
+     inkscape:window-x="356"
+     inkscape:window-y="43"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg20" />
   <defs
@@ -55,44 +55,31 @@
   </defs>
   <title
      id="title6">Asset 1</title>
-  <g
-     id="Layer_2"
-     data-name="Layer 2"
-     transform="matrix(1.3335444,0,0,1.3335444,0,-0.002021)">
-    <g
-       id="Mute_Solo"
-       data-name="Mute/Solo">
-      <rect
-         class="cls-1"
-         x="0.25"
-         y="0.25"
-         width="26.85"
-         height="13.67"
-         rx="1.34"
-         id="rect8"
-         style="fill:#606060" />
-      <path
-         d="m 25.76,0.5 a 1.09,1.09 0 0 1 1.09,1.09 v 11 a 1.09,1.09 0 0 1 -1.09,1.09 H 1.59 A 1.09,1.09 0 0 1 0.5,12.58 v -11 A 1.09,1.09 0 0 1 1.59,0.5 h 24.17 m 0,-0.5 H 1.59 A 1.6,1.6 0 0 0 0,1.59 v 11 a 1.59,1.59 0 0 0 1.59,1.59 h 24.17 a 1.59,1.59 0 0 0 1.59,-1.59 v -11 A 1.59,1.59 0 0 0 25.76,0 Z"
-         id="path10"
-         inkscape:connector-curvature="0" />
-      <path
-         class="cls-2"
-         d="M 10.63,4.54 V 9.65 H 9.79 V 6 L 8.24,8.58 H 8.14 L 6.58,6 V 9.65 H 5.74 V 4.54 H 6.65 L 8.19,7.1 9.73,4.54 Z"
-         id="path12"
-         inkscape:connector-curvature="0"
-         style="fill:#ffffff" />
-      <path
-         class="cls-2"
-         d="M 14.13,9.75 A 2.57,2.57 0 0 1 12.25,9 2.6,2.6 0 0 1 11.48,7.12 2.65,2.65 0 0 1 16,5.22 2.54,2.54 0 0 1 16.78,7.1 2.65,2.65 0 0 1 14.13,9.75 Z m 0,-0.82 A 1.75,1.75 0 0 0 15.41,8.41 1.79,1.79 0 0 0 15.94,7.1 1.76,1.76 0 0 0 15.41,5.79 1.71,1.71 0 0 0 14.13,5.27 1.75,1.75 0 0 0 12.84,5.79 1.79,1.79 0 0 0 12.32,7.1 a 1.82,1.82 0 0 0 0.52,1.31 1.79,1.79 0 0 0 1.29,0.52 z"
-         id="path14"
-         inkscape:connector-curvature="0"
-         style="fill:#ffffff" />
-      <path
-         class="cls-2"
-         d="m 20.69,4.54 h 0.84 V 9.65 H 20.87 L 18.47,6.19 V 9.65 H 17.63 V 4.54 h 0.65 L 20.69,8 Z"
-         id="path16"
-         inkscape:connector-curvature="0"
-         style="fill:#ffffff" />
-    </g>
-  </g>
+  <rect
+     class="cls-1"
+     x="0.33338609"
+     y="0.33548796"
+     width="35.805668"
+     height="18.229551"
+     rx="1.7869495"
+     id="rect8"
+     style="fill:#606060;stroke:#000000;stroke-width:0.66519684;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     class="cls-2"
+     d="M 14.175577,6.0522706 V 12.866682 H 13.0554 V 7.9992454 L 10.988406,11.43979 H 10.855051 L 8.7747222,7.9992454 V 12.866682 H 7.6545449 V 6.0522706 h 1.2135254 l 2.0536587,3.4138736 2.053658,-3.4138736 z"
+     id="path12"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;stroke-width:1.33354437" />
+  <path
+     class="cls-2"
+     d="M 18.842982,13.000037 A 3.4272091,3.4272091 0 0 1 16.335919,11.999879 3.4672154,3.4672154 0 0 1 15.30909,9.4928151 3.5338927,3.5338927 0 0 1 21.33671,6.9590808 3.3872028,3.3872028 0 0 1 22.376875,9.4661442 3.5338927,3.5338927 0 0 1 18.842982,13.000037 Z m 0,-1.093507 A 2.3337027,2.3337027 0 0 0 20.549919,11.213087 2.3870445,2.3870445 0 0 0 21.256698,9.4661442 2.3470381,2.3470381 0 0 0 20.549919,7.7192011 2.2803609,2.2803609 0 0 0 18.842982,7.025758 2.3337027,2.3337027 0 0 0 17.12271,7.7192011 2.3870445,2.3870445 0 0 0 16.429267,9.4661442 2.4270508,2.4270508 0 0 0 17.12271,11.213087 2.3870445,2.3870445 0 0 0 18.842982,11.90653 Z"
+     id="path14"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;stroke-width:1.33354437" />
+  <path
+     class="cls-2"
+     d="m 27.591034,6.0522706 h 1.120177 V 12.866682 H 27.831072 L 24.630565,8.2526188 V 12.866682 H 23.510388 V 6.0522706 h 0.866804 l 3.213842,4.6140634 z"
+     id="path16"
+     inkscape:connector-curvature="0"
+     style="fill:#ffffff;stroke-width:1.33354437" />
 </svg>

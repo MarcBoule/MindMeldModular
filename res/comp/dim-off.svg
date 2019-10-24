@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Generator: Adobe Illustrator 23.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -9,21 +7,26 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   version="1.0"
-   x="0px"
-   y="0px"
+   viewBox="0 0 36.472439 18.897638"
+   version="1.1"
+   id="svg20"
+   sodipodi:docname="dim-off.svg"
    width="9.6499996mm"
    height="5mm"
-   viewBox="0 0 36.47244 18.897639"
-   enable-background="new 0 0 27.4 14.2"
-   xml:space="preserve"
-   id="svg48"
-   sodipodi:docname="dim-off.svg"
-   inkscape:version="0.92.2 5c3e80d, 2017-08-06"><metadata
-     id="metadata54"><rdf:RDF><cc:Work
-         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
-     id="defs52" /><sodipodi:namedview
+   inkscape:version="0.92.2 5c3e80d, 2017-08-06">
+  <metadata
+     id="metadata24">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>polyAsset 1</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
      borderopacity="1"
@@ -32,56 +35,54 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1892"
-     inkscape:window-height="1022"
-     id="namedview50"
+     inkscape:window-width="1737"
+     inkscape:window-height="1025"
+     id="namedview22"
      showgrid="false"
      inkscape:document-units="mm"
      units="mm"
-     inkscape:zoom="10.510949"
-     inkscape:cx="13.7"
-     inkscape:cy="7.0999999"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
+     inkscape:zoom="10.530164"
+     inkscape:cx="-3.4187509"
+     inkscape:cy="7.085"
+     inkscape:window-x="179"
+     inkscape:window-y="64"
      inkscape:window-maximized="0"
-     inkscape:current-layer="svg48" /><g
-     id="Layer_1"
-     transform="translate(0,4.6976389)" /><g
-     id="Mute_x2F_Solo"
-     transform="matrix(1.331111,0,0,1.331111,0,-0.0041369)"><g
-       id="g7"><path
-         d="M 1.6,13.9 C 0.9,13.9 0.3,13.3 0.3,12.6 V 1.6 C 0.3,0.9 0.9,0.3 1.6,0.3 h 24.2 c 0.7,0 1.3,0.6 1.3,1.3 v 11 c 0,0.7 -0.6,1.3 -1.3,1.3 z"
-         id="path3"
-         inkscape:connector-curvature="0"
-         style="fill:#606060" /><path
-         d="m 25.8,0.5 c 0.6,0 1.1,0.5 1.1,1.1 v 11 c 0,0.6 -0.5,1.1 -1.1,1.1 H 1.6 C 1,13.7 0.5,13.2 0.5,12.6 V 1.6 C 0.5,1 1,0.5 1.6,0.5 H 25.8 M 25.8,0 H 1.6 C 0.7,0 0,0.7 0,1.6 v 11 c 0,0.9 0.7,1.6 1.6,1.6 h 24.2 c 0.9,0 1.6,-0.7 1.6,-1.6 V 1.6 C 27.4,0.7 26.6,0 25.8,0 Z"
-         id="path5"
-         inkscape:connector-curvature="0" /></g><g
-       id="g15"><path
-         d="m 9.6,4.5 c 0.7,0 1.3,0.2 1.7,0.7 0.5,0.6 0.7,1.2 0.7,1.9 0,0.7 -0.2,1.3 -0.7,1.8 -0.5,0.5 -1,0.7 -1.7,0.7 h -2 V 4.5 Z m 0,4.3 c 0.5,0 0.9,-0.2 1.2,-0.5 C 11.1,8 11.3,7.5 11.3,7 11.3,6.5 11.1,6.1 10.8,5.7 10.5,5.4 10.1,5.2 9.6,5.2 H 8.4 v 3.5 h 1.2 z"
-         id="path9"
-         inkscape:connector-curvature="0"
-         style="fill:#ffffff" /><path
-         d="m 12.9,4.5 h 0.8 v 5.1 h -0.8 z"
-         id="path11"
-         inkscape:connector-curvature="0"
-         style="fill:#ffffff" /><path
-         d="M 19.7,4.5 V 9.6 H 18.9 V 6 L 17.3,8.6 H 17.2 L 15.7,6 V 9.6 H 14.9 V 4.5 h 0.9 l 1.5,2.6 1.5,-2.6 z"
-         id="path13"
-         inkscape:connector-curvature="0"
-         style="fill:#ffffff" /></g><g
-       id="g17" /><g
-       id="g19" /><g
-       id="g21" /><g
-       id="g23" /><g
-       id="g25" /><g
-       id="g27" /><g
-       id="g29" /><g
-       id="g31" /><g
-       id="g33" /><g
-       id="g35" /><g
-       id="g37" /><g
-       id="g39" /><g
-       id="g41" /><g
-       id="g43" /><g
-       id="g45" /></g></svg>
+     inkscape:current-layer="svg20" />
+  <defs
+     id="defs4">
+    <style
+       id="style2">.cls-1{fill:#723a93;}.cls-2{fill:#fff;}</style>
+  </defs>
+  <title
+     id="title6">polyAsset 1</title>
+  <g
+     id="g821">
+    <rect
+       style="fill:#606060;stroke:#000000;stroke-width:0.66545403;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1"
+       id="rect8"
+       rx="1.7869366"
+       height="18.232183"
+       width="35.805412"
+       y="0.33272702"
+       x="0.33351469"
+       class="cls-1" />
+    <path
+       style="fill:#ffffff;stroke-width:1.33312035"
+       inkscape:connector-curvature="0"
+       id="path12"
+       d="m 12.775355,6.0504421 a 3.0538167,3.051875 0 0 1 2.320368,0.9861954 3.3738673,3.3717221 0 0 1 0.90681,2.4255077 3.3605319,3.3583952 0 0 1 -0.933481,2.4121808 3.0538167,3.051875 0 0 1 -2.320368,0.986195 H 10.081596 V 6.0504421 Z m 0,5.7439219 A 2.013652,2.0123717 0 0 0 14.335602,11.128016 2.3470381,2.3455458 0 0 0 14.949033,9.4621452 2.3470381,2.3455458 0 0 0 14.335602,7.7829476 2.0003166,1.9990448 0 0 0 12.775355,7.1299263 h -1.560247 v 4.6644377 z"
+       class="cls-2" />
+    <path
+       style="fill:#ffffff;stroke-width:1.33312035"
+       inkscape:connector-curvature="0"
+       id="path14"
+       d="m 17.162716,6.0504421 h 1.120178 v 6.8100789 h -1.120178 z"
+       class="cls-2" />
+    <path
+       style="fill:#ffffff;stroke-width:1.33312035"
+       inkscape:connector-curvature="0"
+       id="path16"
+       d="M 26.270825,6.0504421 V 12.860521 H 25.150647 V 7.996179 l -2.066993,3.438357 h -0.14669 L 20.86997,7.996179 v 4.864342 H 19.749793 V 6.0504421 h 1.213525 l 2.053658,3.4117031 2.053659,-3.4117031 z"
+       class="cls-2" />
+  </g>
+</svg>
