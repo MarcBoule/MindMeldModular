@@ -134,6 +134,8 @@ struct TrackSettingsCpBuffer {
 	int8_t auxSendsMode;
 	int8_t panLawStereo;
 	int8_t vuColorThemeLocal;
+	int8_t filterPos;
+	int8_t dispColorLocal;
 	bool linkedFader;
 
 	// second level of copy paste (for track re-ordering)
