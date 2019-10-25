@@ -99,6 +99,8 @@ void TrackSettingsCpBuffer::reset() {
 	auxSendsMode = 3;
 	panLawStereo = 1;
 	vuColorThemeLocal = 0;
+	filterPos = 1;// default is post-insert
+	dispColorLocal = 0;
 	linkedFader = false;
 	
 	// second level
@@ -743,6 +745,8 @@ void MixerTrack::write(TrackSettingsCpBuffer *dest) {
 	dest->auxSendsMode = auxSendsMode;
 	dest->panLawStereo = panLawStereo;
 	dest->vuColorThemeLocal = vuColorThemeLocal;
+	dest->filterPos = filterPos;
+	dest->dispColorLocal = dispColorLocal;
 	dest->linkedFader = gInfo->isLinked(trackNum);
 }
 void MixerTrack::read(TrackSettingsCpBuffer *src) {
@@ -755,6 +759,8 @@ void MixerTrack::read(TrackSettingsCpBuffer *src) {
 	auxSendsMode = src->auxSendsMode;
 	panLawStereo = src->panLawStereo;
 	vuColorThemeLocal = src->vuColorThemeLocal;
+	filterPos = src->filterPos;
+	dispColorLocal = src->dispColorLocal;
 	gInfo->setLinked(trackNum, src->linkedFader);
 }
 
