@@ -48,7 +48,7 @@ Many labels contain separate menus that are different from the module's main men
 
 ## AuxSpander <a id="auxspander"></a>
 
-![IM](res/img/Auxspander.jpg)
+![IM](res/img/Auxspander.png)
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
