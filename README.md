@@ -6,6 +6,7 @@ Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Sp
 
 Version 1.1.2
 
+[//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
 # Modules <a id="modules"></a>
 
@@ -18,7 +19,7 @@ The following modules are part of the MindMeld module pack.
 
 ## MixMaster <a id="mixmaster"></a>
 
-![IM](res/img/MixMaster.jpg)
+![IM](res/img/MixMaster.png)
 
 The MixMaster beams the following features into your Rack for your demanding mixing needs:
 
