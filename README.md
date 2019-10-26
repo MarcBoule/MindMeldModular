@@ -4,16 +4,16 @@ Modules for [VCV Rack](https://vcvrack.com), available soon in the [plugin manag
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 1.1.1
+Version 1.1.2
 
 
 # Modules <a id="modules"></a>
 
 The following modules are part of the MindMeld module pack.
 
-* [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses. Manual: (coming soon)
+* [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses, [user manual](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf).
 
-* [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster. Manual: (see MixMaster manual)
+* [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster, see MixMaster manual above.
 
 
 ## MixMaster <a id="mixmaster"></a>
