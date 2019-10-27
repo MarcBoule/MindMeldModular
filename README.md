@@ -56,12 +56,13 @@ Many labels contain separate menus that are different from the module's main men
 
 # Videos <a id="auxspander"></a>
 
-### Featured videos:
-
+### Promo
 * Eurikon (Latif Karoumi), [MindMeld Modular - Mixmaster for VCV Rack](https://www.youtube.com/watch?v=8g_BwxgEuSw)
-* Omri Cohem, [MixMaster from MindMeld](https://www.youtube.com/watch?v=YcTPaG6N6nI)
 * Eurikon (Latif Karoumi), [MindMeld Modular - Mixmaster for VCV Rack : Go On (Eurikon Remix) - ShAi Dawn](https://www.youtube.com/watch?v=U_Wx2Jxx6Yg)
 
-### Other videos:
+### Tutorials
+* Omri Cohem, [MixMaster from MindMeld](https://www.youtube.com/watch?v=YcTPaG6N6nI)
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
+
+### In the wild
 * Wouter Spekkink, [Street lights](https://www.youtube.com/watch?v=QpDp3RGGcBg)
