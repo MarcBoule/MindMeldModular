@@ -64,5 +64,4 @@ Many labels contain separate menus that are different from the module's main men
 
 ### Other videos:
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
-
 * Wouter Spekkink, [Street lights](https://www.youtube.com/watch?v=QpDp3RGGcBg)
