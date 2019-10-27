@@ -60,6 +60,7 @@ struct AuxExpander : Module {
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
 	int8_t dispColorAuxLocal[4];
 	AuxspanderAux aux[4];
+	float panCvLevels[4];// 0 to 1.0f
 
 	// No need to save, with reset
 	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -198,6 +199,7 @@ struct AuxExpander : Module {
 			panLawStereoLocal.cc4[i] = 1;
 			dispColorAuxLocal[i] = 0;	
 			aux[i].onReset();
+			panCvLevels[i] = 1.0f;
 		}
 		resetNonJson(false);
 	}
@@ -256,6 +258,12 @@ struct AuxExpander : Module {
 			aux[i].dataToJson(rootJ);
 		}
 
+		// panCvLevels
+		json_t *panCvLevelsJ = json_array();
+		for (int c = 0; c < 4; c++)
+			json_array_insert_new(panCvLevelsJ, c, json_real(panCvLevels[c]));
+		json_object_set_new(rootJ, "panCvLevels", panCvLevelsJ);
+		
 		return rootJ;
 	}
 
@@ -301,6 +309,17 @@ struct AuxExpander : Module {
 		// aux
 		for (int i = 0; i < 4; i++) {
 			aux[i].dataFromJson(rootJ);
+		}
+
+		// panCvLevels
+		json_t *panCvLevelsJ = json_object_get(rootJ, "panCvLevels");
+		if (panCvLevelsJ) {
+			for (int c = 0; c < 4; c++)
+			{
+				json_t *panCvLevelsArrayJ = json_array_get(panCvLevelsJ, c);
+				if (panCvLevelsArrayJ)
+					panCvLevels[c] = json_real_value(panCvLevelsArrayJ);
+			}
 		}
 
 		resetNonJson(true);
@@ -483,7 +502,7 @@ struct AuxExpander : Module {
 				float val = params[GLOBAL_AUXPAN_PARAMS + i].getValue();
 				// cv for pan
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
-					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f;// Pan CV is a -5V to +5V input
+					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f * panCvLevels[i];// Pan CV is a -5V to +5V input
 					val = clamp(val, 0.0f, 1.0f);
 					globalRetPansWithCV[i] = val;
 				}
@@ -639,6 +658,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
 				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
+				auxDisplays[i]->srcPanCvLevel = &(module->panCvLevels[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
 				auxDisplays[i]->auxNumber = i;
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);

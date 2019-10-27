@@ -101,6 +101,7 @@ void TrackSettingsCpBuffer::reset() {
 	vuColorThemeLocal = 0;
 	filterPos = 1;// default is post-insert
 	dispColorLocal = 0;
+	panCvLevel = 1.0f;
 	linkedFader = false;
 	
 	// second level
@@ -472,6 +473,7 @@ void MixerGroup::onReset() {
 	panLawStereo = 1;
 	vuColorThemeLocal = 0;
 	dispColorLocal = 0;
+	panCvLevel = 1.0f;
 	resetNonJson();
 }
 
@@ -516,6 +518,9 @@ void MixerGroup::dataToJson(json_t *rootJ) {
 
 	// dispColorLocal
 	json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
+	
+	// panCvLevel
+	json_object_set_new(rootJ, (ids + "panCvLevel").c_str(), json_real(panCvLevel));
 }
 
 
@@ -554,6 +559,11 @@ void MixerGroup::dataFromJson(json_t *rootJ) {
 	json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
 	if (dispColorLocalJ)
 		dispColorLocal = json_integer_value(dispColorLocalJ);
+	
+	// panCvLevel
+	json_t *panCvLevelJ = json_object_get(rootJ, (ids + "panCvLevel").c_str());
+	if (panCvLevelJ)
+		panCvLevel = json_number_value(panCvLevelJ);
 	
 	// extern must call resetNonJson()
 }
@@ -605,6 +615,7 @@ void MixerTrack::onReset() {
 	vuColorThemeLocal = 0;
 	filterPos = 1;// default is post-insert
 	dispColorLocal = 0;
+	panCvLevel = 1.0f;
 	resetNonJson();
 }
 
@@ -671,6 +682,9 @@ void MixerTrack::dataToJson(json_t *rootJ) {
 
 	// dispColorLocal
 	json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
+
+	// panCvLevel
+	json_object_set_new(rootJ, (ids + "panCvLevel").c_str(), json_real(panCvLevel));
 }
 
 
@@ -730,6 +744,11 @@ void MixerTrack::dataFromJson(json_t *rootJ) {
 	if (dispColorLocalJ)
 		dispColorLocal = json_integer_value(dispColorLocalJ);
 	
+	// panCvLevel
+	json_t *panCvLevelJ = json_object_get(rootJ, (ids + "panCvLevel").c_str());
+	if (panCvLevelJ)
+		panCvLevel = json_number_value(panCvLevelJ);
+	
 	// extern must call resetNonJson()
 }
 
@@ -747,6 +766,7 @@ void MixerTrack::write(TrackSettingsCpBuffer *dest) {
 	dest->vuColorThemeLocal = vuColorThemeLocal;
 	dest->filterPos = filterPos;
 	dest->dispColorLocal = dispColorLocal;
+	dest->panCvLevel = panCvLevel;
 	dest->linkedFader = gInfo->isLinked(trackNum);
 }
 void MixerTrack::read(TrackSettingsCpBuffer *src) {
@@ -761,6 +781,7 @@ void MixerTrack::read(TrackSettingsCpBuffer *src) {
 	vuColorThemeLocal = src->vuColorThemeLocal;
 	filterPos = src->filterPos;
 	dispColorLocal = src->dispColorLocal;
+	panCvLevel = src->panCvLevel;
 	gInfo->setLinked(trackNum, src->linkedFader);
 }
 

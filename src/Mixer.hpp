@@ -136,6 +136,7 @@ struct TrackSettingsCpBuffer {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;
 	int8_t dispColorLocal;
+	float panCvLevel;
 	bool linkedFader;
 
 	// second level of copy paste (for track re-ordering)
@@ -571,6 +572,7 @@ struct MixerGroup {
 	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
 	int8_t dispColorLocal;
+	float panCvLevel;// 0 to 1.0f
 
 	// no need to save, with reset
 	private:
@@ -683,7 +685,7 @@ struct MixerGroup {
 			// calc ** pan, panWithCV **
 			float pan = paPan->getValue();
 			if (inPan->isConnected()) {
-				pan += inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
 				panWithCV = pan;
 			}
@@ -805,7 +807,7 @@ struct MixerTrack {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
-
+	float panCvLevel;// 0 to 1.0f
 
 	// no need to save, with reset
 	private:
@@ -1005,7 +1007,7 @@ struct MixerTrack {
 			// calc ** pan, panWithCV **
 			pan = paPan->getValue();
 			if (inPan->isConnected()) {
-				pan += inPan->getVoltage() * 0.1f;// CV is a -5V to +5V input
+				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
 				panWithCV = pan;
 			}

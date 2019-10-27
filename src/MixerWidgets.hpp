@@ -670,6 +670,10 @@ struct TrackDisplay : EditableDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackLPFAdjustSlider);
 			
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcTrack->panCvLevel));
+			panCvSlider->box.size.x = 200.0f;
+			menu->addChild(panCvSlider);
+			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack->fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
@@ -773,6 +777,10 @@ struct GroupDisplay : EditableDisplayBase {
 			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
 			menu->addChild(grpSetLabel);
 			
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcGroup->panCvLevel));
+			panCvSlider->box.size.x = 200.0f;
+			menu->addChild(panCvSlider);
+			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(srcGroup->fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
@@ -846,6 +854,7 @@ struct AuxDisplay : EditableDisplayBase {
 	int8_t* srcPanLawStereoLocal = NULL;
 	int8_t* srcDirectOutsModeGlobal = NULL;
 	int8_t* srcPanLawStereoGlobal = NULL;
+	float* srcPanCvLevel = NULL;
 	char* auxName;
 	int auxNumber = 0;
 	
@@ -865,6 +874,9 @@ struct AuxDisplay : EditableDisplayBase {
 			auxLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(auxLPFAdjustSlider);
 			
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
+			panCvSlider->box.size.x = 200.0f;
+			menu->addChild(panCvSlider);
 			
 			if (*srcDirectOutsModeGlobal >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);

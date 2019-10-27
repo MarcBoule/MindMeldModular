@@ -586,6 +586,41 @@ struct LPFCutoffSlider : ui::Slider {
 };
 
 
+// Pan CV level item
+
+struct PanCvLevelQuantity : Quantity {
+	float *srcPanCvLevel = NULL;
+	  
+	PanCvLevelQuantity(float *_srcPanCvLevel) {
+		srcPanCvLevel = _srcPanCvLevel;
+	}
+	void setValue(float value) override {
+		*srcPanCvLevel = math::clamp(value, getMinValue(), getMaxValue());
+	}
+	float getValue() override {
+		return *srcPanCvLevel;
+	}
+	float getMinValue() override {return 0.0f;}
+	float getMaxValue() override {return 1.0f;}
+	float getDefaultValue() override {return 1.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		return string::f("%i", (int)std::round(getDisplayValue() * 100.0f));
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Pan CV input level";}
+	std::string getUnit() override {return " %";}
+};
+
+struct PanCvLevelSlider : ui::Slider {
+	PanCvLevelSlider(float *_srcPanCvLevel) {
+		quantity = new PanCvLevelQuantity(_srcPanCvLevel);
+	}
+	~PanCvLevelSlider() {
+		delete quantity;
+	}
+};
+
 
 // Fade-rate menu item
 
