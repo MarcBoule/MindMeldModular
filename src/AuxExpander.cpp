@@ -90,7 +90,6 @@ struct AuxExpander : Module {
 	int muteSoloCvTrigRefresh = 0;
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
 	uint16_t ecoMode;
-	int32_t muteTrkAuxSendWhenTrkGrouped;
 	
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -183,7 +182,6 @@ struct AuxExpander : Module {
 			aux[i].construct(i, &inputs[0]);
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
-		muteTrkAuxSendWhenTrkGrouped = 0;
 		
 		onReset();
 
@@ -368,8 +366,6 @@ struct AuxExpander : Module {
 				// Eco mode
 				memcpy(&tmp, &messagesFromMother[AFM_ECO_MODE], 4);
 				ecoMode = (uint16_t)tmp;
-				// mute aux send of track when it is grouped and that group is muted
-				memcpy(&muteTrkAuxSendWhenTrkGrouped, &messagesFromMother[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], 4);
 			}
 			
 			// Fast values from mother
@@ -395,15 +391,11 @@ struct AuxExpander : Module {
 				globalSends = simd::pow<simd::float_4>(globalSends, GlobalInfo::globalAuxSendScalingExponent);
 			
 				//   Indiv mute sends (20 instances)				
-				for (int gi = 0; gi < 16; gi++) {
-					muteSends[gi >> 2][gi & 0x3] = ( ((muteTrkAuxSendWhenTrkGrouped & (1 << gi)) == 0) && 
-													 (params[TRACK_AUXMUTE_PARAMS + gi].getValue() < 0.5f) ? 1.0f : 0.0f );
+				for (int gi = 0; gi < 20; gi++) {
+					muteSends[gi >> 2][gi & 0x3] = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
 				}
-				for (int gi = 0; gi < 4; gi++) {
-					muteSends[4][gi] = params[GROUP_AUXMUTE_PARAMS + gi].getValue();
-				}	
-				muteSends[4] = simd::ifelse(muteSends[4] > 0.5f, 0.0f, 1.0f);
 				for (int gi = 0; gi < 5; gi++) {
+					muteSends[gi] = simd::ifelse(muteSends[gi] > 0.5f, 0.0f, 1.0f);
 					if (movemask(muteSends[gi] == sendMuteSlewers[gi].out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), muteSends[gi]);
 					}

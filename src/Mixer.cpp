@@ -136,7 +136,7 @@ void GlobalInfo::onReset() {
 	panLawStereo = 1;
 	directOutsMode = 3;// post-solo should be default
 	auxSendsMode = 3;// post-solo should be default
-	muteTrkSendsWhenGrpMuted = 0;
+	groupsControlTrackSendLevels = 0;
 	auxReturnsMutedWhenMainSolo = 0;
 	auxReturnsSolosMuteDry = 0;
 	chainMode = 1;// post should be default
@@ -182,8 +182,8 @@ void GlobalInfo::dataToJson(json_t *rootJ) {
 	// auxSendsMode
 	json_object_set_new(rootJ, "auxSendsMode", json_integer(auxSendsMode));
 	
-	// muteTrkSendsWhenGrpMuted
-	json_object_set_new(rootJ, "muteTrkSendsWhenGrpMuted", json_integer(muteTrkSendsWhenGrpMuted));
+	// groupsControlTrackSendLevels
+	json_object_set_new(rootJ, "groupsControlTrackSendLevels", json_integer(groupsControlTrackSendLevels));
 	
 	// auxReturnsMutedWhenMainSolo
 	json_object_set_new(rootJ, "auxReturnsMutedWhenMainSolo", json_integer(auxReturnsMutedWhenMainSolo));
@@ -247,10 +247,10 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 	if (auxSendsModeJ)
 		auxSendsMode = json_integer_value(auxSendsModeJ);
 	
-	// muteTrkSendsWhenGrpMuted
-	json_t *muteTrkSendsWhenGrpMutedJ = json_object_get(rootJ, "muteTrkSendsWhenGrpMuted");
-	if (muteTrkSendsWhenGrpMutedJ)
-		muteTrkSendsWhenGrpMuted = json_integer_value(muteTrkSendsWhenGrpMutedJ);
+	// groupsControlTrackSendLevels
+	json_t *groupsControlTrackSendLevelsJ = json_object_get(rootJ, "groupsControlTrackSendLevels");
+	if (groupsControlTrackSendLevelsJ)
+		groupsControlTrackSendLevels = json_integer_value(groupsControlTrackSendLevelsJ);
 	
 	// auxReturnsMutedWhenMainSolo
 	json_t *auxReturnsMutedWhenMainSoloJ = json_object_get(rootJ, "auxReturnsMutedWhenMainSolo");

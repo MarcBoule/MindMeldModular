@@ -80,7 +80,6 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_DIRECT_AND_PAN_MODES,
 	AFM_TRACK_MOVE,
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
-	AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED,// mute aux send of track when it is grouped and that group is muted
 	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
 	AFM_ECO_MODE,
 	AFM_NUM_VALUES
@@ -192,7 +191,7 @@ struct GlobalInfo {
 	int8_t panLawStereo;// Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
 	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
-	int muteTrkSendsWhenGrpMuted;//  0 = no, 1 = yes
+	int groupsControlTrackSendLevels;//  0 = no, 1 = yes
 	int auxReturnsMutedWhenMainSolo;
 	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
@@ -575,12 +574,12 @@ struct MixerGroup {
 	float panCvLevel;// 0 to 1.0f
 
 	// no need to save, with reset
-	private:
-	simd::float_4 panMatrix;
-	float faderGain;
-	simd::float_4 gainMatrix;	
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
+	private:
+	float faderGain;
+	simd::float_4 panMatrix;
+	simd::float_4 gainMatrix;	
 	float oldPan;
 	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global

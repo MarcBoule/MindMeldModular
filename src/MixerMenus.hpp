@@ -120,10 +120,10 @@ struct TapModeItem : MenuItem {
 struct TapModePlusItem : TapModeItem {
 	GlobalInfo* gInfo;
 
-	struct MuteTrkSendsWhenGrpMutedItem : MenuItem {
-		int* muteTrkSendsWhenGrpMutedPtr;
+	struct GroupsControlTrackSendLevelsItem : MenuItem {
+		int* groupsControlTrackSendLevelsPtr;
 		void onAction(const event::Action &e) override {
-			*muteTrkSendsWhenGrpMutedPtr ^= 0x1;
+			*groupsControlTrackSendLevelsPtr ^= 0x1;
 		}
 	};
 
@@ -132,9 +132,9 @@ struct TapModePlusItem : TapModeItem {
 		Menu *menu = TapModeItem::createChildMenu();
 
 		menu->addChild(new MenuLabel());// empty line	
-		MuteTrkSendsWhenGrpMutedItem *muteTwhenGItem = createMenuItem<MuteTrkSendsWhenGrpMutedItem>("Mute track sends when group is muted", CHECKMARK(gInfo->muteTrkSendsWhenGrpMuted != 0));
-		muteTwhenGItem->muteTrkSendsWhenGrpMutedPtr = &(gInfo->muteTrkSendsWhenGrpMuted);
-		menu->addChild(muteTwhenGItem);
+		GroupsControlTrackSendLevelsItem *levelTwhenGItem = createMenuItem<GroupsControlTrackSendLevelsItem>("Groups control track send levels", CHECKMARK(gInfo->groupsControlTrackSendLevels != 0));
+		levelTwhenGItem->groupsControlTrackSendLevelsPtr = &(gInfo->groupsControlTrackSendLevels);
+		menu->addChild(levelTwhenGItem);
 
 		return menu;
 	}

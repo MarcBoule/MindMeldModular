@@ -442,16 +442,6 @@ struct MixMaster : Module {
 				// Eco mode
 				tmp = gInfo.ecoMode;
 				memcpy(&messageToExpander[AFM_ECO_MODE], &tmp, 4);
-				// mute aux send of track when it is grouped and that group is muted
-				int32_t mask = 0;
-				if (gInfo.muteTrkSendsWhenGrpMuted != 0) {
-					for (int i = 0; i < 4; i++) {
-						if (groups[i].paMute->getValue() > 0.5f) {
-							mask |= gInfo.groupUsage[i];
-						}
-					}
-				}
-				memcpy(&messageToExpander[AFM_TRK_AUX_SEND_MUTED_WHEN_GROUPED], &mask, 4);
 			}
 			
 			// Fast
@@ -490,17 +480,29 @@ struct MixMaster : Module {
 		// auxSends[] has room for 16+4 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 		
-		if (gInfo.auxSendsMode < 4) {
+		if (gInfo.auxSendsMode < 4 && gInfo.groupsControlTrackSendLevels == 0) {
 			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << 5], 32 * 4);
 			memcpy(&auxSends[32], &groupTaps[gInfo.auxSendsMode << 3], 8 * 4);
 		}
 		else {
 			// tracks
+			int trkGroup;
 			for (int trk = 0; trk < 16; trk++) {
-				//if ((int)(tracks[trk].paGroup->getValue() + 0.5f) != 0) continue; // not needed since tracks should have aux sends even when grouped
+				// tracks should have aux sends even when grouped
 				int tapIndex = (tracks[trk].auxSendsMode << 5);
-				auxSends[(trk << 1) + 0] = trackTaps[tapIndex + (trk << 1) + 0];
-				auxSends[(trk << 1) + 1] = trackTaps[tapIndex + (trk << 1) + 1];
+				float trackL = trackTaps[tapIndex + (trk << 1) + 0];
+				float trackR = trackTaps[tapIndex + (trk << 1) + 1];
+				if (gInfo.groupsControlTrackSendLevels != 0 && (trkGroup = (int)(tracks[trk].paGroup->getValue() + 0.5f)) != 0) {
+					trkGroup--;
+					simd::float_4 sigs(trackL, trackR, trackR, trackL);
+					sigs = sigs * groups[trkGroup].gainMatrixSlewers.out;
+					trackL = sigs[0] + sigs[2];
+					trackR = sigs[1] + sigs[3];
+					trackL *= groups[trkGroup].muteSoloGainSlewer.out;
+					trackR *= groups[trkGroup].muteSoloGainSlewer.out;
+				}					
+				auxSends[(trk << 1) + 0] = trackL;
+				auxSends[(trk << 1) + 1] = trackR;
 			}
 			// groups
 			for (int grp = 0; grp < 4; grp++) {
