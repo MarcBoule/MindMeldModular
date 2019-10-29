@@ -61,10 +61,11 @@ struct AuxExpander : Module {
 	int8_t dispColorAuxLocal[4];
 	AuxspanderAux aux[4];
 	float panCvLevels[4];// 0 to 1.0f
+	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
 
 	// No need to save, with reset
 	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
-	int refreshCounter12;
+	int refreshCounter20;
 	VuMeterAllDual vu[4];
 	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
 	simd::float_4 globalSendsWithCV;
@@ -90,6 +91,7 @@ struct AuxExpander : Module {
 	int muteSoloCvTrigRefresh = 0;
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
 	uint16_t ecoMode;
+	float auxRetFadeGains[4];// for return fades
 	
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -180,6 +182,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++) {
 			groupSendVcaGains[i] = simd::float_4::zero();
 			aux[i].construct(i, &inputs[0]);
+			auxRetFadeGains[i] = 1.0f;
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 		
@@ -198,12 +201,14 @@ struct AuxExpander : Module {
 			dispColorAuxLocal[i] = 0;	
 			aux[i].onReset();
 			panCvLevels[i] = 1.0f;
+			auxFadeRatesAndProfiles[i] = 0.0f;
+			auxFadeRatesAndProfiles[i + 4] = 0.0f;
 		}
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
 		updateAuxLabelRequest = 1;
-		refreshCounter12 = 0;
+		refreshCounter20 = 0;
 		for (int i = 0; i < 4; i++) {
 			vu[i].reset();
 			paramRetFaderWithCv[i] = -1.0f;
@@ -261,6 +266,12 @@ struct AuxExpander : Module {
 		for (int c = 0; c < 4; c++)
 			json_array_insert_new(panCvLevelsJ, c, json_real(panCvLevels[c]));
 		json_object_set_new(rootJ, "panCvLevels", panCvLevelsJ);
+		
+		// auxFadeRatesAndProfiles
+		json_t *auxFadeRatesAndProfilesJ = json_array();
+		for (int c = 0; c < 8; c++)
+			json_array_insert_new(auxFadeRatesAndProfilesJ, c, json_real(auxFadeRatesAndProfiles[c]));
+		json_object_set_new(rootJ, "auxFadeRatesAndProfiles", auxFadeRatesAndProfilesJ);
 		
 		return rootJ;
 	}
@@ -320,6 +331,17 @@ struct AuxExpander : Module {
 			}
 		}
 
+		// auxFadeRatesAndProfiles
+		json_t *auxFadeRatesAndProfilesJ = json_object_get(rootJ, "auxFadeRatesAndProfiles");
+		if (auxFadeRatesAndProfilesJ) {
+			for (int c = 0; c < 8; c++)
+			{
+				json_t *auxFadeRatesAndProfilesArrayJ = json_array_get(auxFadeRatesAndProfilesJ, c);
+				if (auxFadeRatesAndProfilesArrayJ)
+					auxFadeRatesAndProfiles[c] = json_real_value(auxFadeRatesAndProfilesArrayJ);
+			}
+		}
+
 		resetNonJson(true);
 	}
 
@@ -366,6 +388,8 @@ struct AuxExpander : Module {
 				// Eco mode
 				memcpy(&tmp, &messagesFromMother[AFM_ECO_MODE], 4);
 				ecoMode = (uint16_t)tmp;
+				// Fade gains
+				memcpy(auxRetFadeGains, &messagesFromMother[AFM_FADE_GAINS], 4 * 4);
 			}
 			
 			// Fast values from mother
@@ -375,7 +399,7 @@ struct AuxExpander : Module {
 
 			// Prepare values used to compute aux sends
 			//   Global aux send knobs (4 instances)
-			if (ecoMode == 0 || (refreshCounter12 & 0x3) == 0) {// stagger 0
+			if (ecoMode == 0 || (refreshCounter20 & 0x3) == 0) {// stagger 0
 				for (int gi = 0; gi < 4; gi++) {
 					globalSends[gi] = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
 				}
@@ -408,7 +432,7 @@ struct AuxExpander : Module {
 			// accumulate tracks
 			for (int trk = 0; trk < 16; trk++) {		
 				// prepare trackSendVcaGains when needed
-				if (ecoMode == 0 || (refreshCounter12 & 0x3) == 1) {// stagger 1			
+				if (ecoMode == 0 || (refreshCounter20 & 0x3) == 1) {// stagger 1			
 					for (int auxi = 0; auxi < 4; auxi++) {
 					// 64 individual track aux send knobs
 						float val = params[TRACK_AUXSEND_PARAMS + (trk << 2) + auxi].getValue();
@@ -434,7 +458,7 @@ struct AuxExpander : Module {
 			// accumulate groups
 			for (int grp = 0; grp < 4; grp++) {
 				// prepare groupSendVcaGains when needed
-				if (ecoMode == 0 || (refreshCounter12 & 0x3) == 2) {// stagger 2
+				if (ecoMode == 0 || (refreshCounter20 & 0x3) == 2) {// stagger 2
 					for (int auxi = 0; auxi < 4; auxi++) {
 						if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
 						// 16 individual group aux send knobs
@@ -481,9 +505,14 @@ struct AuxExpander : Module {
 				aux[i].process(&messagesToMother[MFA_AUX_RETURNS + (i << 1)]);
 			}
 			
-			// values for returns, 12 such values (mute, solo, group)
-			messagesToMother[MFA_VALUE12_INDEX] = (float)refreshCounter12;
-			messagesToMother[MFA_VALUE12] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter12].getValue();;
+			// values for returns, 20 such values (mute, solo, group, fadeRate, fadeProfile)
+			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
+			if (refreshCounter20 < 12) {
+				messagesToMother[MFA_VALUE20] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter20].getValue();
+			}
+			else {
+				messagesToMother[MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
+			}
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
 			memcpy(&messagesToMother[MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
@@ -520,10 +549,10 @@ struct AuxExpander : Module {
 				// scaling done in mother
 				messagesToMother[MFA_AUX_RET_FADER + i] = val;
 			}
-						
-			refreshCounter12++;
-			if (refreshCounter12 >= 12) {
-				refreshCounter12 = 0;
+				
+			refreshCounter20++;
+			if (refreshCounter20 >= 20) {
+				refreshCounter20 = 0;
 			}
 			
 			leftExpander.module->rightExpander.messageFlipRequested = true;
@@ -542,7 +571,7 @@ struct AuxExpander : Module {
 			}
 		}
 		else {// here mother is present and we are not cloaked
-			if (ecoMode == 0 || (refreshCounter12 & 0x3) == 3) {// stagger 3
+			if (ecoMode == 0 || (refreshCounter20 & 0x3) == 3) {// stagger 3
 				for (int i = 0; i < 4; i++) { 
 					vu[i].process(args.sampleTime, &messagesFromMother[AFM_AUX_VUS + (i << 1) + 0]);
 				}
@@ -651,6 +680,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
 				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
 				auxDisplays[i]->srcPanCvLevel = &(module->panCvLevels[i]);
+				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
 				auxDisplays[i]->auxNumber = i;
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
@@ -690,12 +720,18 @@ struct AuxExpanderWidget : ModuleWidget {
 				newFP->srcParam = &(module->params[AuxExpander::GLOBAL_AUXRETURN_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->paramRetFaderWithCv[i]);
 				newFP->colorAndCloak = &(module->colorAndCloak);
+				newFP->srcFadeGain = &(module->auxRetFadeGains[i]);
+				newFP->srcFadeRate = &(module->auxFadeRatesAndProfiles[i]);
 				newFP->dispColorLocalPtr = &(module->dispColorAuxLocal[i]);
 				addChild(newFP);				
 			}				
 			
 			// Global mute buttons
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, AuxExpander::GLOBAL_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			DynMuteFadeButton* newMuteFade;
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, AuxExpander::GLOBAL_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newMuteFade->type = &(module->auxFadeRatesAndProfiles[i]);
+			}
 			
 			// Global solo buttons
 			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(6.35  + 12.7 * i, 116.1)), module, AuxExpander::GLOBAL_AUXSOLO_PARAMS + i, module ? &module->panelTheme : NULL));		

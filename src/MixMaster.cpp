@@ -33,7 +33,7 @@ struct MixMaster : Module {
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
-	float values12[12];
+	float values20[20];
 	dsp::SlewLimiter muteTrackWhenSoloAuxRetSlewer;
 
 	// No need to save, no reset
@@ -53,7 +53,6 @@ struct MixMaster : Module {
 	int muteSoloCvTrigRefresh = 0;
 	// std::string busId;
 	
-
 		
 	MixMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -106,13 +105,13 @@ struct MixMaster : Module {
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
 		
 
-		gInfo.construct(&params[0], values12);
+		gInfo.construct(&params[0], values20);
 		for (int i = 0; i < 16; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1]);
-			aux[i].construct(i, &gInfo, &inputs[0], values12, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
+			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second 
@@ -156,8 +155,8 @@ struct MixMaster : Module {
 			}
 			master.resetNonJson();
 		}
-		for (int i = 0; i < 12; i++) {
-			values12[i] = 0.0f;
+		for (int i = 0; i < 20; i++) {
+			values20[i] = 0.0f;
 		}
 		muteTrackWhenSoloAuxRetSlewer.reset();
 	}
@@ -256,8 +255,8 @@ struct MixMaster : Module {
 			auxReturns = &messagesFromExpander[MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
 			auxRetFadePan = &messagesFromExpander[MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
 						
-			int value12i = clamp((int)(messagesFromExpander[MFA_VALUE12_INDEX]), 0, 11);// mute, solo, group for aux returns
-			values12[value12i] = messagesFromExpander[MFA_VALUE12];
+			int value20i = clamp((int)(messagesFromExpander[MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
+			values20[value20i] = messagesFromExpander[MFA_VALUE20];
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
 			memcpy(&directOutsModeLocalAux, &messagesFromExpander[MFA_AUX_DIR_OUTS], 4);
@@ -442,6 +441,10 @@ struct MixMaster : Module {
 				// Eco mode
 				tmp = gInfo.ecoMode;
 				memcpy(&messageToExpander[AFM_ECO_MODE], &tmp, 4);
+				// auxFadeGains
+				for (int auxi = 0; auxi < 4; auxi++) {
+					messageToExpander[AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
+				}
 			}
 			
 			// Fast

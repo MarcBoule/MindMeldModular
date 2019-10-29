@@ -82,13 +82,14 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	AFM_AUXSENDMUTE_GROUPED_RETURN,
 	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
 	AFM_ECO_MODE,
+	ENUMS(AFM_FADE_GAINS, 4),
 	AFM_NUM_VALUES
 };
 
 enum MotherFromAuxIds { // for expander messages from aux panel to main
 	ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	MFA_VALUE12_INDEX,// a return-related value, 12 of such values to bring back to main, one per sample
-	MFA_VALUE12,
+	MFA_VALUE20_INDEX,// a return-related value, 20 of such values to bring back to main, one per sample (mute, solo, group, fadeRate, fadeProfile)
+	MFA_VALUE20,
 	MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
 	MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
 	ENUMS(MFA_AUX_RET_FADER, 4),
@@ -216,7 +217,7 @@ struct GlobalInfo {
 	Param *paMute;// all 20 solos are here (track and group)
 	Param *paSolo;// all 20 solos are here (track and group)
 	Param *paFade;// all 20 faders are here (track and group)
-	float *values12;
+	float *values20;
 	float maxTGFader;
 	float fadeRates[16 + 4];// reset and json done in tracks and groups. fade rates for tracks and groups
 
@@ -258,7 +259,7 @@ struct GlobalInfo {
 	void updateReturnSoloBits() {
 		int newReturnSoloBitMask = 0;
 		for (int aux = 0; aux < 4; aux++) {
-			if (values12[4 + aux] > 0.5f) {
+			if (values20[4 + aux] > 0.5f) {
 				newReturnSoloBitMask |= (1 << aux);
 			}
 		}
@@ -311,7 +312,7 @@ struct GlobalInfo {
 		}
 	}
 	
-	void construct(Param *_params, float* _values12);
+	void construct(Param *_params, float* _values20);
 	void onReset();
 	void resetNonJson();
 	void dataToJson(json_t *rootJ);
@@ -1253,11 +1254,16 @@ struct MixerAux {
 	simd::float_4 gainMatrix;	
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
-	float muteSoloGain; // value of the mute/fade * solo_enable
 	float oldPan;
 	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
+	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float fadeGainX;
+	float fadeGainScaled;
+	float fadeGainScaledWithSolo;
+	float target;
+
 
 	// no need to save, no reset
 	int auxNum;// 0 to 3
@@ -1267,29 +1273,33 @@ struct MixerAux {
 	float *flMute;
 	float *flSolo0;
 	float *flGroup;
+	float *fadeRate;
+	float *fadeProfile;
 	float *taps;
 	int8_t* panLawStereoLocal;
 
 	int getAuxGroup() {return (int)(*flGroup + 0.5f);}
+	float calcFadeGain() {return *flMute > 0.5f ? 0.0f : 1.0f;}
+	bool isFadeMode() {return *fadeRate >= GlobalInfo::minFadeRate;}
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values12, float* _taps, int8_t* _panLawStereoLocal);
+	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values20, float* _taps, int8_t* _panLawStereoLocal);
 	void onReset();
 	void resetNonJson();
 	void dataToJson(json_t *rootJ) {}
 	void dataFromJson(json_t *rootJ) {}
 	
 	
-	void updateSlowValues() {
-		// calc ** muteSoloGain **
-		float soloGain = (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
-		muteSoloGain = (*flMute > 0.5f ? 0.0f : 1.0f) * soloGain;
-		// Handle "Mute aux returns when soloing track"
-		// i.e. add aux returns to mix when no solo, or when solo and don't want mutes aux returns
+	float calcSoloGain() {
 		if (gInfo->soloBitMask != 0 && gInfo->auxReturnsMutedWhenMainSolo) {
-			muteSoloGain = 0.0f;
+			// Handle "Mute aux returns when soloing track"
+			// i.e. add aux returns to mix when no solo, or when solo and don't want mutes aux returns
+			return 0.0f;
 		}
-		
+		return (gInfo->returnSoloBitMask == 0 || (gInfo->returnSoloBitMask & (1 << auxNum)) != 0) ? 1.0f : 0.0f;
+	}
+	
+	void updateSlowValues() {
 		// ** detect pan mode change ** (and trigger recalc of panMatrix)
 		PackedBytes4 newPanSig;
 		newPanSig.cc4[0] = *panLawStereoLocal;
@@ -1300,12 +1310,12 @@ struct MixerAux {
 			oldPan = -10.0f;
 			oldPanSignature.cc1 = newPanSig.cc1;
 		}
-		
 	}
 	
 	void process(float *mix, float *auxRetFadePan, bool eco) {// mixer aux
 		// auxRetFadePan[0] points fader value, auxRetFadePan[4] points pan value, all indexed for a given aux
 		
+
 		// Tap[0],[1]: pre-insert (aux inputs)
 		// nothing to do, already set up by the auxspander
 		
@@ -1320,6 +1330,29 @@ struct MixerAux {
 		}
 		
 		if (eco) {
+			// calc ** fadeGain, fadeGainX, fadeGainScaled **
+			if (isFadeMode()) {
+				float newTarget = calcFadeGain();
+				if (newTarget != target) {
+					if (!gInfo->symmetricalFade) {
+						fadeGainX = 0.0f;
+					}
+					target = newTarget;
+				}
+				if (fadeGain != target) {
+					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
+					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, *fadeProfile, gInfo->symmetricalFade);
+					fadeGainScaled = std::pow(fadeGain, GlobalInfo::globalAuxReturnScalingExponent);
+				}
+			}
+			else {// we are in mute mode
+				fadeGain = calcFadeGain();
+				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+			}
+			fadeGainScaledWithSolo = fadeGainScaled * calcSoloGain();
+
+
 			// calc ** panMatrix **
 			float pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
 			if (pan != oldPan) {
@@ -1387,8 +1420,8 @@ struct MixerAux {
 		taps[17] = sigs[1] + sigs[3];
 		
 		// Calc muteSoloGainSlewed
-		if (muteSoloGain != muteSoloGainSlewer.out) {
-			muteSoloGainSlewer.process(gInfo->sampleTime, muteSoloGain);
+		if (fadeGainScaledWithSolo != muteSoloGainSlewer.out) {
+			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaledWithSolo);
 		}
 		
 		taps[24] = taps[16] * muteSoloGainSlewer.out;

@@ -855,6 +855,7 @@ struct AuxDisplay : EditableDisplayBase {
 	int8_t* srcDirectOutsModeGlobal = NULL;
 	int8_t* srcPanLawStereoGlobal = NULL;
 	float* srcPanCvLevel = NULL;
+	float* srcFadeRatesAndProfiles = NULL;// use [0] for fade rate, [4] for fade profile, pointer must be setup with aux indexing
 	char* auxName;
 	int auxNumber = 0;
 	
@@ -877,6 +878,14 @@ struct AuxDisplay : EditableDisplayBase {
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);
+			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcFadeRatesAndProfiles);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcFadeRatesAndProfiles[4]));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
 			
 			if (*srcDirectOutsModeGlobal >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);

@@ -122,11 +122,11 @@ void TrackSettingsCpBuffer::reset() {
 
 //struct GlobalInfo
 	
-void GlobalInfo::construct(Param *_params, float* _values12) {
+void GlobalInfo::construct(Param *_params, float* _values20) {
 	paMute = &_params[TRACK_MUTE_PARAMS];
 	paSolo = &_params[TRACK_SOLO_PARAMS];
 	paFade = &_params[TRACK_FADER_PARAMS];
-	values12 = _values12;
+	values20 = _values20;
 	maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
 }
 
@@ -823,13 +823,15 @@ void MixerTrack::read2(TrackSettingsCpBuffer *src) {
 
 // struct MixerAux 
 
-void MixerAux::construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values12, float* _taps, int8_t* _panLawStereoLocal) {
+void MixerAux::construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values20, float* _taps, int8_t* _panLawStereoLocal) {
 	auxNum = _auxNum;
 	ids = "id_a" + std::to_string(auxNum) + "_";
 	gInfo = _gInfo;
 	inInsert = &_inputs[INSERT_GRP_AUX_INPUT];
-	flMute = &_values12[auxNum];
-	flGroup = &_values12[auxNum + 8];
+	flMute = &_values20[auxNum];
+	flGroup = &_values20[auxNum + 8];
+	fadeRate = &_values20[auxNum + 12];
+	fadeProfile = &_values20[auxNum + 16];
 	taps = _taps;
 	panLawStereoLocal = _panLawStereoLocal;
 	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
@@ -848,10 +850,14 @@ void MixerAux::resetNonJson() {
 	gainMatrix = simd::float_4::zero();
 	gainMatrixSlewers.reset();
 	muteSoloGainSlewer.reset();
-	muteSoloGain = 0.0f;
 	oldPan = -10.0f;
 	oldFader = -10.0f;
 	oldPanSignature.cc1 = 0xFFFFFFFF;
+	fadeGain = calcFadeGain();
+	fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+	fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+	fadeGainScaledWithSolo = fadeGainScaled;
+	target = -1.0f;
 }
 	
 
