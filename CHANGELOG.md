@@ -1,6 +1,8 @@
 ### 1.1.3 (in development)
 
 - Added menu entries for pan cv input attenuation in tracks, groups and aux
+- Change "Mute track sends when group is muted" (in "Aux sends" menu, when AuxSpander is attached) to "Groups control track send levels" such that group fader, pan, mute, fade etc. control the track sends also
+- Implement fade in aux returns in AuxSpander
 
 
 ### 1.1.2 (2019-10-27)
