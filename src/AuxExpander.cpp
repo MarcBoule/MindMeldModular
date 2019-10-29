@@ -1025,9 +1025,14 @@ struct AuxExpanderWidget : ModuleWidget {
 					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXRETURN_PARAMS + auxi]->label = strBuf;
 				}
 
-				// Global mute
+				// Global mute/fade
 				for (int auxi = 0; auxi < 4; auxi++) {
-					snprintf(strBuf, 32, "%s: return mute", auxLabels[auxi].c_str());
+					if (moduleA->auxFadeRatesAndProfiles[auxi] >= GlobalInfo::minFadeRate) {
+						snprintf(strBuf, 32, "%s: return fade", auxLabels[auxi].c_str());
+					}
+					else {
+						snprintf(strBuf, 32, "%s: return mute", auxLabels[auxi].c_str());
+					}
 					moduleA->paramQuantities[AuxExpander::GLOBAL_AUXMUTE_PARAMS + auxi]->label = strBuf;
 				}
 
