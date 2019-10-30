@@ -126,6 +126,7 @@ void GlobalInfo::construct(Param *_params, float* _values20) {
 	paMute = &_params[TRACK_MUTE_PARAMS];
 	paSolo = &_params[TRACK_SOLO_PARAMS];
 	paFade = &_params[TRACK_FADER_PARAMS];
+	paGroup = &_params[GROUP_SELECT_PARAMS];
 	values20 = _values20;
 	maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
 }
@@ -144,9 +145,6 @@ void GlobalInfo::onReset() {
 	colorAndCloak.cc4[vuColorGlobal] = 0;
 	colorAndCloak.cc4[dispColor] = 0;
 	colorAndCloak.cc4[detailsShow] = 0x7;
-	for (int i = 0; i < 4; i++) {
-		groupUsage[i] = 0;
-	}
 	symmetricalFade = false;
 	fadeCvOutsWithVolCv = false;
 	linkBitMask = 0;
@@ -166,6 +164,7 @@ void GlobalInfo::resetNonJson() {
 	sampleTime = APP->engine->getSampleTime();
 	requestLinkedFaderReload = true;// whether comming from onReset() or dataFromJson(), we need a synchronous fader reload of linked faders, and at this point we assume that the linkedFaderReloadValues[] have been setup.
 	// oldFaders[] not done here since done synchronously by "requestLinkedFaderReload = true" above
+	updateGroupUsage();
 }
 
 
@@ -196,8 +195,6 @@ void GlobalInfo::dataToJson(json_t *rootJ) {
 	
 	// colorAndCloak
 	json_object_set_new(rootJ, "colorAndCloak", json_integer(colorAndCloak.cc1));
-	
-	// groupUsage does not need to be saved here, it is computed indirectly in MixerTrack::dataFromJson();
 	
 	// symmetricalFade
 	json_object_set_new(rootJ, "symmetricalFade", json_boolean(symmetricalFade));
@@ -271,8 +268,6 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 	json_t *colorAndCloakJ = json_object_get(rootJ, "colorAndCloak");
 	if (colorAndCloakJ)
 		colorAndCloak.cc1 = json_integer_value(colorAndCloakJ);
-	
-	// groupUsage does not need to be loaded here, it is computed indirectly in MixerTrack::dataFromJson();
 	
 	// symmetricalFade
 	json_t *symmetricalFadeJ = json_object_get(rootJ, "symmetricalFade");
@@ -646,6 +641,7 @@ void MixerTrack::resetNonJson() {
 	panWithCV = -1.0f;
 	volCv = 1.0f;
 	target = -1.0f;
+	soloGain = 1.0f;
 }
 
 
@@ -858,6 +854,7 @@ void MixerAux::resetNonJson() {
 	fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 	fadeGainScaledWithSolo = fadeGainScaled;
 	target = -1.0f;
+	soloGain = 1.0f;
 }
 	
 

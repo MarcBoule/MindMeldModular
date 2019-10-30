@@ -282,8 +282,9 @@ struct MixMaster : Module {
 				}
 			}
 			// Master
-			if ((trackToProcess & 0x3) == 1) {// master updated once every 4 passes in input proceesing
+			if ((trackToProcess & 0x3) == 1) {// master and groupUsage updated once every 4 passes in input proceesing
 				master.updateSlowValues();
+				gInfo.updateGroupUsage();
 			}
 			
 			// Message bus test
@@ -484,8 +485,7 @@ struct MixMaster : Module {
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 		
 		// tracks
-		if ( gInfo.auxSendsMode < 4 && (gInfo.groupsControlTrackSendLevels == 0 || 
-				(gInfo.groupUsage[0] == 0 && gInfo.groupUsage[1] == 0 && gInfo.groupUsage[2] == 0 && gInfo.groupUsage[3] == 0 )) ) {
+		if ( gInfo.auxSendsMode < 4 && (gInfo.groupsControlTrackSendLevels == 0 || gInfo.groupUsage[4] == 0) ) {
 			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << 5], 32 * 4);
 		}
 		else {

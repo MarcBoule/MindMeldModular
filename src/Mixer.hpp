@@ -197,7 +197,6 @@ struct GlobalInfo {
 	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
 	PackedBytes4 colorAndCloak;// see enum above called ccIds for fields
-	int groupUsage[4];// bit 0 of first element shows if first track mapped to first group, etc... managed by MixerTrack except for onReset()
 	bool symmetricalFade;
 	bool fadeCvOutsWithVolCv;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -217,9 +216,11 @@ struct GlobalInfo {
 	Param *paMute;// all 20 solos are here (track and group)
 	Param *paSolo;// all 20 solos are here (track and group)
 	Param *paFade;// all 20 faders are here (track and group)
+	Param *paGroup;// all 16 group numbers are here (track)
 	float *values20;
 	float maxTGFader;
 	float fadeRates[16 + 4];// reset and json done in tracks and groups. fade rates for tracks and groups
+	int groupUsage[5];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
 
 	
 	bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
@@ -301,6 +302,23 @@ struct GlobalInfo {
 		}		
 	}
 	
+	void updateGroupUsage() {
+		// clear groupUsage for all track in all groups, and bitwise OR int also
+		for (int i = 0; i < 5; i++) {
+			groupUsage[i] = 0;
+		}
+		
+		for (int trackNum = 0; trackNum < 16; trackNum++) {
+			// set groupUsage for this track in the new group
+			int group = (int)(paGroup[trackNum].getValue() + 0.5f);
+			if (group > 0) {
+				groupUsage[group - 1] |= (1 << trackNum);
+			}
+		}
+		
+		// Bitwise OR of first 4 ints in 5th int
+		groupUsage[4] = groupUsage[0] | groupUsage[1] | groupUsage[2] | groupUsage[3];
+	}	
 	
 	void process() {// GlobalInfo
 		if (requestLinkedFaderReload) {
@@ -835,6 +853,7 @@ struct MixerTrack {
 	float panWithCV;
 	float volCv;
 	float target;
+	float soloGain;
 
 	// no need to save, no reset
 	int trackNum;
@@ -877,19 +896,6 @@ struct MixerTrack {
 	void write2(TrackSettingsCpBuffer *dest);
 	void read2(TrackSettingsCpBuffer *src);
 	
-	
-	void updateGroupUsage() {
-		// clear groupUsage for this track in all groups
-		for (int i = 0; i < 4; i++) {
-			gInfo->groupUsage[i] &= ~(1 << trackNum);
-		}
-		
-		// set groupUsage for this track in the new group
-		int group = (int)(paGroup->getValue() + 0.5f);
-		if (group > 0) {
-			gInfo->groupUsage[group - 1] |= (1 << trackNum);
-		}
-	}
 	
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
@@ -938,9 +944,6 @@ struct MixerTrack {
 
 	
 	void updateSlowValues() {
-		// ** update group usage **
-		updateGroupUsage();
-		
 		// calc ** stereo **
 		bool newStereo = inSig[1].isConnected();
 		if (stereo != newStereo) {
@@ -961,6 +964,9 @@ struct MixerTrack {
 
 		// calc ** inGain **
 		inGain = inSig[0].isConnected() ? gainAdjust : 0.0f;
+		
+		// soloGain
+		soloGain = calcSoloGain();
 
 		// ** process linked **
 		gInfo->processLinked(trackNum, paFade->getValue());
@@ -990,7 +996,7 @@ struct MixerTrack {
 				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}
-			fadeGainScaledWithSolo = fadeGainScaled * calcSoloGain();
+			fadeGainScaledWithSolo = fadeGainScaled * soloGain;
 
 			// calc ** fader, paramWithCV, volCv **
 			fader = paFade->getValue();
@@ -1263,6 +1269,7 @@ struct MixerAux {
 	float fadeGainScaled;
 	float fadeGainScaledWithSolo;
 	float target;
+	float soloGain;
 
 
 	// no need to save, no reset
@@ -1310,6 +1317,9 @@ struct MixerAux {
 			oldPan = -10.0f;
 			oldPanSignature.cc1 = newPanSig.cc1;
 		}
+		
+		// soloGain
+		soloGain = calcSoloGain();
 	}
 	
 	void process(float *mix, float *auxRetFadePan, bool eco) {// mixer aux
@@ -1350,7 +1360,7 @@ struct MixerAux {
 				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}
-			fadeGainScaledWithSolo = fadeGainScaled * calcSoloGain();
+			fadeGainScaledWithSolo = fadeGainScaled * soloGain;
 
 
 			// calc ** panMatrix **
