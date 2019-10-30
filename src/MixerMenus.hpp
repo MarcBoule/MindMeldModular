@@ -131,7 +131,7 @@ struct TapModePlusItem : TapModeItem {
 	Menu *createChildMenu() override {
 		Menu *menu = TapModeItem::createChildMenu();
 
-		menu->addChild(new MenuLabel());// empty line	
+		menu->addChild(new MenuSeparator());
 		GroupsControlTrackSendLevelsItem *levelTwhenGItem = createMenuItem<GroupsControlTrackSendLevelsItem>("Groups control track send levels", CHECKMARK(gInfo->groupsControlTrackSendLevels != 0));
 		levelTwhenGItem->groupsControlTrackSendLevelsPtr = &(gInfo->groupsControlTrackSendLevels);
 		menu->addChild(levelTwhenGItem);

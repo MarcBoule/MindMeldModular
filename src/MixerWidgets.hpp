@@ -728,7 +728,7 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(dispColItem);
 			}
 			
-			menu->addChild(new MenuLabel());// empty line
+			menu->addChild(new MenuSeparator());
 
 			MenuLabel *settingsALabel = new MenuLabel();
 			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);

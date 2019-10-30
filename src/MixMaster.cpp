@@ -698,7 +698,7 @@ struct MixMasterWidget : ModuleWidget {
 		MixMaster *module = dynamic_cast<MixMaster*>(this->module);
 		assert(module);
 
-		menu->addChild(new MenuLabel());// empty line
+		menu->addChild(new MenuSeparator());
 		
 		MenuLabel *settingsALabel = new MenuLabel();
 		settingsALabel->text = "Settings (audio)";
@@ -754,7 +754,7 @@ struct MixMasterWidget : ModuleWidget {
 		
 		
 		
-		menu->addChild(new MenuLabel());// empty line
+		menu->addChild(new MenuSeparator());
 		
 		MenuLabel *settingsVLabel = new MenuLabel();
 		settingsVLabel->text = "Settings (visual)";
