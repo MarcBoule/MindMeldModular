@@ -86,6 +86,33 @@ struct Trigger : dsp::SchmittTrigger {
 };	
 
 
+struct TriggerRiseFall {
+	bool state = false;
+
+	void reset() {
+		state = false;
+	}
+
+	int process(float in) {
+		if (state) {
+			// HIGH to LOW
+			if (in <= 0.1f) {
+				state = false;
+				return -1;
+			}
+		}
+		else {
+			// LOW to HIGH
+			if (in >= 1.0f) {
+				state = true;
+				return 1;
+			}
+		}
+		return 0;
+	}	
+};	
+
+
 struct HoldDetect {
 	long modeHoldDetect;// 0 when not detecting, downward counter when detecting
 	
