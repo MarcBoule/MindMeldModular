@@ -483,12 +483,12 @@ struct MixMaster : Module {
 		// auxSends[] has room for 16+4 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 		
-		if (gInfo.auxSendsMode < 4 && gInfo.groupsControlTrackSendLevels == 0) {
+		// tracks
+		if ( gInfo.auxSendsMode < 4 && (gInfo.groupsControlTrackSendLevels == 0 || 
+				(gInfo.groupUsage[0] == 0 && gInfo.groupUsage[1] == 0 && gInfo.groupUsage[2] == 0 && gInfo.groupUsage[3] == 0 )) ) {
 			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << 5], 32 * 4);
-			memcpy(&auxSends[32], &groupTaps[gInfo.auxSendsMode << 3], 8 * 4);
 		}
 		else {
-			// tracks
 			int trkGroup;
 			for (int trk = 0; trk < 16; trk++) {
 				// tracks should have aux sends even when grouped
@@ -507,13 +507,20 @@ struct MixMaster : Module {
 				auxSends[(trk << 1) + 0] = trackL;
 				auxSends[(trk << 1) + 1] = trackR;
 			}
-			// groups
+		}
+		
+		// groups
+		if (gInfo.auxSendsMode < 4) {
+			memcpy(&auxSends[32], &groupTaps[gInfo.auxSendsMode << 3], 8 * 4);
+		}
+		else {
 			for (int grp = 0; grp < 4; grp++) {
 				int tapIndex = (groups[grp].auxSendsMode << 3);
 				auxSends[(grp << 1) + 32] = groupTaps[tapIndex + (grp << 1) + 0];
 				auxSends[(grp << 1) + 33] = groupTaps[tapIndex + (grp << 1) + 1];
 			}
 		}
+
 	}
 	
 	
