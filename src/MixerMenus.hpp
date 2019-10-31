@@ -252,6 +252,31 @@ struct AuxRetFbProtItem : MenuItem {
 	}
 };
 
+struct MomentaryCvItem : MenuItem {
+	GlobalInfo *gInfo;
+
+	struct MomentaryCvSubItem : MenuItem {
+		GlobalInfo *gInfo;
+		void onAction(const event::Action &e) override {
+			gInfo->momentaryCvButtons ^= 0x1;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		MomentaryCvSubItem *mo1Item = createMenuItem<MomentaryCvSubItem>("Trigger toggle", CHECKMARK(gInfo->momentaryCvButtons == 1));
+		mo1Item->gInfo = gInfo;
+		menu->addChild(mo1Item);
+
+		MomentaryCvSubItem *mo0Item = createMenuItem<MomentaryCvSubItem>("Gate high/low", CHECKMARK(gInfo->momentaryCvButtons == 0));
+		mo0Item->gInfo = gInfo;
+		menu->addChild(mo0Item);
+
+		return menu;
+	}
+};
+
 struct CloakedModeItem : MenuItem {
 	GlobalInfo *gInfo;
 	void onAction(const event::Action &e) override {

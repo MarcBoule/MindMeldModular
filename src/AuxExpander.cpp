@@ -77,6 +77,7 @@ struct AuxExpander : Module {
 	simd::float_4 groupSendVcaGains[4];
 	
 	// No need to save, no reset
+	RefreshCounter refresh;	
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
 	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	PackedBytes4 colorAndCloak;
@@ -87,11 +88,12 @@ struct AuxExpander : Module {
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	simd::float_4 globalSends;
 	simd::float_4 muteSends[5];
-	Trigger muteSoloCvTriggers[28];
-	int muteSoloCvTrigRefresh = 0;
+	TriggerRiseFall muteSoloCvTriggers[28];
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
 	uint16_t ecoMode;
 	float auxRetFadeGains[4];// for return fades
+	int8_t momentaryCvButtons;
+	
 	
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -185,6 +187,7 @@ struct AuxExpander : Module {
 			auxRetFadeGains[i] = 1.0f;
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
+		momentaryCvButtons = 1;// momentary by default
 		
 		onReset();
 
@@ -351,7 +354,9 @@ struct AuxExpander : Module {
 		motherPresent = (leftExpander.module && leftExpander.module->model == modelMixMaster);
 		float *messagesFromMother = (float*)leftExpander.consumerMessage;
 		
-		processMuteSoloCvTriggers();
+		if (refresh.processInputs()) {
+			processMuteSoloCvTriggers();
+		}// userInputs refresh
 		
 		if (motherPresent) {
 			// From Mother
@@ -390,6 +395,9 @@ struct AuxExpander : Module {
 				ecoMode = (uint16_t)tmp;
 				// Fade gains
 				memcpy(auxRetFadeGains, &messagesFromMother[AFM_FADE_GAINS], 4 * 4);
+				// momentaryCvButtons
+				memcpy(&tmp, &messagesFromMother[AFM_MOMENTARY_CVBUTTONS], 4);
+				momentaryCvButtons = (uint8_t)tmp;
 			}
 			
 			// Fast values from mother
@@ -577,6 +585,8 @@ struct AuxExpander : Module {
 				}
 			}
 		}
+		
+		refresh.processLights(); // none, but this advances the refresh counter
 	}// process()
 
 
@@ -618,34 +628,74 @@ struct AuxExpander : Module {
 	}
 	
 	void processMuteSoloCvTriggers() {
-		// mute and solo cv triggers
-		bool toggle = false;
-		//   track send mutes
-		if (muteSoloCvTrigRefresh < 16) {
-			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[POLY_AUX_M_CV_INPUT].getVoltage(muteSoloCvTrigRefresh))) {
-				toggle = true;
+		int state;
+
+		// track send mutes
+		if (inputs[POLY_AUX_M_CV_INPUT].isConnected()) {
+			for (int trk = 0; trk < 16; trk++) {
+				state = muteSoloCvTriggers[trk].process(inputs[POLY_AUX_M_CV_INPUT].getVoltage(trk));
+				if (state != 0) {
+					if (momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[TRACK_AUXMUTE_PARAMS + trk].getValue();// toggle
+							params[TRACK_AUXMUTE_PARAMS + trk].setValue(newParam);
+						};
+					}
+					else {
+						params[TRACK_AUXMUTE_PARAMS + trk].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
 			}
 		}
-		//   group send mutes
-		else if (muteSoloCvTrigRefresh < 20) {
-			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[POLY_GRPS_M_CV_INPUT].getVoltage(muteSoloCvTrigRefresh - 16))) {
-				toggle = true;				
+		// group send mutes
+		if (inputs[POLY_GRPS_M_CV_INPUT].isConnected()) {
+			for (int grp = 0; grp < 4; grp++) {
+				state = muteSoloCvTriggers[grp + 16].process(inputs[POLY_GRPS_M_CV_INPUT].getVoltage(grp));
+				if (state != 0) {
+					if (momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[GROUP_AUXMUTE_PARAMS + grp].getValue();// toggle
+							params[GROUP_AUXMUTE_PARAMS + grp].setValue(newParam);
+						};
+					}
+					else {
+						params[GROUP_AUXMUTE_PARAMS + grp].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
 			}
 		}
-		//   return mutes and solos
-		else {
-			if (muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(muteSoloCvTrigRefresh - 20))) {
-				toggle = true;				
+		// return mutes and solos
+		if (inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].isConnected()) {
+			for (int aux = 0; aux < 4; aux++) {
+				// mutes
+				state = muteSoloCvTriggers[aux + 20].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux));
+				if (state != 0) {
+					if (momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[GLOBAL_AUXMUTE_PARAMS + aux].getValue();// toggle
+							params[GLOBAL_AUXMUTE_PARAMS + aux].setValue(newParam);
+						};
+					}
+					else {
+						params[GLOBAL_AUXMUTE_PARAMS + aux].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
+				
+				// solos
+				state = muteSoloCvTriggers[aux + 20 + 4].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux + 4));
+				if (state != 0) {
+					if (momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[GLOBAL_AUXSOLO_PARAMS + aux].getValue();// toggle
+							params[GLOBAL_AUXSOLO_PARAMS + aux].setValue(newParam);
+						};
+					}
+					else {
+						params[GLOBAL_AUXSOLO_PARAMS + aux].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
+				
 			}
-		}
-		if (toggle) {
-			float newParam = 1.0f - params[TRACK_AUXMUTE_PARAMS + muteSoloCvTrigRefresh].getValue();
-			params[TRACK_AUXMUTE_PARAMS + muteSoloCvTrigRefresh].setValue(newParam);
-		}
-		
-		muteSoloCvTrigRefresh++;
-		if (muteSoloCvTrigRefresh >= 28) {
-			muteSoloCvTrigRefresh = 0;
 		}
 	}
 };

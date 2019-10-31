@@ -49,8 +49,7 @@ struct MixMaster : Module {
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
-	TriggerRiseFall muteSoloCvTriggers[43];// 16 trk mute, 4 grp mute, 16 trk solo, 4 grp solo, 3 mast (mute, dim, mono)
-	int muteSoloCvTrigRefresh = 0;
+	TriggerRiseFall muteSoloCvTriggers[43];// 16 trk mute, 16 trk solo, 4 grp mute, 4 grp solo, 3 mast (mute, dim, mono)
 	// std::string busId;
 	
 		
@@ -287,24 +286,21 @@ struct MixMaster : Module {
 				gInfo.updateGroupUsage();
 			}
 			
+			processMuteSoloCvTriggers();
+			
 			// Message bus test
 			// Message<Payload> *message = messages->receive("1");	
 			// if (message != NULL) {
 				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
 				// delete message;
 			// }
-			
 		}// userInputs refresh
 		
 		
 		// ecoCode: cycles from 0 to 3 in eco mode, stuck at 0 when full power mode
 		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo.ecoMode);
 		bool ecoStagger4 = (gInfo.ecoMode == 0 || ecoCode == 3);
-		
-		if (ecoStagger4) {// stagger 4
-			processMuteSoloCvTriggers();
-		}
-		
+				
 	
 		//********** Outputs **********
 
@@ -446,6 +442,9 @@ struct MixMaster : Module {
 				for (int auxi = 0; auxi < 4; auxi++) {
 					messageToExpander[AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
 				}
+				// momentaryCvButtons
+				tmp = gInfo.momentaryCvButtons;
+				memcpy(&messageToExpander[AFM_MOMENTARY_CVBUTTONS], &tmp, 4);			
 			}
 			
 			// Fast
@@ -639,54 +638,109 @@ struct MixMaster : Module {
 
 
 	void processMuteSoloCvTriggers() {
-		static const int muteCvIsLevelType = 0;
-		
-		// mute and solo cv triggers
-		bool toggle = false;
-		//   track mutes
-		if (muteSoloCvTrigRefresh < 16) {
-			if (0 != muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[TRACK_MUTE_INPUT].getVoltage(muteSoloCvTrigRefresh))) {
-				if (muteCvIsLevelType == 0) {
-					toggle = true;
+		int state;
+		if (inputs[TRACK_MUTE_INPUT].isConnected()) {
+			for (int trk = 0; trk < 16; trk++) {
+				// track mutes
+				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTE_INPUT].getVoltage(trk));
+				if (state != 0) {
+					if (gInfo.momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[TRACK_MUTE_PARAMS + trk].getValue();// toggle
+							params[TRACK_MUTE_PARAMS + trk].setValue(newParam);
+						};
+					}
+					else {
+						params[TRACK_MUTE_PARAMS + trk].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
+			}
+		}
+		if (inputs[TRACK_SOLO_INPUT].isConnected()) {
+			for (int trk = 0; trk < 16; trk++) {
+				// track solos
+				state = muteSoloCvTriggers[trk + 16].process(inputs[TRACK_SOLO_INPUT].getVoltage(trk));
+				if (state != 0) {
+					if (gInfo.momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[TRACK_SOLO_PARAMS + trk].getValue();// toggle
+							params[TRACK_SOLO_PARAMS + trk].setValue(newParam);
+						};
+					}
+					else {
+						params[TRACK_SOLO_PARAMS + trk].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
+			}
+		}
+		if (inputs[GRPM_MUTESOLO_INPUT].isConnected()) {
+			for (int grp = 0; grp < 4; grp++) {
+				// group mutes
+				state = muteSoloCvTriggers[grp + 32].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp));
+				if (state != 0) {
+					if (gInfo.momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[GROUP_MUTE_PARAMS + grp].getValue();// toggle
+							params[GROUP_MUTE_PARAMS + grp].setValue(newParam);
+						};
+					}
+					else {
+						params[GROUP_MUTE_PARAMS + grp].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
+				// group solos
+				state = muteSoloCvTriggers[grp + 32 + 4].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp + 4));
+				if (state != 0) {
+					if (gInfo.momentaryCvButtons) {
+						if (state == 1) {
+							float newParam = 1.0f - params[GROUP_SOLO_PARAMS + grp].getValue();// toggle
+							params[GROUP_SOLO_PARAMS + grp].setValue(newParam);
+						};
+					}
+					else {
+						params[GROUP_SOLO_PARAMS + grp].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+					}
+				}
+			}	
+			// master mute
+			state = muteSoloCvTriggers[40].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(8));
+			if (state != 0) {
+				if (gInfo.momentaryCvButtons) {
+					if (state == 1) {
+						float newParam = 1.0f - params[MAIN_MUTE_PARAM].getValue();// toggle
+						params[MAIN_MUTE_PARAM].setValue(newParam);
+					};
 				}
 				else {
-					float newParam = muteSoloCvTriggers[muteSoloCvTrigRefresh].state ? 1.0f : 0.0f;
-					params[TRACK_MUTE_PARAMS + muteSoloCvTrigRefresh].setValue(newParam);
+					params[MAIN_MUTE_PARAM].setValue(state == 1 ? 1.0f : 0.0f);// gate level
 				}
 			}
-		}
-		//   group mutes
-		else if (muteSoloCvTrigRefresh < 20) {
-			if (1 == muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 16))) {
-				toggle = true;				
+			// master dim
+			state = muteSoloCvTriggers[40 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(9));
+			if (state != 0) {
+				if (gInfo.momentaryCvButtons) {
+					if (state == 1) {
+						float newParam = 1.0f - params[MAIN_DIM_PARAM].getValue();// toggle
+						params[MAIN_DIM_PARAM].setValue(newParam);
+					};
+				}
+				else {
+					params[MAIN_DIM_PARAM].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+				}
 			}
-		}		
-		//   track solos
-		else if (muteSoloCvTrigRefresh < 36) {
-			if (1 == muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[TRACK_SOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 20))) {
-				toggle = true;
+			// master mono
+			state = muteSoloCvTriggers[40 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(10));
+			if (state != 0) {
+				if (gInfo.momentaryCvButtons) {
+					if (state == 1) {
+						float newParam = 1.0f - params[MAIN_MONO_PARAM].getValue();// toggle
+						params[MAIN_MONO_PARAM].setValue(newParam);
+					};
+				}
+				else {
+					params[MAIN_MONO_PARAM].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+				}
 			}
-		}
-		//   group solos
-		else if (muteSoloCvTrigRefresh < 40) {
-			if (1 == muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 36 + 4))) {
-				toggle = true;				
-			}
-		}
-		//   master mute, dim, mono
-		else {
-			if (1 == muteSoloCvTriggers[muteSoloCvTrigRefresh].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(muteSoloCvTrigRefresh - 40 + 8))) {
-				toggle = true;				
-			}
-		}
-		if (toggle) {
-			float newParam = 1.0f - params[TRACK_MUTE_PARAMS + muteSoloCvTrigRefresh].getValue();
-			params[TRACK_MUTE_PARAMS + muteSoloCvTrigRefresh].setValue(newParam);
-		}
-		
-		muteSoloCvTrigRefresh++;
-		if (muteSoloCvTrigRefresh >= 43) {
-			muteSoloCvTrigRefresh = 0;
 		}
 	}
 
@@ -759,6 +813,10 @@ struct MixMasterWidget : ModuleWidget {
 		directOutsItem->isGlobal = true;
 		menu->addChild(directOutsItem);
 		
+		MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Mute/Solo CV", RIGHT_ARROW);
+		momentItem->gInfo = &(module->gInfo);
+		menu->addChild(momentItem);
+
 		FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
 		fadItem->gInfo = &(module->gInfo);
 		menu->addChild(fadItem);

@@ -154,6 +154,7 @@ void GlobalInfo::onReset() {
 	for (int i = 0; i < 16 + 4; i++) {
 		linkedFaderReloadValues[i] = 1.0f;
 	}
+	momentaryCvButtons = 1;// momentary by default
 	resetNonJson();
 }
 
@@ -220,6 +221,9 @@ void GlobalInfo::dataToJson(json_t *rootJ) {
 		json_array_insert_new(fadersJ, i, json_real(paFade[TRACK_FADER_PARAMS + i].getValue()));
 	}
 	json_object_set_new(rootJ, "faders", fadersJ);		
+
+	// momentaryCvButtons
+	json_object_set_new(rootJ, "momentaryCvButtons", json_integer(momentaryCvButtons));
 }
 
 
@@ -313,6 +317,11 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 			linkedFaderReloadValues[i] = paFade[i].getValue();
 		}
 	}
+	
+	// momentaryCvButtons
+	json_t *momentaryCvButtonsJ = json_object_get(rootJ, "momentaryCvButtons");
+	if (momentaryCvButtonsJ)
+		momentaryCvButtons = json_integer_value(momentaryCvButtonsJ);
 	
 	// extern must call resetNonJson()
 }

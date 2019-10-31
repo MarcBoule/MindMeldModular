@@ -83,6 +83,7 @@ enum AuxFromMotherIds { // for expander messages from main to aux panel
 	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
 	AFM_ECO_MODE,
 	ENUMS(AFM_FADE_GAINS, 4),
+	AFM_MOMENTARY_CVBUTTONS,
 	AFM_NUM_VALUES
 };
 
@@ -204,6 +205,7 @@ struct GlobalInfo {
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
 	float linkedFaderReloadValues[16 + 4];
+	int8_t momentaryCvButtons;// 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
