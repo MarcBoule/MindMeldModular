@@ -787,23 +787,6 @@ struct MixMasterWidget : ModuleWidget {
 		panLawStereoItem->isGlobal = true;
 		menu->addChild(panLawStereoItem);
 		
-		if (module->auxExpanderPresent) {
-			TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
-			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
-			auxSendsItem->isGlobal = true;
-			auxSendsItem->gInfo = &(module->gInfo);
-			menu->addChild(auxSendsItem);
-			
-			AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
-			auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo.auxReturnsMutedWhenMainSolo);
-			auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo.auxReturnsSolosMuteDry);
-			menu->addChild(auxRetunsItem);
-		
-			AuxRetFbProtItem *fbpItem = createMenuItem<AuxRetFbProtItem>("Routing returns to groups", RIGHT_ARROW);
-			fbpItem->gInfo = &(module->gInfo);
-			menu->addChild(fbpItem);
-		}
-		
 		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
 		chainItem->gInfo = &(module->gInfo);
 		menu->addChild(chainItem);
@@ -825,6 +808,28 @@ struct MixMasterWidget : ModuleWidget {
 		eco0Item->gInfo = &(module->gInfo);
 		menu->addChild(eco0Item);
 		
+		if (module->auxExpanderPresent) {
+			menu->addChild(new MenuSeparator());
+
+			MenuLabel *settingsVLabel = new MenuLabel();
+			settingsVLabel->text = "AuxSpander";
+			menu->addChild(settingsVLabel);
+			
+			TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
+			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
+			auxSendsItem->isGlobal = true;
+			auxSendsItem->gInfo = &(module->gInfo);
+			menu->addChild(auxSendsItem);
+			
+			AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
+			auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo.auxReturnsMutedWhenMainSolo);
+			auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo.auxReturnsSolosMuteDry);
+			menu->addChild(auxRetunsItem);
+		
+			AuxRetFbProtItem *fbpItem = createMenuItem<AuxRetFbProtItem>("Routing returns to groups", RIGHT_ARROW);
+			fbpItem->gInfo = &(module->gInfo);
+			menu->addChild(fbpItem);
+		}
 		
 		
 		menu->addChild(new MenuSeparator());
