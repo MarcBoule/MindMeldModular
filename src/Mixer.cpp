@@ -128,7 +128,7 @@ void GlobalInfo::construct(Param *_params, float* _values20) {
 	paFade = &_params[TRACK_FADER_PARAMS];
 	paGroup = &_params[GROUP_SELECT_PARAMS];
 	values20 = _values20;
-	maxTGFader = std::pow(trkAndGrpFaderMaxLinearGain, 1.0f / trkAndGrpFaderScalingExponent);
+	maxTGFader = std::pow(GlobalConst::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalConst::trkAndGrpFaderScalingExponent);
 }
 
 
@@ -332,17 +332,19 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 
 // struct MixerMaster 
 
-void MixerMaster::construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
+template<int N_TRK>
+void MixerMaster<N_TRK>::construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
 	gInfo = _gInfo;
 	params = _params;
 	inChain = &_inputs[CHAIN_INPUTS];
 	inVol = &_inputs[GRPM_MUTESOLO_INPUT];
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
-	chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewFast), simd::float_4(GlobalInfo::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 }
 
 
-void MixerMaster::onReset() {
+template<int N_TRK>
+void MixerMaster<N_TRK>::onReset() {
 	dcBlock = false;
 	clipping = 0;
 	fadeRate = 0.0f;
@@ -355,7 +357,8 @@ void MixerMaster::onReset() {
 }
 
 
-void MixerMaster::resetNonJson() {
+template<int N_TRK>
+void MixerMaster<N_TRK>::resetNonJson() {
 	chainGainsAndMute = simd::float_4::zero();
 	faderGain = 0.0f;
 	gainMatrix = simd::float_4::zero();
@@ -373,7 +376,8 @@ void MixerMaster::resetNonJson() {
 }
 
 
-void MixerMaster::dataToJson(json_t *rootJ) {
+template<int N_TRK>
+void MixerMaster<N_TRK>::dataToJson(json_t *rootJ) {
 	// dcBlock
 	json_object_set_new(rootJ, "dcBlock", json_boolean(dcBlock));
 
@@ -400,7 +404,8 @@ void MixerMaster::dataToJson(json_t *rootJ) {
 }
 
 
-void MixerMaster::dataFromJson(json_t *rootJ) {
+template<int N_TRK>
+void MixerMaster<N_TRK>::dataFromJson(json_t *rootJ) {
 	// dcBlock
 	json_t *dcBlockJ = json_object_get(rootJ, "dcBlock");
 	if (dcBlockJ)
@@ -444,7 +449,8 @@ void MixerMaster::dataFromJson(json_t *rootJ) {
 	// extern must call resetNonJson()
 }		
 
-
+template struct MixerMaster<16>;
+template struct MixerMaster<8>;
 
 //*****************************************************************************
 
@@ -464,8 +470,8 @@ void MixerGroup::construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 	groupName = _groupName;
 	taps = _taps;
 	fadeRate = &(_gInfo->fadeRates[16 + groupNum]);
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
-	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 }
 
 
@@ -597,9 +603,9 @@ void MixerTrack::construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Pa
 	groupTaps = _groupTaps;
 	insertOuts = _insertOuts;
 	fadeRate = &(_gInfo->fadeRates[trackNum]);
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
-	inGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
-	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	inGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	for (int i = 0; i < 2; i++) {
 		hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 		lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
@@ -839,8 +845,8 @@ void MixerAux::construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float*
 	fadeProfile = &_values20[auxNum + 16];
 	taps = _taps;
 	panLawStereoLocal = _panLawStereoLocal;
-	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalInfo::antipopSlewSlow), simd::float_4(GlobalInfo::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
-	muteSoloGainSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+	gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+	muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 }
 
 

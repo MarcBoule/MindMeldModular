@@ -99,6 +99,25 @@ enum MotherFromAuxIds { // for expander messages from aux panel to main
 };
 
 
+struct GlobalConst {
+	// constants
+	static const int trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static const int individualAuxSendScalingExponent = 2; // for example, 3 is x^3 scaling
+	static constexpr float individualAuxSendMaxLinearGain = 1.0f; // for example, 2.0f is +6 dB
+	static const int globalAuxSendScalingExponent = 2; // for example, 2 is x^2 scaling
+	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
+	static const int globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
+	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static constexpr float antipopSlewFast = 125.0f;// for mute/solo
+	static constexpr float antipopSlewSlow = 25.0f;// for pan/fader
+	static constexpr float minFadeRate = 0.1f;
+	static constexpr float masterFaderMaxLinearGain = 2.0f;
+	static const int masterFaderScalingExponent = 3; 
+};
+
+
+
 
 //*****************************************************************************
 
@@ -168,22 +187,12 @@ union PackedBytes4 {
 	int8_t cc4[4];
 };
 
+
+
 // managed by Mixer, not by tracks (tracks read only)
 struct GlobalInfo {
-	
 	// constants
-	static const int trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static const int individualAuxSendScalingExponent = 2; // for example, 3 is x^3 scaling
-	static constexpr float individualAuxSendMaxLinearGain = 1.0f; // for example, 2.0f is +6 dB
-	static const int globalAuxSendScalingExponent = 2; // for example, 2 is x^2 scaling
-	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
-	static const int globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static constexpr float antipopSlewFast = 125.0f;// for mute/solo
-	static constexpr float antipopSlewSlow = 25.0f;// for pan/fader
-	static constexpr float minFadeRate = 0.1f;
-	
+	// none
 	
 	// need to save, no reset
 	// none
@@ -293,7 +302,7 @@ struct GlobalInfo {
 			return;
 		}
 		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
-			if (trkOrGrp != trkOrGrpNum && isLinked(trkOrGrp) && fadeRates[trkOrGrp] >= minFadeRate) {
+			if (trkOrGrp != trkOrGrpNum && isLinked(trkOrGrp) && fadeRates[trkOrGrp] >= GlobalConst::minFadeRate) {
 				if (newTarget > 0.5f && paMute[trkOrGrp].getValue() > 0.5f) {
 					paMute[trkOrGrp].setValue(0.0f);
 				}
@@ -344,11 +353,9 @@ struct GlobalInfo {
 
 //*****************************************************************************
 
-// template<int N_TRK>
+template<int N_TRK>
 struct MixerMaster {
 	// Constants
-	static const int masterFaderScalingExponent = 3; 
-	static constexpr float masterFaderMaxLinearGain = 2.0f;
 	
 	// need to save, no reset
 	// none
@@ -388,7 +395,7 @@ struct MixerMaster {
 	Input *inVol;
 
 	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
-	bool isFadeMode() {return fadeRate >= GlobalInfo::minFadeRate;}
+	bool isFadeMode() {return fadeRate >= GlobalConst::minFadeRate;}
 
 	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs);
 	void onReset();
@@ -478,7 +485,7 @@ struct MixerMaster {
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-					fadeGainScaled = std::pow(fadeGain, masterFaderScalingExponent);
+					fadeGainScaled = std::pow(fadeGain, GlobalConst::masterFaderScalingExponent);
 				}
 			}
 			else {// we are in mute mode
@@ -505,7 +512,7 @@ struct MixerMaster {
 			// scaling
 			if (fader != oldFader) {
 				oldFader = fader;
-				faderGain = std::pow(fader, masterFaderScalingExponent);
+				faderGain = std::pow(fader, GlobalConst::masterFaderScalingExponent);
 			}
 			
 			// calc ** gainMatrix **
@@ -578,7 +585,7 @@ struct MixerMaster {
 //*****************************************************************************
 
 
-
+template<int N_TRK>
 struct MixerGroup {
 	// Constants
 	// none
@@ -631,7 +638,7 @@ struct MixerGroup {
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	bool isLinked() {return gInfo->isLinked(16 + groupNum);}
 	void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
-	bool isFadeMode() {return *fadeRate >= GlobalInfo::minFadeRate;}
+	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps);
 	void onReset();
@@ -685,7 +692,7 @@ struct MixerGroup {
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-					fadeGainScaled = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
+					fadeGainScaled = std::pow(fadeGain, GlobalConst::trkAndGrpFaderScalingExponent);
 				}
 			}
 			else {// we are in mute mode
@@ -757,7 +764,7 @@ struct MixerGroup {
 			}
 			// calc ** faderGain **
 			if (fader != oldFader) {
-				faderGain = std::pow(fader, GlobalInfo::trkAndGrpFaderScalingExponent);// scaling
+				faderGain = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
 			}
 			// calc ** gainMatrix **
 			if (fader != oldFader || pan != oldPan) {
@@ -884,7 +891,7 @@ struct MixerTrack {
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
 	bool isLinked() {return gInfo->isLinked(trackNum);}
 	void toggleLinked() {gInfo->toggleLinked(trackNum);}
-	bool isFadeMode() {return *fadeRate >= GlobalInfo::minFadeRate;}
+	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
 	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts);
@@ -992,7 +999,7 @@ struct MixerTrack {
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
-					fadeGainScaled = std::pow(fadeGain, GlobalInfo::trkAndGrpFaderScalingExponent);
+					fadeGainScaled = std::pow(fadeGain, GlobalConst::trkAndGrpFaderScalingExponent);
 				}
 			}
 			else {// we are in mute mode
@@ -1186,7 +1193,7 @@ struct MixerTrack {
 			}
 			// calc ** faderGain **
 			if (fader != oldFader) {
-				faderGain = std::pow(fader, GlobalInfo::trkAndGrpFaderScalingExponent);// scaling
+				faderGain = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
 			}
 			// calc ** gainMatrix **
 			if (fader != oldFader || pan != oldPan) {
@@ -1291,7 +1298,7 @@ struct MixerAux {
 
 	int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 	float calcFadeGain() {return *flMute > 0.5f ? 0.0f : 1.0f;}
-	bool isFadeMode() {return *fadeRate >= GlobalInfo::minFadeRate;}
+	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
 	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values20, float* _taps, int8_t* _panLawStereoLocal);
@@ -1356,7 +1363,7 @@ struct MixerAux {
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, *fadeProfile, gInfo->symmetricalFade);
-					fadeGainScaled = std::pow(fadeGain, GlobalInfo::globalAuxReturnScalingExponent);
+					fadeGainScaled = std::pow(fadeGain, GlobalConst::globalAuxReturnScalingExponent);
 				}
 			}
 			else {// we are in mute mode
@@ -1411,7 +1418,7 @@ struct MixerAux {
 			// calc ** faderGain **
 			if (auxRetFadePan[0] != oldFader) {
 				// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
-				faderGain = std::pow(auxRetFadePan[0], GlobalInfo::globalAuxReturnScalingExponent);// scaling
+				faderGain = std::pow(auxRetFadePan[0], GlobalConst::globalAuxReturnScalingExponent);// scaling
 			}
 			// calc ** gainMatrix **
 			if (auxRetFadePan[0] != oldFader || pan != oldPan) {

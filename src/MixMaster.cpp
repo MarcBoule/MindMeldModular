@@ -16,6 +16,7 @@ struct MixMaster : Module {
 
 
 	// Constants
+	static const int N_TRK = 16;// temporary, chang so that proper number of params are declared
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
@@ -28,7 +29,7 @@ struct MixMaster : Module {
 	MixerTrack tracks[16];
 	MixerGroup groups[4];
 	MixerAux aux[4];
-	MixerMaster master;
+	MixerMaster<N_TRK> master;
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -61,14 +62,14 @@ struct MixMaster : Module {
 
 		char strBuf[32];
 		// Track
-		float maxTGFader = std::pow(GlobalInfo::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalInfo::trkAndGrpFaderScalingExponent);
+		float maxTGFader = std::pow(GlobalConst::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalConst::trkAndGrpFaderScalingExponent);
 		for (int i = 0; i < 16; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Track #%i pan", i + 1);
 			configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Track #%i level", i + 1);
-			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
+			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalConst::trkAndGrpFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Track #%i mute", i + 1);
 			configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
@@ -86,7 +87,7 @@ struct MixMaster : Module {
 			configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
 			snprintf(strBuf, 32, "Group #%i level", i + 1);
-			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalInfo::trkAndGrpFaderScalingExponent);
+			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalConst::trkAndGrpFaderScalingExponent);
 			// Mute
 			snprintf(strBuf, 32, "Group #%i mute", i + 1);
 			configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
@@ -94,8 +95,8 @@ struct MixMaster : Module {
 			snprintf(strBuf, 32, "Group #%i solo", i + 1);
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		float maxMFader = std::pow(MixerMaster::masterFaderMaxLinearGain, 1.0f / MixerMaster::masterFaderScalingExponent);
-		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * MixerMaster::masterFaderScalingExponent);
+		float maxMFader = std::pow(GlobalConst::masterFaderMaxLinearGain, 1.0f / GlobalConst::masterFaderScalingExponent);
+		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * GlobalConst::masterFaderScalingExponent);
 		// Mute
 		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
 		// Dim
@@ -113,7 +114,7 @@ struct MixMaster : Module {
 			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
-		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalInfo::antipopSlewFast, GlobalInfo::antipopSlewFast); // slew rate is in input-units per second 
+		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);

@@ -668,7 +668,7 @@ struct FadeRateQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut >= GlobalInfo::minFadeRate) {
+		if (valCut >= GlobalConst::minFadeRate) {
 			return string::f("%.1f", valCut);
 		}
 		else {
@@ -678,7 +678,7 @@ struct FadeRateQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "Fade";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= GlobalInfo::minFadeRate) {
+		if (getDisplayValue() >= GlobalConst::minFadeRate) {
 			return " s";
 		}
 		else {
@@ -933,10 +933,11 @@ struct ClippingItem : MenuItem {
 
 // dim gain menu item
 
+template<int N_TRK>
 struct DimGainQuantity : Quantity {
-	MixerMaster *srcMaster = NULL;
+	MixerMaster<N_TRK> *srcMaster = NULL;
 	  
-	DimGainQuantity(MixerMaster *_srcMaster) {
+	DimGainQuantity(MixerMaster<N_TRK> *_srcMaster) {
 		srcMaster = _srcMaster;
 	}
 	void setValue(float value) override {
@@ -961,10 +962,10 @@ struct DimGainQuantity : Quantity {
 	std::string getUnit() override {return " dB";}
 };
 
-//template<int N_TRK>
+template<int N_TRK>
 struct DimGainSlider : ui::Slider {
-	DimGainSlider(MixerMaster *srcMaster) {
-		quantity = new DimGainQuantity(srcMaster);
+	DimGainSlider(MixerMaster<N_TRK> *srcMaster) {
+		quantity = new DimGainQuantity<N_TRK>(srcMaster);
 	}
 	~DimGainSlider() {
 		delete quantity;
