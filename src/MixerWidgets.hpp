@@ -495,7 +495,6 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int numChars = 4;
 	int textSize = 12;
 	bool doubleClick = false;
-	GlobalInfo *gInfo = NULL;
 	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use EditableDisplayBase for Aux displays
 	int8_t* dispColorLocal;
 
@@ -572,6 +571,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 // Master display editable label with menu
 // --------------------
 
+template<int N_TRK>
 struct MasterDisplay : EditableDisplayBase {
 	MixerMaster *srcMaster;
 	
@@ -604,11 +604,11 @@ struct MasterDisplay : EditableDisplayBase {
 			menu->addChild(dimSliderItem);
 			
 			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
-			dcItem->srcMaster = srcMaster;
+			dcItem->dcBlockSrc = &(srcMaster->dcBlock);
 			menu->addChild(dcItem);
 			
 			ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
-			clipItem->srcMaster = srcMaster;
+			clipItem->clippingSrc = &(srcMaster->clipping);
 			menu->addChild(clipItem);
 				
 			if (srcMaster->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
@@ -958,8 +958,6 @@ struct GroupSelectDisplay : ParamWidget {
 			int colorIndex = srcColor->cc4[dispColor] < 7 ? srcColor->cc4[dispColor] : *srcColorLocal;
 			if (colorIndex != oldDispColor) {
 				ldc.color = DISP_COLORS[colorIndex];
-				// arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
-				// arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
 				oldDispColor = colorIndex;
 			}
 		}

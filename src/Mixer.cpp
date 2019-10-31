@@ -151,8 +151,8 @@ void GlobalInfo::onReset() {
 	filterPos = 1;// default is post-insert
 	groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 	ecoMode = 0xFFFF;// all 1's means yes, 0 means no
-	for (int i = 0; i < 16 + 4; i++) {
-		linkedFaderReloadValues[i] = 1.0f;
+	for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+		linkedFaderReloadValues[trkOrGrp] = 1.0f;
 	}
 	momentaryCvButtons = 1;// momentary by default
 	resetNonJson();
@@ -217,8 +217,8 @@ void GlobalInfo::dataToJson(json_t *rootJ) {
 	
 	// faders (extra copy for linkedFaderReloadValues that will be populated in dataFromJson())
 	json_t *fadersJ = json_array();
-	for (int i = 0; i < 16 + 4; i++) {
-		json_array_insert_new(fadersJ, i, json_real(paFade[TRACK_FADER_PARAMS + i].getValue()));
+	for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+		json_array_insert_new(fadersJ, trkOrGrp, json_real(paFade[TRACK_FADER_PARAMS + trkOrGrp].getValue()));
 	}
 	json_object_set_new(rootJ, "faders", fadersJ);		
 
@@ -306,15 +306,15 @@ void GlobalInfo::dataFromJson(json_t *rootJ) {
 	// faders (populate linkedFaderReloadValues)
 	json_t *fadersJ = json_object_get(rootJ, "faders");
 	if (fadersJ) {
-		for (int i = 0; i < 16 + 4; i++) {
-			json_t *fadersArrayJ = json_array_get(fadersJ, i);
+		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+			json_t *fadersArrayJ = json_array_get(fadersJ, trkOrGrp);
 			if (fadersArrayJ)
-				linkedFaderReloadValues[i] = json_number_value(fadersArrayJ);
+				linkedFaderReloadValues[trkOrGrp] = json_number_value(fadersArrayJ);
 		}
 	}
 	else {// legacy
-		for (int i = 0; i < 16 + 4; i++) {
-			linkedFaderReloadValues[i] = paFade[i].getValue();
+		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+			linkedFaderReloadValues[trkOrGrp] = paFade[trkOrGrp].getValue();
 		}
 	}
 	

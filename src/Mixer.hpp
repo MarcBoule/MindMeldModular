@@ -222,7 +222,7 @@ struct GlobalInfo {
 	float *values20;
 	float maxTGFader;
 	float fadeRates[16 + 4];// reset and json done in tracks and groups. fade rates for tracks and groups
-	int groupUsage[5];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
+	int groupUsage[4 + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
 
 	
 	bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
@@ -234,7 +234,7 @@ struct GlobalInfo {
 	// track and group solos
 	void updateSoloBitMask() {
 		soloBitMask = 0ul;
-		for (unsigned long trkOrGrp = 0; trkOrGrp < 20; trkOrGrp++) {
+		for (unsigned long trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
 			updateSoloBit(trkOrGrp);
 		}
 	}
@@ -261,9 +261,9 @@ struct GlobalInfo {
 	// aux return solos
 	void updateReturnSoloBits() {
 		int newReturnSoloBitMask = 0;
-		for (int aux = 0; aux < 4; aux++) {
-			if (values20[4 + aux] > 0.5f) {
-				newReturnSoloBitMask |= (1 << aux);
+		for (int auxi = 0; auxi < 4; auxi++) {
+			if (values20[4 + auxi] > 0.5f) {
+				newReturnSoloBitMask |= (1 << auxi);
 			}
 		}
 		returnSoloBitMask = newReturnSoloBitMask;
@@ -274,12 +274,12 @@ struct GlobalInfo {
 		if (newFader != oldFaders[trgOrGrpNum]) {
 			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
 				float delta = newFader - oldFaders[trgOrGrpNum];
-				for (int i = 0; i < 16 + 4; i++) {
-					if (isLinked(i) && i != trgOrGrpNum) {
-						float newValue = paFade[i].getValue() + delta;
+				for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+					if (isLinked(trkOrGrp) && trkOrGrp != trgOrGrpNum) {
+						float newValue = paFade[trkOrGrp].getValue() + delta;
 						newValue = clamp(newValue, 0.0f, maxTGFader);
-						paFade[i].setValue(newValue);
-						oldFaders[i] = newValue;// so that the other fader doesn't trigger a link propagation 
+						paFade[trkOrGrp].setValue(newValue);
+						oldFaders[trkOrGrp] = newValue;// so that the other fader doesn't trigger a link propagation 
 					}
 				}
 			}
@@ -306,27 +306,29 @@ struct GlobalInfo {
 	
 	void updateGroupUsage() {
 		// clear groupUsage for all track in all groups, and bitwise OR int also
-		for (int i = 0; i < 5; i++) {
-			groupUsage[i] = 0;
+		for (int gu = 0; gu < 4 + 1; gu++) {
+			groupUsage[gu] = 0;
 		}
 		
-		for (int trackNum = 0; trackNum < 16; trackNum++) {
+		for (int trk = 0; trk < 16; trk++) {
 			// set groupUsage for this track in the new group
-			int group = (int)(paGroup[trackNum].getValue() + 0.5f);
+			int group = (int)(paGroup[trk].getValue() + 0.5f);
 			if (group > 0) {
-				groupUsage[group - 1] |= (1 << trackNum);
+				groupUsage[group - 1] |= (1 << trk);
 			}
 		}
 		
-		// Bitwise OR of first 4 ints in 5th int
-		groupUsage[4] = groupUsage[0] | groupUsage[1] | groupUsage[2] | groupUsage[3];
+		// Bitwise OR of first ints in last int
+		for (int grp = 0; grp < 4; grp++) {
+			groupUsage[4] |= groupUsage[grp];
+		}
 	}	
 	
 	void process() {// GlobalInfo
 		if (requestLinkedFaderReload) {
-			for (int i = 0; i < 16 + 4; i++) {
-				oldFaders[i] = linkedFaderReloadValues[i];
-				paFade[i].setValue(linkedFaderReloadValues[i]);
+			for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+				oldFaders[trkOrGrp] = linkedFaderReloadValues[trkOrGrp];
+				paFade[trkOrGrp].setValue(linkedFaderReloadValues[trkOrGrp]);
 			}
 			requestLinkedFaderReload = false;
 		}
@@ -342,7 +344,7 @@ struct GlobalInfo {
 
 //*****************************************************************************
 
-
+// template<int N_TRK>
 struct MixerMaster {
 	// Constants
 	static const int masterFaderScalingExponent = 3; 

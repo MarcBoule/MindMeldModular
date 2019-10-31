@@ -749,7 +749,9 @@ struct MixMaster : Module {
 
 
 struct MixMasterWidget : ModuleWidget {
-	MasterDisplay* masterDisplay;
+	static const int N_TRK = 16;// no need to make this a template, since need separate widgets for MixMaster vs MixMasterJr
+
+	MasterDisplay<N_TRK>* masterDisplay;
 	TrackDisplay* trackDisplays[16];
 	GroupDisplay* groupDisplays[4];
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
@@ -779,7 +781,7 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(filterPosItem);
 		
 		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
-		panLawMonoItem->gInfo = &(module->gInfo);
+		panLawMonoItem->panLawMonoSrc = &(module->gInfo.panLawMono);
 		menu->addChild(panLawMonoItem);
 		
 		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
@@ -788,7 +790,7 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(panLawStereoItem);
 		
 		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
-		chainItem->gInfo = &(module->gInfo);
+		chainItem->chainModeSrc = &(module->gInfo.chainMode);
 		menu->addChild(chainItem);
 		
 		TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
@@ -797,15 +799,16 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(directOutsItem);
 		
 		MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Mute/Solo CV", RIGHT_ARROW);
-		momentItem->gInfo = &(module->gInfo);
+		momentItem->momentaryCvButtonsSrc = &(module->gInfo.momentaryCvButtons);
 		menu->addChild(momentItem);
 
 		FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
-		fadItem->gInfo = &(module->gInfo);
+		fadItem->symmetricalFadeSrc = &(module->gInfo.symmetricalFade);
+		fadItem->fadeCvOutsWithVolCvSrc = &(module->gInfo.fadeCvOutsWithVolCv);
 		menu->addChild(fadItem);
 		
 		EcoItem *eco0Item = createMenuItem<EcoItem>("Eco mode", CHECKMARK(module->gInfo.ecoMode));
-		eco0Item->gInfo = &(module->gInfo);
+		eco0Item->ecoModeSrc = &(module->gInfo.ecoMode);
 		menu->addChild(eco0Item);
 		
 		if (module->auxExpanderPresent) {
@@ -818,7 +821,7 @@ struct MixMasterWidget : ModuleWidget {
 			TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
 			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
 			auxSendsItem->isGlobal = true;
-			auxSendsItem->gInfo = &(module->gInfo);
+			auxSendsItem->groupsControlTrackSendLevelsSrc = &(module->gInfo.groupsControlTrackSendLevels);
 			menu->addChild(auxSendsItem);
 			
 			AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
@@ -827,7 +830,7 @@ struct MixMasterWidget : ModuleWidget {
 			menu->addChild(auxRetunsItem);
 		
 			AuxRetFbProtItem *fbpItem = createMenuItem<AuxRetFbProtItem>("Routing returns to groups", RIGHT_ARROW);
-			fbpItem->gInfo = &(module->gInfo);
+			fbpItem->groupedAuxReturnFeedbackProtectionSrc = &(module->gInfo.groupedAuxReturnFeedbackProtection);
 			menu->addChild(fbpItem);
 		}
 		
@@ -857,7 +860,7 @@ struct MixMasterWidget : ModuleWidget {
 		menu->addChild(cvPointerShowItem);
 		
 		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
-		nightItem->gInfo = &(module->gInfo);
+		nightItem->colorAndCloakSrc = &(module->gInfo.colorAndCloak);
 		menu->addChild(nightItem);
 		
 		// ExpansionItem *expItem = createMenuItem<ExpansionItem>("Show CVs on left side", CHECKMARK(module->expansion));
@@ -897,7 +900,6 @@ struct MixMasterWidget : ModuleWidget {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
-				trackDisplays[i]->gInfo = &(module->gInfo);
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
@@ -997,7 +999,6 @@ struct MixMasterWidget : ModuleWidget {
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
-				groupDisplays[i]->gInfo = &(module->gInfo);
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
@@ -1062,7 +1063,7 @@ struct MixMasterWidget : ModuleWidget {
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
-		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 1.2, 128.5 - 97.0))));
+		addChild(masterDisplay = createWidgetCentered<MasterDisplay<N_TRK>>(mm2px(Vec(294.81 + 1.2, 128.5 - 97.0))));
 		if (module) {
 			masterDisplay->srcMaster = &(module->master);
 			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);

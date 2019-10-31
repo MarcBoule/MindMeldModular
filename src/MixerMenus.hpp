@@ -16,13 +16,13 @@
 // --------------------
 
 struct PanLawMonoItem : MenuItem {
-	GlobalInfo *gInfo;
+	int *panLawMonoSrc;
 	
 	struct PanLawMonoSubItem : MenuItem {
-		GlobalInfo *gInfo;
+		int *panLawMonoSrc;
 		int setVal;
 		void onAction(const event::Action &e) override {
-			gInfo->panLawMono = setVal;
+			*panLawMonoSrc = setVal;
 		}
 	};
 	
@@ -37,8 +37,8 @@ struct PanLawMonoItem : MenuItem {
 		};
 			
 		for (int i = 0; i < 4; i++) {
-			PanLawMonoSubItem *lawMonoItem = createMenuItem<PanLawMonoSubItem>(panLawMonoNames[i], CHECKMARK(gInfo->panLawMono == i));
-			lawMonoItem->gInfo = gInfo;
+			PanLawMonoSubItem *lawMonoItem = createMenuItem<PanLawMonoSubItem>(panLawMonoNames[i], CHECKMARK(*panLawMonoSrc == i));
+			lawMonoItem->panLawMonoSrc = panLawMonoSrc;
 			lawMonoItem->setVal = i;
 			menu->addChild(lawMonoItem);
 		}
@@ -118,12 +118,12 @@ struct TapModeItem : MenuItem {
 };
 
 struct TapModePlusItem : TapModeItem {
-	GlobalInfo* gInfo;
+	int* groupsControlTrackSendLevelsSrc;
 
 	struct GroupsControlTrackSendLevelsItem : MenuItem {
-		int* groupsControlTrackSendLevelsPtr;
+		int* groupsControlTrackSendLevelsSrc;
 		void onAction(const event::Action &e) override {
-			*groupsControlTrackSendLevelsPtr ^= 0x1;
+			*groupsControlTrackSendLevelsSrc ^= 0x1;
 		}
 	};
 
@@ -132,8 +132,8 @@ struct TapModePlusItem : TapModeItem {
 		Menu *menu = TapModeItem::createChildMenu();
 
 		menu->addChild(new MenuSeparator());
-		GroupsControlTrackSendLevelsItem *levelTwhenGItem = createMenuItem<GroupsControlTrackSendLevelsItem>("Groups control track send levels", CHECKMARK(gInfo->groupsControlTrackSendLevels != 0));
-		levelTwhenGItem->groupsControlTrackSendLevelsPtr = &(gInfo->groupsControlTrackSendLevels);
+		GroupsControlTrackSendLevelsItem *levelTwhenGItem = createMenuItem<GroupsControlTrackSendLevelsItem>("Groups control track send levels", CHECKMARK(*groupsControlTrackSendLevelsSrc != 0));
+		levelTwhenGItem->groupsControlTrackSendLevelsSrc = groupsControlTrackSendLevelsSrc;
 		menu->addChild(levelTwhenGItem);
 
 		return menu;
@@ -201,25 +201,25 @@ struct AuxReturnItem : MenuItem {
 
 
 struct ChainItem : MenuItem {
-	GlobalInfo *gInfo;
+	int *chainModeSrc;
 
 	struct ChainSubItem : MenuItem {
-		GlobalInfo *gInfo;
+		int *chainModeSrc;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
-			gInfo->chainMode = setVal;
+			*chainModeSrc = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		ChainSubItem *ch0Item = createMenuItem<ChainSubItem>("Pre-master", CHECKMARK(gInfo->chainMode == 0));
-		ch0Item->gInfo = gInfo;
+		ChainSubItem *ch0Item = createMenuItem<ChainSubItem>("Pre-master", CHECKMARK(*chainModeSrc == 0));
+		ch0Item->chainModeSrc = chainModeSrc;
 		menu->addChild(ch0Item);
 
-		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master", CHECKMARK(gInfo->chainMode == 1));
-		ch1Item->gInfo = gInfo;
+		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master", CHECKMARK(*chainModeSrc == 1));
+		ch1Item->chainModeSrc = chainModeSrc;
 		ch1Item->setVal = 1;
 		menu->addChild(ch1Item);
 
@@ -228,24 +228,24 @@ struct ChainItem : MenuItem {
 };
 
 struct AuxRetFbProtItem : MenuItem {
-	GlobalInfo *gInfo;
+	int8_t *groupedAuxReturnFeedbackProtectionSrc;
 
 	struct AuxRetFbProtSubItem : MenuItem {
-		GlobalInfo *gInfo;
+		int8_t *groupedAuxReturnFeedbackProtectionSrc;
 		void onAction(const event::Action &e) override {
-			gInfo->groupedAuxReturnFeedbackProtection ^= 0x1;
+			*groupedAuxReturnFeedbackProtectionSrc ^= 0x1;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		AuxRetFbProtSubItem *fb1Item = createMenuItem<AuxRetFbProtSubItem>("Feedback protection ON (default)", CHECKMARK(gInfo->groupedAuxReturnFeedbackProtection == 1));
-		fb1Item->gInfo = gInfo;
+		AuxRetFbProtSubItem *fb1Item = createMenuItem<AuxRetFbProtSubItem>("Feedback protection ON (default)", CHECKMARK(*groupedAuxReturnFeedbackProtectionSrc == 1));
+		fb1Item->groupedAuxReturnFeedbackProtectionSrc = groupedAuxReturnFeedbackProtectionSrc;
 		menu->addChild(fb1Item);
 
-		AuxRetFbProtSubItem *fb0Item = createMenuItem<AuxRetFbProtSubItem>("Feedback protection OFF (Warning RTFM!)", CHECKMARK(gInfo->groupedAuxReturnFeedbackProtection == 0));
-		fb0Item->gInfo = gInfo;
+		AuxRetFbProtSubItem *fb0Item = createMenuItem<AuxRetFbProtSubItem>("Feedback protection OFF (Warning RTFM!)", CHECKMARK(*groupedAuxReturnFeedbackProtectionSrc == 0));
+		fb0Item->groupedAuxReturnFeedbackProtectionSrc = groupedAuxReturnFeedbackProtectionSrc;
 		menu->addChild(fb0Item);
 
 		return menu;
@@ -253,24 +253,24 @@ struct AuxRetFbProtItem : MenuItem {
 };
 
 struct MomentaryCvItem : MenuItem {
-	GlobalInfo *gInfo;
+	int8_t *momentaryCvButtonsSrc;
 
 	struct MomentaryCvSubItem : MenuItem {
-		GlobalInfo *gInfo;
+		int8_t *momentaryCvButtonsSrc;
 		void onAction(const event::Action &e) override {
-			gInfo->momentaryCvButtons ^= 0x1;
+			*momentaryCvButtonsSrc ^= 0x1;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		MomentaryCvSubItem *mo1Item = createMenuItem<MomentaryCvSubItem>("Trigger toggle", CHECKMARK(gInfo->momentaryCvButtons == 1));
-		mo1Item->gInfo = gInfo;
+		MomentaryCvSubItem *mo1Item = createMenuItem<MomentaryCvSubItem>("Trigger toggle", CHECKMARK(*momentaryCvButtonsSrc == 1));
+		mo1Item->momentaryCvButtonsSrc = momentaryCvButtonsSrc;
 		menu->addChild(mo1Item);
 
-		MomentaryCvSubItem *mo0Item = createMenuItem<MomentaryCvSubItem>("Gate high/low", CHECKMARK(gInfo->momentaryCvButtons == 0));
-		mo0Item->gInfo = gInfo;
+		MomentaryCvSubItem *mo0Item = createMenuItem<MomentaryCvSubItem>("Gate high/low", CHECKMARK(*momentaryCvButtonsSrc == 0));
+		mo0Item->momentaryCvButtonsSrc = momentaryCvButtonsSrc;
 		menu->addChild(mo0Item);
 
 		return menu;
@@ -278,9 +278,9 @@ struct MomentaryCvItem : MenuItem {
 };
 
 struct CloakedModeItem : MenuItem {
-	GlobalInfo *gInfo;
+	PackedBytes4 *colorAndCloakSrc;
 	void onAction(const event::Action &e) override {
-		gInfo->colorAndCloak.cc4[cloakedMode] ^= 0xFF;
+		colorAndCloakSrc->cc4[cloakedMode] ^= 0xFF;
 	}
 };
 
@@ -425,31 +425,32 @@ struct CvPointerShowItem : MenuItem {
 
 
 struct FadeSettingsItem : MenuItem {
-	GlobalInfo *gInfo;
+	bool *symmetricalFadeSrc;
+	bool *fadeCvOutsWithVolCvSrc;
 
 	struct SymmetricalFadeItem : MenuItem {
-		GlobalInfo *gInfo;
+		bool *symmetricalFadeSrc;
 		void onAction(const event::Action &e) override {
-			gInfo->symmetricalFade = !gInfo->symmetricalFade;
+			*symmetricalFadeSrc = !*symmetricalFadeSrc;
 		}
 	};
 
 	struct FadeCvOutItem : MenuItem {
-		GlobalInfo *gInfo;
+		bool *fadeCvOutsWithVolCvSrc;
 		void onAction(const event::Action &e) override {
-			gInfo->fadeCvOutsWithVolCv = !gInfo->fadeCvOutsWithVolCv;
+			*fadeCvOutsWithVolCvSrc = !*fadeCvOutsWithVolCvSrc;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		SymmetricalFadeItem *symItem = createMenuItem<SymmetricalFadeItem>("Symmetrical", CHECKMARK(gInfo->symmetricalFade));
-		symItem->gInfo = gInfo;
+		SymmetricalFadeItem *symItem = createMenuItem<SymmetricalFadeItem>("Symmetrical", CHECKMARK(*symmetricalFadeSrc));
+		symItem->symmetricalFadeSrc = symmetricalFadeSrc;
 		menu->addChild(symItem);
 		
-		FadeCvOutItem *fadeCvItem = createMenuItem<FadeCvOutItem>("Include vol CV in fade CV out", CHECKMARK(gInfo->fadeCvOutsWithVolCv));
-		fadeCvItem->gInfo = gInfo;
+		FadeCvOutItem *fadeCvItem = createMenuItem<FadeCvOutItem>("Include vol CV in fade CV out", CHECKMARK(*fadeCvOutsWithVolCvSrc));
+		fadeCvItem->fadeCvOutsWithVolCvSrc = fadeCvOutsWithVolCvSrc;
 		menu->addChild(fadeCvItem);
 		
 		return menu;
@@ -457,9 +458,9 @@ struct FadeSettingsItem : MenuItem {
 };
 
 struct EcoItem : MenuItem {
-	GlobalInfo *gInfo;
+	uint16_t *ecoModeSrc;
 	void onAction(const event::Action &e) override {
-		gInfo->ecoMode = ~gInfo->ecoMode;
+		*ecoModeSrc = ~*ecoModeSrc;
 	}
 };
 
@@ -894,34 +895,34 @@ struct TrackReorderItem : MenuItem {
 
 // dcBlocker
 struct DcBlockItem : MenuItem {
-	MixerMaster *srcMaster;
+	bool *dcBlockSrc;
 	void onAction(const event::Action &e) override {
-		srcMaster->dcBlock = !srcMaster->dcBlock;
+		*dcBlockSrc = !*dcBlockSrc;
 	}
 };
 		
 		
 // clipper
 struct ClippingItem : MenuItem {
-	MixerMaster *srcMaster;
+	int *clippingSrc;
 
 	struct ClippingSubItem : MenuItem {
-		MixerMaster *srcMaster;
+		int *clippingSrc;
 		int setVal = 0;
 		void onAction(const event::Action &e) override {
-			srcMaster->clipping = setVal;
+			*clippingSrc = setVal;
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		ClippingSubItem *lim0Item = createMenuItem<ClippingSubItem>("Soft (default)", CHECKMARK(srcMaster->clipping == 0));
-		lim0Item->srcMaster = srcMaster;
+		ClippingSubItem *lim0Item = createMenuItem<ClippingSubItem>("Soft (default)", CHECKMARK(*clippingSrc == 0));
+		lim0Item->clippingSrc = clippingSrc;
 		menu->addChild(lim0Item);
 
-		ClippingSubItem *lim1Item = createMenuItem<ClippingSubItem>("Hard", CHECKMARK(srcMaster->clipping == 1));
-		lim1Item->srcMaster = srcMaster;
+		ClippingSubItem *lim1Item = createMenuItem<ClippingSubItem>("Hard", CHECKMARK(*clippingSrc == 1));
+		lim1Item->clippingSrc = clippingSrc;
 		lim1Item->setVal = 1;
 		menu->addChild(lim1Item);
 
@@ -960,6 +961,7 @@ struct DimGainQuantity : Quantity {
 	std::string getUnit() override {return " dB";}
 };
 
+//template<int N_TRK>
 struct DimGainSlider : ui::Slider {
 	DimGainSlider(MixerMaster *srcMaster) {
 		quantity = new DimGainQuantity(srcMaster);
