@@ -585,7 +585,6 @@ struct MixerMaster {
 //*****************************************************************************
 
 
-template<int N_TRK>
 struct MixerGroup {
 	// Constants
 	// none

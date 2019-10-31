@@ -24,7 +24,7 @@ struct MixMaster : Module {
 	// int expansion;
 	
 	// Need to save, with reset
-	alignas(4) char trackLabels[4 * 20 + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * (16 + 4) + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	GlobalInfo gInfo;
 	MixerTrack tracks[16];
 	MixerGroup groups[4];
