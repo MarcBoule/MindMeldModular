@@ -821,7 +821,16 @@ struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 // --------------------
 
 struct MasterDisplay : EditableDisplayBase {
-	MixerMaster *srcMaster;
+	bool* dcBlock;
+	int* clipping;
+	float* fadeRate;
+	float* fadeProfile;
+	int8_t* vuColorThemeLocal;
+	int8_t* dispColorLocal;
+	float* dimGain;
+	char* masterLabel;
+	float* dimGainIntegerDB;
+	PackedBytes4* colorAndCloak;
 	
 	MasterDisplay() {
 		numChars = 6;
@@ -839,36 +848,36 @@ struct MasterDisplay : EditableDisplayBase {
 			mastSetLabel->text = "Master settings: ";
 			menu->addChild(mastSetLabel);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate));
+			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcMaster->fadeProfile));
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(fadeProfile);
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			DimGainSlider *dimSliderItem = new DimGainSlider(&(srcMaster->dimGain), &(srcMaster->dimGainIntegerDB));
+			DimGainSlider *dimSliderItem = new DimGainSlider(dimGain, dimGainIntegerDB);
 			dimSliderItem->box.size.x = 200.0f;
 			menu->addChild(dimSliderItem);
 			
-			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
-			dcItem->dcBlockSrc = &(srcMaster->dcBlock);
+			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(*dcBlock));
+			dcItem->dcBlockSrc = dcBlock;
 			menu->addChild(dcItem);
 			
 			ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
-			clipItem->clippingSrc = &(srcMaster->clipping);
+			clipItem->clippingSrc = clipping;
 			menu->addChild(clipItem);
 				
-			if (srcMaster->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
+			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcMaster->vuColorThemeLocal);
+				vuColItem->srcColor = vuColorThemeLocal;
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
 			
-			if (srcMaster->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
+			if (colorAndCloak->cc4[dispColor] >= 7) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-				dispColItem->srcColor = &(srcMaster->dispColorLocal);
+				dispColItem->srcColor = dispColorLocal;
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
 			}
@@ -879,7 +888,7 @@ struct MasterDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);		
 	}
 	void onChange(const event::Change &e) override {
-		snprintf(srcMaster->masterLabel, 7, "%s", text.c_str());
+		snprintf(masterLabel, 7, "%s", text.c_str());
 		EditableDisplayBase::onChange(e);
 	};
 };
@@ -892,10 +901,84 @@ struct MasterDisplay : EditableDisplayBase {
 struct TrackDisplay : EditableDisplayBase {
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;
+	bool *auxExpanderPresentPtr;
+	char* trackNames;
+	
+	// copy callback
+	//----
+	void copyTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
+		TrackSettingsCpBuffer buffer;
+		tracks[_trackNumSrc].write(&buffer);
+		tracks[_trackNumDest].read(&buffer);
+	}
+	
+	
+	//----
+	
+	// move callback
 	int *updateTrackLabelRequestPtr;
 	int *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
-	bool *auxExpanderPresentPtr;
+
+	CableWidget* cwClr[4];
+	
+	void transferTrackInputs(int srcTrk, int destTrk) {
+		// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
+		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+			CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
+			if (cwRip != NULL) {
+				APP->scene->rack->removeCable(cwRip);
+				cwRip->setInput(inputWidgets[destTrk + i * 16]);
+				APP->scene->rack->addCable(cwRip);
+			}
+		}
+	}
+	void clearTrackInputs(int trk) {
+		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+			cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
+			if (cwClr[i] != NULL) {
+				APP->scene->rack->removeCable(cwClr[i]);
+			}
+		}
+	}
+	void reconnectTrackInputs(int trk) {
+		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+			if (cwClr[i] != NULL) {
+				cwClr[i]->setInput(inputWidgets[trk + i * 16]);
+				APP->scene->rack->addCable(cwClr[i]);
+			}
+		}
+	}	
+	
+	void moveTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
+		TrackSettingsCpBuffer buffer1;
+		TrackSettingsCpBuffer buffer2;
+		
+		tracks[_trackNumSrc].write2(&buffer2);
+		clearTrackInputs(_trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
+		if (_trackNumDest < _trackNumSrc) {
+			for (int trk = _trackNumSrc - 1; trk >= _trackNumDest; trk--) {
+				tracks[trk].write2(&buffer1);
+				tracks[trk + 1].read2(&buffer1);
+				transferTrackInputs(trk, trk + 1);
+			}
+		}
+		else {// must automatically be bigger (equal is impossible)
+			for (int trk = _trackNumSrc; trk < _trackNumDest; trk++) {
+				tracks[trk + 1].write2(&buffer1);
+				tracks[trk].read2(&buffer1);
+				transferTrackInputs(trk + 1, trk);
+			}
+		}
+		tracks[_trackNumDest].read2(&buffer2);
+		reconnectTrackInputs(_trackNumDest);
+		
+		*updateTrackLabelRequestPtr = 1;
+		*trackMoveInAuxRequestPtr = (_trackNumSrc | (_trackNumDest << 8));
+	}
+	
+	//----
+		
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -983,16 +1066,17 @@ struct TrackDisplay : EditableDisplayBase {
 			menu->addChild(settingsALabel);
 
 			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
-			copyItem->tracks = tracks;
+			copyItem->copyTrackSettingsCallback = copyTrackSettingsCallback;
 			copyItem->trackNumSrc = trackNumSrc;
+			copyItem->trackNames = trackNames;
+			copyItem->numTracks = 16;
 			menu->addChild(copyItem);
 			
 			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
 			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
-			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
-			reodrerItem->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
-			reodrerItem->inputWidgets = inputWidgets;
+			reodrerItem->trackNames = trackNames;
+			reodrerItem->numTracks = 16;
 			menu->addChild(reodrerItem);
 			
 			e.consume(this);

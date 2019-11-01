@@ -761,19 +761,18 @@ struct LinkFaderItem : MenuItem {
 
 // copy track menu settings to
 struct CopyTrackSettingsItem : MenuItem {
-	//void (*copyTrackSettingsCallback)(int srcTrack, int destTrack);
-	MixerTrack *tracks = NULL;
+	void (*copyTrackSettingsCallback)(int, int);
 	int trackNumSrc;	
+	char* trackNames;
+	int numTracks;
 
 	struct CopyTrackSettingsSubItem : MenuItem {
-		MixerTrack *tracks = NULL;
-		int trackNumSrc;	
+		void (*copyTrackSettingsCallback)(int, int);
+		int trackNumSrc;
 		int trackNumDest;
 
 		void onAction(const event::Action &e) override {
-			TrackSettingsCpBuffer buffer;
-			tracks[trackNumSrc].write(&buffer);
-			tracks[trackNumDest].read(&buffer);
+			copyTrackSettingsCallback(trackNumSrc, trackNumDest);
 		}
 	};
 	
@@ -781,10 +780,10 @@ struct CopyTrackSettingsItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < numTracks; trk++) {
 			bool onSource = (trk == trackNumSrc);
-			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
-			reo0Item->tracks = tracks;
+			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(trackNames[trk << 2], 4), CHECKMARK(onSource));
+			reo0Item->copyTrackSettingsCallback = copyTrackSettingsCallback;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
 			reo0Item->disabled = onSource;
@@ -797,75 +796,18 @@ struct CopyTrackSettingsItem : MenuItem {
 
 // move track to
 struct TrackReorderItem : MenuItem {
-	MixerTrack *tracks = NULL;
+	void (*moveTrackSettingsCallback)(int, int);
 	int trackNumSrc;	
-	int *updateTrackLabelRequestPtr;
-	int32_t *trackMoveInAuxRequestPtr;
-	PortWidget **inputWidgets;
+	char* trackNames;
+	int numTracks;
 
 	struct TrackReorderSubItem : MenuItem {
-		MixerTrack *tracks = NULL;
+		void (*moveTrackSettingsCallback)(int, int);
 		int trackNumSrc;	
 		int trackNumDest;
-		int *updateTrackLabelRequestPtr;
-		int32_t *trackMoveInAuxRequestPtr;
-		PortWidget **inputWidgets;
-		
-		CableWidget* cwClr[4];
-		
-		void transferTrackInputs(int srcTrk, int destTrk) {
-			// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
-			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
-				if (cwRip != NULL) {
-					APP->scene->rack->removeCable(cwRip);
-					cwRip->setInput(inputWidgets[destTrk + i * 16]);
-					APP->scene->rack->addCable(cwRip);
-				}
-			}
-		}
-		void clearTrackInputs(int trk) {
-			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
-				if (cwClr[i] != NULL) {
-					APP->scene->rack->removeCable(cwClr[i]);
-				}
-			}
-		}
-		void reconnectTrackInputs(int trk) {
-			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				if (cwClr[i] != NULL) {
-					cwClr[i]->setInput(inputWidgets[trk + i * 16]);
-					APP->scene->rack->addCable(cwClr[i]);
-				}
-			}
-		}
 
 		void onAction(const event::Action &e) override {
-			TrackSettingsCpBuffer buffer1;
-			TrackSettingsCpBuffer buffer2;
-			
-			tracks[trackNumSrc].write2(&buffer2);
-			clearTrackInputs(trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
-			if (trackNumDest < trackNumSrc) {
-				for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
-					tracks[trk].write2(&buffer1);
-					tracks[trk + 1].read2(&buffer1);
-					transferTrackInputs(trk, trk + 1);
-				}
-			}
-			else {// must automatically be bigger (equal is impossible)
-				for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
-					tracks[trk + 1].write2(&buffer1);
-					tracks[trk].read2(&buffer1);
-					transferTrackInputs(trk + 1, trk);
-				}
-			}
-			tracks[trackNumDest].read2(&buffer2);
-			reconnectTrackInputs(trackNumDest);
-			
-			*updateTrackLabelRequestPtr = 1;
-			*trackMoveInAuxRequestPtr = (trackNumSrc | (trackNumDest << 8));
+			moveTrackSettingsCallback(trackNumSrc, trackNumDest);
 		}
 	};
 	
@@ -873,15 +815,12 @@ struct TrackReorderItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < numTracks; trk++) {
 			bool onSource = (trk == trackNumSrc);
-			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
-			reo0Item->tracks = tracks;
+			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(trackNames[trk << 2], 4), CHECKMARK(onSource));
+			reo0Item->moveTrackSettingsCallback = moveTrackSettingsCallback;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
-			reo0Item->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
-			reo0Item->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
-			reo0Item->inputWidgets = inputWidgets;
 			reo0Item->disabled = onSource;
 			menu->addChild(reo0Item);
 		}
@@ -948,7 +887,7 @@ struct DimGainQuantity : Quantity {
 		*dimGainIntegerDBSrc = calcDimGainIntegerDB(gainLin);
 	}
 	float getValue() override {
-		return 20.0f * std::log10(srcMaster->dimGain);
+		return 20.0f * std::log10(*dimGainSrc);
 	}
 	float getMinValue() override {return -30.0f;}
 	float getMaxValue() override {return -1.0f;}

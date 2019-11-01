@@ -947,6 +947,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				trackDisplays[i]->trackNames = &(module->trackNames);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);
 			}
 			// HPF lights
@@ -1105,9 +1106,16 @@ struct MixMasterWidget : ModuleWidget {
 		// Master label
 		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 1.2, 128.5 - 97.0))));
 		if (module) {
-			masterDisplay->srcMaster = &(module->master);
-			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+			masterDisplay->dcBlock = &(module->master.dcBlock);
+			masterDisplay->clipping = &(module->master.clipping);
+			masterDisplay->fadeRate = &(module->master.fadeRate);
+			masterDisplay->fadeProfile = &(module->master.fadeProfile);
+			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
 			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
+			masterDisplay->dimGain = &(module->master.dimGain);
+			masterDisplay->masterLabel = &(module->master.masterLabel);
+			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
+			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
 		}
 		
 		// Master fader
