@@ -449,7 +449,7 @@ struct MixerMaster {
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		fadeGainScaled = fadeGain;
 		paramWithCV = -1.0f;
-		updateDimGainIntegerDB();
+		dimGainIntegerDB = calcDimGainIntegerDB(dimGain);
 		target = -1.0f;
 	}
 
@@ -530,11 +530,6 @@ struct MixerMaster {
 		dcCutoffFreq *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		dcBlocker[0].setCutoff(dcCutoffFreq);
 		dcBlocker[1].setCutoff(dcCutoffFreq);
-	}
-	
-	void updateDimGainIntegerDB() {
-		float integerDB = std::round(20.0f * std::log10(dimGain));
-		dimGainIntegerDB = std::pow(10.0f, integerDB / 20.0f);
 	}
 	
 	

@@ -130,6 +130,12 @@ static inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
 }
 
 
+static inline float calcDimGainIntegerDB(float dimGain) {
+	float integerDB = std::round(20.0f * std::log10(dimGain));
+	return std::pow(10.0f, integerDB / 20.0f);
+}
+
+
 // Utility
 
 float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade);

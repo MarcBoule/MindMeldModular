@@ -5,6 +5,11 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
+#ifndef MMM_MIXERMENUS_HPP
+#define MMM_MIXERMENUS_HPP
+
+#include "MixerCommon.hpp"
+
 
 // Module's context menu
 // --------------------
@@ -465,17 +470,17 @@ struct EcoItem : MenuItem {
 // Gain adjust menu item
 
 struct GainAdjustQuantity : Quantity {
-	MixerTrack *srcTrack = NULL;
+	float *gainAdjustSrc;
 	  
-	GainAdjustQuantity(MixerTrack *_srcTrack) {
-		srcTrack = _srcTrack;
+	GainAdjustQuantity(float *_gainAdjustSrc) {
+		gainAdjustSrc = _gainAdjustSrc;
 	}
 	void setValue(float value) override {
 		float gainInDB = math::clamp(value, getMinValue(), getMaxValue());
-		srcTrack->gainAdjust = std::pow(10.0f, gainInDB / 20.0f);
+		*gainAdjustSrc = std::pow(10.0f, gainInDB / 20.0f);
 	}
 	float getValue() override {
-		return 20.0f * std::log10(srcTrack->gainAdjust);
+		return 20.0f * std::log10(*gainAdjustSrc);
 	}
 	float getMinValue() override {return -20.0f;}
 	float getMaxValue() override {return 20.0f;}
@@ -492,8 +497,8 @@ struct GainAdjustQuantity : Quantity {
 };
 
 struct GainAdjustSlider : ui::Slider {
-	GainAdjustSlider(MixerTrack *srcTrack) {
-		quantity = new GainAdjustQuantity(srcTrack);
+	GainAdjustSlider(float *gainAdjustSrc) {
+		quantity = new GainAdjustQuantity(gainAdjustSrc);
 	}
 	~GainAdjustSlider() {
 		delete quantity;
@@ -756,6 +761,7 @@ struct LinkFaderItem : MenuItem {
 
 // copy track menu settings to
 struct CopyTrackSettingsItem : MenuItem {
+	//void (*copyTrackSettingsCallback)(int srcTrack, int destTrack);
 	MixerTrack *tracks = NULL;
 	int trackNumSrc;	
 
@@ -928,15 +934,18 @@ struct ClippingItem : MenuItem {
 // dim gain menu item
 
 struct DimGainQuantity : Quantity {
-	MixerMaster *srcMaster = NULL;
+	float *dimGainSrc;
+	float *dimGainIntegerDBSrc;
 	  
-	DimGainQuantity(MixerMaster *_srcMaster) {
-		srcMaster = _srcMaster;
+	DimGainQuantity(float* _dimGainSrc, float* _dimGainIntegerDBSrc) {
+		dimGainSrc = _dimGainSrc;
+		dimGainIntegerDBSrc = _dimGainIntegerDBSrc;
 	}
 	void setValue(float value) override {
 		float gainInDB = math::clamp(value, getMinValue(), getMaxValue());
-		srcMaster->dimGain = std::pow(10.0f, gainInDB / 20.0f);
-		srcMaster->updateDimGainIntegerDB();
+		float gainLin = std::pow(10.0f, gainInDB / 20.0f);
+		*dimGainSrc = gainLin;
+		*dimGainIntegerDBSrc = calcDimGainIntegerDB(gainLin);
 	}
 	float getValue() override {
 		return 20.0f * std::log10(srcMaster->dimGain);
@@ -956,11 +965,12 @@ struct DimGainQuantity : Quantity {
 };
 
 struct DimGainSlider : ui::Slider {
-	DimGainSlider(MixerMaster *srcMaster) {
-		quantity = new DimGainQuantity(srcMaster);
+	DimGainSlider(float* dimGainSrc, float* dimGainIntegerDBSrc) {
+		quantity = new DimGainQuantity(dimGainSrc, dimGainIntegerDBSrc);
 	}
 	~DimGainSlider() {
 		delete quantity;
 	}
 };
 
+#endif
