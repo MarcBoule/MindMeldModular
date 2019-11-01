@@ -5,50 +5,6 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef MMM_MIXERWIDGETS_HPP
-#define MMM_MIXERWIDGETS_HPP
-
-
-#include "Mixer.hpp"
-#include "MixerMenus.hpp"
-#include <time.h>
-
-
-static const NVGcolor DISP_COLORS[] = {
-	nvgRGB(0xff, 0xd7, 0x14),// yellow
-	nvgRGB(240, 240, 240),// light-gray			
-	nvgRGB(140, 235, 107),// green
-	nvgRGB(102, 245, 207),// aqua
-	nvgRGB(102, 207, 245),// cyan
-	nvgRGB(102, 183, 245),// blue
-	nvgRGB(177, 107, 235)// purple
-};
-
-// --------------------
-// VU meters
-// --------------------
-
-// Colors
-static const int numThemes = 5;
-static const NVGcolor VU_THEMES_TOP[numThemes][2] =  
-									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
-										{nvgRGB(68, 164, 122), 	nvgRGB(102, 245, 182)}, // teal: peak (darker), rms (lighter)
-										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // light blue: peak (darker), rms (lighter)
-										{nvgRGB(68, 125, 164), 	nvgRGB(102, 180, 245)}, // blue: peak (darker), rms (lighter)
-										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_THEMES_BOT[numThemes][2] =  
-									   {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
-										{nvgRGB(68, 164, 156), 	nvgRGB(102, 245, 232)}, // teal: peak (darker), rms (lighter)
-										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // light blue: peak (darker), rms (lighter)
-										{nvgRGB(68,  92, 164), 	nvgRGB(102, 130, 245)}, // blue: peak (darker), rms (lighter)
-										{nvgRGB(85,  70, 130), 	nvgRGB(135, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
-static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
-static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
-
-static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
-static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
-
 
 // Base struct
 struct VuMeterBase : OpaqueWidget {
@@ -352,8 +308,6 @@ struct VuMeterAux : VuMeterTrack {//
 // Fade pointer
 // --------------------
 
-static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
-static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
 
 struct CvAndFadePointerBase : OpaqueWidget {
 	// instantiator must setup:
@@ -379,6 +333,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 
 
 	void draw(const DrawArgs &args) override {
+	static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
 		// cv pointer (draw only when cv has en effect)
 		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
 			float cvPosNormalized = *srcParamWithCV / maxTFader;
@@ -462,9 +417,6 @@ struct CvAndFadePointerAuxRet : CvAndFadePointerBase {
 // Displays 
 // --------------------
 
-static const Vec DISP_SIZE = Vec(38, 16);
-static const Vec DISP_OFFSET = Vec(2.6f, -2.2f);
-
 
 // Non-Editable track and group (used by auxspander)
 // --------------------
@@ -474,7 +426,7 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	int8_t* dispColorLocalPtr;
 	
 	TrackAndGroupLabel() {
-		box.size = DISP_SIZE;
+		box.size = Vec(38, 16);
 		textOffset = Vec(7.5, 12);
 		text = "-00-";
 	};
@@ -499,8 +451,8 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int8_t* dispColorLocal;
 
 	EditableDisplayBase() {
-		box.size = DISP_SIZE;
-		textOffset = DISP_OFFSET;
+		box.size = Vec(38, 16);
+		textOffset = Vec(2.6f, -2.2f);
 		text = "-00-";
 	};
 	
@@ -568,366 +520,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 }; 
 
 
-// Master display editable label with menu
-// --------------------
 
-template<int N_TRK>
-struct MasterDisplay : EditableDisplayBase {
-	MixerMaster<N_TRK> *srcMaster;
-	
-	MasterDisplay() {
-		numChars = 6;
-		textSize = 13;
-		box.size.x = mm2px(18.3f);
-		textOffset.x = 1.4f;// 2.4f
-		text = "-0000-";
-	}
-	
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
-			ui::Menu *menu = createMenu();
-
-			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Master settings: ";
-			menu->addChild(mastSetLabel);
-			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(&(srcMaster->fadeRate));
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
-			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcMaster->fadeProfile));
-			fadeProfSlider->box.size.x = 200.0f;
-			menu->addChild(fadeProfSlider);
-			
-			DimGainSlider<N_TRK> *dimSliderItem = new DimGainSlider<N_TRK>(srcMaster);
-			dimSliderItem->box.size.x = 200.0f;
-			menu->addChild(dimSliderItem);
-			
-			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(srcMaster->dcBlock));
-			dcItem->dcBlockSrc = &(srcMaster->dcBlock);
-			menu->addChild(dcItem);
-			
-			ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
-			clipItem->clippingSrc = &(srcMaster->clipping);
-			menu->addChild(clipItem);
-				
-			if (srcMaster->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
-				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcMaster->vuColorThemeLocal);
-				vuColItem->isGlobal = false;
-				menu->addChild(vuColItem);
-			}
-			
-			if (srcMaster->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
-				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-				dispColItem->srcColor = &(srcMaster->dispColorLocal);
-				dispColItem->isGlobal = false;
-				menu->addChild(dispColItem);
-			}
-			
-			e.consume(this);
-			return;
-		}
-		EditableDisplayBase::onButton(e);		
-	}
-	void onChange(const event::Change &e) override {
-		snprintf(srcMaster->masterLabel, 7, "%s", text.c_str());
-		EditableDisplayBase::onChange(e);
-	};
-};
-
-
-
-// Track display editable label with menu
-// --------------------
-
-struct TrackDisplay : EditableDisplayBase {
-	MixerTrack *tracks = NULL;
-	int trackNumSrc;
-	int *updateTrackLabelRequestPtr;
-	int *trackMoveInAuxRequestPtr;
-	PortWidget **inputWidgets;
-	bool *auxExpanderPresentPtr;
-
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
-			ui::Menu *menu = createMenu();
-			MixerTrack *srcTrack = &(tracks[trackNumSrc]);
-
-			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Track settings: " + std::string(srcTrack->trackName, 4);
-			menu->addChild(trkSetLabel);
-			
-			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(srcTrack);
-			trackGainAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(trackGainAdjustSlider);
-			
-			HPFCutoffSlider<MixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<MixerTrack>(srcTrack);
-			trackHPFAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(trackHPFAdjustSlider);
-			
-			LPFCutoffSlider<MixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<MixerTrack>(srcTrack);
-			trackLPFAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(trackLPFAdjustSlider);
-			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcTrack->panCvLevel));
-			panCvSlider->box.size.x = 200.0f;
-			menu->addChild(panCvSlider);
-			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack->fadeRate);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
-			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcTrack->fadeProfile));
-			fadeProfSlider->box.size.x = 200.0f;
-			menu->addChild(fadeProfSlider);
-			
-			LinkFaderItem<MixerTrack> *linkFadItem = createMenuItem<LinkFaderItem<MixerTrack>>("Link fader and fade", CHECKMARK(srcTrack->isLinked()));
-			linkFadItem->srcTrkGrp = srcTrack;
-			menu->addChild(linkFadItem);
-			
-			if (srcTrack->gInfo->directOutsMode >= 4) {
-				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
-				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);
-				directOutsItem->isGlobal = false;
-				menu->addChild(directOutsItem);
-			}
-
-			if (srcTrack->gInfo->filterPos >= 2) {
-				FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
-				filterPosItem->filterPosSrc = &(srcTrack->filterPos);
-				filterPosItem->isGlobal = false;
-				menu->addChild(filterPosItem);
-			}
-
-			if (srcTrack->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
-				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
-				auxSendsItem->tapModePtr = &(srcTrack->auxSendsMode);
-				auxSendsItem->isGlobal = false;
-				menu->addChild(auxSendsItem);
-			}
-
-			if (srcTrack->gInfo->panLawStereo >= 3) {
-				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-				panLawStereoItem->panLawStereoSrc = &(srcTrack->panLawStereo);
-				panLawStereoItem->isGlobal = false;
-				menu->addChild(panLawStereoItem);
-			}
-
-			if (srcTrack->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
-				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcTrack->vuColorThemeLocal);
-				vuColItem->isGlobal = false;
-				menu->addChild(vuColItem);
-			}
-
-			if (srcTrack->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
-				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-				dispColItem->srcColor = &(srcTrack->dispColorLocal);
-				dispColItem->isGlobal = false;
-				menu->addChild(dispColItem);
-			}
-			
-			menu->addChild(new MenuSeparator());
-
-			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
-			menu->addChild(settingsALabel);
-
-			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
-			copyItem->tracks = tracks;
-			copyItem->trackNumSrc = trackNumSrc;
-			menu->addChild(copyItem);
-			
-			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
-			reodrerItem->tracks = tracks;
-			reodrerItem->trackNumSrc = trackNumSrc;
-			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
-			reodrerItem->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
-			reodrerItem->inputWidgets = inputWidgets;
-			menu->addChild(reodrerItem);
-			
-			e.consume(this);
-			return;
-		}
-		EditableDisplayBase::onButton(e);
-	}
-	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
-		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			tracks[trackNumSrc].trackName[i] = text[i];
-		}
-		EditableDisplayBase::onChange(e);
-	};
-};
-
-
-// Group display editable label with menu
-// --------------------
-
-struct GroupDisplay : EditableDisplayBase {
-	MixerGroup *srcGroup = NULL;
-	bool *auxExpanderPresentPtr;
-
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
-			ui::Menu *menu = createMenu();
-
-			MenuLabel *grpSetLabel = new MenuLabel();
-			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
-			menu->addChild(grpSetLabel);
-			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcGroup->panCvLevel));
-			panCvSlider->box.size.x = 200.0f;
-			menu->addChild(panCvSlider);
-			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(srcGroup->fadeRate);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
-			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
-			fadeProfSlider->box.size.x = 200.0f;
-			menu->addChild(fadeProfSlider);
-			
-			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Link fader and fade", CHECKMARK(srcGroup->isLinked()));
-			linkFadItem->srcTrkGrp = srcGroup;
-			menu->addChild(linkFadItem);
-			
-			if (srcGroup->gInfo->directOutsMode >= 4) {
-				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
-				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
-				directOutsItem->isGlobal = false;
-				menu->addChild(directOutsItem);
-			}
-
-			if (srcGroup->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
-				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
-				auxSendsItem->tapModePtr = &(srcGroup->auxSendsMode);
-				auxSendsItem->isGlobal = false;
-				menu->addChild(auxSendsItem);
-			}
-
-			if (srcGroup->gInfo->panLawStereo >= 3) {
-				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
-				panLawStereoItem->isGlobal = false;
-				menu->addChild(panLawStereoItem);
-			}
-
-			if (srcGroup->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
-				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = &(srcGroup->vuColorThemeLocal);
-				vuColItem->isGlobal = false;
-				menu->addChild(vuColItem);
-			}
-			
-			if (srcGroup->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
-				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-				dispColItem->srcColor = &(srcGroup->dispColorLocal);
-				dispColItem->isGlobal = false;
-				menu->addChild(dispColItem);
-			}
-			
-			e.consume(this);
-			return;
-		}
-		EditableDisplayBase::onButton(e);
-	}
-	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
-		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			srcGroup->groupName[i] = text[i];
-		}
-		EditableDisplayBase::onChange(e);
-	};
-};
-
-
-// Aux display editable label with menu
-// --------------------
-
-struct AuxDisplay : EditableDisplayBase {
-	AuxspanderAux *srcAux = NULL;
-	int8_t* srcVuColor = NULL;
-	int8_t* srcDispColor = NULL;
-	int8_t* srcDirectOutsModeLocal = NULL;
-	int8_t* srcPanLawStereoLocal = NULL;
-	int8_t* srcDirectOutsModeGlobal = NULL;
-	int8_t* srcPanLawStereoGlobal = NULL;
-	float* srcPanCvLevel = NULL;
-	float* srcFadeRatesAndProfiles = NULL;// use [0] for fade rate, [4] for fade profile, pointer must be setup with aux indexing
-	char* auxName;
-	int auxNumber = 0;
-	
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
-			ui::Menu *menu = createMenu();
-
-			MenuLabel *auxSetLabel = new MenuLabel();
-			auxSetLabel->text = "Aux settings: " + text;
-			menu->addChild(auxSetLabel);
-			
-			HPFCutoffSlider<AuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<AuxspanderAux>(srcAux);
-			auxHPFAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(auxHPFAdjustSlider);
-			
-			LPFCutoffSlider<AuxspanderAux> *auxLPFAdjustSlider = new LPFCutoffSlider<AuxspanderAux>(srcAux);
-			auxLPFAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(auxLPFAdjustSlider);
-			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
-			panCvSlider->box.size.x = 200.0f;
-			menu->addChild(panCvSlider);
-			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(srcFadeRatesAndProfiles);
-			fadeSlider->box.size.x = 200.0f;
-			menu->addChild(fadeSlider);
-			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcFadeRatesAndProfiles[4]));
-			fadeProfSlider->box.size.x = 200.0f;
-			menu->addChild(fadeProfSlider);
-			
-			if (*srcDirectOutsModeGlobal >= 4) {
-				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
-				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
-				directOutsItem->isGlobal = false;
-				menu->addChild(directOutsItem);
-			}
-
-			if (*srcPanLawStereoGlobal >= 3) {
-				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
-				panLawStereoItem->isGlobal = false;
-				menu->addChild(panLawStereoItem);
-			}
-
-			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
-				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-				vuColItem->srcColor = srcVuColor;
-				vuColItem->isGlobal = false;
-				menu->addChild(vuColItem);
-			}
-			
-			if (colorAndCloak->cc4[dispColor] >= 7) {
-				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-				dispColItem->srcColor = srcDispColor;
-				dispColItem->isGlobal = false;
-				menu->addChild(dispColItem);
-			}
-			
-			e.consume(this);
-			return;
-		}
-		EditableDisplayBase::onButton(e);
-	}
-	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(auxName))) = 0x20202020;
-		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			auxName[i] = text[i];
-		}
-		EditableDisplayBase::onChange(e);
-	};
-};
 
 
 // Group select parameter with non-editable label, but will respond to hover key press
@@ -1035,71 +628,6 @@ struct DynGroupPlusButtonNotify : DynGroupPlusButtonNoParam {
 };
 
 
-// Special solo button with mutex feature (ctrl-click)
-
-struct DynSoloButtonMutex : DynSoloButton {
-	Param *soloParams;// 19 (or 15) params in here must be cleared when mutex solo performed on a group (track)
-	unsigned long soloMutexUnclickMemory;// for ctrl-unclick. Invalid when soloMutexUnclickMemory == -1
-	int soloMutexUnclickMemorySize;// -1 when nothing stored
-
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			if (((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
-				int soloParamId = paramQuantity->paramId - TRACK_SOLO_PARAMS;
-				bool isTrack = (soloParamId < 16);
-				int end = 16 + (isTrack ? 0 : 4);
-				bool turningOnSolo = soloParams[soloParamId].getValue() < 0.5f;
-				
-				
-				if (turningOnSolo) {// ctrl turning on solo: memorize solo states and clear all other solos 
-					// memorize solo states in case ctrl-unclick happens
-					soloMutexUnclickMemorySize = end;
-					soloMutexUnclickMemory = 0;
-					for (int i = 0; i < end; i++) {
-						if (soloParams[i].getValue() > 0.5f) {
-							soloMutexUnclickMemory |= (1 << i);
-						}
-					}
-					
-					// clear 19 (or 15) solos 
-					for (int i = 0; i < end; i++) {
-						if (soloParamId != i) {
-							soloParams[i].setValue(0.0f);
-						}
-					}
-					
-				}
-				else {// ctrl turning off solo: recall stored solo states
-					// reinstate 19 (or 15) solos 
-					if (soloMutexUnclickMemorySize >= 0) {
-						for (int i = 0; i < soloMutexUnclickMemorySize; i++) {
-							if (soloParamId != i) {
-								soloParams[i].setValue((soloMutexUnclickMemory & (1 << i)) != 0 ? 1.0f : 0.0f);
-							}
-						}
-						soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
-					}
-				}
-				e.consume(this);
-				return;
-			}
-			else {
-				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
-				if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
-					for (int i = 0; i < 20; i++) {
-						if (i != paramQuantity->paramId - TRACK_SOLO_PARAMS) {
-							soloParams[i].setValue(0.0f);
-						}
-					}
-					e.consume(this);
-					return;
-				}
-			}
-		}
-		DynSoloButton::onButton(e);		
-	}
-};
-
 
 // switch with dual display types (for Mute/Fade buttons)
 // --------------------
@@ -1153,70 +681,6 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 	}
 };
 
-struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
-	Param *muteParams;// 19 (or 15) params in here must be cleared when mutex mute performed on a group (track)
-
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
-				for (int i = 0; i < 20; i++) {
-					if (i != paramQuantity->paramId - TRACK_MUTE_PARAMS) {
-						muteParams[i].setValue(0.0f);
-					}
-				}
-				e.consume(this);
-				return;
-			}
-		}
-		DynMuteFadeButton::onButton(e);		
-	}	
-};
-
-// linked faders
-// --------------------
-
-struct DynSmallFaderWithLink : DynSmallFader {
-	GlobalInfo *gInfo;
-	Param *faderParams = NULL;
-	float lastValue = -1.0f;
-	
-	void onButton(const event::Button &e) override {
-		int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
-				gInfo->toggleLinked(faderIndex);
-				e.consume(this);
-				return;
-			}
-			else if ((APP->window->getMods() & RACK_MOD_MASK) == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
-				gInfo->linkBitMask = 0;
-				e.consume(this);
-				return;
-			}
-		}
-		DynSmallFader::onButton(e);		
-	}
-
-	void draw(const DrawArgs &args) override {
-		DynSmallFader::draw(args);
-		if (paramQuantity) {
-			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-			if (gInfo->isLinked(faderIndex)) {
-				float v = paramQuantity->getScaledValue();
-				float offsetY = handle->box.size.y / 2.0f;
-				float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
-				
-				nvgBeginPath(args.vg);
-				nvgMoveTo(args.vg, 0, ypos);
-				nvgLineTo(args.vg, box.size.x, ypos);
-				nvgClosePath(args.vg);
-				nvgStrokeColor(args.vg, SCHEME_RED);
-				nvgStrokeWidth(args.vg, mm2px(0.4f));
-				nvgStroke(args.vg);
-			}
-		}
-	}
-};
 
 
 // knobs with color theme arc
@@ -1279,8 +743,6 @@ struct DynKnobWithArc : DynKnob {
 	}
 };
 
-static constexpr float arcCvScale = 0.65f;
-static const int greyArc = 120;
 
 struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	int oldDispColor = -1;
@@ -1296,7 +758,7 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 			int colorIndex = colorAndCloakPtr->cc4[dispColor] < 7 ? colorAndCloakPtr->cc4[dispColor] : *dispColorLocal;
 			if (colorIndex != oldDispColor) {
 				arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
-				arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+				arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 				oldDispColor = colorIndex;
 			}
 		}
@@ -1309,7 +771,7 @@ struct DynSmallKnobAuxAWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxA.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(219, 65, 85);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
 struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
@@ -1317,7 +779,7 @@ struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxB.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(255, 127, 42);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
 struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
@@ -1325,7 +787,7 @@ struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxC.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(113, 160, 255);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
 struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
@@ -1333,9 +795,8 @@ struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxD.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(163, 93, 209);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);//calcArcColorDarker(arcCvScale);
+		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
 
 
-#endif

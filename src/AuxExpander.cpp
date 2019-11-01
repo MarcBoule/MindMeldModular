@@ -6,6 +6,7 @@
 //***********************************************************************************************
 
 
+#include "MixerCommon.hpp"
 #include "MixerWidgets.hpp"
 
 
@@ -41,6 +42,216 @@ struct AuxExpander : Module {
 		ENUMS(AUXSENDMUTE_GROUPED_RETURN_LIGHTS, 16),
 		NUM_LIGHTS
 	};
+
+
+
+
+
+struct AuxspanderAux {
+	// Constants
+	static constexpr float minHPFCutoffFreq = 20.0f;
+	static constexpr float maxLPFCutoffFreq = 20000.0f;
+	static constexpr float hpfBiquadQ = 1.0f;// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
+	
+	// need to save, no reset
+	// none
+	
+	// need to save, with reset
+	private:
+	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
+	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
+	public:
+
+	// no need to save, with reset
+	private:
+	OnePoleFilter hpPreFilter[2];// 6dB/oct
+	dsp::BiquadFilter hpFilter[2];// 12dB/oct
+	dsp::BiquadFilter lpFilter[2];// 12db/oct
+	public:
+
+	// no need to save, no reset
+	int auxNum;
+	std::string ids;
+	Input *inSig;
+
+
+	void construct(int _auxNum, Input *_inputs) {
+		auxNum = _auxNum;
+		ids = "id_x" + std::to_string(auxNum) + "_";
+		inSig = &_inputs[0 + 2 * auxNum + 0];
+		for (int i = 0; i < 2; i++) {
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
+			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
+		}
+	}
+
+
+	void onReset() {
+		setHPFCutoffFreq(13.0f);// off
+		setLPFCutoffFreq(20010.0f);// off
+		resetNonJson();
+	}
+
+
+	void dataToJson(json_t *rootJ) {
+		// hpfCutoffFreq
+		json_object_set_new(rootJ, (ids + "hpfCutoffFreq").c_str(), json_real(getHPFCutoffFreq()));
+		
+		// lpfCutoffFreq
+		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
+	}
+
+
+	void dataFromJson(json_t *rootJ) {
+		// hpfCutoffFreq
+		json_t *hpfCutoffFreqJ = json_object_get(rootJ, (ids + "hpfCutoffFreq").c_str());
+		if (hpfCutoffFreqJ)
+			setHPFCutoffFreq(json_number_value(hpfCutoffFreqJ));
+		
+		// lpfCutoffFreq
+		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
+		if (lpfCutoffFreqJ)
+			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
+
+		// extern must call resetNonJson()
+	}	
+
+	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
+		hpfCutoffFreq = fc;
+		fc *= APP->engine->getSampleTime();// fc is in normalized freq for rest of method
+		for (int i = 0; i < 2; i++) {
+			hpPreFilter[i].setCutoff(fc);
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, hpfBiquadQ, 0.0);
+		}
+	}
+	float getHPFCutoffFreq() {return hpfCutoffFreq;}
+	
+	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
+		lpfCutoffFreq = fc;
+		fc *= APP->engine->getSampleTime();// fc is in normalized freq for rest of method
+		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
+		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
+	}
+	float getLPFCutoffFreq() {return lpfCutoffFreq;}
+
+
+	void onSampleRateChange() {
+		setHPFCutoffFreq(hpfCutoffFreq);
+		setLPFCutoffFreq(lpfCutoffFreq);
+	}
+
+
+	void process(float *mix) {// auxspander aux	
+		// optimize unused aux
+		if (!inSig[0].isConnected()) {
+			mix[0] = mix[1] = 0.0f;
+			return;
+		}
+		mix[0] = inSig[0].getVoltage();
+		mix[1] = inSig[1].isConnected() ? inSig[1].getVoltage() : mix[0];
+		// Filters
+		// HPF
+		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			mix[0] = hpFilter[0].process(hpPreFilter[0].processHP(mix[0]));
+			mix[1] = inSig[1].isConnected() ? hpFilter[1].process(hpPreFilter[1].processHP(mix[1])) : mix[0];
+		}
+		// LPF
+		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			mix[0] = lpFilter[0].process(mix[0]);
+			mix[1] = inSig[1].isConnected() ? lpFilter[1].process(mix[1]) : mix[0];
+		}
+	}
+};// struct AuxspanderAux
+
+
+// Aux display editable label with menu
+// --------------------
+
+struct AuxDisplay : EditableDisplayBase {
+	AuxspanderAux *srcAux = NULL;
+	int8_t* srcVuColor = NULL;
+	int8_t* srcDispColor = NULL;
+	int8_t* srcDirectOutsModeLocal = NULL;
+	int8_t* srcPanLawStereoLocal = NULL;
+	int8_t* srcDirectOutsModeGlobal = NULL;
+	int8_t* srcPanLawStereoGlobal = NULL;
+	float* srcPanCvLevel = NULL;
+	float* srcFadeRatesAndProfiles = NULL;// use [0] for fade rate, [4] for fade profile, pointer must be setup with aux indexing
+	char* auxName;
+	int auxNumber = 0;
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *auxSetLabel = new MenuLabel();
+			auxSetLabel->text = "Aux settings: " + text;
+			menu->addChild(auxSetLabel);
+			
+			HPFCutoffSlider<AuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<AuxspanderAux>(srcAux);
+			auxHPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(auxHPFAdjustSlider);
+			
+			LPFCutoffSlider<AuxspanderAux> *auxLPFAdjustSlider = new LPFCutoffSlider<AuxspanderAux>(srcAux);
+			auxLPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(auxLPFAdjustSlider);
+			
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
+			panCvSlider->box.size.x = 200.0f;
+			menu->addChild(panCvSlider);
+			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcFadeRatesAndProfiles);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcFadeRatesAndProfiles[4]));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
+			
+			if (*srcDirectOutsModeGlobal >= 4) {
+				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
+				directOutsItem->isGlobal = false;
+				menu->addChild(directOutsItem);
+			}
+
+			if (*srcPanLawStereoGlobal >= 3) {
+				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
+				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
+				panLawStereoItem->isGlobal = false;
+				menu->addChild(panLawStereoItem);
+			}
+
+			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
+				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+				vuColItem->srcColor = srcVuColor;
+				vuColItem->isGlobal = false;
+				menu->addChild(vuColItem);
+			}
+			
+			if (colorAndCloak->cc4[dispColor] >= 7) {
+				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+				dispColItem->srcColor = srcDispColor;
+				dispColItem->isGlobal = false;
+				menu->addChild(dispColItem);
+			}
+			
+			e.consume(this);
+			return;
+		}
+		EditableDisplayBase::onButton(e);
+	}
+	void onChange(const event::Change &e) override {
+		(*((uint32_t*)(auxName))) = 0x20202020;
+		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
+			auxName[i] = text[i];
+		}
+		EditableDisplayBase::onChange(e);
+	};
+};
+
+
+
 
 	// Expander
 	float leftMessages[2][AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in Mixer.hpp

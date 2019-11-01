@@ -5,12 +5,6 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef MMM_MIXERMENUS_HPP
-#define MMM_MIXERMENUS_HPP
-
-
-#include "Mixer.hpp"
-
 
 // Module's context menu
 // --------------------
@@ -933,11 +927,10 @@ struct ClippingItem : MenuItem {
 
 // dim gain menu item
 
-template<int N_TRK>
 struct DimGainQuantity : Quantity {
-	MixerMaster<N_TRK> *srcMaster = NULL;
+	MixerMaster *srcMaster = NULL;
 	  
-	DimGainQuantity(MixerMaster<N_TRK> *_srcMaster) {
+	DimGainQuantity(MixerMaster *_srcMaster) {
 		srcMaster = _srcMaster;
 	}
 	void setValue(float value) override {
@@ -962,15 +955,12 @@ struct DimGainQuantity : Quantity {
 	std::string getUnit() override {return " dB";}
 };
 
-template<int N_TRK>
 struct DimGainSlider : ui::Slider {
-	DimGainSlider(MixerMaster<N_TRK> *srcMaster) {
-		quantity = new DimGainQuantity<N_TRK>(srcMaster);
+	DimGainSlider(MixerMaster *srcMaster) {
+		quantity = new DimGainQuantity(srcMaster);
 	}
 	~DimGainSlider() {
 		delete quantity;
 	}
 };
 
-
-#endif
