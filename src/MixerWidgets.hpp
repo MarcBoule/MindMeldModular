@@ -446,87 +446,6 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	}
 };
 
-// Editable track and group displays base struct
-// --------------------
-
-struct EditableDisplayBase : LedDisplayTextField {
-	int numChars = 4;
-	int textSize = 12;
-	bool doubleClick = false;
-	PackedBytes4* colorAndCloak = NULL; // make this separate so that we can use EditableDisplayBase for Aux displays
-	int8_t* dispColorLocal;
-
-	EditableDisplayBase() {
-		box.size = Vec(38, 16);
-		textOffset = Vec(2.6f, -2.2f);
-		text = "-00-";
-	};
-	
-	// don't want background so implement adapted version here
-	void draw(const DrawArgs &args) override {
-		if (colorAndCloak) {
-			int colorIndex = colorAndCloak->cc4[dispColor] < 7 ? colorAndCloak->cc4[dispColor] : *dispColorLocal;
-			color = DISP_COLORS[colorIndex];
-		}
-		if (cursor > numChars) {
-			text.resize(numChars);
-			cursor = numChars;
-			selection = numChars;
-		}
-		
-		// the code below is LedDisplayTextField.draw() without the background rect
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			bndSetFont(font->handle);
-
-			NVGcolor highlightColor = color;
-			highlightColor.a = 0.5;
-			int begin = std::min(cursor, selection);
-			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
-				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
-				-1, color, textSize, text.c_str(), highlightColor, begin, end);
-
-			bndSetFont(APP->window->uiFont->handle);
-		}
-		nvgResetScissor(args.vg);
-	}
-	
-	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
-	void onSelectText(const event::SelectText &e) override {
-		if (e.codepoint < 128) {
-			char letter = (char) e.codepoint;
-			if (letter == 0x20) {// space
-				letter = 0x2D;// hyphen
-			}
-			std::string newText(1, letter);
-			insertText(newText);
-		}
-		e.consume(this);	
-		
-		if (text.length() > (unsigned)numChars) {
-			text = text.substr(0, numChars);
-		}
-	}
-	
-	void onDoubleClick(const event::DoubleClick& e) override {
-		doubleClick = true;
-	}
-	
-	void onButton(const event::Button &e) override {
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_RELEASE) {
-			if (doubleClick) {
-				doubleClick = false;
-				selectAll();
-			}
-		}
-		LedDisplayTextField::onButton(e);
-	}
-
-}; 
-
-
-
 
 
 // Group select parameter with non-editable label, but will respond to hover key press
@@ -814,6 +733,85 @@ struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 
 
 
+// Editable track and group displays base struct
+// --------------------
+
+struct EditableDisplayBase : LedDisplayTextField {
+	int numChars = 4;
+	int textSize = 12;
+	bool doubleClick = false;
+	PackedBytes4* colorAndCloak = NULL;
+	int8_t* dispColorLocal;
+
+	EditableDisplayBase() {
+		box.size = Vec(38, 16);
+		textOffset = Vec(2.6f, -2.2f);
+		text = "-00-";
+	};
+	
+	// don't want background so implement adapted version here
+	void draw(const DrawArgs &args) override {
+		if (colorAndCloak) {
+			int colorIndex = colorAndCloak->cc4[dispColor] < 7 ? colorAndCloak->cc4[dispColor] : *dispColorLocal;
+			color = DISP_COLORS[colorIndex];
+		}
+		if (cursor > numChars) {
+			text.resize(numChars);
+			cursor = numChars;
+			selection = numChars;
+		}
+		
+		// the code below is LedDisplayTextField.draw() without the background rect
+		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+		if (font->handle >= 0) {
+			bndSetFont(font->handle);
+
+			NVGcolor highlightColor = color;
+			highlightColor.a = 0.5;
+			int begin = std::min(cursor, selection);
+			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
+			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
+				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
+				-1, color, textSize, text.c_str(), highlightColor, begin, end);
+
+			bndSetFont(APP->window->uiFont->handle);
+		}
+		nvgResetScissor(args.vg);
+	}
+	
+	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
+	void onSelectText(const event::SelectText &e) override {
+		if (e.codepoint < 128) {
+			char letter = (char) e.codepoint;
+			if (letter == 0x20) {// space
+				letter = 0x2D;// hyphen
+			}
+			std::string newText(1, letter);
+			insertText(newText);
+		}
+		e.consume(this);	
+		
+		if (text.length() > (unsigned)numChars) {
+			text = text.substr(0, numChars);
+		}
+	}
+	
+	void onDoubleClick(const event::DoubleClick& e) override {
+		doubleClick = true;
+	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_RELEASE) {
+			if (doubleClick) {
+				doubleClick = false;
+				selectAll();
+			}
+		}
+		LedDisplayTextField::onButton(e);
+	}
+
+}; 
+
 
 
 
@@ -899,124 +897,57 @@ struct MasterDisplay : EditableDisplayBase {
 // --------------------
 
 struct TrackDisplay : EditableDisplayBase {
-	MixerTrack *tracks = NULL;
+	void (*copyTrackSettingsCallback)(int, int);
+	void (*moveTrackSettingsCallback)(int, int);
 	int trackNumSrc;
 	bool *auxExpanderPresentPtr;
 	char* trackNames;
+	int numTracks;
+	float* gainAdjustSrc;
+	float* panCvLevelSrc;
+	float* fadeRateSrc;
+	float* fadeProfileSrc;
+	unsigned long* linkBitMaskSrc;
 	
-	// copy callback
-	//----
-	void copyTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
-		TrackSettingsCpBuffer buffer;
-		tracks[_trackNumSrc].write(&buffer);
-		tracks[_trackNumDest].read(&buffer);
-	}
-	
-	
-	//----
-	
-	// move callback
-	int *updateTrackLabelRequestPtr;
-	int *trackMoveInAuxRequestPtr;
-	PortWidget **inputWidgets;
-
-	CableWidget* cwClr[4];
-	
-	void transferTrackInputs(int srcTrk, int destTrk) {
-		// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
-		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-			CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
-			if (cwRip != NULL) {
-				APP->scene->rack->removeCable(cwRip);
-				cwRip->setInput(inputWidgets[destTrk + i * 16]);
-				APP->scene->rack->addCable(cwRip);
-			}
-		}
-	}
-	void clearTrackInputs(int trk) {
-		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-			cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
-			if (cwClr[i] != NULL) {
-				APP->scene->rack->removeCable(cwClr[i]);
-			}
-		}
-	}
-	void reconnectTrackInputs(int trk) {
-		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-			if (cwClr[i] != NULL) {
-				cwClr[i]->setInput(inputWidgets[trk + i * 16]);
-				APP->scene->rack->addCable(cwClr[i]);
-			}
-		}
-	}	
-	
-	void moveTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
-		TrackSettingsCpBuffer buffer1;
-		TrackSettingsCpBuffer buffer2;
-		
-		tracks[_trackNumSrc].write2(&buffer2);
-		clearTrackInputs(_trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
-		if (_trackNumDest < _trackNumSrc) {
-			for (int trk = _trackNumSrc - 1; trk >= _trackNumDest; trk--) {
-				tracks[trk].write2(&buffer1);
-				tracks[trk + 1].read2(&buffer1);
-				transferTrackInputs(trk, trk + 1);
-			}
-		}
-		else {// must automatically be bigger (equal is impossible)
-			for (int trk = _trackNumSrc; trk < _trackNumDest; trk++) {
-				tracks[trk + 1].write2(&buffer1);
-				tracks[trk].read2(&buffer1);
-				transferTrackInputs(trk + 1, trk);
-			}
-		}
-		tracks[_trackNumDest].read2(&buffer2);
-		reconnectTrackInputs(_trackNumDest);
-		
-		*updateTrackLabelRequestPtr = 1;
-		*trackMoveInAuxRequestPtr = (_trackNumSrc | (_trackNumDest << 8));
-	}
-	
-	//----
-		
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
-			MixerTrack *srcTrack = &(tracks[trackNumSrc]);
 
 			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Track settings: " + std::string(srcTrack->trackName, 4);
+			trkSetLabel->text = "Track settings: " + std::string(trackNames[trackNumSrc], 4);
 			menu->addChild(trkSetLabel);
 			
-			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(&(srcTrack->gainAdjust));
+			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(gainAdjustSrc);
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			
-			HPFCutoffSlider<MixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<MixerTrack>(srcTrack);
-			trackHPFAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(trackHPFAdjustSlider);
+			// HPFCutoffSlider<MixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<MixerTrack>(srcTrack);
+			// trackHPFAdjustSlider->box.size.x = 200.0f;
+			// menu->addChild(trackHPFAdjustSlider);
 			
-			LPFCutoffSlider<MixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<MixerTrack>(srcTrack);
-			trackLPFAdjustSlider->box.size.x = 200.0f;
-			menu->addChild(trackLPFAdjustSlider);
+			// LPFCutoffSlider<MixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<MixerTrack>(srcTrack);
+			// trackLPFAdjustSlider->box.size.x = 200.0f;
+			// menu->addChild(trackLPFAdjustSlider);
 			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcTrack->panCvLevel));
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(panCvLevelSrc);
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack->fadeRate);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRateSrc);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcTrack->fadeProfile));
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(fadeProfileSrc);
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem<MixerTrack> *linkFadItem = createMenuItem<LinkFaderItem<MixerTrack>>("Link fader and fade", CHECKMARK(srcTrack->isLinked()));
-			linkFadItem->srcTrkGrp = srcTrack;
+			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(linkBitMaskSrc, trackNumSrc)));
+			linkFadItem->linkBitMaskSrc = linkBitMaskSrc;
+			linkFadItem->trackOrGroupNum = trackNumSrc;
 			menu->addChild(linkFadItem);
 			
+			/*
 			if (srcTrack->gInfo->directOutsMode >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);
@@ -1057,26 +988,26 @@ struct TrackDisplay : EditableDisplayBase {
 				dispColItem->srcColor = &(srcTrack->dispColorLocal);
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
-			}
+			}*/
 			
 			menu->addChild(new MenuSeparator());
 
 			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
+			settingsALabel->text = "Actions: " + std::string(trackNames[trackNumSrc << 2], 4);
 			menu->addChild(settingsALabel);
 
 			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
 			copyItem->copyTrackSettingsCallback = copyTrackSettingsCallback;
 			copyItem->trackNumSrc = trackNumSrc;
 			copyItem->trackNames = trackNames;
-			copyItem->numTracks = 16;
+			copyItem->numTracks = numTracks;
 			menu->addChild(copyItem);
 			
 			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
-			reodrerItem->tracks = tracks;
+			reodrerItem->moveTrackSettingsCallback = moveTrackSettingsCallback;
 			reodrerItem->trackNumSrc = trackNumSrc;
 			reodrerItem->trackNames = trackNames;
-			reodrerItem->numTracks = 16;
+			reodrerItem->numTracks = numTracks;
 			menu->addChild(reodrerItem);
 			
 			e.consume(this);
@@ -1085,9 +1016,9 @@ struct TrackDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
+		(*((uint32_t*)(&trackNames[trackNumSrc << 2]))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			tracks[trackNumSrc].trackName[i] = text[i];
+			trackNames[(trackNumSrc << 2) + i] = text[i];
 		}
 		EditableDisplayBase::onChange(e);
 	};
@@ -1098,33 +1029,42 @@ struct TrackDisplay : EditableDisplayBase {
 // --------------------
 
 struct GroupDisplay : EditableDisplayBase {
-	MixerGroup *srcGroup = NULL;
+	int groupNumSrc;
 	bool *auxExpanderPresentPtr;
+	char* groupNames;
+	int numGroups;
+	int numTracks;
+	float* panCvLevelSrc;
+	float* fadeRateSrc;
+	float* fadeProfileSrc;
+	unsigned long* linkBitMaskSrc;
+
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *grpSetLabel = new MenuLabel();
-			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
+			grpSetLabel->text = "Group settings: " + std::string(groupNames[groupNumSrc << 2], 4);
 			menu->addChild(grpSetLabel);
 			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcGroup->panCvLevel));
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(panCvLevelSrc);
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(srcGroup->fadeRate);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRateSrc);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(fadeProfileSrc);
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem<MixerGroup> *linkFadItem = createMenuItem<LinkFaderItem<MixerGroup>>("Link fader and fade", CHECKMARK(srcGroup->isLinked()));
-			linkFadItem->srcTrkGrp = srcGroup;
+			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(linkBitMaskSrc, numTracks + groupNumSrc)));
+			linkFadItem->linkBitMaskSrc = linkBitMaskSrc;
+			linkFadItem->trackOrGroupNum = numTracks + groupNumSrc;
 			menu->addChild(linkFadItem);
-			
+			/*
 			if (srcGroup->gInfo->directOutsMode >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
@@ -1159,16 +1099,16 @@ struct GroupDisplay : EditableDisplayBase {
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
 			}
-			
+			*/
 			e.consume(this);
 			return;
 		}
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
+		(*((uint32_t*)(&groupNames[groupNumSrc << 2]))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			srcGroup->groupName[i] = text[i];
+			groupNames[(groupNumSrc << 2) + i] = text[i];
 		}
 		EditableDisplayBase::onChange(e);
 	};
@@ -1176,17 +1116,108 @@ struct GroupDisplay : EditableDisplayBase {
 
 
 
+
+// Aux display editable label with menu
+// --------------------
+
+struct AuxDisplay : EditableDisplayBase {
+	int8_t* srcVuColor = NULL;
+	int8_t* srcDispColor = NULL;
+	int8_t* srcDirectOutsModeLocal = NULL;
+	int8_t* srcPanLawStereoLocal = NULL;
+	int8_t* srcDirectOutsModeGlobal = NULL;
+	int8_t* srcPanLawStereoGlobal = NULL;
+	float* srcPanCvLevel = NULL;
+	float* srcFadeRatesAndProfiles = NULL;// use [0] for fade rate, [4] for fade profile, pointer must be setup with aux indexing
+	char* auxName;
+	int auxNumber = 0;
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			ui::Menu *menu = createMenu();
+
+			MenuLabel *auxSetLabel = new MenuLabel();
+			auxSetLabel->text = "Aux settings: " + text;
+			menu->addChild(auxSetLabel);
+			
+			/*HPFCutoffSlider<AuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<AuxspanderAux>(srcAux);
+			auxHPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(auxHPFAdjustSlider);
+			
+			LPFCutoffSlider<AuxspanderAux> *auxLPFAdjustSlider = new LPFCutoffSlider<AuxspanderAux>(srcAux);
+			auxLPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(auxLPFAdjustSlider);
+			*/
+			
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
+			panCvSlider->box.size.x = 200.0f;
+			menu->addChild(panCvSlider);
+			
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcFadeRatesAndProfiles);
+			fadeSlider->box.size.x = 200.0f;
+			menu->addChild(fadeSlider);
+			
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcFadeRatesAndProfiles[4]));
+			fadeProfSlider->box.size.x = 200.0f;
+			menu->addChild(fadeProfSlider);
+			
+			if (*srcDirectOutsModeGlobal >= 4) {
+				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
+				directOutsItem->isGlobal = false;
+				menu->addChild(directOutsItem);
+			}
+
+			if (*srcPanLawStereoGlobal >= 3) {
+				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
+				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
+				panLawStereoItem->isGlobal = false;
+				menu->addChild(panLawStereoItem);
+			}
+
+			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
+				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
+				vuColItem->srcColor = srcVuColor;
+				vuColItem->isGlobal = false;
+				menu->addChild(vuColItem);
+			}
+			
+			if (colorAndCloak->cc4[dispColor] >= 7) {
+				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+				dispColItem->srcColor = srcDispColor;
+				dispColItem->isGlobal = false;
+				menu->addChild(dispColItem);
+			}
+			
+			e.consume(this);
+			return;
+		}
+		EditableDisplayBase::onButton(e);
+	}
+	void onChange(const event::Change &e) override {
+		(*((uint32_t*)(auxName))) = 0x20202020;
+		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
+			auxName[i] = text[i];
+		}
+		EditableDisplayBase::onChange(e);
+	};
+};
+
+
+
+
 // Special solo button with mutex feature (ctrl-click)
 
 struct DynSoloButtonMutex : DynSoloButton {
 	Param *soloParams;// 19 (or 15) params in here must be cleared when mutex solo performed on a group (track)
+	int baseSoloParamId;
 	unsigned long soloMutexUnclickMemory;// for ctrl-unclick. Invalid when soloMutexUnclickMemory == -1
 	int soloMutexUnclickMemorySize;// -1 when nothing stored
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if (((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
-				int soloParamId = paramQuantity->paramId - TRACK_SOLO_PARAMS;
+				int soloParamId = paramQuantity->paramId - baseSoloParamId;
 				bool isTrack = (soloParamId < 16);
 				int end = 16 + (isTrack ? 0 : 4);
 				bool turningOnSolo = soloParams[soloParamId].getValue() < 0.5f;
@@ -1228,7 +1259,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
 				if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 					for (int i = 0; i < 16 + 4; i++) {
-						if (i != paramQuantity->paramId - TRACK_SOLO_PARAMS) {
+						if (i != paramQuantity->paramId - baseSoloParamId) {
 							soloParams[i].setValue(0.0f);
 						}
 					}
@@ -1245,12 +1276,13 @@ struct DynSoloButtonMutex : DynSoloButton {
 
 struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
 	Param *muteParams;// 19 (or 15) params in here must be cleared when mutex mute performed on a group (track)
+	int baseMuteParamId;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 				for (int i = 0; i < 16 + 4; i++) {
-					if (i != paramQuantity->paramId - TRACK_MUTE_PARAMS) {
+					if (i != paramQuantity->paramId - baseMuteParamId) {
 						muteParams[i].setValue(0.0f);
 					}
 				}
@@ -1268,20 +1300,21 @@ struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
 // --------------------
 
 struct DynSmallFaderWithLink : DynSmallFader {
-	GlobalInfo *gInfo;
+	unsigned long* linkBitMaskSrc;
 	Param *faderParams = NULL;
+	int baseFaderParamId;
 	float lastValue = -1.0f;
 	
 	void onButton(const event::Button &e) override {
-		int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
+		int faderIndex = paramQuantity->paramId - baseFaderParamId;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
-				gInfo->toggleLinked(faderIndex);
+				toggleLinked(linkBitMaskSrc, faderIndex);
 				e.consume(this);
 				return;
 			}
 			else if ((APP->window->getMods() & RACK_MOD_MASK) == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
-				gInfo->linkBitMask = 0;
+				*linkBitMaskSrc = 0;
 				e.consume(this);
 				return;
 			}
@@ -1292,8 +1325,8 @@ struct DynSmallFaderWithLink : DynSmallFader {
 	void draw(const DrawArgs &args) override {
 		DynSmallFader::draw(args);
 		if (paramQuantity) {
-			int faderIndex = paramQuantity->paramId - TRACK_FADER_PARAMS;
-			if (gInfo->isLinked(faderIndex)) {
+			int faderIndex = paramQuantity->paramId - baseFaderParamId;
+			if (isLinked(linkBitMaskSrc, faderIndex)) {
 				float v = paramQuantity->getScaledValue();
 				float offsetY = handle->box.size.y / 2.0f;
 				float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
@@ -1309,12 +1342,5 @@ struct DynSmallFaderWithLink : DynSmallFader {
 		}
 	}
 };
-
-
-
-
-
-
-
 
 #endif

@@ -171,6 +171,10 @@ struct TrackSettingsCpBuffer {
 };
 
 
+static inline bool isLinked(unsigned long *linkBitMaskSrc, int index) {return (*linkBitMaskSrc & (1 << index)) != 0;}
+static inline void toggleLinked(unsigned long *linkBitMaskSrc, int index) {*linkBitMaskSrc ^= (1 << index);}
+
+
 //*****************************************************************************
 
 
@@ -180,6 +184,8 @@ enum ccIds {
 	dispColor, // 0 is yellow, 1 is light-gray, 2 is green, 3 is aqua, 4 is cyan, 5 is blue, 6 is purple, 7 is per track
 	detailsShow // bit 0 is knob param arc, bit 1 is knob cv arc, bit 2 is fader cv pointer
 };
+
+
 union PackedBytes4 {
 	int32_t cc1;
 	int8_t cc4[4];

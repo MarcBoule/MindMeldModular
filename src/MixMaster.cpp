@@ -10,7 +10,7 @@
 #include "MixerWidgets.hpp"
 
 
-template<int N_TRK>
+template<int N_TRK, int N_GRP>
 struct MixMaster : Module {
 
 	enum ParamIds {
@@ -64,7 +64,8 @@ struct MixMaster : Module {
 	};
 
 
-	#include "Mixer.hpp"
+	#include "MixMaster.hpp"
+	
 	
 	// Expander
 	float rightMessages[2][MFA_NUM_VALUES] = {};// messages from aux-expander (first index is page), see enum called MotherFromAuxIds in Mixer.hpp
@@ -796,21 +797,103 @@ struct MixMaster : Module {
 
 struct MixMasterWidget : ModuleWidget {
 	static const int N_TRK = 16;
+	static const int N_GRP = 4;
 
-	MixMaster<N_TRK>::MasterDisplay* masterDisplay;
-	MixMaster<N_TRK>::TrackDisplay* trackDisplays[16];
-	MixMaster<N_TRK>::GroupDisplay* groupDisplays[4];
+	MasterDisplay* masterDisplay;
+	TrackDisplay* trackDisplays[16];
+	GroupDisplay* groupDisplays[4];
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
 	time_t oldTime = 0;
 
 
+
+	// Callbacks
+	// --------------------
+
+	// copy callback
+	//----
+	void copyTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
+		MixMaster<N_TRK, N_GRP>* module = (MixMaster<N_TRK, N_GRP>*)(this->module);
+		TrackSettingsCpBuffer buffer;
+		module->tracks[_trackNumSrc].write(&buffer);
+		module->tracks[_trackNumDest].read(&buffer);
+	}
+	
+	
+	//----
+	
+	// move callback
+	CableWidget* cwClr[4];
+	
+	void transferTrackInputs(int srcTrk, int destTrk) {
+		// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
+		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+			CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
+			if (cwRip != NULL) {
+				APP->scene->rack->removeCable(cwRip);
+				cwRip->setInput(inputWidgets[destTrk + i * 16]);
+				APP->scene->rack->addCable(cwRip);
+			}
+		}
+	}
+	void clearTrackInputs(int trk) {
+		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+			cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
+			if (cwClr[i] != NULL) {
+				APP->scene->rack->removeCable(cwClr[i]);
+			}
+		}
+	}
+	void reconnectTrackInputs(int trk) {
+		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+			if (cwClr[i] != NULL) {
+				cwClr[i]->setInput(inputWidgets[trk + i * 16]);
+				APP->scene->rack->addCable(cwClr[i]);
+			}
+		}
+	}	
+	
+	void moveTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
+		MixMaster<N_TRK, N_GRP>* module = (MixMaster<N_TRK, N_GRP>*)(this->module);
+		
+		TrackSettingsCpBuffer buffer1;
+		TrackSettingsCpBuffer buffer2;
+		
+		module->tracks[_trackNumSrc].write2(&buffer2);
+		clearTrackInputs(_trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
+		if (_trackNumDest < _trackNumSrc) {
+			for (int trk = _trackNumSrc - 1; trk >= _trackNumDest; trk--) {
+				module->tracks[trk].write2(&buffer1);
+				module->tracks[trk + 1].read2(&buffer1);
+				transferTrackInputs(trk, trk + 1);
+			}
+		}
+		else {// must automatically be bigger (equal is impossible)
+			for (int trk = _trackNumSrc; trk < _trackNumDest; trk++) {
+				module->tracks[trk + 1].write2(&buffer1);
+				module->tracks[trk].read2(&buffer1);
+				transferTrackInputs(trk + 1, trk);
+			}
+		}
+		module->tracks[_trackNumDest].read2(&buffer2);
+		reconnectTrackInputs(_trackNumDest);
+		
+		module->updateTrackLabelRequest = 1;
+		module->trackMoveInAuxRequest = (_trackNumSrc | (_trackNumDest << 8));
+	}
+	
+	//----
+		
+
+
+
 	// Module's context menu
 	// --------------------
 
 	void appendContextMenu(Menu *menu) override {
-		MixMaster<N_TRK> *module = dynamic_cast<MixMaster<N_TRK>*>(this->module);
+		MixMaster<N_TRK, N_GRP>* module = (MixMaster<N_TRK, N_GRP>*)(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -911,7 +994,7 @@ struct MixMasterWidget : ModuleWidget {
 	// Module's widget
 	// --------------------
 
-	MixMasterWidget(MixMaster<N_TRK> *module) {
+	MixMasterWidget(MixMaster<N_TRK, N_GRP> *module) {
 		setModule(module);
 
 		// Main panels from Inkscape
@@ -921,17 +1004,17 @@ struct MixMasterWidget : ModuleWidget {
 		// Inserts and CVs
 		static const float xIns = 13.8;
 		// Insert outputs
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), false, module, INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, MixMaster<N_TRK, N_GRP>::INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), false, module, MixMaster<N_TRK, N_GRP>::INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, MixMaster<N_TRK, N_GRP>::INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, MixMaster<N_TRK, N_GRP>::INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, MixMaster<N_TRK, N_GRP>::INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, MixMaster<N_TRK, N_GRP>::INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, MixMaster<N_TRK, N_GRP>::TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, MixMaster<N_TRK, N_GRP>::TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, MixMaster<N_TRK, N_GRP>::GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
 		
 		
 		// Tracks
@@ -941,30 +1024,32 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
-				trackDisplays[i]->tracks = &(module->tracks[0]);
-				trackDisplays[i]->trackNumSrc = i;
-				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
-				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
-				trackDisplays[i]->inputWidgets = inputWidgets;
-				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
-				trackDisplays[i]->trackNames = &(module->trackNames);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);
+				trackDisplays[i]->trackNumSrc = i;
+				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				trackDisplays[i]->trackNames = module->trackLabels;
+				trackDisplays[i]->numTracks = N_TRK;
+				trackDisplays[i]->gainAdjustSrc = &(module->tracks[i].gainAdjust);
+				trackDisplays[i]->panCvLevelSrc = &(module->tracks[i].panCvLevel);
+				trackDisplays[i]->fadeRateSrc = module->tracks[i].fadeRate;
+				trackDisplays[i]->fadeProfileSrc = &(module->tracks[i].fadeProfile);
+				trackDisplays[i]->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 			}
 			// HPF lights
-			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TRACK_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, MixMaster<N_TRK, N_GRP>::TRACK_HPF_LIGHTS + i));	
 			// LPF lights
-			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TRACK_LPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, MixMaster<N_TRK, N_GRP>::TRACK_LPF_LIGHTS + i));	
 			// Left inputs
-			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, MixMaster<N_TRK, N_GRP>::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
-			addInput(inputWidgets[i + 16] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), true, module, TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(inputWidgets[i + 16] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), true, module, MixMaster<N_TRK, N_GRP>::TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
 			// Volume inputs
-			addInput(inputWidgets[i + 16 * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), true, module, TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), true, module, MixMaster<N_TRK, N_GRP>::TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, MixMaster<N_TRK, N_GRP>::TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobTrack;
-			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, MixMaster<N_TRK, N_GRP>::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobTrack->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
 				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
@@ -973,10 +1058,11 @@ struct MixMasterWidget : ModuleWidget {
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				newFader->gInfo = &(module->gInfo);
-				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
+				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->faderParams = &module->params[MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS];
+				newFader->baseFaderParamId = MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu);
@@ -985,7 +1071,7 @@ struct MixMasterWidget : ModuleWidget {
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
-				newFP->srcParam = &(module->params[TRACK_FADER_PARAMS + i]);
+				newFP->srcParam = &(module->params[MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
 				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
@@ -997,30 +1083,32 @@ struct MixMasterWidget : ModuleWidget {
 			
 			// Mutes
 			DynMuteFadeButtonWithClear* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, MixMaster<N_TRK, N_GRP>::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = module->tracks[i].fadeRate;
-				newMuteFade->muteParams = &module->params[TRACK_MUTE_PARAMS];
+				newMuteFade->muteParams = &module->params[MixMaster<N_TRK, N_GRP>::TRACK_MUTE_PARAMS];
+				newMuteFade->baseMuteParamId = MixMaster<N_TRK, N_GRP>::TRACK_MUTE_PARAMS;
 			}
 			// Solos
 			DynSoloButtonMutex *newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
-			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, MixMaster<N_TRK, N_GRP>::TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			newSoloButton->soloParams =  module ? &module->params[MixMaster<N_TRK, N_GRP>::TRACK_SOLO_PARAMS] : NULL;
+			newSoloButton->baseSoloParamId = MixMaster<N_TRK, N_GRP>::TRACK_SOLO_PARAMS;
 			// Group dec
 			DynGroupMinusButtonNotify *newGrpMinusButton;
 			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
-				newGrpMinusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
+				newGrpMinusButton->sourceParam = &(module->params[MixMaster<N_TRK, N_GRP>::GROUP_SELECT_PARAMS + i]);
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
 			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
-				newGrpPlusButton->sourceParam = &(module->params[GROUP_SELECT_PARAMS + i]);
+				newGrpPlusButton->sourceParam = &(module->params[MixMaster<N_TRK, N_GRP>::GROUP_SELECT_PARAMS + i]);
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
-			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, GROUP_SELECT_PARAMS + i));
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, MixMaster<N_TRK, N_GRP>::GROUP_SELECT_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
@@ -1032,27 +1120,34 @@ struct MixMasterWidget : ModuleWidget {
 		for (int i = 0; i < 4; i++) {
 			// Monitor outputs
 			if (i > 0) {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, DIRECT_OUTPUTS + i - 1, module ? &module->panelTheme : NULL));
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, MixMaster<N_TRK, N_GRP>::DIRECT_OUTPUTS + i - 1, module ? &module->panelTheme : NULL));
 			}
 			else {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), false, module, FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));				
+				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), false, module, MixMaster<N_TRK, N_GRP>::FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));				
 			}
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
-				groupDisplays[i]->srcGroup = &(module->groups[i]);
-				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
+				groupDisplays[i]->groupNumSrc = i;
+				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				groupDisplays[i]->groupNames = &(module->trackLabels[N_TRK << 2]);
+				groupDisplays[i]->numGroups = N_GRP;
+				groupDisplays[i]->numTracks = N_TRK;
+				groupDisplays[i]->panCvLevelSrc = &(module->groups[i].panCvLevel);
+				groupDisplays[i]->fadeRateSrc = module->groups[i].fadeRate;
+				groupDisplays[i]->fadeProfileSrc = &(module->groups[i].fadeProfile);
+				groupDisplays[i]->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 			}
 			
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), true, module, GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), true, module, MixMaster<N_TRK, N_GRP>::GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, MixMaster<N_TRK, N_GRP>::GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobGroup;
-			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, MixMaster<N_TRK, N_GRP>::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				panKnobGroup->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
 				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
@@ -1061,10 +1156,10 @@ struct MixMasterWidget : ModuleWidget {
 			
 			// Faders
 			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, MixMaster<N_TRK, N_GRP>::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 			if (module) {
-				newFader->gInfo = &(module->gInfo);
-				newFader->faderParams = &module->params[TRACK_FADER_PARAMS];
+				newFader->faderParams = &module->params[MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS];
+				newFader->baseFaderParamId = MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu);
@@ -1073,7 +1168,7 @@ struct MixMasterWidget : ModuleWidget {
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
-				newFP->srcParam = &(module->params[GROUP_FADER_PARAMS + i]);
+				newFP->srcParam = &(module->params[MixMaster<N_TRK, N_GRP>::GROUP_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
 				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
@@ -1084,24 +1179,26 @@ struct MixMasterWidget : ModuleWidget {
 
 			// Mutes
 			DynMuteFadeButtonWithClear* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, MixMaster<N_TRK, N_GRP>::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newMuteFade->type = module->groups[i].fadeRate;
-				newMuteFade->muteParams = &module->params[TRACK_MUTE_PARAMS];
+				newMuteFade->muteParams = &module->params[MixMaster<N_TRK, N_GRP>::TRACK_MUTE_PARAMS];
+				newMuteFade->baseMuteParamId = MixMaster<N_TRK, N_GRP>::TRACK_MUTE_PARAMS;
 			}
 			// Solos
 			DynSoloButtonMutex* newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
-			newSoloButton->soloParams =  module ? &module->params[TRACK_SOLO_PARAMS] : NULL;
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, MixMaster<N_TRK, N_GRP>::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			newSoloButton->soloParams =  module ? &module->params[MixMaster<N_TRK, N_GRP>::TRACK_SOLO_PARAMS] : NULL;
+			newSoloButton->baseSoloParamId = MixMaster<N_TRK, N_GRP>::TRACK_SOLO_PARAMS;
 		}
 		
 		// Master inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 12.8)), true, module, CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 21.8)), true, module, CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 12.8)), true, module, MixMaster<N_TRK, N_GRP>::CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 21.8)), true, module, MixMaster<N_TRK, N_GRP>::CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 12.8)), false, module, MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 12.8)), false, module, MixMaster<N_TRK, N_GRP>::MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, MixMaster<N_TRK, N_GRP>::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
 		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 1.2, 128.5 - 97.0))));
@@ -1113,13 +1210,13 @@ struct MixMasterWidget : ModuleWidget {
 			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
 			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
 			masterDisplay->dimGain = &(module->master.dimGain);
-			masterDisplay->masterLabel = &(module->master.masterLabel);
+			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
 			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
 		}
 		
 		// Master fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(300.17, 70.3)), module, MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(300.17, 70.3)), module, MixMaster<N_TRK, N_GRP>::MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
@@ -1130,7 +1227,7 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
-			newFP->srcParam = &(module->params[MAIN_FADER_PARAM]);
+			newFP->srcParam = &(module->params[MixMaster<N_TRK, N_GRP>::MAIN_FADER_PARAM]);
 			newFP->srcParamWithCV = &(module->master.paramWithCV);
 			newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
 			newFP->srcFadeGain = &(module->master.fadeGain);
@@ -1140,39 +1237,39 @@ struct MixMasterWidget : ModuleWidget {
 		
 		// Master mute
 		DynMuteFadeButton* newMuteFade;
-		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(294.82, 109.8)), module, MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(294.82, 109.8)), module, MixMaster<N_TRK, N_GRP>::MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
 		}
 		
 		// Master dim
-		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(289.42, 116.1)), module, MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(289.42, 116.1)), module, MixMaster<N_TRK, N_GRP>::MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
 		
 		// Master mono
-		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22, 116.1)), module, MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22, 116.1)), module, MixMaster<N_TRK, N_GRP>::MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {
-		MixMaster* moduleM = (MixMaster*)module;
-		if (moduleM) {
+		MixMaster<N_TRK, N_GRP>* module = (MixMaster<N_TRK, N_GRP>*)(this->module);
+		if (module) {
 			// Track labels (pull from module)
-			if (moduleM->updateTrackLabelRequest != 0) {// pull request from module
+			if (module->updateTrackLabelRequest != 0) {// pull request from module
 				// master display
-				masterDisplay->text = std::string(&(moduleM->master.masterLabel[0]), 6);
+				masterDisplay->text = std::string(&(module->master.masterLabel[0]), 6);
 				// track displays
 				for (int trk = 0; trk < 16; trk++) {
-					trackDisplays[trk]->text = std::string(&(moduleM->trackLabels[trk * 4]), 4);
+					trackDisplays[trk]->text = std::string(&(module->trackLabels[trk * 4]), 4);
 				}
 				// group displays
 				for (int grp = 0; grp < 4; grp++) {
-					groupDisplays[grp]->text = std::string(&(moduleM->trackLabels[(16 + grp) * 4]), 4);
+					groupDisplays[grp]->text = std::string(&(module->trackLabels[(16 + grp) * 4]), 4);
 				}
-				moduleM->updateTrackLabelRequest = 0;// all done pulling
+				module->updateTrackLabelRequest = 0;// all done pulling
 			}
 			
 			// Borders
-			if ( moduleM->auxExpanderPresent != oldAuxExpanderPresent ) {
-				oldAuxExpanderPresent = moduleM->auxExpanderPresent;
+			if ( module->auxExpanderPresent != oldAuxExpanderPresent ) {
+				oldAuxExpanderPresent = module->auxExpanderPresent;
 			
 				if (oldAuxExpanderPresent) {
 					//panelBorder->box.pos.x = 0;
@@ -1191,67 +1288,67 @@ struct MixMasterWidget : ModuleWidget {
 				oldTime = currentTime;
 				char strBuf[32];
 				for (int i = 0; i < 16; i++) {
-					std::string trackLabel = std::string(&(moduleM->trackLabels[i * 4]), 4);
+					std::string trackLabel = std::string(&(module->trackLabels[i * 4]), 4);
 					// Pan
 					snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
-					moduleM->paramQuantities[TRACK_PAN_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::TRACK_PAN_PARAMS + i]->label = strBuf;
 					// Fader
 					snprintf(strBuf, 32, "%s: level", trackLabel.c_str());
-					moduleM->paramQuantities[TRACK_FADER_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::TRACK_FADER_PARAMS + i]->label = strBuf;
 					// Mute/fade
-					if (moduleM->tracks[i].isFadeMode()) {
+					if (module->tracks[i].isFadeMode()) {
 						snprintf(strBuf, 32, "%s: fade", trackLabel.c_str());
 					}
 					else {
 						snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
 					}
-					moduleM->paramQuantities[TRACK_MUTE_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::TRACK_MUTE_PARAMS + i]->label = strBuf;
 					// Solo
 					snprintf(strBuf, 32, "%s: solo", trackLabel.c_str());
-					moduleM->paramQuantities[TRACK_SOLO_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::TRACK_SOLO_PARAMS + i]->label = strBuf;
 					// Group select
 					snprintf(strBuf, 32, "%s: group", trackLabel.c_str());
-					moduleM->paramQuantities[GROUP_SELECT_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::GROUP_SELECT_PARAMS + i]->label = strBuf;
 				}
 				// Group
 				for (int i = 0; i < 4; i++) {
-					std::string groupLabel = std::string(&(moduleM->trackLabels[(16 + i) * 4]), 4);
+					std::string groupLabel = std::string(&(module->trackLabels[(16 + i) * 4]), 4);
 					// Pan
 					snprintf(strBuf, 32, "%s: pan", groupLabel.c_str());
-					moduleM->paramQuantities[GROUP_PAN_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::GROUP_PAN_PARAMS + i]->label = strBuf;
 					// Fader
 					snprintf(strBuf, 32, "%s: level", groupLabel.c_str());
-					moduleM->paramQuantities[GROUP_FADER_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::GROUP_FADER_PARAMS + i]->label = strBuf;
 					// Mute/fade
-					if (moduleM->groups[i].isFadeMode()) {
+					if (module->groups[i].isFadeMode()) {
 						snprintf(strBuf, 32, "%s: fade", groupLabel.c_str());
 					}
 					else {
 						snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
 					}
-					moduleM->paramQuantities[GROUP_MUTE_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::GROUP_MUTE_PARAMS + i]->label = strBuf;
 					// Solo
 					snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
-					moduleM->paramQuantities[GROUP_SOLO_PARAMS + i]->label = strBuf;
+					module->paramQuantities[MixMaster<N_TRK, N_GRP>::GROUP_SOLO_PARAMS + i]->label = strBuf;
 				}
-				std::string masterLabel = std::string(moduleM->master.masterLabel, 6);
+				std::string masterLabel = std::string(module->master.masterLabel, 6);
 				// Fader
 				snprintf(strBuf, 32, "%s: level", masterLabel.c_str());
-				moduleM->paramQuantities[MAIN_FADER_PARAM]->label = strBuf;
+				module->paramQuantities[MixMaster<N_TRK, N_GRP>::MAIN_FADER_PARAM]->label = strBuf;
 				// Mute/fade
-				if (moduleM->master.isFadeMode()) {
+				if (module->master.isFadeMode()) {
 					snprintf(strBuf, 32, "%s: fade", masterLabel.c_str());
 				}
 				else {
 					snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
 				}
-				moduleM->paramQuantities[MAIN_MUTE_PARAM]->label = strBuf;
+				module->paramQuantities[MixMaster<N_TRK, N_GRP>::MAIN_MUTE_PARAM]->label = strBuf;
 				// Dim
 				snprintf(strBuf, 32, "%s: dim", masterLabel.c_str());
-				moduleM->paramQuantities[MAIN_DIM_PARAM]->label = strBuf;
+				module->paramQuantities[MixMaster<N_TRK, N_GRP>::MAIN_DIM_PARAM]->label = strBuf;
 				// Mono
 				snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
-				moduleM->paramQuantities[MAIN_MONO_PARAM]->label = strBuf;
+				module->paramQuantities[MixMaster<N_TRK, N_GRP>::MAIN_MONO_PARAM]->label = strBuf;
 			}
 		}			
 		
@@ -1260,4 +1357,4 @@ struct MixMasterWidget : ModuleWidget {
 	}// void step()
 };
 
-Model *modelMixMaster = createModel<MixMaster<16>, MixMasterWidget>("MixMaster");
+Model *modelMixMaster = createModel<MixMaster<16, 4>, MixMasterWidget>("MixMaster");

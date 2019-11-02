@@ -750,11 +750,12 @@ struct FadeProfileSlider : ui::Slider {
 
 
 // linked fader menu item
-template <typename TrackOrGroup>
 struct LinkFaderItem : MenuItem {
-	TrackOrGroup *srcTrkGrp = NULL;
+	unsigned long *linkBitMaskSrc;
+	int trackOrGroupNum;// must be properly indexed for groups
+	
 	void onAction(const event::Action &e) override {
-		srcTrkGrp->toggleLinked();
+		toggleLinked(linkBitMaskSrc, trackOrGroupNum);
 	}
 };
 

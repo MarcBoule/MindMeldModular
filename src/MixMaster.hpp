@@ -24,7 +24,7 @@ struct GlobalInfo {
 	int auxReturnsMutedWhenMainSolo;
 	int auxReturnsSolosMuteDry;
 	int chainMode;// 0 is pre-master, 1 is post-master
-	PackedBytes4 colorAndCloak;// see enum above called ccIds for fields
+	PackedBytes4 colorAndCloak;// see enum called ccIds for fields
 	bool symmetricalFade;
 	bool fadeCvOutsWithVolCv;
 	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
@@ -52,7 +52,6 @@ struct GlobalInfo {
 	int groupUsage[4 + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
 
 	
-	bool isLinked(int index) {return (linkBitMask & (1 << index)) != 0;}
 	void clearLinked(int index) {linkBitMask &= ~(1 << index);}
 	void setLinked(int index) {linkBitMask |= (1 << index);}
 	void setLinked(int index, bool state) {if (state) setLinked(index); else clearLinked(index);}
@@ -99,10 +98,10 @@ struct GlobalInfo {
 	// linked faders
 	void processLinked(int trgOrGrpNum, float newFader) {
 		if (newFader != oldFaders[trgOrGrpNum]) {
-			if (linkBitMask != 0l && isLinked(trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
+			if (linkBitMask != 0l && isLinked(&linkBitMask, trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
 				float delta = newFader - oldFaders[trgOrGrpNum];
 				for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
-					if (isLinked(trkOrGrp) && trkOrGrp != trgOrGrpNum) {
+					if (isLinked(&linkBitMask, trkOrGrp) && trkOrGrp != trgOrGrpNum) {
 						float newValue = paFade[trkOrGrp].getValue() + delta;
 						newValue = clamp(newValue, 0.0f, maxTGFader);
 						paFade[trkOrGrp].setValue(newValue);
@@ -116,11 +115,11 @@ struct GlobalInfo {
 
 	// linked fade
 	void fadeOtherLinkedTracks(int trkOrGrpNum, float newTarget) {
-		if ((linkBitMask == 0l) || !isLinked(trkOrGrpNum)) {
+		if ((linkBitMask == 0l) || !isLinked(&linkBitMask, trkOrGrpNum)) {
 			return;
 		}
 		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
-			if (trkOrGrp != trkOrGrpNum && isLinked(trkOrGrp) && fadeRates[trkOrGrp] >= GlobalConst::minFadeRate) {
+			if (trkOrGrp != trkOrGrpNum && isLinked(&linkBitMask, trkOrGrp) && fadeRates[trkOrGrp] >= GlobalConst::minFadeRate) {
 				if (newTarget > 0.5f && paMute[trkOrGrp].getValue() > 0.5f) {
 					paMute[trkOrGrp].setValue(0.0f);
 				}
@@ -751,8 +750,6 @@ struct MixerGroup {
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
-	bool isLinked() {return gInfo->isLinked(16 + groupNum);}
-	void toggleLinked() {gInfo->toggleLinked(16 + groupNum);}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
@@ -1120,8 +1117,6 @@ struct MixerTrack {
 
 
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
-	bool isLinked() {return gInfo->isLinked(trackNum);}
-	void toggleLinked() {gInfo->toggleLinked(trackNum);}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
@@ -1318,7 +1313,7 @@ struct MixerTrack {
 		dest->filterPos = filterPos;
 		dest->dispColorLocal = dispColorLocal;
 		dest->panCvLevel = panCvLevel;
-		dest->linkedFader = gInfo->isLinked(trackNum);
+		dest->linkedFader = isLinked(&(gInfo->linkBitMask), trackNum);
 	}
 	void read(TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
@@ -1710,6 +1705,7 @@ struct MixerTrack {
 };// struct MixerTrack
 
 
+
 //*****************************************************************************
 
 
@@ -1799,6 +1795,8 @@ struct MixerAux {
 		soloGain = 1.0f;
 	}	
 
+	void dataToJson(json_t *rootJ) {}
+	void dataFromJson(json_t *rootJ) {}
 	
 	float calcSoloGain() {
 		if (gInfo->soloBitMask != 0 && gInfo->auxReturnsMutedWhenMainSolo) {
@@ -1944,6 +1942,5 @@ struct MixerAux {
 		mix[1] += taps[25];
 	}
 };// struct MixerAux
-
 
 
