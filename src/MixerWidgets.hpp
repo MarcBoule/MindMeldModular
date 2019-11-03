@@ -944,8 +944,6 @@ struct TrackDisplay : EditableDisplayBase {
 			linkFadItem->linkBitMaskSrc = &(srcTrack->gInfo->linkBitMask);
 			menu->addChild(linkFadItem);
 
-		
-			/*
 			if (srcTrack->gInfo->directOutsMode >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);
@@ -986,7 +984,7 @@ struct TrackDisplay : EditableDisplayBase {
 				dispColItem->srcColor = &(srcTrack->dispColorLocal);
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
-			}*/
+			}
 			
 			//menu->addChild(new MenuSeparator());
 			menu->addChild(new MenuLabel());// empty line
@@ -1055,7 +1053,7 @@ struct GroupDisplay : EditableDisplayBase {
 			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcGroup->gInfo->linkBitMask), numTracks + srcGroup->groupNum)));
 			linkFadItem->linkBitMaskSrc = &(srcGroup->gInfo->linkBitMask);
 			menu->addChild(linkFadItem);
-			/*
+			
 			if (srcGroup->gInfo->directOutsMode >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
@@ -1090,7 +1088,7 @@ struct GroupDisplay : EditableDisplayBase {
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
 			}
-			*/
+			
 			e.consume(this);
 			return;
 		}
@@ -1111,7 +1109,9 @@ struct GroupDisplay : EditableDisplayBase {
 // Aux display editable label with menu
 // --------------------
 
+template <typename TAuxspanderAux>
 struct AuxDisplay : EditableDisplayBase {
+	TAuxspanderAux *srcAux = NULL;
 	int8_t* srcVuColor = NULL;
 	int8_t* srcDispColor = NULL;
 	int8_t* srcDirectOutsModeLocal = NULL;
@@ -1131,14 +1131,13 @@ struct AuxDisplay : EditableDisplayBase {
 			auxSetLabel->text = "Aux settings: " + text;
 			menu->addChild(auxSetLabel);
 			
-			/*HPFCutoffSlider<AuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<AuxspanderAux>(srcAux);
+			HPFCutoffSlider<TAuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<TAuxspanderAux>(srcAux);
 			auxHPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(auxHPFAdjustSlider);
 			
-			LPFCutoffSlider<AuxspanderAux> *auxLPFAdjustSlider = new LPFCutoffSlider<AuxspanderAux>(srcAux);
+			LPFCutoffSlider<TAuxspanderAux> *auxLPFAdjustSlider = new LPFCutoffSlider<TAuxspanderAux>(srcAux);
 			auxLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(auxLPFAdjustSlider);
-			*/
 			
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
 			panCvSlider->box.size.x = 200.0f;

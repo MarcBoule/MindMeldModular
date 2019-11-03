@@ -14,43 +14,42 @@ template<int N_TRK, int N_GRP>
 struct MixMaster : Module {
 
 	enum ParamIds {
-		ENUMS(TRACK_FADER_PARAMS, 16),
-		ENUMS(GROUP_FADER_PARAMS, 4),// must follow TRACK_FADER_PARAMS since code assumes contiguous
-		ENUMS(TRACK_PAN_PARAMS, 16),
-		ENUMS(GROUP_PAN_PARAMS, 4),
-		ENUMS(TRACK_MUTE_PARAMS, 16),
-		ENUMS(GROUP_MUTE_PARAMS, 4),// must follow TRACK_MUTE_PARAMS since code assumes contiguous
-		ENUMS(TRACK_SOLO_PARAMS, 16),// must follow GROUP_MUTE_PARAMS since code assumes contiguous
-		ENUMS(GROUP_SOLO_PARAMS, 4),// must follow TRACK_SOLO_PARAMS since code assumes contiguous
+		ENUMS(TRACK_FADER_PARAMS, N_TRK),
+		ENUMS(GROUP_FADER_PARAMS, N_GRP),// must follow TRACK_FADER_PARAMS since code assumes contiguous
+		ENUMS(TRACK_PAN_PARAMS, N_TRK),
+		ENUMS(GROUP_PAN_PARAMS, N_GRP),
+		ENUMS(TRACK_MUTE_PARAMS, N_TRK),
+		ENUMS(GROUP_MUTE_PARAMS, N_GRP),// must follow TRACK_MUTE_PARAMS since code assumes contiguous
+		ENUMS(TRACK_SOLO_PARAMS, N_TRK),// must follow GROUP_MUTE_PARAMS since code assumes contiguous
+		ENUMS(GROUP_SOLO_PARAMS, N_GRP),// must follow TRACK_SOLO_PARAMS since code assumes contiguous
 		MAIN_MUTE_PARAM,// must follow GROUP_SOLO_PARAMS since code assumes contiguous
 		MAIN_DIM_PARAM,// must follow MAIN_MUTE_PARAM since code assumes contiguous
 		MAIN_MONO_PARAM,// must follow MAIN_DIM_PARAM since code assumes contiguous
 		MAIN_FADER_PARAM,
-		ENUMS(GROUP_SELECT_PARAMS, 16),
+		ENUMS(GROUP_SELECT_PARAMS, N_TRK),
 		NUM_PARAMS
 	}; 
 
 
 	enum InputIds {
-		ENUMS(TRACK_SIGNAL_INPUTS, 16 * 2), // Track 0: 0 = L, 1 = R, Track 1: 2 = L, 3 = R, etc...
-		ENUMS(TRACK_VOL_INPUTS, 16),
-		ENUMS(GROUP_VOL_INPUTS, 4),
-		ENUMS(TRACK_PAN_INPUTS, 16), 
-		ENUMS(GROUP_PAN_INPUTS, 4), 
+		ENUMS(TRACK_SIGNAL_INPUTS, N_TRK * 2), // Track 0: 0 = L, 1 = R, Track 1: 2 = L, 3 = R, etc...
+		ENUMS(TRACK_VOL_INPUTS, N_TRK),
+		ENUMS(GROUP_VOL_INPUTS, N_GRP),
+		ENUMS(TRACK_PAN_INPUTS, N_TRK), 
+		ENUMS(GROUP_PAN_INPUTS, N_GRP), 
 		ENUMS(CHAIN_INPUTS, 2),
-		ENUMS(INSERT_TRACK_INPUTS, 2),
+		ENUMS(INSERT_TRACK_INPUTS, N_TRK / 8),
 		INSERT_GRP_AUX_INPUT,
-		TRACK_MUTE_INPUT,
-		TRACK_SOLO_INPUT,
+		ENUMS(TRACK_MUTESOLO_INPUTS, 2),
 		GRPM_MUTESOLO_INPUT,// 1-4 Group mutes, 5-8 Group solos, 9 Master Mute, 10 Master Dim, 11 Master Mono, 12 Master VOL
 		NUM_INPUTS
 	};
 
 
 	enum OutputIds {
-		ENUMS(DIRECT_OUTPUTS, 3), // Track 1-8, Track 9-16, Groups and Aux
+		ENUMS(DIRECT_OUTPUTS, N_TRK / 8 + 1), // Track 1-8, (Track 9-16), Groups and Aux
 		ENUMS(MAIN_OUTPUTS, 2),
-		ENUMS(INSERT_TRACK_OUTPUTS, 2),
+		ENUMS(INSERT_TRACK_OUTPUTS, N_TRK / 8),
 		INSERT_GRP_AUX_OUTPUT,
 		FADE_CV_OUTPUT,
 		NUM_OUTPUTS
@@ -58,8 +57,8 @@ struct MixMaster : Module {
 
 
 	enum LightIds {
-		ENUMS(TRACK_HPF_LIGHTS, 16),
-		ENUMS(TRACK_LPF_LIGHTS, 16),
+		ENUMS(TRACK_HPF_LIGHTS, N_TRK),
+		ENUMS(TRACK_LPF_LIGHTS, N_TRK),
 		NUM_LIGHTS
 	};
 
@@ -77,10 +76,10 @@ struct MixMaster : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
-	alignas(4) char trackLabels[4 * (16 + 4) + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	GlobalInfo gInfo;
-	MixerTrack tracks[16];
-	MixerGroup groups[4];
+	MixerTrack tracks[N_TRK];
+	MixerGroup groups[N_GRP];
 	MixerAux aux[4];
 	MixerMaster master;
 	
@@ -93,9 +92,9 @@ struct MixMaster : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	float trackTaps[16 * 2 * 4];// room for 4 taps for each of the 16 stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
-	float trackInsertOuts[16 * 2];// room for 16 stereo track insert outs
-	float groupTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo groups
+	float trackTaps[N_TRK * 2 * 4];// room for 4 taps for each of the 16 stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
+	float trackInsertOuts[N_TRK * 2];// room for 16 stereo track insert outs
+	float groupTaps[N_GRP * 2 * 4];// room for 4 taps for each of the 4 stereo groups
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
@@ -103,7 +102,7 @@ struct MixMaster : Module {
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
-	TriggerRiseFall muteSoloCvTriggers[43];// 16 trk mute, 16 trk solo, 4 grp mute, 4 grp solo, 3 mast (mute, dim, mono)
+	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 trk mute, 16 trk solo, 4 grp mute, 4 grp solo, 3 mast (mute, dim, mono)
 	// std::string busId;
 	
 		
@@ -116,7 +115,7 @@ struct MixMaster : Module {
 		char strBuf[32];
 		// Track
 		float maxTGFader = std::pow(GlobalConst::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalConst::trkAndGrpFaderScalingExponent);
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Track #%i pan", i + 1);
 			configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
@@ -134,7 +133,7 @@ struct MixMaster : Module {
 			configParam(GROUP_SELECT_PARAMS + i, 0.0f, 4.0f, 0.0f, strBuf);
 		}
 		// Group
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < N_GRP; i++) {
 			// Pan
 			snprintf(strBuf, 32, "Group #%i pan", i + 1);
 			configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
@@ -159,11 +158,11 @@ struct MixMaster : Module {
 		
 
 		gInfo.construct(&params[0], values20);
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
-		for (int i = 0; i < 4; i++) {
-			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (16 + i)]), &groupTaps[i << 1]);
+		for (int i = 0; i < N_GRP; i++) {
+			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1]);
 			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
@@ -181,13 +180,20 @@ struct MixMaster : Module {
 
 	
 	void onReset() override {
-		snprintf(trackLabels, 4 * (16 + 4) + 1, "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4");	
+		for (int trk = 0; trk < N_TRK; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		}
+		for (int grp = 0; grp < N_GRP; grp++) {
+			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
+		}
 		gInfo.onReset();
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].onReset();
 		}
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < N_GRP; i++) {
 			groups[i].onReset();
+		}
+		for (int i = 0; i < 4; i++) {
 			aux[i].onReset();
 		}
 		master.onReset();
@@ -198,11 +204,13 @@ struct MixMaster : Module {
 		trackMoveInAuxRequest = 0;
 		if (recurseNonJson) {
 			gInfo.resetNonJson();
-			for (int i = 0; i < 16; i++) {
+			for (int i = 0; i < N_TRK; i++) {
 				tracks[i].resetNonJson();
 			}
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < N_GRP; i++) {
 				groups[i].resetNonJson();
+			}
+			for (int i = 0; i < 4; i++) {
 				aux[i].resetNonJson();
 			}
 			master.resetNonJson();
@@ -231,12 +239,15 @@ struct MixMaster : Module {
 		gInfo.dataToJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].dataToJson(rootJ);
 		}
-		// groups/aux
-		for (int i = 0; i < 4; i++) {
+		// groups
+		for (int i = 0; i < N_GRP; i++) {
 			groups[i].dataToJson(rootJ);
+		}
+		// aux
+		for (int i = 0; i < 4; i++) {
 			aux[i].dataToJson(rootJ);
 		}
 		// master
@@ -255,17 +266,17 @@ struct MixMaster : Module {
 		// trackLabels
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
 		if (textJ)
-			snprintf(trackLabels, 4 * (16 + 4) + 1, "%s", json_string_value(textJ));
+			snprintf(trackLabels, 4 * (N_TRK + N_GRP) + 1, "%s", json_string_value(textJ));
 		
 		// gInfo
 		gInfo.dataFromJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].dataFromJson(rootJ);
 		}
 		// groups/aux
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < N_GRP; i++) {
 			groups[i].dataFromJson(rootJ);
 			aux[i].dataFromJson(rootJ);
 		}
@@ -278,7 +289,7 @@ struct MixMaster : Module {
 
 	void onSampleRateChange() override {
 		gInfo.sampleTime = APP->engine->getSampleTime();
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < N_TRK; trk++) {
 			tracks[trk].onSampleRateChange();
 		}
 		master.onSampleRateChange();
@@ -318,7 +329,7 @@ struct MixMaster : Module {
 			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
 			// Groups/Aux
 			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
-				gInfo.updateSoloBit(16 + (trackToProcess >> 2));
+				gInfo.updateSoloBit(N_TRK + (trackToProcess >> 2));
 				groups[trackToProcess >> 2].updateSlowValues();
 				if (auxExpanderPresent) {
 					gInfo.updateReturnSoloBits();
@@ -350,7 +361,7 @@ struct MixMaster : Module {
 		//********** Outputs **********
 
 		float mix[2] = {0.0f};// room for main (groups will automatically be stored into groups taps 0 by tracks)
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < (N_GRP << 1); i++) {
 			groupTaps[i] = 0.0f;
 		}
 		
@@ -358,7 +369,7 @@ struct MixMaster : Module {
 		gInfo.process();
 		
 		// Tracks
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < N_TRK; trk++) {
 			tracks[trk].process(mix, ecoCode == 0);// stagger 1
 		}
 		// Aux return when group
@@ -379,7 +390,7 @@ struct MixMaster : Module {
 		
 		// Groups (at this point, all groups's tap0 are setup and ready)
 		bool ecoStagger2 = (gInfo.ecoMode == 0 || ecoCode == 1);
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < N_GRP; i++) {
 			groups[i].process(mix, ecoStagger2);// stagger 2
 		}
 		
@@ -410,12 +421,16 @@ struct MixMaster : Module {
 		
 		// Direct outs (uses trackTaps, groupTaps and auxTaps)
 		SetDirectTrackOuts(0);// 1-8
-		SetDirectTrackOuts(8);// 9-16
+		if (N_TRK == 16) {
+			SetDirectTrackOuts(8);// 9-16
+		}
 		SetDirectGroupAuxOuts();
 				
 		// Insert outs (uses trackInsertOuts and group tap0 and aux tap0)
 		SetInsertTrackOuts(0);// 1-8
-		SetInsertTrackOuts(8);// 9-16
+		if (N_TRK == 16) {
+			SetInsertTrackOuts(8);// 9-16
+		}
 		SetInsertGroupAuxOuts();	
 
 		setFadeCvOuts();
@@ -426,7 +441,7 @@ struct MixMaster : Module {
 		bool slowExpander = false;		
 		if (refresh.processLights()) {
 			slowExpander = true;
-			for (int i = 0; i < 16; i++) {
+			for (int i = 0; i < N_TRK; i++) {
 				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
 				lights[TRACK_LPF_LIGHTS + i].setBrightness(tracks[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
 			}
@@ -446,7 +461,7 @@ struct MixMaster : Module {
 			if (slowExpander) {
 				// Track names
 				*updateSlow = 1;
-				memcpy(&messageToExpander[AFM_TRACK_GROUP_NAMES], trackLabels, 4 * (16 + 4));
+				memcpy(&messageToExpander[AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
 				// Panel theme
 				int32_t tmp = panelTheme;
 				memcpy(&messageToExpander[AFM_PANEL_THEME], &tmp, 4);
@@ -470,12 +485,12 @@ struct MixMaster : Module {
 					}
 				}
 				else {
-					for (int i = 0; i < 4; i++) {
+					for (int i = 0; i < (N_TRK >> 2); i++) {
 						for (int j = 0; j < 4; j++) {
 							tmpDispCols[i].cc4[j] = tracks[ (i << 2) + j ].dispColorLocal;
 						}	
 					}
-					for (int j = 0; j < 4; j++) {
+					for (int j = 0; j < N_GRP; j++) {
 						tmpDispCols[4].cc4[j] = groups[ j ].dispColorLocal;
 					}
 				}	
@@ -684,10 +699,10 @@ struct MixMaster : Module {
 
 	void processMuteSoloCvTriggers() {
 		int state;
-		if (inputs[TRACK_MUTE_INPUT].isConnected()) {
+		if (inputs[TRACK_MUTESOLO_INPUTS + 0].isConnected()) {
 			for (int trk = 0; trk < 16; trk++) {
 				// track mutes
-				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTE_INPUT].getVoltage(trk));
+				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTESOLO_INPUTS + 0].getVoltage(trk));
 				if (state != 0) {
 					if (gInfo.momentaryCvButtons) {
 						if (state == 1) {
@@ -701,10 +716,10 @@ struct MixMaster : Module {
 				}
 			}
 		}
-		if (inputs[TRACK_SOLO_INPUT].isConnected()) {
+		if (inputs[TRACK_MUTESOLO_INPUTS + 1].isConnected()) {
 			for (int trk = 0; trk < 16; trk++) {
 				// track solos
-				state = muteSoloCvTriggers[trk + 16].process(inputs[TRACK_SOLO_INPUT].getVoltage(trk));
+				state = muteSoloCvTriggers[trk + 16].process(inputs[TRACK_MUTESOLO_INPUTS + 1].getVoltage(trk));
 				if (state != 0) {
 					if (gInfo.momentaryCvButtons) {
 						if (state == 1) {
@@ -932,9 +947,9 @@ struct MixMasterWidget : ModuleWidget {
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, TMixMaster::INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, TMixMaster::INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, TMixMaster::INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
-		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TMixMaster::TRACK_MUTE_INPUT, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TMixMaster::TRACK_SOLO_INPUT, module ? &module->panelTheme : NULL));
+		// Mute, solo and other CVs
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TMixMaster::TRACK_MUTESOLO_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TMixMaster::TRACK_MUTESOLO_INPUTS + 1, module ? &module->panelTheme : NULL));
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, TMixMaster::GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
 		
 	
