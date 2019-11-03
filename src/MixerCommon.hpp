@@ -68,6 +68,8 @@ struct GlobalConst {
 	static constexpr float minFadeRate = 0.1f;
 	static constexpr float masterFaderMaxLinearGain = 2.0f;
 	static const int masterFaderScalingExponent = 3; 
+	static constexpr float minHPFCutoffFreq = 20.0f;
+	static constexpr float maxLPFCutoffFreq = 20000.0f;
 };
 
 

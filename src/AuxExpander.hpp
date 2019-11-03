@@ -8,8 +8,6 @@
 
 struct AuxspanderAux {
 	// Constants
-	static constexpr float minHPFCutoffFreq = 20.0f;
-	static constexpr float maxLPFCutoffFreq = 20000.0f;
 	static constexpr float hpfBiquadQ = 1.0f;// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
 	
 	// need to save, no reset
@@ -111,12 +109,12 @@ struct AuxspanderAux {
 		mix[1] = inSig[1].isConnected() ? inSig[1].getVoltage() : mix[0];
 		// Filters
 		// HPF
-		if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+		if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
 			mix[0] = hpFilter[0].process(hpPreFilter[0].processHP(mix[0]));
 			mix[1] = inSig[1].isConnected() ? hpFilter[1].process(hpPreFilter[1].processHP(mix[1])) : mix[0];
 		}
 		// LPF
-		if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+		if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
 			mix[0] = lpFilter[0].process(mix[0]);
 			mix[1] = inSig[1].isConnected() ? lpFilter[1].process(mix[1]) : mix[0];
 		}

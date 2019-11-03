@@ -1043,8 +1043,6 @@ struct MixerGroup {
 
 struct MixerTrack {
 	// Constants
-	static constexpr float minHPFCutoffFreq = 20.0f;
-	static constexpr float maxLPFCutoffFreq = 20000.0f;
 	static constexpr float hpfBiquadQ = 1.0f;// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
 	
 	// need to save, no reset
@@ -1538,12 +1536,12 @@ struct MixerTrack {
 			// Filters
 			// Tap[32],[33]: pre-fader (post insert)
 			// HPF
-			if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
 				taps[32] = hpFilter[0].process(hpPreFilter[0].processHP(taps[32]));
 				taps[33] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[33])) : taps[32];
 			}
 			// LPF
-			if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
 				taps[32] = lpFilter[0].process(taps[32]);
 				taps[33]  = stereo ? lpFilter[1].process(taps[33]) : taps[32];
 			}
@@ -1552,12 +1550,12 @@ struct MixerTrack {
 			// Filters
 			float filtered[2] = {taps[0], taps[1]};
 			// HPF
-			if (getHPFCutoffFreq() >= minHPFCutoffFreq) {
+			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
 				filtered[0] = hpFilter[0].process(hpPreFilter[0].processHP(filtered[0]));
 				filtered[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(filtered[1])) : filtered[0];
 			}
 			// LPF
-			if (getLPFCutoffFreq() <= maxLPFCutoffFreq) {
+			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
 				filtered[0] = lpFilter[0].process(filtered[0]);
 				filtered[1] = stereo ? lpFilter[1].process(filtered[1]) : filtered[0];
 			}

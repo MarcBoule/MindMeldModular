@@ -843,7 +843,7 @@ struct MasterDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Master settings: ";
+			mastSetLabel->text = "Master settings: " + std::string(masterLabel, 6);
 			menu->addChild(mastSetLabel);
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);
@@ -899,6 +899,8 @@ struct MasterDisplay : EditableDisplayBase {
 struct TrackDisplay : EditableDisplayBase {
 	void (*copyTrackSettingsCallback)(int, int);
 	void (*moveTrackSettingsCallback)(int, int);
+	void (*setHPFCutoffFreqCallback)(float, int);
+	float (*getHPFCutoffFreqCallback)(int);	
 	int trackNumSrc;
 	bool *auxExpanderPresentPtr;
 	char* trackNames;
@@ -915,16 +917,19 @@ struct TrackDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Track settings: " + std::string(trackNames[trackNumSrc], 4);
+			trkSetLabel->text = "Track settings: " + std::string(&(trackNames[trackNumSrc << 2]), 4);
 			menu->addChild(trkSetLabel);
 			
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(gainAdjustSrc);
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			
-			// HPFCutoffSlider<MixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<MixerTrack>(srcTrack);
-			// trackHPFAdjustSlider->box.size.x = 200.0f;
-			// menu->addChild(trackHPFAdjustSlider);
+			HPFCutoffSlider *trackHPFAdjustSlider = new HPFCutoffSlider();
+			trackHPFAdjustSlider->box.size.x = 200.0f;
+			trackHPFAdjustSlider->setHPFCutoffFreqCallback = setHPFCutoffFreqCallback;
+			trackHPFAdjustSlider->getHPFCutoffFreqCallback = getHPFCutoffFreqCallback;
+			trackHPFAdjustSlider->trackNum = trackNumSrc;
+			menu->addChild(trackHPFAdjustSlider);
 			
 			// LPFCutoffSlider<MixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<MixerTrack>(srcTrack);
 			// trackLPFAdjustSlider->box.size.x = 200.0f;
@@ -993,7 +998,7 @@ struct TrackDisplay : EditableDisplayBase {
 			menu->addChild(new MenuSeparator());
 
 			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + std::string(trackNames[trackNumSrc << 2], 4);
+			settingsALabel->text = "Actions: " + std::string(&(trackNames[trackNumSrc << 2]), 4);
 			menu->addChild(settingsALabel);
 
 			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
@@ -1045,7 +1050,7 @@ struct GroupDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *grpSetLabel = new MenuLabel();
-			grpSetLabel->text = "Group settings: " + std::string(groupNames[groupNumSrc << 2], 4);
+			grpSetLabel->text = "Group settings: " + std::string(&(groupNames[groupNumSrc << 2]), 4);
 			menu->addChild(grpSetLabel);
 			
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(panCvLevelSrc);

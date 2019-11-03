@@ -509,18 +509,16 @@ struct GainAdjustSlider : ui::Slider {
 
 // HPF filter cutoff menu item
 
-template <typename TrackOrAux>
 struct HPFCutoffQuantity : Quantity {
-	TrackOrAux *srcTrackOrAux = NULL;
-	
-	HPFCutoffQuantity(TrackOrAux *_srcTrackOrAux) {
-		srcTrackOrAux = _srcTrackOrAux;
-	}
+	void (*setHPFCutoffFreqCallback)(float, int);
+	float (*getHPFCutoffFreqCallback)(int);
+	int trackNum;
+
 	void setValue(float value) override {
-		srcTrackOrAux->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
+		setHPFCutoffFreqCallback(math::clamp(value, getMinValue(), getMaxValue()), trackNum);
 	}
 	float getValue() override {
-		return srcTrackOrAux->getHPFCutoffFreq();
+		return getHPFCutoffFreqCallback(trackNum);
 	}
 	float getMinValue() override {return 13.0f;}
 	float getMaxValue() override {return 1000.0f;}
@@ -528,7 +526,7 @@ struct HPFCutoffQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut >= TrackOrAux::minHPFCutoffFreq) {
+		if (valCut >= GlobalConst::minHPFCutoffFreq) {
 			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
 		}
 		else {
@@ -538,7 +536,7 @@ struct HPFCutoffQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "HPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= TrackOrAux::minHPFCutoffFreq) {
+		if (getDisplayValue() >= GlobalConst::minHPFCutoffFreq) {
 			return " Hz";
 		}
 		else {
@@ -547,10 +545,16 @@ struct HPFCutoffQuantity : Quantity {
 	}
 };
 
-template <typename TrackOrAux>
 struct HPFCutoffSlider : ui::Slider {
-	HPFCutoffSlider(TrackOrAux *srcTrackOrAux) {
-		quantity = new HPFCutoffQuantity<TrackOrAux>(srcTrackOrAux);
+	void (*setHPFCutoffFreqCallback)(float, int);
+	float (*getHPFCutoffFreqCallback)(int);	
+	int trackNum;
+	
+	HPFCutoffSlider() {
+		quantity = new HPFCutoffQuantity();
+		((HPFCutoffQuantity*)quantity)->setHPFCutoffFreqCallback = setHPFCutoffFreqCallback;
+		((HPFCutoffQuantity*)quantity)->getHPFCutoffFreqCallback = getHPFCutoffFreqCallback;
+		((HPFCutoffQuantity*)quantity)->trackNum = trackNum;
 	}
 	~HPFCutoffSlider() {
 		delete quantity;
@@ -580,7 +584,7 @@ struct LPFCutoffQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valCut = getDisplayValue();
-		if (valCut <= TrackOrAux::maxLPFCutoffFreq) {
+		if (valCut <= GlobalConst::maxLPFCutoffFreq) {
 			valCut =  std::round(valCut / 100.0f);
 			return string::f("%g", math::normalizeZero(valCut / 10.0f));
 		}
@@ -591,7 +595,7 @@ struct LPFCutoffQuantity : Quantity {
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "LPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() <= TrackOrAux::maxLPFCutoffFreq) {
+		if (getDisplayValue() <= GlobalConst::maxLPFCutoffFreq) {
 			return " kHz";
 		}
 		else {
@@ -783,7 +787,7 @@ struct CopyTrackSettingsItem : MenuItem {
 
 		for (int trk = 0; trk < numTracks; trk++) {
 			bool onSource = (trk == trackNumSrc);
-			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(trackNames[trk << 2], 4), CHECKMARK(onSource));
+			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(&(trackNames[trk << 2]), 4), CHECKMARK(onSource));
 			reo0Item->copyTrackSettingsCallback = copyTrackSettingsCallback;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
@@ -818,7 +822,7 @@ struct TrackReorderItem : MenuItem {
 
 		for (int trk = 0; trk < numTracks; trk++) {
 			bool onSource = (trk == trackNumSrc);
-			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(trackNames[trk << 2], 4), CHECKMARK(onSource));
+			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(&(trackNames[trk << 2]), 4), CHECKMARK(onSource));
 			reo0Item->moveTrackSettingsCallback = moveTrackSettingsCallback;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
