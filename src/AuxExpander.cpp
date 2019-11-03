@@ -735,6 +735,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
+				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
 				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
@@ -745,7 +746,6 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
 				auxDisplays[i]->auxNumber = i;
-				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
 			}
 			// Y is 4.7, same X as below
 			
