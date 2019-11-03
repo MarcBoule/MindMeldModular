@@ -802,109 +802,12 @@ struct MixMasterWidget : ModuleWidget {
 	typedef MixMaster<N_TRK, N_GRP> TMixMaster;
 
 	MasterDisplay* masterDisplay;
-	TrackDisplay* trackDisplays[16];
-	GroupDisplay* groupDisplays[4];
+	TrackDisplay<TMixMaster::MixerTrack>* trackDisplays[16];
+	GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[4];
 	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
 	time_t oldTime = 0;
-
-
-
-	// Callbacks
-	// --------------------
-
-	// copy callback
-	//----
-	void copyTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
-		TMixMaster* module = (TMixMaster*)(this->module);
-		TrackSettingsCpBuffer buffer;
-		module->tracks[_trackNumSrc].write(&buffer);
-		module->tracks[_trackNumDest].read(&buffer);
-	}
-	
-	
-	//----
-	
-	// move callback
-	CableWidget* cwClr[4];
-	
-	void transferTrackInputs(int srcTrk, int destTrk) {
-		// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
-		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-			CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
-			if (cwRip != NULL) {
-				APP->scene->rack->removeCable(cwRip);
-				cwRip->setInput(inputWidgets[destTrk + i * 16]);
-				APP->scene->rack->addCable(cwRip);
-			}
-		}
-	}
-	void clearTrackInputs(int trk) {
-		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-			cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
-			if (cwClr[i] != NULL) {
-				APP->scene->rack->removeCable(cwClr[i]);
-			}
-		}
-	}
-	void reconnectTrackInputs(int trk) {
-		for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-			if (cwClr[i] != NULL) {
-				cwClr[i]->setInput(inputWidgets[trk + i * 16]);
-				APP->scene->rack->addCable(cwClr[i]);
-			}
-		}
-	}	
-	
-	void moveTrackSettingsCallback(int _trackNumSrc, int _trackNumDest) {
-		TMixMaster* module = (TMixMaster*)(this->module);
-		
-		TrackSettingsCpBuffer buffer1;
-		TrackSettingsCpBuffer buffer2;
-		
-		module->tracks[_trackNumSrc].write2(&buffer2);
-		clearTrackInputs(_trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
-		if (_trackNumDest < _trackNumSrc) {
-			for (int trk = _trackNumSrc - 1; trk >= _trackNumDest; trk--) {
-				module->tracks[trk].write2(&buffer1);
-				module->tracks[trk + 1].read2(&buffer1);
-				transferTrackInputs(trk, trk + 1);
-			}
-		}
-		else {// must automatically be bigger (equal is impossible)
-			for (int trk = _trackNumSrc; trk < _trackNumDest; trk++) {
-				module->tracks[trk + 1].write2(&buffer1);
-				module->tracks[trk].read2(&buffer1);
-				transferTrackInputs(trk + 1, trk);
-			}
-		}
-		module->tracks[_trackNumDest].read2(&buffer2);
-		reconnectTrackInputs(_trackNumDest);
-		
-		module->updateTrackLabelRequest = 1;
-		module->trackMoveInAuxRequest = (_trackNumSrc | (_trackNumDest << 8));
-	}
-	
-	//----
-	
-	void setHPFCutoffFreqTrackCallback(float cutoff, int trackNum) {
-		((TMixMaster*)module)->tracks[trackNum].setHPFCutoffFreq(cutoff);
-	}
-	float getHPFCutoffFreqTrackCallback(int trackNum) {
-		return ((TMixMaster*)module)->tracks[trackNum].getHPFCutoffFreq();
-	}
-
-		
-	//----
-		
-	//----
-		
-	//----
-		
-	//----
-		
-
 
 
 	// Module's context menu
@@ -1039,25 +942,17 @@ struct MixMasterWidget : ModuleWidget {
 		static const float xTrck1 = 11.43 + 20.32;
 		for (int i = 0; i < 16; i++) {
 			// Labels
-			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
-				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);
-				
-				trackDisplays[i]->copyTrackSettingsCallback = copyTrackSettingsCallback;
-				trackDisplays[i]->moveTrackSettingsCallback = moveTrackSettingsCallback;
-				trackDisplays[i]->setHPFCutoffFreqCallback = setHPFCutoffFreqTrackCallback;
-				trackDisplays[i]->getHPFCutoffFreqCallback = getHPFCutoffFreqTrackCallback;
-				
+				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
+				trackDisplays[i]->tracks = module->tracks;
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
-				trackDisplays[i]->trackNames = module->trackLabels;
 				trackDisplays[i]->numTracks = N_TRK;
-				trackDisplays[i]->gainAdjustSrc = &(module->tracks[i].gainAdjust);
-				trackDisplays[i]->panCvLevelSrc = &(module->tracks[i].panCvLevel);
-				trackDisplays[i]->fadeRateSrc = module->tracks[i].fadeRate;
-				trackDisplays[i]->fadeProfileSrc = &(module->tracks[i].fadeProfile);
-				trackDisplays[i]->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
+				trackDisplays[i]->inputWidgets = inputWidgets;
 			}
 			// HPF lights
 			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPF_LIGHTS + i));	
@@ -1150,19 +1045,13 @@ struct MixMasterWidget : ModuleWidget {
 				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), false, module, TMixMaster::FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));				
 			}
 			// Labels
-			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
+			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
-				groupDisplays[i]->groupNumSrc = i;
+				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
-				groupDisplays[i]->groupNames = &(module->trackLabels[N_TRK << 2]);
-				groupDisplays[i]->numGroups = N_GRP;
 				groupDisplays[i]->numTracks = N_TRK;
-				groupDisplays[i]->panCvLevelSrc = &(module->groups[i].panCvLevel);
-				groupDisplays[i]->fadeRateSrc = module->groups[i].fadeRate;
-				groupDisplays[i]->fadeProfileSrc = &(module->groups[i].fadeProfile);
-				groupDisplays[i]->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 			}
 			
 			// Volume inputs

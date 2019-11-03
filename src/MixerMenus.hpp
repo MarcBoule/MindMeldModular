@@ -131,6 +131,7 @@ struct TapModePlusItem : TapModeItem {
 		Menu *menu = TapModeItem::createChildMenu();
 
 		menu->addChild(new MenuSeparator());
+		
 		GroupsControlTrackSendLevelsItem *levelTwhenGItem = createMenuItem<GroupsControlTrackSendLevelsItem>("Groups control track send levels", CHECKMARK(*groupsControlTrackSendLevelsSrc != 0));
 		levelTwhenGItem->groupsControlTrackSendLevelsSrc = groupsControlTrackSendLevelsSrc;
 		menu->addChild(levelTwhenGItem);
@@ -509,16 +510,18 @@ struct GainAdjustSlider : ui::Slider {
 
 // HPF filter cutoff menu item
 
+template <typename TrackOrAux>
 struct HPFCutoffQuantity : Quantity {
-	void (*setHPFCutoffFreqCallback)(float, int);
-	float (*getHPFCutoffFreqCallback)(int);
-	int trackNum;
-
+	TrackOrAux *srcTrackOrAux = NULL;
+	
+	HPFCutoffQuantity(TrackOrAux *_srcTrackOrAux) {
+		srcTrackOrAux = _srcTrackOrAux;
+	}
 	void setValue(float value) override {
-		setHPFCutoffFreqCallback(math::clamp(value, getMinValue(), getMaxValue()), trackNum);
+		srcTrackOrAux->setHPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
 	}
 	float getValue() override {
-		return getHPFCutoffFreqCallback(trackNum);
+		return srcTrackOrAux->getHPFCutoffFreq();
 	}
 	float getMinValue() override {return 13.0f;}
 	float getMaxValue() override {return 1000.0f;}
@@ -545,16 +548,10 @@ struct HPFCutoffQuantity : Quantity {
 	}
 };
 
+template <typename TrackOrAux>
 struct HPFCutoffSlider : ui::Slider {
-	void (*setHPFCutoffFreqCallback)(float, int);
-	float (*getHPFCutoffFreqCallback)(int);	
-	int trackNum;
-	
-	HPFCutoffSlider() {
-		quantity = new HPFCutoffQuantity();
-		((HPFCutoffQuantity*)quantity)->setHPFCutoffFreqCallback = setHPFCutoffFreqCallback;
-		((HPFCutoffQuantity*)quantity)->getHPFCutoffFreqCallback = getHPFCutoffFreqCallback;
-		((HPFCutoffQuantity*)quantity)->trackNum = trackNum;
+	HPFCutoffSlider(TrackOrAux *srcTrackOrAux) {
+		quantity = new HPFCutoffQuantity<TrackOrAux>(srcTrackOrAux);
 	}
 	~HPFCutoffSlider() {
 		delete quantity;
@@ -567,16 +564,16 @@ struct HPFCutoffSlider : ui::Slider {
 
 template <typename TrackOrAux>
 struct LPFCutoffQuantity : Quantity {
-	TrackOrAux *srcTrack = NULL;
+	TrackOrAux *srcTrackOrAux = NULL;
 	
 	LPFCutoffQuantity(TrackOrAux *_srcTrack) {
-		srcTrack = _srcTrack;
+		srcTrackOrAux = _srcTrack;
 	}
 	void setValue(float value) override {
-		srcTrack->setLPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
+		srcTrackOrAux->setLPFCutoffFreq(math::clamp(value, getMinValue(), getMaxValue()));
 	}
 	float getValue() override {
-		return srcTrack->getLPFCutoffFreq();
+		return srcTrackOrAux->getLPFCutoffFreq();
 	}
 	float getMinValue() override {return 1000.0f;}
 	float getMaxValue() override {return 21000.0f;}
@@ -606,8 +603,8 @@ struct LPFCutoffQuantity : Quantity {
 
 template <typename TrackOrAux>
 struct LPFCutoffSlider : ui::Slider {
-	LPFCutoffSlider(TrackOrAux *srcTrack) {
-		quantity = new LPFCutoffQuantity<TrackOrAux>(srcTrack);
+	LPFCutoffSlider(TrackOrAux *srcTrackOrAux) {
+		quantity = new LPFCutoffQuantity<TrackOrAux>(srcTrackOrAux);
 	}
 	~LPFCutoffSlider() {
 		delete quantity;
@@ -765,19 +762,20 @@ struct LinkFaderItem : MenuItem {
 
 
 // copy track menu settings to
+template <typename TMixerTrack>
 struct CopyTrackSettingsItem : MenuItem {
-	void (*copyTrackSettingsCallback)(int, int);
+	TMixerTrack *tracks = NULL;
 	int trackNumSrc;	
-	char* trackNames;
-	int numTracks;
 
 	struct CopyTrackSettingsSubItem : MenuItem {
-		void (*copyTrackSettingsCallback)(int, int);
-		int trackNumSrc;
+		TMixerTrack *tracks = NULL;
+		int trackNumSrc;	
 		int trackNumDest;
 
 		void onAction(const event::Action &e) override {
-			copyTrackSettingsCallback(trackNumSrc, trackNumDest);
+			TrackSettingsCpBuffer buffer;
+			tracks[trackNumSrc].write(&buffer);
+			tracks[trackNumDest].read(&buffer);
 		}
 	};
 	
@@ -785,10 +783,10 @@ struct CopyTrackSettingsItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		for (int trk = 0; trk < numTracks; trk++) {
+		for (int trk = 0; trk < 16; trk++) {
 			bool onSource = (trk == trackNumSrc);
-			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(&(trackNames[trk << 2]), 4), CHECKMARK(onSource));
-			reo0Item->copyTrackSettingsCallback = copyTrackSettingsCallback;
+			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
+			reo0Item->tracks = tracks;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
 			reo0Item->disabled = onSource;
@@ -800,19 +798,77 @@ struct CopyTrackSettingsItem : MenuItem {
 };
 
 // move track to
+template <typename TMixerTrack>
 struct TrackReorderItem : MenuItem {
-	void (*moveTrackSettingsCallback)(int, int);
+	TMixerTrack *tracks = NULL;
 	int trackNumSrc;	
-	char* trackNames;
-	int numTracks;
+	int *updateTrackLabelRequestPtr;
+	int32_t *trackMoveInAuxRequestPtr;
+	PortWidget **inputWidgets;
 
 	struct TrackReorderSubItem : MenuItem {
-		void (*moveTrackSettingsCallback)(int, int);
+		TMixerTrack *tracks = NULL;
 		int trackNumSrc;	
 		int trackNumDest;
+		int *updateTrackLabelRequestPtr;
+		int32_t *trackMoveInAuxRequestPtr;
+		PortWidget **inputWidgets;
+		
+		CableWidget* cwClr[4];
+		
+		void transferTrackInputs(int srcTrk, int destTrk) {
+			// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
+			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
+				if (cwRip != NULL) {
+					APP->scene->rack->removeCable(cwRip);
+					cwRip->setInput(inputWidgets[destTrk + i * 16]);
+					APP->scene->rack->addCable(cwRip);
+				}
+			}
+		}
+		void clearTrackInputs(int trk) {
+			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+				cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
+				if (cwClr[i] != NULL) {
+					APP->scene->rack->removeCable(cwClr[i]);
+				}
+			}
+		}
+		void reconnectTrackInputs(int trk) {
+			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
+				if (cwClr[i] != NULL) {
+					cwClr[i]->setInput(inputWidgets[trk + i * 16]);
+					APP->scene->rack->addCable(cwClr[i]);
+				}
+			}
+		}
 
 		void onAction(const event::Action &e) override {
-			moveTrackSettingsCallback(trackNumSrc, trackNumDest);
+			TrackSettingsCpBuffer buffer1;
+			TrackSettingsCpBuffer buffer2;
+			
+			tracks[trackNumSrc].write2(&buffer2);
+			clearTrackInputs(trackNumSrc);// dangle the wires connected to the source track while ripple re-connect
+			if (trackNumDest < trackNumSrc) {
+				for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
+					tracks[trk].write2(&buffer1);
+					tracks[trk + 1].read2(&buffer1);
+					transferTrackInputs(trk, trk + 1);
+				}
+			}
+			else {// must automatically be bigger (equal is impossible)
+				for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
+					tracks[trk + 1].write2(&buffer1);
+					tracks[trk].read2(&buffer1);
+					transferTrackInputs(trk + 1, trk);
+				}
+			}
+			tracks[trackNumDest].read2(&buffer2);
+			reconnectTrackInputs(trackNumDest);
+			
+			*updateTrackLabelRequestPtr = 1;
+			*trackMoveInAuxRequestPtr = (trackNumSrc | (trackNumDest << 8));
 		}
 	};
 	
@@ -820,12 +876,15 @@ struct TrackReorderItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		for (int trk = 0; trk < numTracks; trk++) {
+		for (int trk = 0; trk < 16; trk++) {
 			bool onSource = (trk == trackNumSrc);
-			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(&(trackNames[trk << 2]), 4), CHECKMARK(onSource));
-			reo0Item->moveTrackSettingsCallback = moveTrackSettingsCallback;
+			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
+			reo0Item->tracks = tracks;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
+			reo0Item->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			reo0Item->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
+			reo0Item->inputWidgets = inputWidgets;
 			reo0Item->disabled = onSource;
 			menu->addChild(reo0Item);
 		}
@@ -833,6 +892,7 @@ struct TrackReorderItem : MenuItem {
 		return menu;
 	}		
 };
+
 
 // Master right-click menu
 // --------------------

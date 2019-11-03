@@ -1380,6 +1380,7 @@ struct MixerTrack {
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 	float calcSoloGain() {// returns 1.0f when the check for solo means this track should play, 0.0f otherwise
+		// code below assumes 16 tracks and 4 groups (see F0000 bitmask)
 		if (gInfo->soloBitMask == 0ul) {// no track nor groups are soloed 
 			return 1.0f;
 		}

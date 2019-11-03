@@ -896,62 +896,55 @@ struct MasterDisplay : EditableDisplayBase {
 // Track display editable label with menu
 // --------------------
 
+template <typename TMixerTrack>
 struct TrackDisplay : EditableDisplayBase {
-	void (*copyTrackSettingsCallback)(int, int);
-	void (*moveTrackSettingsCallback)(int, int);
-	void (*setHPFCutoffFreqCallback)(float, int);
-	float (*getHPFCutoffFreqCallback)(int);	
+	TMixerTrack *tracks = NULL;
 	int trackNumSrc;
 	bool *auxExpanderPresentPtr;
-	char* trackNames;
 	int numTracks;
-	float* gainAdjustSrc;
-	float* panCvLevelSrc;
-	float* fadeRateSrc;
-	float* fadeProfileSrc;
-	unsigned long* linkBitMaskSrc;
+	int *updateTrackLabelRequestPtr;
+	int *trackMoveInAuxRequestPtr;
+	PortWidget **inputWidgets;
 	
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
-
+			TMixerTrack *srcTrack = &(tracks[trackNumSrc]);
+			
 			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Track settings: " + std::string(&(trackNames[trackNumSrc << 2]), 4);
+			trkSetLabel->text = "Track settings: " + std::string(srcTrack->trackName, 4);
 			menu->addChild(trkSetLabel);
 			
-			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(gainAdjustSrc);
+			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(&(srcTrack->gainAdjust));
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			
-			HPFCutoffSlider *trackHPFAdjustSlider = new HPFCutoffSlider();
+			HPFCutoffSlider<TMixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<TMixerTrack>(srcTrack);
 			trackHPFAdjustSlider->box.size.x = 200.0f;
-			trackHPFAdjustSlider->setHPFCutoffFreqCallback = setHPFCutoffFreqCallback;
-			trackHPFAdjustSlider->getHPFCutoffFreqCallback = getHPFCutoffFreqCallback;
-			trackHPFAdjustSlider->trackNum = trackNumSrc;
 			menu->addChild(trackHPFAdjustSlider);
 			
-			// LPFCutoffSlider<MixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<MixerTrack>(srcTrack);
-			// trackLPFAdjustSlider->box.size.x = 200.0f;
-			// menu->addChild(trackLPFAdjustSlider);
+			LPFCutoffSlider<TMixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<TMixerTrack>(srcTrack);
+			trackLPFAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(trackLPFAdjustSlider);
 			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(panCvLevelSrc);
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcTrack->panCvLevel));
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRateSrc);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcTrack->fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(fadeProfileSrc);
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcTrack->fadeProfile));
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(linkBitMaskSrc, trackNumSrc)));
-			linkFadItem->linkBitMaskSrc = linkBitMaskSrc;
-			linkFadItem->trackOrGroupNum = trackNumSrc;
+			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc)));
+			linkFadItem->linkBitMaskSrc = &(srcTrack->gInfo->linkBitMask);
 			menu->addChild(linkFadItem);
-			
+
+		
 			/*
 			if (srcTrack->gInfo->directOutsMode >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
@@ -995,24 +988,24 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(dispColItem);
 			}*/
 			
-			menu->addChild(new MenuSeparator());
+			//menu->addChild(new MenuSeparator());
+			menu->addChild(new MenuLabel());// empty line
 
 			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + std::string(&(trackNames[trackNumSrc << 2]), 4);
+			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
 			menu->addChild(settingsALabel);
 
-			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track menu settings to:", RIGHT_ARROW);
-			copyItem->copyTrackSettingsCallback = copyTrackSettingsCallback;
+			CopyTrackSettingsItem<TMixerTrack> *copyItem = createMenuItem<CopyTrackSettingsItem<TMixerTrack>>("Copy track menu settings to:", RIGHT_ARROW);
+			copyItem->tracks = tracks;
 			copyItem->trackNumSrc = trackNumSrc;
-			copyItem->trackNames = trackNames;
-			copyItem->numTracks = numTracks;
 			menu->addChild(copyItem);
 			
-			TrackReorderItem *reodrerItem = createMenuItem<TrackReorderItem>("Move to:", RIGHT_ARROW);
-			reodrerItem->moveTrackSettingsCallback = moveTrackSettingsCallback;
+			TrackReorderItem<TMixerTrack> *reodrerItem = createMenuItem<TrackReorderItem<TMixerTrack>>("Move to:", RIGHT_ARROW);
+			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
-			reodrerItem->trackNames = trackNames;
-			reodrerItem->numTracks = numTracks;
+			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			reodrerItem->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
+			reodrerItem->inputWidgets = inputWidgets;
 			menu->addChild(reodrerItem);
 			
 			e.consume(this);
@@ -1021,9 +1014,9 @@ struct TrackDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(&trackNames[trackNumSrc << 2]))) = 0x20202020;
+		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			trackNames[(trackNumSrc << 2) + i] = text[i];
+			tracks[trackNumSrc].trackName[i] = text[i];
 		}
 		EditableDisplayBase::onChange(e);
 	};
@@ -1033,41 +1026,34 @@ struct TrackDisplay : EditableDisplayBase {
 // Group display editable label with menu
 // --------------------
 
+template <typename TMixerGroup>
 struct GroupDisplay : EditableDisplayBase {
-	int groupNumSrc;
+	TMixerGroup *srcGroup = NULL;
 	bool *auxExpanderPresentPtr;
-	char* groupNames;
-	int numGroups;
-	int numTracks;
-	float* panCvLevelSrc;
-	float* fadeRateSrc;
-	float* fadeProfileSrc;
-	unsigned long* linkBitMaskSrc;
-
+	int numTracks;// used to calc group offset in linkBitMask
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *grpSetLabel = new MenuLabel();
-			grpSetLabel->text = "Group settings: " + std::string(&(groupNames[groupNumSrc << 2]), 4);
+			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
 			menu->addChild(grpSetLabel);
 			
-			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(panCvLevelSrc);
+			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcGroup->panCvLevel));
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);
 			
-			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRateSrc);
+			FadeRateSlider *fadeSlider = new FadeRateSlider(srcGroup->fadeRate);
 			fadeSlider->box.size.x = 200.0f;
 			menu->addChild(fadeSlider);
 			
-			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(fadeProfileSrc);
+			FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(srcGroup->fadeProfile));
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(linkBitMaskSrc, numTracks + groupNumSrc)));
-			linkFadItem->linkBitMaskSrc = linkBitMaskSrc;
-			linkFadItem->trackOrGroupNum = numTracks + groupNumSrc;
+			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcGroup->gInfo->linkBitMask), numTracks + srcGroup->groupNum)));
+			linkFadItem->linkBitMaskSrc = &(srcGroup->gInfo->linkBitMask);
 			menu->addChild(linkFadItem);
 			/*
 			if (srcGroup->gInfo->directOutsMode >= 4) {
@@ -1111,9 +1097,9 @@ struct GroupDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(&groupNames[groupNumSrc << 2]))) = 0x20202020;
+		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
 		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
-			groupNames[(groupNumSrc << 2) + i] = text[i];
+			srcGroup->groupName[i] = text[i];
 		}
 		EditableDisplayBase::onChange(e);
 	};
