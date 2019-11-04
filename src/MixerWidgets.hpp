@@ -456,7 +456,7 @@ struct GroupSelectDisplay : ParamWidget {
 	int oldDispColor = -1;
 	PackedBytes4 *srcColor = NULL;
 	int8_t* srcColorLocal;
-	int num_groups;// N_GRP
+	int numGroups;// N_GRP
 	
 	GroupSelectDisplay() {
 		box.size = Vec(18, 16);
@@ -487,18 +487,18 @@ struct GroupSelectDisplay : ParamWidget {
 	void onHoverKey(const event::HoverKey &e) override {
 		if (paramQuantity) {
 			if (e.action == GLFW_PRESS) {
-				if (e.key >= GLFW_KEY_1 && e.key <= (GLFW_KEY_0 + num_groups)) {
+				if (e.key >= GLFW_KEY_1 && e.key <= (GLFW_KEY_0 + numGroups)) {
 					paramQuantity->setValue((float)(e.key - GLFW_KEY_0));
 				}
-				else if (e.key >= GLFW_KEY_KP_1 && e.key <= (GLFW_KEY_KP_0 + num_groups)) {
+				else if (e.key >= GLFW_KEY_KP_1 && e.key <= (GLFW_KEY_KP_0 + numGroups)) {
 					paramQuantity->setValue((float)(e.key - GLFW_KEY_KP_0));
 				}
 				else if ( ((e.mods & RACK_MOD_MASK) == 0) && (
 						(e.key >= GLFW_KEY_A && e.key <= GLFW_KEY_Z) ||
 						e.key == GLFW_KEY_SPACE || e.key == GLFW_KEY_MINUS || 
 						e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0 || 
-						(e.key >= (GLFW_KEY_1 + num_groups) && e.key <= GLFW_KEY_9) || 
-						(e.key >= (GLFW_KEY_KP_1 + num_groups) && e.key <= GLFW_KEY_KP_9) ) ){
+						(e.key >= (GLFW_KEY_1 + numGroups) && e.key <= GLFW_KEY_9) || 
+						(e.key >= (GLFW_KEY_KP_1 + numGroups) && e.key <= GLFW_KEY_KP_9) ) ){
 					paramQuantity->setValue(0.0f);
 				}
 			}
@@ -526,13 +526,13 @@ struct GroupSelectDisplay : ParamWidget {
 
 struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
 	Param* sourceParam = NULL;// param that is mapped to this
-	float num_groups;// (float)N_GRP
+	float numGroups;// (float)N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupMinusButtonNoParam::onChange(e);
 		if (sourceParam && state != 0) {
 			float group = sourceParam->getValue();// separate variable so no glitch
-			if (group < 0.5f) group = num_groups;
+			if (group < 0.5f) group = numGroups;
 			else group -= 1.0f;
 			sourceParam->setValue(group);
 		}		
@@ -542,13 +542,13 @@ struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
 
 struct DynGroupPlusButtonNotify : DynGroupPlusButtonNoParam {
 	Param* sourceParam = NULL;// param that is mapped to this
-	int num_groups;// N_GRP
+	int numGroups;// N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupPlusButtonNoParam::onChange(e);
 		if (sourceParam && state != 0) {
 			float group = sourceParam->getValue();// separate variable so no glitch
-			if (group > (num_groups - 0.5f)) group = 0.0f;
+			if (group > (numGroups - 0.5f)) group = 0.0f;
 			else group += 1.0f;
 			sourceParam->setValue(group);
 		}		
@@ -729,13 +729,6 @@ struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 
 
 
-
-
-
-
-
-
-
 // Editable track and group displays base struct
 // --------------------
 
@@ -812,10 +805,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 		}
 		LedDisplayTextField::onButton(e);
 	}
-
 }; 
-
-
 
 
 // Master display editable label with menu
@@ -1202,17 +1192,20 @@ struct AuxDisplay : EditableDisplayBase {
 // Special solo button with mutex feature (ctrl-click)
 
 struct DynSoloButtonMutex : DynSoloButton {
-	Param *soloParams;// 19 (or 15) params in here must be cleared when mutex solo performed on a group (track)
+	Param *soloParams;// 19 or 15 params in here must be cleared when mutex solo performed on a group (track)
+	//  (9 or 7 for jr)
 	int baseSoloParamId;
 	unsigned long soloMutexUnclickMemory;// for ctrl-unclick. Invalid when soloMutexUnclickMemory == -1
 	int soloMutexUnclickMemorySize;// -1 when nothing stored
+	int numTracks;
+	int numGroups;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if (((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
 				int soloParamId = paramQuantity->paramId - baseSoloParamId;
-				bool isTrack = (soloParamId < 16);
-				int end = 16 + (isTrack ? 0 : 4);
+				bool isTrack = (soloParamId < numTracks);
+				int end = numTracks + (isTrack ? 0 : numGroups);
 				bool turningOnSolo = soloParams[soloParamId].getValue() < 0.5f;
 				
 				
@@ -1226,7 +1219,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 						}
 					}
 					
-					// clear 19 (or 15) solos 
+					// clear 19 or 15 solos (9 or 7 for jr)
 					for (int i = 0; i < end; i++) {
 						if (soloParamId != i) {
 							soloParams[i].setValue(0.0f);
@@ -1235,7 +1228,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 					
 				}
 				else {// ctrl turning off solo: recall stored solo states
-					// reinstate 19 (or 15) solos 
+					// reinstate 19 or 15 solos (9 or 7 for jr) 
 					if (soloMutexUnclickMemorySize >= 0) {
 						for (int i = 0; i < soloMutexUnclickMemorySize; i++) {
 							if (soloParamId != i) {
@@ -1251,7 +1244,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 			else {
 				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
 				if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
-					for (int i = 0; i < 16 + 4; i++) {
+					for (int i = 0; i < (numTracks + numGroups); i++) {
 						if (i != paramQuantity->paramId - baseSoloParamId) {
 							soloParams[i].setValue(0.0f);
 						}
@@ -1268,13 +1261,15 @@ struct DynSoloButtonMutex : DynSoloButton {
 
 
 struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
-	Param *muteParams;// 19 (or 15) params in here must be cleared when mutex mute performed on a group (track)
+	Param *muteParams;// 19 or 15 params in here must be cleared when mutex mute performed on a group (track)
+	//  (9 or 7 for jr)
 	int baseMuteParamId;
+	int numTracksAndGroups;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
-				for (int i = 0; i < 16 + 4; i++) {
+				for (int i = 0; i < (numTracksAndGroups); i++) {
 					if (i != paramQuantity->paramId - baseMuteParamId) {
 						muteParams[i].setValue(0.0f);
 					}

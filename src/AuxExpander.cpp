@@ -812,14 +812,14 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(6.35 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
-				newGrpMinusButton->num_groups = (float)N_GRP;
+				newGrpMinusButton->numGroups = (float)N_GRP;
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
 			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(6.35 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
-				newGrpPlusButton->num_groups = (float)N_GRP;
+				newGrpPlusButton->numGroups = (float)N_GRP;
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
@@ -827,7 +827,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
-				groupSelectDisplay->num_groups = N_GRP;
+				groupSelectDisplay->numGroups = N_GRP;
 			}
 		}
 
