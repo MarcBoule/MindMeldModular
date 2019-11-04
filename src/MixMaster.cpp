@@ -322,22 +322,25 @@ struct MixMaster : Module {
 		}
 
 		if (refresh.processInputs()) {
-			int trackToProcess = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
+			int sixteenCount = refresh.refreshCounter >> 4;// Corresponds to 172Hz refreshing of each track, at 44.1 kHz
 			
 			// Tracks
+			int trackToProcess = (N_TRK == 16 ? sixteenCount : (sixteenCount & 0x7));
 			gInfo.updateSoloBit(trackToProcess);
 			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
-			// Groups/Aux
-			if ( (trackToProcess & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
-				gInfo.updateSoloBit(N_TRK + (trackToProcess >> 2));
-				groups[trackToProcess >> 2].updateSlowValues();
-				if (auxExpanderPresent) {
-					gInfo.updateReturnSoloBits();
-					aux[trackToProcess >> 2].updateSlowValues();
-				}
+			// Groups
+			if ( (sixteenCount & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
+				int groupToProcess = sixteenCount >> (4 - N_GRP / 2);
+				gInfo.updateSoloBit(N_TRK + groupToProcess);
+				groups[groupToProcess].updateSlowValues();
+			}
+			// Aux
+			if ( auxExpanderPresent && ((sixteenCount & 0x3) == 1) ) {// an aux is updated once every 16 passes in input proceesing
+				gInfo.updateReturnSoloBits();
+				aux[sixteenCount >> 2].updateSlowValues();
 			}
 			// Master
-			if ((trackToProcess & 0x3) == 1) {// master and groupUsage updated once every 4 passes in input proceesing
+			if ((sixteenCount & 0x3) == 2) {// master and groupUsage updated once every 4 passes in input proceesing
 				master.updateSlowValues();
 				gInfo.updateGroupUsage();
 			}
@@ -485,7 +488,7 @@ struct MixMaster : Module {
 					}
 				}
 				else {
-					for (int i = 0; i < (N_TRK >> 2); i++) {
+					for (int i = 0; i < (N_TRK / 4); i++) {
 						for (int j = 0; j < 4; j++) {
 							tmpDispCols[i].cc4[j] = tracks[ (i << 2) + j ].dispColorLocal;
 						}	
@@ -527,8 +530,8 @@ struct MixMaster : Module {
 	
 	void setFadeCvOuts() {
 		if (outputs[FADE_CV_OUTPUT].isConnected()) {
-			outputs[FADE_CV_OUTPUT].setChannels(numChannels16);
-			for (int trk = 0; trk < 16; trk++) {
+			outputs[FADE_CV_OUTPUT].setChannels(N_TRK == 16 ? numChannels16 : 8);
+			for (int trk = 0; trk < N_TRK; trk++) {
 				float outV = tracks[trk].fadeGain * 10.0f;
 				if (gInfo.fadeCvOutsWithVolCv) {
 					outV *= tracks[trk].volCv;
@@ -545,13 +548,13 @@ struct MixMaster : Module {
 		
 		// tracks
 		if ( gInfo.auxSendsMode < 4 && (gInfo.groupsControlTrackSendLevels == 0 || gInfo.groupUsage[4] == 0) ) {
-			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << 5], 32 * 4);
+			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << (3 + N_TRK / 8)], (N_TRK * 2) * 4);
 		}
 		else {
 			int trkGroup;
-			for (int trk = 0; trk < 16; trk++) {
+			for (int trk = 0; trk < N_TRK; trk++) {
 				// tracks should have aux sends even when grouped
-				int tapIndex = (tracks[trk].auxSendsMode << 5);
+				int tapIndex = (tracks[trk].auxSendsMode << (3 + N_TRK / 8));
 				float trackL = trackTaps[tapIndex + (trk << 1) + 0];
 				float trackR = trackTaps[tapIndex + (trk << 1) + 1];
 				if (gInfo.groupsControlTrackSendLevels != 0 && (trkGroup = (int)(tracks[trk].paGroup->getValue() + 0.5f)) != 0) {
@@ -570,13 +573,13 @@ struct MixMaster : Module {
 		
 		// groups
 		if (gInfo.auxSendsMode < 4) {
-			memcpy(&auxSends[32], &groupTaps[gInfo.auxSendsMode << 3], 8 * 4);
+			memcpy(&auxSends[N_TRK * 2], &groupTaps[gInfo.auxSendsMode << (1 + N_GRP / 2)], (N_GRP * 2) * 4);
 		}
 		else {
-			for (int grp = 0; grp < 4; grp++) {
-				int tapIndex = (groups[grp].auxSendsMode << 3);
-				auxSends[(grp << 1) + 32] = groupTaps[tapIndex + (grp << 1) + 0];
-				auxSends[(grp << 1) + 33] = groupTaps[tapIndex + (grp << 1) + 1];
+			for (int grp = 0; grp < N_GRP; grp++) {
+				int tapIndex = (groups[grp].auxSendsMode << (1 + N_GRP / 2));
+				auxSends[(grp << 1) + N_TRK * 2] = groupTaps[tapIndex + (grp << 1) + 0];
+				auxSends[(grp << 1) + N_TRK * 2] = groupTaps[tapIndex + (grp << 1) + 1];
 			}
 		}
 
@@ -592,19 +595,19 @@ struct MixMaster : Module {
 			if (tapIndex < 4) {// global direct outs
 				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 					for (unsigned int i = 0; i < 8; i++) {
-						int offset = (tapIndex << 5) + ((base + i) << 1);
+						int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
 				}
 				else {
-					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << 5) + (base << 1)], 4 * 16);
+					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << (3 + N_TRK / 8)) + (base << 1)], 4 * 16);
 				}
 			}
 			else {// per track direct outs
 				for (unsigned int i = 0; i < 8; i++) {
 					tapIndex = tracks[base + i].directOutsMode;
-					int offset = (tapIndex << 5) + ((base + i) << 1);
+					int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
 					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
 						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
@@ -620,39 +623,40 @@ struct MixMaster : Module {
 	
 	
 	void SetDirectGroupAuxOuts() {
-		if (outputs[DIRECT_OUTPUTS + 2].isConnected()) {
+		int outputNum = DIRECT_OUTPUTS + N_TRK / 8;
+		if (outputs[outputNum].isConnected()) {
 			if (auxExpanderPresent) {
-				outputs[DIRECT_OUTPUTS + 2].setChannels(numChannels16);
+				outputs[outputNum].setChannels(N_GRP == 4 ? numChannels16 : 12);
 			}
 			else {
-				outputs[DIRECT_OUTPUTS + 2].setChannels(8);
+				outputs[outputNum].setChannels(N_GRP * 2);
 			}
 
 			// Groups
 			int tapIndex = gInfo.directOutsMode;			
 			if (gInfo.directOutsMode < 4) {// global direct outs
 				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-					for (unsigned int i = 0; i < 4; i++) {
-						int offset = (tapIndex << 3) + (i << 1);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
+					for (unsigned int i = 0; i < N_GRP; i++) {
+						int offset = (tapIndex << (1 + N_GRP / 2)) + (i << 1);
+						outputs[outputNum].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
+						outputs[outputNum].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
 				}
 				else {
-					memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(), &groupTaps[(tapIndex << 3)], 4 * 8);
+					memcpy(outputs[outputNum].getVoltages(), &groupTaps[(tapIndex << (1 + N_GRP / 2))], 4 * N_GRP * 2);
 				}
 			}
 			else {// per group direct outs
-				for (unsigned int i = 0; i < 4; i++) {
+				for (unsigned int i = 0; i < N_GRP; i++) {
 					tapIndex = groups[i].directOutsMode;
-					int offset = (tapIndex << 3) + (i << 1);
+					int offset = (tapIndex << (1 + N_GRP / 2)) + (i << 1);
 					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
+						outputs[outputNum].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
+						outputs[outputNum].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
 					else {
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 0], 2 * i);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(groupTaps[offset + 1], 2 * i + 1);
+						outputs[outputNum].setVoltage(groupTaps[offset + 0], 2 * i);
+						outputs[outputNum].setVoltage(groupTaps[offset + 1], 2 * i + 1);
 					}
 				}
 			}
@@ -662,14 +666,14 @@ struct MixMaster : Module {
 			if (auxExpanderPresent) {
 				if (gInfo.directOutsMode < 4) {// global direct outs
 					int tapIndex = gInfo.directOutsMode;
-					memcpy(outputs[DIRECT_OUTPUTS + 2].getVoltages(8), &auxTaps[(tapIndex << 3)], 4 * 8);
+					memcpy(outputs[outputNum].getVoltages(N_GRP * 2), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
 				else {// per aux direct outs
 					for (unsigned int i = 0; i < 4; i++) {
 						int tapIndex = directOutsModeLocalAux.cc4[i];
 						int offset = (tapIndex << 3) + (i << 1);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(auxTaps[offset + 0], 8 + 2 * i);
-						outputs[DIRECT_OUTPUTS + 2].setVoltage(auxTaps[offset + 1], 8 + 2 * i + 1);
+						outputs[outputNum].setVoltage(auxTaps[offset + 0], N_GRP * 2 + 2 * i);
+						outputs[outputNum].setVoltage(auxTaps[offset + 1], N_GRP * 2 + 2 * i + 1);
 					}
 				}		
 			}
@@ -688,10 +692,15 @@ struct MixMaster : Module {
 
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
-			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(auxExpanderPresent ? numChannels16 : 8);
-			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupTaps, 4 * 8);// insert out for groups is directly tap0
 			if (auxExpanderPresent) {
-				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(8), auxTaps, 4 * 8);// insert out for aux is directly tap0
+				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(N_GRP == 4 ? numChannels16 : 12);
+			}
+			else {
+				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(N_GRP * 2);
+			}
+			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupTaps, 4 * N_GRP * 2);// insert out for groups is directly tap0
+			if (auxExpanderPresent) {
+				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(N_GRP * 2), auxTaps, 4 * 8);// insert out for aux is directly tap0
 			}
 		}
 	}
@@ -700,7 +709,7 @@ struct MixMaster : Module {
 	void processMuteSoloCvTriggers() {
 		int state;
 		if (inputs[TRACK_MUTESOLO_INPUTS + 0].isConnected()) {
-			for (int trk = 0; trk < 16; trk++) {
+			for (int trk = 0; trk < N_TRK; trk++) {
 				// track mutes
 				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTESOLO_INPUTS + 0].getVoltage(trk));
 				if (state != 0) {
@@ -716,10 +725,11 @@ struct MixMaster : Module {
 				}
 			}
 		}
-		if (inputs[TRACK_MUTESOLO_INPUTS + 1].isConnected()) {
-			for (int trk = 0; trk < 16; trk++) {
+		int soloInputNum = TRACK_MUTESOLO_INPUTS + N_TRK / 16;
+		if (inputs[soloInputNum].isConnected()) {
+			for (int trk = 0; trk < N_TRK; trk++) {
 				// track solos
-				state = muteSoloCvTriggers[trk + 16].process(inputs[TRACK_MUTESOLO_INPUTS + 1].getVoltage(trk));
+				state = muteSoloCvTriggers[trk + N_TRK].process(inputs[soloInputNum].getVoltage((N_TRK == 16 ? 0 : 8) + trk));
 				if (state != 0) {
 					if (gInfo.momentaryCvButtons) {
 						if (state == 1) {
@@ -734,9 +744,9 @@ struct MixMaster : Module {
 			}
 		}
 		if (inputs[GRPM_MUTESOLO_INPUT].isConnected()) {
-			for (int grp = 0; grp < 4; grp++) {
+			for (int grp = 0; grp < N_GRP; grp++) {
 				// group mutes
-				state = muteSoloCvTriggers[grp + 32].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp));
+				state = muteSoloCvTriggers[grp + N_TRK * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp));
 				if (state != 0) {
 					if (gInfo.momentaryCvButtons) {
 						if (state == 1) {
@@ -748,8 +758,8 @@ struct MixMaster : Module {
 						params[GROUP_MUTE_PARAMS + grp].setValue(state == 1 ? 1.0f : 0.0f);// gate level
 					}
 				}
-				// group solos
-				state = muteSoloCvTriggers[grp + 32 + 4].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp + 4));
+				// group solos 
+				state = muteSoloCvTriggers[grp + N_TRK * 2 + N_GRP].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp + N_GRP));
 				if (state != 0) {
 					if (gInfo.momentaryCvButtons) {
 						if (state == 1) {
@@ -763,7 +773,7 @@ struct MixMaster : Module {
 				}
 			}	
 			// master mute
-			state = muteSoloCvTriggers[40].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(8));
+			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2));
 			if (state != 0) {
 				if (gInfo.momentaryCvButtons) {
 					if (state == 1) {
@@ -776,7 +786,7 @@ struct MixMaster : Module {
 				}
 			}
 			// master dim
-			state = muteSoloCvTriggers[40 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(9));
+			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 1));
 			if (state != 0) {
 				if (gInfo.momentaryCvButtons) {
 					if (state == 1) {
@@ -789,7 +799,7 @@ struct MixMaster : Module {
 				}
 			}
 			// master mono
-			state = muteSoloCvTriggers[40 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(10));
+			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 2));
 			if (state != 0) {
 				if (gInfo.momentaryCvButtons) {
 					if (state == 1) {
@@ -803,13 +813,13 @@ struct MixMaster : Module {
 			}
 		}
 	}
-	
-	
-
 };
 
 
+//-----------------------------------------------------------------------------
 
+
+// template<int N_TRK, int N_GRP>
 struct MixMasterWidget : ModuleWidget {
 	static const int N_TRK = 16;
 	static const int N_GRP = 4;
@@ -817,9 +827,9 @@ struct MixMasterWidget : ModuleWidget {
 	typedef MixMaster<N_TRK, N_GRP> TMixMaster;
 
 	MasterDisplay* masterDisplay;
-	TrackDisplay<TMixMaster::MixerTrack>* trackDisplays[16];
-	GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[4];
-	PortWidget* inputWidgets[16 * 4];// Left, Right, Volume, Pan
+	TrackDisplay<TMixMaster::MixerTrack>* trackDisplays[N_TRK];
+	GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[N_GRP];
+	PortWidget* inputWidgets[N_TRK * 4];// Left, Right, Volume, Pan
 	PanelBorder* panelBorder;
 	bool oldAuxExpanderPresent = false;
 	time_t oldTime = 0;
@@ -1187,12 +1197,12 @@ struct MixMasterWidget : ModuleWidget {
 				// master display
 				masterDisplay->text = std::string(&(module->master.masterLabel[0]), 6);
 				// track displays
-				for (int trk = 0; trk < 16; trk++) {
+				for (int trk = 0; trk < N_TRK; trk++) {
 					trackDisplays[trk]->text = std::string(&(module->trackLabels[trk * 4]), 4);
 				}
 				// group displays
-				for (int grp = 0; grp < 4; grp++) {
-					groupDisplays[grp]->text = std::string(&(module->trackLabels[(16 + grp) * 4]), 4);
+				for (int grp = 0; grp < N_GRP; grp++) {
+					groupDisplays[grp]->text = std::string(&(module->trackLabels[(N_TRK + grp) * 4]), 4);
 				}
 				module->updateTrackLabelRequest = 0;// all done pulling
 			}
@@ -1217,7 +1227,7 @@ struct MixMasterWidget : ModuleWidget {
 			if (currentTime != oldTime) {
 				oldTime = currentTime;
 				char strBuf[32];
-				for (int i = 0; i < 16; i++) {
+				for (int i = 0; i < N_TRK; i++) {
 					std::string trackLabel = std::string(&(module->trackLabels[i * 4]), 4);
 					// Pan
 					snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
@@ -1242,7 +1252,7 @@ struct MixMasterWidget : ModuleWidget {
 				}
 				// Group
 				for (int i = 0; i < 4; i++) {
-					std::string groupLabel = std::string(&(module->trackLabels[(16 + i) * 4]), 4);
+					std::string groupLabel = std::string(&(module->trackLabels[(N_TRK + i) * 4]), 4);
 					// Pan
 					snprintf(strBuf, 32, "%s: pan", groupLabel.c_str());
 					module->paramQuantities[TMixMaster::GROUP_PAN_PARAMS + i]->label = strBuf;

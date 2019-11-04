@@ -31,7 +31,7 @@ struct GlobalInfo {
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
-	float linkedFaderReloadValues[16 + 4];
+	float linkedFaderReloadValues[N_TRK + N_GRP];
 	int8_t momentaryCvButtons;// 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
 
 	// no need to save, with reset
@@ -39,7 +39,7 @@ struct GlobalInfo {
 	int returnSoloBitMask;
 	float sampleTime;
 	bool requestLinkedFaderReload;
-	float oldFaders[16 + 4];
+	float oldFaders[N_TRK + N_GRP];
 
 	// no need to save, no reset
 	Param *paMute;// all 20 solos are here (track and group)
@@ -48,8 +48,8 @@ struct GlobalInfo {
 	Param *paGroup;// all 16 group numbers are here (track)
 	float *values20;
 	float maxTGFader;
-	float fadeRates[16 + 4];// reset and json done in tracks and groups. fade rates for tracks and groups
-	int groupUsage[4 + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
+	float fadeRates[N_TRK + N_GRP];// reset and json done in tracks and groups. fade rates for tracks and groups
+	int groupUsage[N_GRP + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
 
 	
 	void clearLinked(int index) {linkBitMask &= ~(1 << index);}
@@ -60,12 +60,12 @@ struct GlobalInfo {
 	// track and group solos
 	void updateSoloBitMask() {
 		soloBitMask = 0ul;
-		for (unsigned long trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+		for (unsigned long trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 			updateSoloBit(trkOrGrp);
 		}
 	}
 	void updateSoloBit(unsigned long trkOrGrp) {
-		if (trkOrGrp < 16) {
+		if (trkOrGrp < N_TRK) {
 			if (paSolo[trkOrGrp].getValue() > 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
@@ -73,7 +73,7 @@ struct GlobalInfo {
 				soloBitMask &= ~(1 << trkOrGrp);
 			}	
 		}
-		else {// trkOrGrp >= 16
+		else {// trkOrGrp >= N_TRK
 			if (paSolo[trkOrGrp].getValue() > 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
@@ -100,7 +100,7 @@ struct GlobalInfo {
 		if (newFader != oldFaders[trgOrGrpNum]) {
 			if (linkBitMask != 0l && isLinked(&linkBitMask, trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
 				float delta = newFader - oldFaders[trgOrGrpNum];
-				for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+				for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 					if (isLinked(&linkBitMask, trkOrGrp) && trkOrGrp != trgOrGrpNum) {
 						float newValue = paFade[trkOrGrp].getValue() + delta;
 						newValue = clamp(newValue, 0.0f, maxTGFader);
@@ -118,7 +118,7 @@ struct GlobalInfo {
 		if ((linkBitMask == 0l) || !isLinked(&linkBitMask, trkOrGrpNum)) {
 			return;
 		}
-		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 			if (trkOrGrp != trkOrGrpNum && isLinked(&linkBitMask, trkOrGrp) && fadeRates[trkOrGrp] >= GlobalConst::minFadeRate) {
 				if (newTarget > 0.5f && paMute[trkOrGrp].getValue() > 0.5f) {
 					paMute[trkOrGrp].setValue(0.0f);
@@ -132,11 +132,11 @@ struct GlobalInfo {
 	
 	void updateGroupUsage() {
 		// clear groupUsage for all track in all groups, and bitwise OR int also
-		for (int gu = 0; gu < 4 + 1; gu++) {
+		for (int gu = 0; gu < (N_GRP + 1); gu++) {
 			groupUsage[gu] = 0;
 		}
 		
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < N_TRK; trk++) {
 			// set groupUsage for this track in the new group
 			int group = (int)(paGroup[trk].getValue() + 0.5f);
 			if (group > 0) {
@@ -145,14 +145,14 @@ struct GlobalInfo {
 		}
 		
 		// Bitwise OR of first ints in last int
-		for (int grp = 0; grp < 4; grp++) {
-			groupUsage[4] |= groupUsage[grp];
+		for (int grp = 0; grp < N_GRP; grp++) {
+			groupUsage[N_GRP] |= groupUsage[grp];
 		}
 	}	
 	
 	void process() {// GlobalInfo
 		if (requestLinkedFaderReload) {
-			for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 				oldFaders[trkOrGrp] = linkedFaderReloadValues[trkOrGrp];
 				paFade[trkOrGrp].setValue(linkedFaderReloadValues[trkOrGrp]);
 			}
@@ -188,7 +188,7 @@ struct GlobalInfo {
 		filterPos = 1;// default is post-insert
 		groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
-		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 			linkedFaderReloadValues[trkOrGrp] = 1.0f;
 		}
 		momentaryCvButtons = 1;// momentary by default
@@ -254,7 +254,7 @@ struct GlobalInfo {
 		
 		// faders (extra copy for linkedFaderReloadValues that will be populated in dataFromJson())
 		json_t *fadersJ = json_array();
-		for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 			json_array_insert_new(fadersJ, trkOrGrp, json_real(paFade[TRACK_FADER_PARAMS + trkOrGrp].getValue()));
 		}
 		json_object_set_new(rootJ, "faders", fadersJ);		
@@ -343,14 +343,14 @@ struct GlobalInfo {
 		// faders (populate linkedFaderReloadValues)
 		json_t *fadersJ = json_object_get(rootJ, "faders");
 		if (fadersJ) {
-			for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 				json_t *fadersArrayJ = json_array_get(fadersJ, trkOrGrp);
 				if (fadersArrayJ)
 					linkedFaderReloadValues[trkOrGrp] = json_number_value(fadersArrayJ);
 			}
 		}
 		else {// legacy
-			for (int trkOrGrp = 0; trkOrGrp < 16 + 4; trkOrGrp++) {
+			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 				linkedFaderReloadValues[trkOrGrp] = paFade[trkOrGrp].getValue();
 			}
 		}
@@ -737,7 +737,7 @@ struct MixerGroup {
 	float target = -1.0f;
 	
 	// no need to save, no reset
-	int groupNum;// 0 to 3
+	int groupNum;// 0 to 3 (1)
 	std::string ids;
 	GlobalInfo *gInfo;
 	Input *inInsert;
@@ -766,7 +766,7 @@ struct MixerGroup {
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
 		groupName = _groupName;
 		taps = _taps;
-		fadeRate = &(_gInfo->fadeRates[16 + groupNum]);
+		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
@@ -877,7 +877,7 @@ struct MixerGroup {
 		
 	void updateSlowValues() {
 		// ** process linked **
-		gInfo->processLinked(16 + groupNum, paFade->getValue());
+		gInfo->processLinked(N_TRK + groupNum, paFade->getValue());
 		
 		// ** detect pan mode change ** (and trigger recalc of panMatrix)
 		PackedBytes4 newPanSig;
@@ -898,12 +898,12 @@ struct MixerGroup {
 		
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((groupNum << 1) + 0);
-			taps[9] = inInsert->getVoltage((groupNum << 1) + 1);
+			taps[N_GRP * 2 + 0] = inInsert->getVoltage((groupNum << 1) + 0);
+			taps[N_GRP * 2 + 1] = inInsert->getVoltage((groupNum << 1) + 1);
 		}
 		else {
-			taps[8] = taps[0];
-			taps[9] = taps[1];
+			taps[N_GRP * 2 + 0] = taps[0];
+			taps[N_GRP * 2 + 1] = taps[1];
 		}
 
 		if (eco) {	
@@ -914,7 +914,7 @@ struct MixerGroup {
 					if (!gInfo->symmetricalFade) {
 						fadeGainX = 0.0f;
 					}
-					gInfo->fadeOtherLinkedTracks(groupNum + 16, newTarget);
+					gInfo->fadeOtherLinkedTracks(groupNum + N_TRK, newTarget);
 					target = newTarget;
 				}
 				if (fadeGain != target) {
@@ -1008,30 +1008,30 @@ struct MixerGroup {
 		}
 		
 		// Apply gainMatrixSlewed
-		simd::float_4 sigs(taps[8], taps[9], taps[9], taps[8]);
+		simd::float_4 sigs(taps[N_GRP * 2 + 0], taps[N_GRP * 2 + 1], taps[N_GRP * 2 + 1], taps[N_GRP * 2 + 0]);
 		sigs = sigs * gainMatrixSlewers.out;
 		
-		taps[16] = sigs[0] + sigs[2];
-		taps[17] = sigs[1] + sigs[3];
+		taps[N_GRP * 4 + 0] = sigs[0] + sigs[2];
+		taps[N_GRP * 4 + 1] = sigs[1] + sigs[3];
 		
 		// Calc muteSoloGainSlewed (solo not actually in here but in groups)
 		if (fadeGainScaled != muteSoloGainSlewer.out) {
 			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaled);
 		}
 		
-		taps[24] = taps[16] * muteSoloGainSlewer.out;
-		taps[25] = taps[17] * muteSoloGainSlewer.out;
+		taps[N_GRP * 6 + 0] = taps[N_GRP * 4 + 0] * muteSoloGainSlewer.out;
+		taps[N_GRP * 6 + 1] = taps[N_GRP * 4 + 1] * muteSoloGainSlewer.out;
 			
 		// Add to mix
-		mix[0] += taps[24];
-		mix[1] += taps[25];
+		mix[0] += taps[N_GRP * 6 + 0];
+		mix[1] += taps[N_GRP * 6 + 1];
 		
 		// VUs
 		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
 			vu.reset();
 		}
 		else if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[24]);
+			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_GRP * 6 + 0]);
 		}
 	}
 };// struct MixerGroup
@@ -1380,21 +1380,20 @@ struct MixerTrack {
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
 	float calcSoloGain() {// returns 1.0f when the check for solo means this track should play, 0.0f otherwise
-		// code below assumes 16 tracks and 4 groups (see F0000 bitmask)
 		if (gInfo->soloBitMask == 0ul) {// no track nor groups are soloed 
 			return 1.0f;
 		}
 		// here at least one track or group is soloed
 		int group = (int)(paGroup->getValue() + 0.5f);
 		if ( ((gInfo->soloBitMask & (1 << trackNum)) != 0) ) {// if this track is soloed
-			if (group == 0 || ((gInfo->soloBitMask & 0xF0000) == 0)) {// not grouped, or grouped but no groups are soloed, play
+			if (group == 0 || ((gInfo->soloBitMask & ((N_GRP * N_GRP - 1) << N_TRK)) == 0)) {// not grouped, or grouped but no groups are soloed, play
 				return 1.0f;
 			}
 			// grouped and at least one group is soloed, so play only if its group is itself soloed
-			return ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ? 1.0f : 0.0f);
+			return ( (gInfo->soloBitMask & (1ul << (N_TRK + group - 1))) != 0ul ? 1.0f : 0.0f);
 		}
 		// here this track is not soloed
-		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (16 + group - 1))) != 0ul ) ) {// if going through soloed group  
+		if ( (group != 0) && ( (gInfo->soloBitMask & (1ul << (N_TRK + group - 1))) != 0ul ) ) {// if going through soloed group  
 			// check all solos of all tracks mapped to group, and return true if all those solos are off
 			return ((gInfo->groupUsage[group - 1] & gInfo->soloBitMask) == 0) ? 1.0f : 0.0f;
 		}
@@ -1437,7 +1436,7 @@ struct MixerTrack {
 		gInfo->processLinked(trackNum, paFade->getValue());
 	}
 	
-	
+
 	void process(float *mix, bool eco) {// track		
 		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
@@ -1493,9 +1492,9 @@ struct MixerTrack {
 		if (!inUse) {
 			if (oldInUse) {
 				taps[0] = 0.0f; taps[1] = 0.0f;
-				taps[32] = 0.0f; taps[33] = 0.0f;
-				taps[64] = 0.0f; taps[65] = 0.0f;
-				taps[96] = 0.0f; taps[97] = 0.0f;
+				taps[N_TRK * 2 + 0] = 0.0f; taps[N_TRK * 2 + 1] = 0.0f;
+				taps[N_TRK * 4 + 0] = 0.0f; taps[N_TRK * 4 + 1] = 0.0f;
+				taps[N_TRK * 6 + 0] = 0.0f; taps[N_TRK * 6 + 1] = 0.0f;
 				insertOuts[0] = 0.0f;
 				insertOuts[1] = 0.0f;
 				vu.reset();
@@ -1526,25 +1525,25 @@ struct MixerTrack {
 			
 			// Post insert (taps[32..33] are provisional, since not yet filtered)
 			if (inInsert[insertPortIndex].isConnected()) {
-				taps[32] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
-				taps[33] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+				taps[N_TRK * 2 + 0] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
+				taps[N_TRK * 2 + 1] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
 			}
 			else {
-				taps[32] = taps[0];
-				taps[33] = taps[1];
+				taps[N_TRK * 2 + 0] = taps[0];
+				taps[N_TRK * 2 + 1] = taps[1];
 			}
 
 			// Filters
 			// Tap[32],[33]: pre-fader (post insert)
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-				taps[32] = hpFilter[0].process(hpPreFilter[0].processHP(taps[32]));
-				taps[33] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[33])) : taps[32];
+				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].processHP(taps[N_TRK * 2 + 0]));
+				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
 			}
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
-				taps[32] = lpFilter[0].process(taps[32]);
-				taps[33]  = stereo ? lpFilter[1].process(taps[33]) : taps[32];
+				taps[N_TRK * 2 + 0] = lpFilter[0].process(taps[N_TRK * 2 + 0]);
+				taps[N_TRK * 2 + 1]  = stereo ? lpFilter[1].process(taps[N_TRK * 2 + 1]) : taps[N_TRK * 2 + 0];
 			}
 		}
 		else {// filters before inserts
@@ -1567,12 +1566,12 @@ struct MixerTrack {
 			
 			// Tap[32],[33]: pre-fader (post insert)
 			if (inInsert[insertPortIndex].isConnected()) {
-				taps[32] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
-				taps[33] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+				taps[N_TRK * 2 + 0] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
+				taps[N_TRK * 2 + 1] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
 			}
 			else {
-				taps[32] = filtered[0];
-				taps[33] = filtered[1];
+				taps[N_TRK * 2 + 0] = filtered[0];
+				taps[N_TRK * 2 + 1] = filtered[1];
 			}
 		}// filterPos
 		
@@ -1665,11 +1664,11 @@ struct MixerTrack {
 		// Tap[64],[65]: post-fader
 
 		// Apply gainMatrixSlewed
-		simd::float_4 sigs(taps[32], taps[33], taps[33], taps[32]);
+		simd::float_4 sigs(taps[N_TRK * 2 + 0], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 0]);
 		sigs *= gainMatrixSlewers.out;
 		
-		taps[64] = sigs[0] + sigs[2];
-		taps[65] = sigs[1] + sigs[3];
+		taps[N_TRK * 4 + 0] = sigs[0] + sigs[2];
+		taps[N_TRK * 4 + 1] = sigs[1] + sigs[3];
 
 
 		// Tap[96],[97]: post-mute-solo
@@ -1679,18 +1678,18 @@ struct MixerTrack {
 			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaledWithSolo);
 		}
 
-		taps[96] = taps[64] * muteSoloGainSlewer.out;
-		taps[97] = taps[65] * muteSoloGainSlewer.out;
+		taps[N_TRK * 6 + 0] = taps[N_TRK * 4 + 0] * muteSoloGainSlewer.out;
+		taps[N_TRK * 6 + 1] = taps[N_TRK * 4 + 1] * muteSoloGainSlewer.out;
 			
 		// Add to mix since gainMatrixSlewed can be non zero
 		if (paGroup->getValue() < 0.5f) {
-			mix[0] += taps[96];
-			mix[1] += taps[97];
+			mix[0] += taps[N_TRK * 6 + 0];
+			mix[1] += taps[N_TRK * 6 + 1];
 		}
 		else {
 			int groupIndex = (int)(paGroup->getValue() - 0.5f);
-			groupTaps[(groupIndex << 1) + 0] += taps[96];
-			groupTaps[(groupIndex << 1) + 1] += taps[97];
+			groupTaps[(groupIndex << 1) + 0] += taps[N_TRK * 6 + 0];
+			groupTaps[(groupIndex << 1) + 1] += taps[N_TRK * 6 + 1];
 		}
 		
 		// VUs
@@ -1698,7 +1697,7 @@ struct MixerTrack {
 			vu.reset();
 		}
 		else if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[96]);
+			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_TRK * 6 + 0]);
 		}
 	}
 };// struct MixerTrack
