@@ -452,10 +452,11 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 // --------------------
 
 struct GroupSelectDisplay : ParamWidget {
+	LedDisplayChoice ldc;
+	int oldDispColor = -1;
 	PackedBytes4 *srcColor = NULL;
 	int8_t* srcColorLocal;
-	int oldDispColor = -1;
-	LedDisplayChoice ldc;
+	int num_groups;// N_GRP
 	
 	GroupSelectDisplay() {
 		box.size = Vec(18, 16);
@@ -486,18 +487,18 @@ struct GroupSelectDisplay : ParamWidget {
 	void onHoverKey(const event::HoverKey &e) override {
 		if (paramQuantity) {
 			if (e.action == GLFW_PRESS) {
-				if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
+				if (e.key >= GLFW_KEY_1 && e.key <= (GLFW_KEY_0 + num_groups)) {
 					paramQuantity->setValue((float)(e.key - GLFW_KEY_0));
 				}
-				else if (e.key >= GLFW_KEY_KP_1 && e.key <= GLFW_KEY_KP_4) {
+				else if (e.key >= GLFW_KEY_KP_1 && e.key <= (GLFW_KEY_KP_0 + num_groups)) {
 					paramQuantity->setValue((float)(e.key - GLFW_KEY_KP_0));
 				}
 				else if ( ((e.mods & RACK_MOD_MASK) == 0) && (
 						(e.key >= GLFW_KEY_A && e.key <= GLFW_KEY_Z) ||
 						e.key == GLFW_KEY_SPACE || e.key == GLFW_KEY_MINUS || 
 						e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0 || 
-						(e.key >= GLFW_KEY_5 && e.key <= GLFW_KEY_9) || 
-						(e.key >= GLFW_KEY_KP_5 && e.key <= GLFW_KEY_KP_9) ) ){
+						(e.key >= (GLFW_KEY_1 + num_groups) && e.key <= GLFW_KEY_9) || 
+						(e.key >= (GLFW_KEY_KP_1 + num_groups) && e.key <= GLFW_KEY_KP_9) ) ){
 					paramQuantity->setValue(0.0f);
 				}
 			}
@@ -525,12 +526,13 @@ struct GroupSelectDisplay : ParamWidget {
 
 struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
 	Param* sourceParam = NULL;// param that is mapped to this
+	float num_groups;// (float)N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupMinusButtonNoParam::onChange(e);
 		if (sourceParam && state != 0) {
 			float group = sourceParam->getValue();// separate variable so no glitch
-			if (group < 0.5f) group = 4.0f;
+			if (group < 0.5f) group = num_groups;
 			else group -= 1.0f;
 			sourceParam->setValue(group);
 		}		
@@ -540,12 +542,13 @@ struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
 
 struct DynGroupPlusButtonNotify : DynGroupPlusButtonNoParam {
 	Param* sourceParam = NULL;// param that is mapped to this
+	int num_groups;// N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		DynGroupPlusButtonNoParam::onChange(e);
 		if (sourceParam && state != 0) {
 			float group = sourceParam->getValue();// separate variable so no glitch
-			if (group > 3.5f) group = 0.0f;
+			if (group > (num_groups - 0.5f)) group = 0.0f;
 			else group += 1.0f;
 			sourceParam->setValue(group);
 		}		

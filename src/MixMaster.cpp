@@ -163,6 +163,8 @@ struct MixMaster : Module {
 		}
 		for (int i = 0; i < N_GRP; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1]);
+		}
+		for (int i = 0; i < 4; i++) {
 			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
@@ -298,7 +300,9 @@ struct MixMaster : Module {
 
 	void process(const ProcessArgs &args) override {
 		
-		auxExpanderPresent = (rightExpander.module && rightExpander.module->model == modelAuxExpander);
+		auxExpanderPresent = //(N_TRK == 16 ? 
+			(rightExpander.module && rightExpander.module->model == modelAuxExpander);//:
+			//(rightExpander.module && rightExpander.module->model == modelAuxExpanderJr);
 		
 		
 		//********** Inputs **********
@@ -547,7 +551,7 @@ struct MixMaster : Module {
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 		
 		// tracks
-		if ( gInfo.auxSendsMode < 4 && (gInfo.groupsControlTrackSendLevels == 0 || gInfo.groupUsage[4] == 0) ) {
+		if ( gInfo.auxSendsMode < 4 && (gInfo.groupsControlTrackSendLevels == 0 || gInfo.groupUsage[N_GRP] == 0) ) {
 			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << (3 + N_TRK / 8)], (N_TRK * 2) * 4);
 		}
 		else {
@@ -819,123 +823,13 @@ struct MixMaster : Module {
 //-----------------------------------------------------------------------------
 
 
-// template<int N_TRK, int N_GRP>
 struct MixMasterWidget : ModuleWidget {
 	static const int N_TRK = 16;
 	static const int N_GRP = 4;
 
-	typedef MixMaster<N_TRK, N_GRP> TMixMaster;
 
-	MasterDisplay* masterDisplay;
-	TrackDisplay<TMixMaster::MixerTrack>* trackDisplays[N_TRK];
-	GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[N_GRP];
-	PortWidget* inputWidgets[N_TRK * 4];// Left, Right, Volume, Pan
-	PanelBorder* panelBorder;
-	bool oldAuxExpanderPresent = false;
-	time_t oldTime = 0;
+	#include "MixMasterWidget.hpp"
 
-
-	// Module's context menu
-	// --------------------
-
-	void appendContextMenu(Menu *menu) override {		
-		TMixMaster* module = (TMixMaster*)(this->module);
-		assert(module);
-
-		menu->addChild(new MenuSeparator());
-		
-		MenuLabel *settingsALabel = new MenuLabel();
-		settingsALabel->text = "Settings (audio)";
-		menu->addChild(settingsALabel);
-		
-		FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
-		filterPosItem->filterPosSrc = &(module->gInfo.filterPos);
-		filterPosItem->isGlobal = true;
-		menu->addChild(filterPosItem);
-		
-		PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
-		panLawMonoItem->panLawMonoSrc = &(module->gInfo.panLawMono);
-		menu->addChild(panLawMonoItem);
-		
-		PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-		panLawStereoItem->panLawStereoSrc = &(module->gInfo.panLawStereo);
-		panLawStereoItem->isGlobal = true;
-		menu->addChild(panLawStereoItem);
-		
-		ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
-		chainItem->chainModeSrc = &(module->gInfo.chainMode);
-		menu->addChild(chainItem);
-		
-		TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
-		directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
-		directOutsItem->isGlobal = true;
-		menu->addChild(directOutsItem);
-		
-		MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Mute/Solo CV", RIGHT_ARROW);
-		momentItem->momentaryCvButtonsSrc = &(module->gInfo.momentaryCvButtons);
-		menu->addChild(momentItem);
-
-		FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
-		fadItem->symmetricalFadeSrc = &(module->gInfo.symmetricalFade);
-		fadItem->fadeCvOutsWithVolCvSrc = &(module->gInfo.fadeCvOutsWithVolCv);
-		menu->addChild(fadItem);
-		
-		EcoItem *eco0Item = createMenuItem<EcoItem>("Eco mode", CHECKMARK(module->gInfo.ecoMode));
-		eco0Item->ecoModeSrc = &(module->gInfo.ecoMode);
-		menu->addChild(eco0Item);
-		
-		if (module->auxExpanderPresent) {
-			menu->addChild(new MenuSeparator());
-
-			MenuLabel *settingsVLabel = new MenuLabel();
-			settingsVLabel->text = "AuxSpander";
-			menu->addChild(settingsVLabel);
-			
-			TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
-			auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
-			auxSendsItem->isGlobal = true;
-			auxSendsItem->groupsControlTrackSendLevelsSrc = &(module->gInfo.groupsControlTrackSendLevels);
-			menu->addChild(auxSendsItem);
-			
-			AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
-			auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo.auxReturnsMutedWhenMainSolo);
-			auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo.auxReturnsSolosMuteDry);
-			menu->addChild(auxRetunsItem);
-		
-			AuxRetFbProtItem *fbpItem = createMenuItem<AuxRetFbProtItem>("Routing returns to groups", RIGHT_ARROW);
-			fbpItem->groupedAuxReturnFeedbackProtectionSrc = &(module->gInfo.groupedAuxReturnFeedbackProtection);
-			menu->addChild(fbpItem);
-		}
-		
-		
-		menu->addChild(new MenuSeparator());
-		
-		MenuLabel *settingsVLabel = new MenuLabel();
-		settingsVLabel->text = "Settings (visual)";
-		menu->addChild(settingsVLabel);
-		
-		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-		dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
-		dispColItem->isGlobal = true;
-		menu->addChild(dispColItem);
-		
-		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
-		vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
-		vuColItem->isGlobal = true;
-		menu->addChild(vuColItem);
-		
-		KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
-		knobArcShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
-		menu->addChild(knobArcShowItem);
-		
-		CvPointerShowItem *cvPointerShowItem = createMenuItem<CvPointerShowItem>("Fader CV pointers", RIGHT_ARROW);
-		cvPointerShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
-		menu->addChild(cvPointerShowItem);
-		
-		CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
-		nightItem->colorAndCloakSrc = &(module->gInfo.colorAndCloak);
-		menu->addChild(nightItem);
-	}
 
 	// Module's widget
 	// --------------------
@@ -1043,12 +937,14 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
+				newGrpMinusButton->num_groups = (float)N_GRP;
 			}
 			// Group inc
 			DynGroupPlusButtonNotify *newGrpPlusButton;
 			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
+				newGrpPlusButton->num_groups = (float)N_GRP;
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
@@ -1056,6 +952,7 @@ struct MixMasterWidget : ModuleWidget {
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
+				groupSelectDisplay->num_groups = N_GRP;
 			}
 		}
 		
@@ -1186,114 +1083,271 @@ struct MixMasterWidget : ModuleWidget {
 		
 		// Master mono
 		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22, 116.1)), module, TMixMaster::MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
-
 	}
-	
-	void step() override {
-		TMixMaster* module = (TMixMaster*)(this->module);
-		if (module) {
-			// Track labels (pull from module)
-			if (module->updateTrackLabelRequest != 0) {// pull request from module
-				// master display
-				masterDisplay->text = std::string(&(module->master.masterLabel[0]), 6);
-				// track displays
-				for (int trk = 0; trk < N_TRK; trk++) {
-					trackDisplays[trk]->text = std::string(&(module->trackLabels[trk * 4]), 4);
-				}
-				// group displays
-				for (int grp = 0; grp < N_GRP; grp++) {
-					groupDisplays[grp]->text = std::string(&(module->trackLabels[(N_TRK + grp) * 4]), 4);
-				}
-				module->updateTrackLabelRequest = 0;// all done pulling
-			}
-			
-			// Borders
-			if ( module->auxExpanderPresent != oldAuxExpanderPresent ) {
-				oldAuxExpanderPresent = module->auxExpanderPresent;
-			
-				if (oldAuxExpanderPresent) {
-					//panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x + 3;
-				}
-				else {
-					//panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x;
-				}
-				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
-			}
-			
-			// Update param tooltips at 1Hz
-			time_t currentTime = time(0);
-			if (currentTime != oldTime) {
-				oldTime = currentTime;
-				char strBuf[32];
-				for (int i = 0; i < N_TRK; i++) {
-					std::string trackLabel = std::string(&(module->trackLabels[i * 4]), 4);
-					// Pan
-					snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
-					module->paramQuantities[TMixMaster::TRACK_PAN_PARAMS + i]->label = strBuf;
-					// Fader
-					snprintf(strBuf, 32, "%s: level", trackLabel.c_str());
-					module->paramQuantities[TMixMaster::TRACK_FADER_PARAMS + i]->label = strBuf;
-					// Mute/fade
-					if (module->tracks[i].isFadeMode()) {
-						snprintf(strBuf, 32, "%s: fade", trackLabel.c_str());
-					}
-					else {
-						snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
-					}
-					module->paramQuantities[TMixMaster::TRACK_MUTE_PARAMS + i]->label = strBuf;
-					// Solo
-					snprintf(strBuf, 32, "%s: solo", trackLabel.c_str());
-					module->paramQuantities[TMixMaster::TRACK_SOLO_PARAMS + i]->label = strBuf;
-					// Group select
-					snprintf(strBuf, 32, "%s: group", trackLabel.c_str());
-					module->paramQuantities[TMixMaster::GROUP_SELECT_PARAMS + i]->label = strBuf;
-				}
-				// Group
-				for (int i = 0; i < 4; i++) {
-					std::string groupLabel = std::string(&(module->trackLabels[(N_TRK + i) * 4]), 4);
-					// Pan
-					snprintf(strBuf, 32, "%s: pan", groupLabel.c_str());
-					module->paramQuantities[TMixMaster::GROUP_PAN_PARAMS + i]->label = strBuf;
-					// Fader
-					snprintf(strBuf, 32, "%s: level", groupLabel.c_str());
-					module->paramQuantities[TMixMaster::GROUP_FADER_PARAMS + i]->label = strBuf;
-					// Mute/fade
-					if (module->groups[i].isFadeMode()) {
-						snprintf(strBuf, 32, "%s: fade", groupLabel.c_str());
-					}
-					else {
-						snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
-					}
-					module->paramQuantities[TMixMaster::GROUP_MUTE_PARAMS + i]->label = strBuf;
-					// Solo
-					snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
-					module->paramQuantities[TMixMaster::GROUP_SOLO_PARAMS + i]->label = strBuf;
-				}
-				std::string masterLabel = std::string(module->master.masterLabel, 6);
-				// Fader
-				snprintf(strBuf, 32, "%s: level", masterLabel.c_str());
-				module->paramQuantities[TMixMaster::MAIN_FADER_PARAM]->label = strBuf;
-				// Mute/fade
-				if (module->master.isFadeMode()) {
-					snprintf(strBuf, 32, "%s: fade", masterLabel.c_str());
-				}
-				else {
-					snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
-				}
-				module->paramQuantities[TMixMaster::MAIN_MUTE_PARAM]->label = strBuf;
-				// Dim
-				snprintf(strBuf, 32, "%s: dim", masterLabel.c_str());
-				module->paramQuantities[TMixMaster::MAIN_DIM_PARAM]->label = strBuf;
-				// Mono
-				snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
-				module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
-			}
-		}			
-		
-		Widget::step();
-	}// void step()
 };
 
+
+//-----------------------------------------------------------------------------
+
+
+struct MixMasterJrWidget : ModuleWidget {
+	static const int N_TRK = 8;
+	static const int N_GRP = 2;
+
+
+	#include "MixMasterWidget.hpp"
+
+
+	// Module's widget
+	// --------------------
+
+	MixMasterJrWidget(TMixMaster *module) {
+		setModule(module);
+
+		// Main panels from Inkscape
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/mixmaster-jr.svg")));
+		panelBorder = findBorder(panel);		
+		
+		// Inserts and CVs
+		static const float xIns = 13.8;
+		// Fade CV output
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, TMixMaster::FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));
+		// Insert outputs
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, TMixMaster::INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));				
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), false, module, TMixMaster::INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		// Insert inputs
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, TMixMaster::INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, TMixMaster::INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		// Mute, solo and other CVs
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TMixMaster::TRACK_MUTESOLO_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TMixMaster::GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
+		
+	
+		// Tracks
+		static const float xTrck1 = 11.43 + 20.32;
+		for (int i = 0; i < N_TRK; i++) {
+			// Labels
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
+			if (module) {
+				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
+				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
+				trackDisplays[i]->tracks = module->tracks;
+				trackDisplays[i]->trackNumSrc = i;
+				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				trackDisplays[i]->numTracks = N_TRK;
+				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
+				trackDisplays[i]->inputWidgets = inputWidgets;
+			}
+			// HPF lights
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPF_LIGHTS + i));	
+			// LPF lights
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPF_LIGHTS + i));	
+			// Left inputs
+			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			// Right inputs
+			addInput(inputWidgets[i + N_TRK] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			// Volume inputs
+			addInput(inputWidgets[i + N_TRK * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), true, module, TMixMaster::TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			// Pan inputs
+			addInput(inputWidgets[i + N_TRK * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, TMixMaster::TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			// Pan knobs
+			DynSmallKnobGreyWithArc *panKnobTrack;
+			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				panKnobTrack->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
+				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
+				panKnobTrack->dispColorLocal = &(module->tracks[i].dispColorLocal);
+			}
+			
+			// Faders
+			DynSmallFaderWithLink *newFader;
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->faderParams = &module->params[TMixMaster::TRACK_FADER_PARAMS];
+				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
+				// VU meters
+				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
+				newVU->srcLevels = &(module->tracks[i].vu);
+				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
+				addChild(newVU);
+				// Fade pointers
+				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
+				newFP->srcParam = &(module->params[TMixMaster::TRACK_FADER_PARAMS + i]);
+				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
+				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
+				newFP->srcFadeRate = module->tracks[i].fadeRate;
+				newFP->dispColorLocalPtr = &(module->tracks[i].dispColorLocal);
+				addChild(newFP);				
+			}
+			
+			
+			// Mutes
+			DynMuteFadeButtonWithClear* newMuteFade;
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TMixMaster::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newMuteFade->type = module->tracks[i].fadeRate;
+				newMuteFade->muteParams = &module->params[TMixMaster::TRACK_MUTE_PARAMS];
+				newMuteFade->baseMuteParamId = TMixMaster::TRACK_MUTE_PARAMS;
+			}
+			// Solos
+			DynSoloButtonMutex *newSoloButton;
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TMixMaster::TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			newSoloButton->soloParams =  module ? &module->params[TMixMaster::TRACK_SOLO_PARAMS] : NULL;
+			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
+			// Group dec
+			DynGroupMinusButtonNotify *newGrpMinusButton;
+			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			if (module) {
+				newGrpMinusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
+				newGrpMinusButton->num_groups = (float)N_GRP;
+			}
+			// Group inc
+			DynGroupPlusButtonNotify *newGrpPlusButton;
+			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			if (module) {
+				newGrpPlusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
+				newGrpPlusButton->num_groups = (float)N_GRP;
+			}
+			// Group select displays
+			GroupSelectDisplay* groupSelectDisplay;
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
+			if (module) {
+				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
+				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
+				groupSelectDisplay->num_groups = N_GRP;
+			}
+		}
+		
+		// Monitor outputs and groups
+		static const float xGrp1 = 217.17 - 12.7 * 8 + 20.32;
+		for (int i = 0; i < N_GRP; i++) {
+			// Monitor outputs
+			addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, TMixMaster::DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+			// Labels
+			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
+			if (module) {
+				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
+				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
+				groupDisplays[i]->srcGroup = &(module->groups[i]);
+				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
+				groupDisplays[i]->numTracks = N_TRK;
+			}
+			
+			// Volume inputs
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), true, module, TMixMaster::GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			// Pan inputs
+			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, TMixMaster::GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			// Pan knobs
+			DynSmallKnobGreyWithArc *panKnobGroup;
+			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				panKnobGroup->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
+				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
+				panKnobGroup->dispColorLocal = &(module->groups[i].dispColorLocal);
+			}
+			
+			// Faders
+			DynSmallFaderWithLink *newFader;
+			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			if (module) {
+				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->faderParams = &(module->params[TMixMaster::TRACK_FADER_PARAMS]);
+				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
+				// VU meters
+				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
+				newVU->srcLevels = &(module->groups[i].vu);
+				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
+				addChild(newVU);
+				// Fade pointers
+				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
+				newFP->srcParam = &(module->params[TMixMaster::GROUP_FADER_PARAMS + i]);
+				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
+				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+				newFP->srcFadeGain = &(module->groups[i].fadeGain);
+				newFP->srcFadeRate = module->groups[i].fadeRate;
+				newFP->dispColorLocalPtr = &(module->groups[i].dispColorLocal);
+				addChild(newFP);				
+			}
+
+			// Mutes
+			DynMuteFadeButtonWithClear* newMuteFade;
+			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, TMixMaster::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			if (module) {
+				newMuteFade->type = module->groups[i].fadeRate;
+				newMuteFade->muteParams = &module->params[TMixMaster::TRACK_MUTE_PARAMS];
+				newMuteFade->baseMuteParamId = TMixMaster::TRACK_MUTE_PARAMS;
+			}
+			// Solos
+			DynSoloButtonMutex* newSoloButton;
+			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, TMixMaster::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			newSoloButton->soloParams =  module ? &module->params[TMixMaster::TRACK_SOLO_PARAMS] : NULL;
+			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
+		}
+	
+		// Master inputs
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62 - 12.7 * 10, 12.8)), true, module, TMixMaster::CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62 - 12.7 * 10, 21.8)), true, module, TMixMaster::CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		
+		// Master outputs
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12 - 12.7 * 10, 12.8)), false, module, TMixMaster::MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12 - 12.7 * 10, 21.8)), false, module, TMixMaster::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		
+		// Master label
+		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 - 12.7 * 10 + 1.2, 128.5 - 97.0))));
+		if (module) {
+			masterDisplay->dcBlock = &(module->master.dcBlock);
+			masterDisplay->clipping = &(module->master.clipping);
+			masterDisplay->fadeRate = &(module->master.fadeRate);
+			masterDisplay->fadeProfile = &(module->master.fadeProfile);
+			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
+			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
+			masterDisplay->dimGain = &(module->master.dimGain);
+			masterDisplay->masterLabel = module->master.masterLabel;
+			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
+			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+		}
+		
+		// Master fader
+		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(300.17 - 12.7 * 10, 70.3)), module, TMixMaster::MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		if (module) {
+			// VU meter
+			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82 - 12.7 * 10, 70.3)));
+			newVU->srcLevels = &(module->master.vu);
+			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
+			newVU->clippingPtr = &(module->master.clipping);
+			addChild(newVU);
+			// Fade pointer
+			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 12.7 * 10 - 3.4, 70.3)));
+			newFP->srcParam = &(module->params[TMixMaster::MAIN_FADER_PARAM]);
+			newFP->srcParamWithCV = &(module->master.paramWithCV);
+			newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+			newFP->srcFadeGain = &(module->master.fadeGain);
+			newFP->srcFadeRate = &(module->master.fadeRate);
+			addChild(newFP);				
+		}
+		
+		// Master mute
+		DynMuteFadeButton* newMuteFade;
+		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(294.82 - 12.7 * 10, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		if (module) {
+			newMuteFade->type = &(module->master.fadeRate);
+		}
+		
+		// Master dim
+		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(289.42 - 12.7 * 10, 116.1)), module, TMixMaster::MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		
+		// Master mono
+		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22 - 12.7 * 10, 116.1)), module, TMixMaster::MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+	}
+};
+
+
+
 Model *modelMixMaster = createModel<MixMaster<16, 4>, MixMasterWidget>("MixMaster");
+Model *modelMixMasterJr = createModel<MixMaster<8, 2>, MixMasterJrWidget>("MixMasterJr");

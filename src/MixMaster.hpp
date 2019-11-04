@@ -27,7 +27,7 @@ struct GlobalInfo {
 	PackedBytes4 colorAndCloak;// see enum called ccIds for fields
 	bool symmetricalFade;
 	bool fadeCvOutsWithVolCv;
-	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb)
+	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb), or 10 bits for 8trk + 2grp
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
@@ -42,10 +42,10 @@ struct GlobalInfo {
 	float oldFaders[N_TRK + N_GRP];
 
 	// no need to save, no reset
-	Param *paMute;// all 20 solos are here (track and group)
-	Param *paSolo;// all 20 solos are here (track and group)
-	Param *paFade;// all 20 faders are here (track and group)
-	Param *paGroup;// all 16 group numbers are here (track)
+	Param *paMute;// all 20 (10) solos are here (track and group)
+	Param *paSolo;// all 20 (10) solos are here (track and group)
+	Param *paFade;// all 20 (10) faders are here (track and group)
+	Param *paGroup;// all 16 (8) group numbers are here (track)
 	float *values20;
 	float maxTGFader;
 	float fadeRates[N_TRK + N_GRP];// reset and json done in tracks and groups. fade rates for tracks and groups
