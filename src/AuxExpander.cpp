@@ -12,10 +12,10 @@
 template<int N_TRK, int N_GRP>
 struct AuxExpander : Module {
 	enum ParamIds {
-		ENUMS(TRACK_AUXSEND_PARAMS, 16 * 4), // trk 1 aux A, trk 1 aux B, ... 
-		ENUMS(GROUP_AUXSEND_PARAMS, 4 * 4),// Mapping: 1A, 2A, 3A, 4A, 1B, etc
-		ENUMS(TRACK_AUXMUTE_PARAMS, 16),
-		ENUMS(GROUP_AUXMUTE_PARAMS, 4),// must be contiguous with TRACK_AUXMUTE_PARAMS
+		ENUMS(TRACK_AUXSEND_PARAMS, N_TRK * 4), // trk 1 aux A, trk 1 aux B, ... 
+		ENUMS(GROUP_AUXSEND_PARAMS, N_GRP * 4),// Mapping: 1A, 2A, 3A, 4A, 1B, etc
+		ENUMS(TRACK_AUXMUTE_PARAMS, N_TRK),
+		ENUMS(GROUP_AUXMUTE_PARAMS, N_GRP),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),// must be contiguous with GROUP_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),// must be contiguous with GLOBAL_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),// must be contiguous with GLOBAL_AUXSOLO_PARAMS
@@ -26,10 +26,10 @@ struct AuxExpander : Module {
 	};
 	enum InputIds {
 		ENUMS(RETURN_INPUTS, 2 * 4),// must be first element (see AuxspanderAux.construct()). Mapping: left A, right A, left B, right B, left C, right C, left D, right D
-		ENUMS(POLY_AUX_AD_CV_INPUTS, 4),
+		ENUMS(POLY_AUX_AD_CV_INPUTS, N_GRP),// size happens to coincide with N_GRP
 		POLY_AUX_M_CV_INPUT,
 		POLY_GRPS_AD_CV_INPUT,// Mapping: 1A, 2A, 3A, 4A, 1B, etc
-		POLY_GRPS_M_CV_INPUT,
+		POLY_GRPS_M_CV_INPUT,// not used in jr version, use POLY_AUX_M_CV_INPUT instead
 		POLY_BUS_SND_PAN_RET_CV_INPUT,
 		POLY_BUS_MUTE_SOLO_CV_INPUT,
 		NUM_INPUTS
@@ -39,7 +39,7 @@ struct AuxExpander : Module {
 		NUM_OUTPUTS
 	};
 	enum LightIds {
-		ENUMS(AUXSENDMUTE_GROUPED_RETURN_LIGHTS, 16),
+		ENUMS(AUXSENDMUTE_GROUPED_RETURN_LIGHTS, N_GRP * 4),
 		NUM_LIGHTS
 	};
 	
@@ -74,17 +74,17 @@ struct AuxExpander : Module {
 	VuMeterAllDual vu[4];
 	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
 	simd::float_4 globalSendsWithCV;
-	float indivTrackSendWithCv[64];
-	float indivGroupSendWithCv[16];
+	float indivTrackSendWithCv[N_TRK * 4];
+	float indivGroupSendWithCv[N_GRP * 4];
 	float globalRetPansWithCV[4];
 	dsp::TSlewLimiter<simd::float_4> sendMuteSlewers[5];
-	simd::float_4 trackSendVcaGains[16];
-	simd::float_4 groupSendVcaGains[4];
+	simd::float_4 trackSendVcaGains[N_TRK];
+	simd::float_4 groupSendVcaGains[N_GRP];
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	alignas(4) char trackLabels[4 * 20 + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1] = "-01--02--03--04--05--06--07--08--09--10--11--12--13--14--15--16-GRP1GRP2GRP3GRP4";// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
 	PackedBytes4 colorAndCloak;
 	PackedBytes4 directOutsAndStereoPanModes;// cc1[0] is direct out mode, cc1[1] is stereo pan mode
 	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
@@ -93,7 +93,7 @@ struct AuxExpander : Module {
 	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	simd::float_4 globalSends;
 	simd::float_4 muteSends[5];
-	TriggerRiseFall muteSoloCvTriggers[28];
+	TriggerRiseFall muteSoloCvTriggers[N_TRK + N_GRP + 4 + 4];
 	PackedBytes4 trackDispColsLocal[5];// 4 elements for 16 tracks, and 1 element for 4 groups
 	uint16_t ecoMode;
 	float auxRetFadeGains[4];// for return fades
@@ -109,7 +109,7 @@ struct AuxExpander : Module {
 		char strBuf[32];
 
 		maxAGIndivSendFader = std::pow(GlobalConst::individualAuxSendMaxLinearGain, 1.0f / GlobalConst::individualAuxSendScalingExponent);
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			// Track send aux A
 			snprintf(strBuf, 32, "Track #%i aux send A", i + 1);
 			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalConst::individualAuxSendScalingExponent);
@@ -126,7 +126,7 @@ struct AuxExpander : Module {
 			snprintf(strBuf, 32, "Track #%i aux send mute", i + 1);
 			configParam(TRACK_AUXMUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
-		for (int grp = 0; grp < 4; grp++) {
+		for (int grp = 0; grp < N_GRP; grp++) {
 			// Group send aux A
 			snprintf(strBuf, 32, "Group #%i aux send A", grp + 1);
 			configParam(GROUP_AUXSEND_PARAMS + 0 + grp, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalConst::individualAuxSendScalingExponent);
@@ -143,7 +143,7 @@ struct AuxExpander : Module {
 			snprintf(strBuf, 32, "Group #%i aux send mute", grp + 1);
 			configParam(GROUP_AUXMUTE_PARAMS + grp, 0.0f, 1.0f, 0.0f, strBuf);		
 		}
-
+		
 		// Global send aux A-D
 		maxAGGlobSendFader = std::pow(GlobalConst::globalAuxSendMaxLinearGain, 1.0f / GlobalConst::globalAuxSendScalingExponent);
 		configParam(GLOBAL_AUXSEND_PARAMS + 0, 0.0f, maxAGGlobSendFader, 1.0f, "Global aux send A", " dB", -10, 20.0f * GlobalConst::globalAuxSendScalingExponent);
@@ -152,17 +152,17 @@ struct AuxExpander : Module {
 		configParam(GLOBAL_AUXSEND_PARAMS + 3, 0.0f, maxAGGlobSendFader, 1.0f, "Global aux send D", " dB", -10, 20.0f * GlobalConst::globalAuxSendScalingExponent);
 
 		// Global pan return aux A-D
-		configParam(GLOBAL_AUXPAN_PARAMS + 0, 0.0f, 1.0f, 0.5f, "Global aux return pan A", "%", 0.0f, 200.0f, -100.0f);
-		configParam(GLOBAL_AUXPAN_PARAMS + 1, 0.0f, 1.0f, 0.5f, "Global aux return pan B", "%", 0.0f, 200.0f, -100.0f);
-		configParam(GLOBAL_AUXPAN_PARAMS + 2, 0.0f, 1.0f, 0.5f, "Global aux return pan C", "%", 0.0f, 200.0f, -100.0f);
-		configParam(GLOBAL_AUXPAN_PARAMS + 3, 0.0f, 1.0f, 0.5f, "Global aux return pan D", "%", 0.0f, 200.0f, -100.0f);
+		configParam(GLOBAL_AUXPAN_PARAMS + 0, 0.0f, 1.0f, 0.5f, "Aux return pan A", "%", 0.0f, 200.0f, -100.0f);
+		configParam(GLOBAL_AUXPAN_PARAMS + 1, 0.0f, 1.0f, 0.5f, "Aux return pan B", "%", 0.0f, 200.0f, -100.0f);
+		configParam(GLOBAL_AUXPAN_PARAMS + 2, 0.0f, 1.0f, 0.5f, "Aux return pan C", "%", 0.0f, 200.0f, -100.0f);
+		configParam(GLOBAL_AUXPAN_PARAMS + 3, 0.0f, 1.0f, 0.5f, "Aux return pan D", "%", 0.0f, 200.0f, -100.0f);
 
 		// Global return aux A-D
 		float maxAGAuxRetFader = std::pow(GlobalConst::globalAuxReturnMaxLinearGain, 1.0f / GlobalConst::globalAuxReturnScalingExponent);
-		configParam(GLOBAL_AUXRETURN_PARAMS + 0, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return A", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
-		configParam(GLOBAL_AUXRETURN_PARAMS + 1, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return B", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
-		configParam(GLOBAL_AUXRETURN_PARAMS + 2, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return C", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
-		configParam(GLOBAL_AUXRETURN_PARAMS + 3, 0.0f, maxAGAuxRetFader, 1.0f, "Global aux return D", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
+		configParam(GLOBAL_AUXRETURN_PARAMS + 0, 0.0f, maxAGAuxRetFader, 1.0f, "Aux return level A", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
+		configParam(GLOBAL_AUXRETURN_PARAMS + 1, 0.0f, maxAGAuxRetFader, 1.0f, "Aux return level B", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
+		configParam(GLOBAL_AUXRETURN_PARAMS + 2, 0.0f, maxAGAuxRetFader, 1.0f, "Aux return level C", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
+		configParam(GLOBAL_AUXRETURN_PARAMS + 3, 0.0f, maxAGAuxRetFader, 1.0f, "Aux return level D", " dB", -10, 20.0f * GlobalConst::globalAuxReturnScalingExponent);
 
 		// Global mute
 		configParam(GLOBAL_AUXMUTE_PARAMS + 0, 0.0f, 1.0f, 0.0f, "Global aux send mute A");		
@@ -176,7 +176,12 @@ struct AuxExpander : Module {
 		configParam(GLOBAL_AUXSOLO_PARAMS + 2, 0.0f, 1.0f, 0.0f, "Global aux send solo C");		
 		configParam(GLOBAL_AUXSOLO_PARAMS + 3, 0.0f, 1.0f, 0.0f, "Global aux send solo D");		
 
-
+		// Global group select
+		configParam(GLOBAL_AUXGROUP_PARAMS + 0, 0.0f, (float)N_GRP, 0.0f, "Aux A return group");		
+		configParam(GLOBAL_AUXGROUP_PARAMS + 1, 0.0f, (float)N_GRP, 0.0f, "Aux B return group");		
+		configParam(GLOBAL_AUXGROUP_PARAMS + 2, 0.0f, (float)N_GRP, 0.0f, "Aux C return group");		
+		configParam(GLOBAL_AUXGROUP_PARAMS + 3, 0.0f, (float)N_GRP, 0.0f, "Aux D return group");		
+		
 		colorAndCloak.cc1 = 0;
 		directOutsAndStereoPanModes.cc1 = 0;
 		for (int i = 0; i < 5; i++) {
@@ -1077,7 +1082,7 @@ struct AuxExpanderWidget : ModuleWidget {
 						moduleA->paramQuantities[TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + auxi]->label = strBuf;
 					}
 					// Mutes
-					snprintf(strBuf, 32, "%s: aux mute", trackLabel.c_str());
+					snprintf(strBuf, 32, "%s: send mute", trackLabel.c_str());
 					moduleA->paramQuantities[TAuxExpander::TRACK_AUXMUTE_PARAMS + i]->label = strBuf;
 				}
 
@@ -1114,6 +1119,12 @@ struct AuxExpanderWidget : ModuleWidget {
 				for (int auxi = 0; auxi < 4; auxi++) {
 					snprintf(strBuf, 32, "%s: return solo", auxLabels[auxi].c_str());
 					moduleA->paramQuantities[TAuxExpander::GLOBAL_AUXSOLO_PARAMS + auxi]->label = strBuf;
+				}
+				
+				// Global return group select
+				for (int auxi = 0; auxi < 4; auxi++) {
+					snprintf(strBuf, 32, "%s: return group", auxLabels[auxi].c_str());
+					moduleA->paramQuantities[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + auxi]->label = strBuf;
 				}
 			}
 		}
