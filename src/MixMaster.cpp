@@ -117,44 +117,44 @@ struct MixMaster : Module {
 		float maxTGFader = std::pow(GlobalConst::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalConst::trkAndGrpFaderScalingExponent);
 		for (int i = 0; i < N_TRK; i++) {
 			// Pan
-			snprintf(strBuf, 32, "Track #%i pan", i + 1);
+			snprintf(strBuf, 32, "-%02i-: pan", i + 1);
 			configParam(TRACK_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
-			snprintf(strBuf, 32, "Track #%i level", i + 1);
+			snprintf(strBuf, 32, "-%02i-: level", i + 1);
 			configParam(TRACK_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalConst::trkAndGrpFaderScalingExponent);
 			// Mute
-			snprintf(strBuf, 32, "Track #%i mute", i + 1);
+			snprintf(strBuf, 32, "-%02i-: mute", i + 1);
 			configParam(TRACK_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 			// Solo
-			snprintf(strBuf, 32, "Track #%i solo", i + 1);
+			snprintf(strBuf, 32, "-%02i-: solo", i + 1);
 			configParam(TRACK_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 			// Group select
-			snprintf(strBuf, 32, "Track #%i group", i + 1);
+			snprintf(strBuf, 32, "-%02i-: group", i + 1);
 			configParam(GROUP_SELECT_PARAMS + i, 0.0f, (float)N_GRP, 0.0f, strBuf);
 		}
 		// Group
 		for (int i = 0; i < N_GRP; i++) {
 			// Pan
-			snprintf(strBuf, 32, "Group #%i pan", i + 1);
+			snprintf(strBuf, 32, "GRP%i: pan", i + 1);
 			configParam(GROUP_PAN_PARAMS + i, 0.0f, 1.0f, 0.5f, strBuf, "%", 0.0f, 200.0f, -100.0f);
 			// Fader
-			snprintf(strBuf, 32, "Group #%i level", i + 1);
+			snprintf(strBuf, 32, "GRP%i: level", i + 1);
 			configParam(GROUP_FADER_PARAMS + i, 0.0f, maxTGFader, 1.0f, strBuf, " dB", -10, 20.0f * GlobalConst::trkAndGrpFaderScalingExponent);
 			// Mute
-			snprintf(strBuf, 32, "Group #%i mute", i + 1);
+			snprintf(strBuf, 32, "GRP%i: mute", i + 1);
 			configParam(GROUP_MUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 			// Solo
-			snprintf(strBuf, 32, "Group #%i solo", i + 1);
+			snprintf(strBuf, 32, "GRP%i: solo", i + 1);
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
 		float maxMFader = std::pow(GlobalConst::masterFaderMaxLinearGain, 1.0f / GlobalConst::masterFaderScalingExponent);
-		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "Master level", " dB", -10, 20.0f * GlobalConst::masterFaderScalingExponent);
+		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "MASTER: level", " dB", -10, 20.0f * GlobalConst::masterFaderScalingExponent);
 		// Mute
-		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "Master mute");
+		configParam(MAIN_MUTE_PARAM, 0.0f, 1.0f, 0.0f, "MASTER: mute");
 		// Dim
-		configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "Master dim");
+		configParam(MAIN_DIM_PARAM, 0.0f, 1.0f, 0.0f, "MASTER: dim");
 		// Mono
-		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "Master mono");
+		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "MASTER: mono");
 		
 
 		gInfo.construct(&params[0], values20);

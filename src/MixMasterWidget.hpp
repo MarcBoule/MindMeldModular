@@ -160,7 +160,7 @@ void step() override {
 		if (currentTime != oldTime) {
 			oldTime = currentTime;
 			char strBuf[32];
-			for (int i = 0; i < N_TRK; i++) {
+			/*for (int i = 0; i < N_TRK; i++) {
 				std::string trackLabel = std::string(&(module->trackLabels[i * 4]), 4);
 				// Pan
 				snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
@@ -221,7 +221,7 @@ void step() override {
 			module->paramQuantities[TMixMaster::MAIN_DIM_PARAM]->label = strBuf;
 			// Mono
 			snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
-			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
+			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;*/
 		}
 	}			
 	
