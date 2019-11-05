@@ -18,6 +18,7 @@ void init(rack::Plugin *p) {
 	p->addModel(modelMixMaster);
 	p->addModel(modelAuxExpander);
 	p->addModel(modelMixMasterJr);
+	p->addModel(modelAuxExpanderJr);
 }
 
 

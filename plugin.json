@@ -33,6 +33,13 @@
 			"description": "8-track stereo mixer with 2 group busses",
 			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
 			"tags": ["Mixer"]
+		},
+		{
+			"slug": "AuxExpanderJr",
+			"name": "AuxSpanderJr",
+			"description": "4-aux FX bus expander for MixMasterJr",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
+			"tags": ["Mixer", "Expander"]
 		}
 	]
 }

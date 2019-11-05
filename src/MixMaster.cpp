@@ -76,7 +76,7 @@ struct MixMaster : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
-	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1];// 4 chars per label, 16 tracks and 4 groups means 20 labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only
 	GlobalInfo gInfo;
 	MixerTrack tracks[N_TRK];
 	MixerGroup groups[N_GRP];
@@ -300,9 +300,7 @@ struct MixMaster : Module {
 
 	void process(const ProcessArgs &args) override {
 		
-		auxExpanderPresent = //(N_TRK == 16 ? 
-			(rightExpander.module && rightExpander.module->model == modelAuxExpander);//:
-			//(rightExpander.module && rightExpander.module->model == modelAuxExpanderJr);
+		auxExpanderPresent = (rightExpander.module && rightExpander.module->model == (N_TRK == 16 ? modelAuxExpander : modelAuxExpanderJr));
 		
 		
 		//********** Inputs **********

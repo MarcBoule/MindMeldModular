@@ -29,8 +29,9 @@ extern Plugin *pluginInstance;
 
 // All modules that are part of pluginInstance go here
 extern Model *modelMixMaster;
-extern Model *modelMixMasterJr;
 extern Model *modelAuxExpander;
+extern Model *modelMixMasterJr;
+extern Model *modelAuxExpanderJr;
 
 
 
