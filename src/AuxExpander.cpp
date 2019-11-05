@@ -469,7 +469,7 @@ struct AuxExpander : Module {
 								val += inputs[inputNum].getVoltage(trk);
 							}
 							else {
-								val += inputs[inputNum].getVoltage(trk + ((auxi & 0x1) != 0) ? 8 : 0);
+								val += inputs[inputNum].getVoltage(trk + (((auxi & 0x1) != 0) ? 8 : 0));
 							}
 							val *= 0.1f * maxAGIndivSendFader;
 							val = clamp(val, 0.0f, maxAGIndivSendFader);
@@ -512,7 +512,7 @@ struct AuxExpander : Module {
 						}
 					}
 					groupSendVcaGains[grp] = simd::pow<simd::float_4>(groupSendVcaGains[grp], GlobalConst::individualAuxSendScalingExponent);
-					groupSendVcaGains[grp] *= globalSends * simd::float_4(sendMuteSlewers[4].out[grp]);
+					groupSendVcaGains[grp] *= globalSends * simd::float_4(sendMuteSlewers[N_TRK >> 2].out[grp]);
 				}
 				// vca the aux send knobs with the group's sound
 				auxSends[0] += groupSendVcaGains[grp] * simd::float_4(auxSendsTrkGrp[(grp << 1) + N_TRK * 2 + 0]);// L
