@@ -490,7 +490,7 @@ struct GainAdjustQuantity : Quantity {
 	std::string getDisplayValueString() override {
 		float valGain = getDisplayValue();
 		valGain =  std::round(valGain * 100.0f);
-		return string::f("%g", math::normalizeZero(valGain / 100.0f));
+		return string::f("%.1f", math::normalizeZero(valGain / 100.0f));
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "Gain adjust";}
@@ -765,7 +765,8 @@ struct LinkFaderItem : MenuItem {
 template <typename TMixerTrack>
 struct CopyTrackSettingsItem : MenuItem {
 	TMixerTrack *tracks = NULL;
-	int trackNumSrc;	
+	int trackNumSrc;
+	int numTracks;
 
 	struct CopyTrackSettingsSubItem : MenuItem {
 		TMixerTrack *tracks = NULL;
@@ -783,7 +784,7 @@ struct CopyTrackSettingsItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < numTracks; trk++) {
 			bool onSource = (trk == trackNumSrc);
 			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
 			reo0Item->tracks = tracks;
@@ -802,6 +803,7 @@ template <typename TMixerTrack>
 struct TrackReorderItem : MenuItem {
 	TMixerTrack *tracks = NULL;
 	int trackNumSrc;	
+	int numTracks;
 	int *updateTrackLabelRequestPtr;
 	int32_t *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
@@ -810,6 +812,7 @@ struct TrackReorderItem : MenuItem {
 		TMixerTrack *tracks = NULL;
 		int trackNumSrc;	
 		int trackNumDest;
+		int numTracks;
 		int *updateTrackLabelRequestPtr;
 		int32_t *trackMoveInAuxRequestPtr;
 		PortWidget **inputWidgets;
@@ -819,17 +822,17 @@ struct TrackReorderItem : MenuItem {
 		void transferTrackInputs(int srcTrk, int destTrk) {
 			// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * 16]);// only top needed since inputs have at most one cable
+				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * numTracks]);// only top needed since inputs have at most one cable
 				if (cwRip != NULL) {
 					APP->scene->rack->removeCable(cwRip);
-					cwRip->setInput(inputWidgets[destTrk + i * 16]);
+					cwRip->setInput(inputWidgets[destTrk + i * numTracks]);
 					APP->scene->rack->addCable(cwRip);
 				}
 			}
 		}
 		void clearTrackInputs(int trk) {
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
-				cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * 16]);// only top needed since inputs have at most one cable
+				cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * numTracks]);// only top needed since inputs have at most one cable
 				if (cwClr[i] != NULL) {
 					APP->scene->rack->removeCable(cwClr[i]);
 				}
@@ -838,7 +841,7 @@ struct TrackReorderItem : MenuItem {
 		void reconnectTrackInputs(int trk) {
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
 				if (cwClr[i] != NULL) {
-					cwClr[i]->setInput(inputWidgets[trk + i * 16]);
+					cwClr[i]->setInput(inputWidgets[trk + i * numTracks]);
 					APP->scene->rack->addCable(cwClr[i]);
 				}
 			}
@@ -876,12 +879,13 @@ struct TrackReorderItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		for (int trk = 0; trk < 16; trk++) {
+		for (int trk = 0; trk < numTracks; trk++) {
 			bool onSource = (trk == trackNumSrc);
 			TrackReorderSubItem *reo0Item = createMenuItem<TrackReorderSubItem>(std::string(tracks[trk].trackName, 4), CHECKMARK(onSource));
 			reo0Item->tracks = tracks;
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
+			reo0Item->numTracks = numTracks;
 			reo0Item->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
 			reo0Item->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
 			reo0Item->inputWidgets = inputWidgets;

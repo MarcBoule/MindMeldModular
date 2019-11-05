@@ -92,8 +92,8 @@ struct MixMaster : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	bool auxExpanderPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	float trackTaps[N_TRK * 2 * 4];// room for 4 taps for each of the 16 stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
-	float trackInsertOuts[N_TRK * 2];// room for 16 stereo track insert outs
+	float trackTaps[N_TRK * 2 * 4];// room for 4 taps for each of the 16 (8) stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
+	float trackInsertOuts[N_TRK * 2];// room for 16 (8) stereo track insert outs
 	float groupTaps[N_GRP * 2 * 4];// room for 4 taps for each of the 4 stereo groups
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
@@ -102,7 +102,7 @@ struct MixMaster : Module {
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
-	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 trk mute, 16 trk solo, 4 grp mute, 4 grp solo, 3 mast (mute, dim, mono)
+	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
 	// std::string busId;
 	
 		
@@ -514,7 +514,7 @@ struct MixMaster : Module {
 			
 			// Fast
 			
-			// 16+4 stereo signals to be used to make sends in aux expander
+			// 16+4 (8+2) stereo signals to be used to make sends in aux expander
 			writeAuxSends(&messageToExpander[AFM_AUX_SENDS]);						
 			// Aux VUs
 			for (int i = 0; i < 4; i++) {
@@ -544,8 +544,8 @@ struct MixMaster : Module {
 	}
 	
 	void writeAuxSends(float* auxSends) {
-		// Aux sends (send track and group audio (16+4 stereo signals) to auxspander
-		// auxSends[] has room for 16+4 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
+		// Aux sends (send track and group audio (16+4 or 8+2 stereo signals) to auxspander
+		// auxSends[] has room for 16+4 or 8+2 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 		
 		// tracks

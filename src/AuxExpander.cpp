@@ -493,7 +493,7 @@ struct AuxExpander : Module {
 				if (ecoMode == 0 || (refreshCounter20 & 0x3) == 2) {// stagger 2
 					for (int auxi = 0; auxi < 4; auxi++) {
 						if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
-						// 16 individual group aux send knobs
+						// 16 (8) individual group aux send knobs
 							float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
 							if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
 								// Knob CV (adding, pre-scaling)

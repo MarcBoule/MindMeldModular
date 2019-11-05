@@ -27,7 +27,7 @@ struct GlobalInfo {
 	PackedBytes4 colorAndCloak;// see enum called ccIds for fields
 	bool symmetricalFade;
 	bool fadeCvOutsWithVolCv;
-	unsigned long linkBitMask;// 20 bits for 16 tracks (trk1 = lsb) and 4 groups (grp4 = msb), or 10 bits for 8trk + 2grp
+	unsigned long linkBitMask;// 20 bits for 16 trks (trk1 = lsb) + 4 grps (grp4 = msb), or 10 bits for 8trk + 2grp
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no

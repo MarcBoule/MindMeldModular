@@ -935,6 +935,7 @@ struct TrackDisplay : EditableDisplayBase {
 			
 			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc)));
 			linkFadItem->linkBitMaskSrc = &(srcTrack->gInfo->linkBitMask);
+			linkFadItem->trackOrGroupNum = trackNumSrc;
 			menu->addChild(linkFadItem);
 
 			if (srcTrack->gInfo->directOutsMode >= 4) {
@@ -989,11 +990,13 @@ struct TrackDisplay : EditableDisplayBase {
 			CopyTrackSettingsItem<TMixerTrack> *copyItem = createMenuItem<CopyTrackSettingsItem<TMixerTrack>>("Copy track menu settings to:", RIGHT_ARROW);
 			copyItem->tracks = tracks;
 			copyItem->trackNumSrc = trackNumSrc;
+			copyItem->numTracks = numTracks;
 			menu->addChild(copyItem);
 			
 			TrackReorderItem<TMixerTrack> *reodrerItem = createMenuItem<TrackReorderItem<TMixerTrack>>("Move to:", RIGHT_ARROW);
 			reodrerItem->tracks = tracks;
 			reodrerItem->trackNumSrc = trackNumSrc;
+			reodrerItem->numTracks = numTracks;
 			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
 			reodrerItem->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
 			reodrerItem->inputWidgets = inputWidgets;
@@ -1043,8 +1046,10 @@ struct GroupDisplay : EditableDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcGroup->gInfo->linkBitMask), numTracks + srcGroup->groupNum)));
+			int groupNumForLink = numTracks + srcGroup->groupNum;
+			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcGroup->gInfo->linkBitMask), groupNumForLink)));
 			linkFadItem->linkBitMaskSrc = &(srcGroup->gInfo->linkBitMask);
+			linkFadItem->trackOrGroupNum = groupNumForLink;
 			menu->addChild(linkFadItem);
 			
 			if (srcGroup->gInfo->directOutsMode >= 4) {
