@@ -106,6 +106,15 @@ struct AuxExpander : Module {
 		leftExpander.producerMessage = leftMessages[0];
 		leftExpander.consumerMessage = leftMessages[1];
 		
+
+		for (int trk = 0; trk < N_TRK; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		}
+		for (int grp = 0; grp < N_GRP; grp++) {
+			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
+		}
+		updateTrackLabelRequest = 1;
+
 		char strBuf[32];
 
 		maxAGIndivSendFader = std::pow(GlobalConst::individualAuxSendMaxLinearGain, 1.0f / GlobalConst::individualAuxSendScalingExponent);
@@ -167,13 +176,6 @@ struct AuxExpander : Module {
 			configParam(GLOBAL_AUXGROUP_PARAMS + i, 0.0f, (float)N_GRP, 0.0f, strBuf);		
 		}		
 		
-
-		for (int trk = 0; trk < N_TRK; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
-		}
-		for (int grp = 0; grp < N_GRP; grp++) {
-			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
-		}
 
 		colorAndCloak.cc1 = 0;
 		directOutsAndStereoPanModes.cc1 = 0;
@@ -426,10 +428,9 @@ struct AuxExpander : Module {
 				}
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
 					// Knob CV (adding, pre-scaling)
-					for (int gi = 0; gi < 4; gi++) {
-						globalSends[gi] += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(gi);
-					}
-					globalSends *= 0.1f * maxAGGlobSendFader;
+					simd::float_4 cvVoltages{inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(0), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(1),
+					inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(2), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(3)};
+					globalSends += cvVoltages * 0.1f * maxAGGlobSendFader;
 					// lines above replace commented line below since templating AuxExpander broke it for some strange reason
 					//globalSends += (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0)) * 0.1f * maxAGGlobSendFader;
 					globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
@@ -724,6 +725,9 @@ struct AuxExpander : Module {
 		}
 	}
 };
+
+
+//-----------------------------------------------------------------------------
 
 
 struct AuxExpanderWidget : ModuleWidget {

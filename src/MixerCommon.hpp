@@ -19,7 +19,7 @@
 //*****************************************************************************
 
 // Communications between mixer and auxspander
-// Fields in the float arrays
+// Fields in the float arrays, implemented for N_TRK = 16 and N_GRP = 4, will have unused floats when 8 tracks and 2 groups
 
 enum AuxFromMotherIds { // for expander messages from main to aux panel
 	ENUMS(AFM_AUX_SENDS, 40), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R

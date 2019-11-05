@@ -616,8 +616,8 @@ struct MixerMaster {
 			
 			// calc ** fader, paramWithCV **
 			float fader = params[MAIN_FADER_PARAM].getValue();
-			if (inVol->isConnected() && inVol->getChannels() >= 12) {
-				fader *= clamp(inVol->getVoltage(11) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
+			if (inVol->isConnected() && inVol->getChannels() >= (N_GRP * 2 + 4)) {
+				fader *= clamp(inVol->getVoltage(N_GRP * 2 + 4 - 1) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
 				paramWithCV = fader;
 			}
 			else {

@@ -15,10 +15,10 @@ void init(rack::Plugin *p) {
 	pluginInstance = p;
 	// messages = new MessageBus<Payload>();
 
-	p->addModel(modelMixMaster);
-	p->addModel(modelAuxExpander);
 	p->addModel(modelMixMasterJr);
 	p->addModel(modelAuxExpanderJr);
+	p->addModel(modelMixMaster);
+	p->addModel(modelAuxExpander);
 }
 
 

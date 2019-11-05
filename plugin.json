@@ -14,20 +14,6 @@
 	"changelogUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/CHANGELOG.md",
 	"modules": [
 		{
-			"slug": "MixMaster",
-			"name": "MixMaster",
-			"description": "16-track stereo mixer with 4 group busses",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
-			"tags": ["Mixer"]
-		},
-		{
-			"slug": "AuxExpander",
-			"name": "AuxSpander",
-			"description": "4-aux FX bus expander for MixMaster",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
-			"tags": ["Mixer", "Expander"]
-		},
-		{
 			"slug": "MixMasterJr",
 			"name": "MixMasterJr",
 			"description": "8-track stereo mixer with 2 group busses",
@@ -38,6 +24,20 @@
 			"slug": "AuxExpanderJr",
 			"name": "AuxSpanderJr",
 			"description": "4-aux FX bus expander for MixMasterJr",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
+			"tags": ["Mixer", "Expander"]
+		},
+		{
+			"slug": "MixMaster",
+			"name": "MixMaster",
+			"description": "16-track stereo mixer with 4 group busses",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
+			"tags": ["Mixer"]
+		},
+		{
+			"slug": "AuxExpander",
+			"name": "AuxSpander",
+			"description": "4-aux FX bus expander for MixMaster",
 			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
 			"tags": ["Mixer", "Expander"]
 		}
