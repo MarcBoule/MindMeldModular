@@ -15,46 +15,45 @@
 
 
 
-
 //*****************************************************************************
-
-// Communications between mixer and auxspander
-// Fields in the float arrays, implemented for N_TRK = 16 and N_GRP = 4, will have unused floats when 8 tracks and 2 groups
-
-enum AuxFromMotherIds { // for expander messages from main to aux panel
-	ENUMS(AFM_AUX_SENDS, 40), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
-	ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
-	ENUMS(AFM_TRACK_GROUP_NAMES, 16 + 4),
-	AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
-	AFM_PANEL_THEME,
-	AFM_COLOR_AND_CLOAK,
-	AFM_DIRECT_AND_PAN_MODES,
-	AFM_TRACK_MOVE,
-	AFM_AUXSENDMUTE_GROUPED_RETURN,
-	ENUMS(AFM_TRK_DISP_COL, 5),// 4 tracks per dword, 4 groups in last dword
-	AFM_ECO_MODE,
-	ENUMS(AFM_FADE_GAINS, 4),
-	AFM_MOMENTARY_CVBUTTONS,
-	AFM_NUM_VALUES
-};
-
-enum MotherFromAuxIds { // for expander messages from aux panel to main
-	ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-	MFA_VALUE20_INDEX,// a return-related value, 20 of such values to bring back to main, one per sample (mute, solo, group, fadeRate, fadeProfile)
-	MFA_VALUE20,
-	MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
-	MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
-	ENUMS(MFA_AUX_RET_FADER, 4),
-	ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
-	MFA_NUM_VALUES
-};
-
-
-
 // Constants
 
+
+// Communications between mixer and auxspander
+template <int N_TRK, int N_GRP>
+struct ExpansionInterface {
+	enum AuxFromMotherIds { // for expander messages from main to aux panel
+		ENUMS(AFM_AUX_SENDS, (N_TRK + N_GRP) * 2), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
+		ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
+		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP),
+		AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
+		AFM_PANEL_THEME,
+		AFM_COLOR_AND_CLOAK,
+		AFM_DIRECT_AND_PAN_MODES,
+		AFM_TRACK_MOVE,
+		AFM_AUXSENDMUTE_GROUPED_RETURN,
+		ENUMS(AFM_TRK_DISP_COL, N_TRK / 4 + 1),// 4 tracks per dword, 4 (2) groups in last dword
+		AFM_ECO_MODE,
+		ENUMS(AFM_FADE_GAINS, 4),
+		AFM_MOMENTARY_CVBUTTONS,
+		AFM_NUM_VALUES
+	};
+	
+	enum MotherFromAuxIds { // for expander messages from aux panel to main
+		ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
+		MFA_VALUE20_INDEX,// a return-related value, 20 of such values to bring back to main, one per sample (mute, solo, group, fadeRate, fadeProfile)
+		MFA_VALUE20,
+		MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
+		MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
+		ENUMS(MFA_AUX_RET_FADER, 4),
+		ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
+		MFA_NUM_VALUES
+	};	
+};
+
+
+// Global
 struct GlobalConst {
-	// constants
 	static const int trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
 	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
 	static const int individualAuxSendScalingExponent = 2; // for example, 3 is x^3 scaling
@@ -73,6 +72,7 @@ struct GlobalConst {
 };
 
 
+// Colors
 
 static const NVGcolor DISP_COLORS[] = {
 	nvgRGB(0xff, 0xd7, 0x14),// yellow
@@ -84,11 +84,6 @@ static const NVGcolor DISP_COLORS[] = {
 	nvgRGB(177, 107, 235)// purple
 };
 
-// --------------------
-// VU meters
-// --------------------
-
-// Colors
 static const int numThemes = 5;
 static const NVGcolor VU_THEMES_TOP[numThemes][2] =  
 									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
@@ -113,8 +108,8 @@ static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
 static const int greyArc = 120;
 
 
-//*****************************************************************************
 
+//*****************************************************************************
 // Math
 
 // Calculate std::sin(theta) using MacLaurin series
@@ -138,6 +133,8 @@ static inline float calcDimGainIntegerDB(float dimGain) {
 }
 
 
+
+//*****************************************************************************
 // Utility
 
 float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade);

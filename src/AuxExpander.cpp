@@ -11,6 +11,7 @@
 
 template<int N_TRK, int N_GRP>
 struct AuxExpander : Module {
+	
 	enum ParamIds {
 		ENUMS(TRACK_AUXSEND_PARAMS, N_TRK * 4), // trk 1 aux A, trk 1 aux B, ... 
 		ENUMS(GROUP_AUXSEND_PARAMS, N_GRP * 4),// Mapping: 1A, 2A, 3A, 4A, 1B, etc
@@ -24,6 +25,7 @@ struct AuxExpander : Module {
 		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),
 		NUM_PARAMS
 	};
+	
 	enum InputIds {
 		ENUMS(RETURN_INPUTS, 2 * 4),// must be first element (see AuxspanderAux.construct()). Mapping: left A, right A, left B, right B, left C, right C, left D, right D
 		ENUMS(POLY_AUX_AD_CV_INPUTS, N_GRP),// size happens to coincide with N_GRP
@@ -34,21 +36,25 @@ struct AuxExpander : Module {
 		POLY_BUS_MUTE_SOLO_CV_INPUT,
 		NUM_INPUTS
 	};
+	
 	enum OutputIds {
 		ENUMS(SEND_OUTPUTS, 2 * 4),// A left, B left, C left, D left, A right, B right, C right, D right
 		NUM_OUTPUTS
 	};
+	
 	enum LightIds {
 		ENUMS(AUXSENDMUTE_GROUPED_RETURN_LIGHTS, N_GRP * 4),
 		NUM_LIGHTS
 	};
+	
+	typedef ExpansionInterface<N_TRK, N_GRP> Intf;
 	
 	
 	#include "AuxExpander.hpp"
 	
 
 	// Expander
-	float leftMessages[2][AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in Mixer.hpp
+	float leftMessages[2][Intf::AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in Mixer.hpp
 
 
 	// Constants
@@ -378,40 +384,40 @@ struct AuxExpander : Module {
 			// ***********
 			
 			// Slow values from mother
-			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[AFM_UPDATE_SLOW]);
+			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[Intf::AFM_UPDATE_SLOW]);
 			if (*updateSlow != 0) {
 				// Track labels
-				memcpy(trackLabels, &messagesFromMother[AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
+				memcpy(trackLabels, &messagesFromMother[Intf::AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
 				updateTrackLabelRequest = 1;
 				// Panel theme
 				int32_t tmp;
-				memcpy(&tmp, &messagesFromMother[AFM_PANEL_THEME], 4);
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_PANEL_THEME], 4);
 				panelTheme = tmp;
 				// Color theme
-				memcpy(&colorAndCloak.cc1, &messagesFromMother[AFM_COLOR_AND_CLOAK], 4);
+				memcpy(&colorAndCloak.cc1, &messagesFromMother[Intf::AFM_COLOR_AND_CLOAK], 4);
 				// Direct outs mode global and Stereo pan mode global
-				memcpy(&directOutsAndStereoPanModes.cc1, &messagesFromMother[AFM_DIRECT_AND_PAN_MODES], 4);			
+				memcpy(&directOutsAndStereoPanModes.cc1, &messagesFromMother[Intf::AFM_DIRECT_AND_PAN_MODES], 4);			
 				// Track move
-				memcpy(&tmp, &messagesFromMother[AFM_TRACK_MOVE], 4);
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_TRACK_MOVE], 4);
 				if (tmp != 0) {
 					moveTrack(tmp);
 					tmp = 0;
-					memcpy(&messagesFromMother[AFM_TRACK_MOVE], &tmp, 4);
+					memcpy(&messagesFromMother[Intf::AFM_TRACK_MOVE], &tmp, 4);
 				}
 				// Aux send mute when grouped return lights
-				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[AFM_AUXSENDMUTE_GROUPED_RETURN];
+				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN];
 				for (int i = 0; i < N_TRK; i++) {
 					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
 				}
 				// Display colors (when per track)
-				memcpy(trackDispColsLocal, &messagesFromMother[AFM_TRK_DISP_COL], (N_TRK / 4 + 1) * 4);
+				memcpy(trackDispColsLocal, &messagesFromMother[Intf::AFM_TRK_DISP_COL], (N_TRK / 4 + 1) * 4);
 				// Eco mode
-				memcpy(&tmp, &messagesFromMother[AFM_ECO_MODE], 4);
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_ECO_MODE], 4);
 				ecoMode = (uint16_t)tmp;
 				// Fade gains
-				memcpy(auxRetFadeGains, &messagesFromMother[AFM_FADE_GAINS], 4 * 4);
+				memcpy(auxRetFadeGains, &messagesFromMother[Intf::AFM_FADE_GAINS], 4 * 4);
 				// momentaryCvButtons
-				memcpy(&tmp, &messagesFromMother[AFM_MOMENTARY_CVBUTTONS], 4);
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_MOMENTARY_CVBUTTONS], 4);
 				momentaryCvButtons = (uint8_t)tmp;
 			}
 			
@@ -454,7 +460,7 @@ struct AuxExpander : Module {
 			}
 	
 			// Aux send VCAs
-			float* auxSendsTrkGrp = &messagesFromMother[AFM_AUX_SENDS];// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
+			float* auxSendsTrkGrp = &messagesFromMother[Intf::AFM_AUX_SENDS];// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
 			simd::float_4 auxSends[2] = {simd::float_4::zero(), simd::float_4::zero()};// [0] = ABCD left, [1] = ABCD right
 			// accumulate tracks
 			for (int trk = 0; trk < N_TRK; trk++) {
@@ -535,21 +541,21 @@ struct AuxExpander : Module {
 			// Aux returns
 			// left A, right A, left B, right B, left C, right C, left D, right D
 			for (int i = 0; i < 4; i++) {
-				aux[i].process(&messagesToMother[MFA_AUX_RETURNS + (i << 1)]);
+				aux[i].process(&messagesToMother[Intf::MFA_AUX_RETURNS + (i << 1)]);
 			}
 			
 			// values for returns, 20 such values (mute, solo, group, fadeRate, fadeProfile)
-			messagesToMother[MFA_VALUE20_INDEX] = (float)refreshCounter20;
+			messagesToMother[Intf::MFA_VALUE20_INDEX] = (float)refreshCounter20;
 			if (refreshCounter20 < 12) {
-				messagesToMother[MFA_VALUE20] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter20].getValue();
+				messagesToMother[Intf::MFA_VALUE20] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter20].getValue();
 			}
 			else {
-				messagesToMother[MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
+				messagesToMother[Intf::MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
 			}
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
-			memcpy(&messagesToMother[MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
-			memcpy(&messagesToMother[MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
+			memcpy(&messagesToMother[Intf::MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
+			memcpy(&messagesToMother[Intf::MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
 			
 			// aux return pan
 			for (int i = 0; i < 4; i++) {
@@ -563,7 +569,7 @@ struct AuxExpander : Module {
 				else {
 					globalRetPansWithCV[i] = -1.0f;
 				}
-				messagesToMother[MFA_AUX_RET_PAN + i] = val;
+				messagesToMother[Intf::MFA_AUX_RET_PAN + i] = val;
 			}
 			
 			// aux return fader
@@ -580,7 +586,7 @@ struct AuxExpander : Module {
 					paramRetFaderWithCv[i] = -1.0f;// do not show cv pointer
 				}
 				// scaling done in mother
-				messagesToMother[MFA_AUX_RET_FADER + i] = val;
+				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = val;
 			}
 				
 			refreshCounter20++;
@@ -606,7 +612,7 @@ struct AuxExpander : Module {
 		else {// here mother is present and we are not cloaked
 			if (ecoMode == 0 || (refreshCounter20 & 0x3) == 3) {// stagger 3
 				for (int i = 0; i < 4; i++) { 
-					vu[i].process(args.sampleTime, &messagesFromMother[AFM_AUX_VUS + (i << 1) + 0]);
+					vu[i].process(args.sampleTime, &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
 				}
 			}
 		}

@@ -30,7 +30,6 @@ struct MixMaster : Module {
 		NUM_PARAMS
 	}; 
 
-
 	enum InputIds {
 		ENUMS(TRACK_SIGNAL_INPUTS, N_TRK * 2), // Track 0: 0 = L, 1 = R, Track 1: 2 = L, 3 = R, etc...
 		ENUMS(TRACK_VOL_INPUTS, N_TRK),
@@ -45,7 +44,6 @@ struct MixMaster : Module {
 		NUM_INPUTS
 	};
 
-
 	enum OutputIds {
 		ENUMS(DIRECT_OUTPUTS, N_TRK / 8 + 1), // Track 1-8, (Track 9-16), Groups and Aux
 		ENUMS(MAIN_OUTPUTS, 2),
@@ -55,19 +53,20 @@ struct MixMaster : Module {
 		NUM_OUTPUTS
 	};
 
-
 	enum LightIds {
 		ENUMS(TRACK_HPF_LIGHTS, N_TRK),
 		ENUMS(TRACK_LPF_LIGHTS, N_TRK),
 		NUM_LIGHTS
 	};
 
+	typedef ExpansionInterface<N_TRK, N_GRP> Intf;
+
 
 	#include "MixMaster.hpp"
 	
 	
 	// Expander
-	float rightMessages[2][MFA_NUM_VALUES] = {};// messages from aux-expander (first index is page), see enum called MotherFromAuxIds in Mixer.hpp
+	float rightMessages[2][Intf::MFA_NUM_VALUES] = {};// messages from aux-expander (first index is page), see enum called MotherFromAuxIds in Mixer.hpp
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
@@ -309,15 +308,15 @@ struct MixMaster : Module {
 		if (auxExpanderPresent) {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
-			auxReturns = &messagesFromExpander[MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
-			auxRetFadePan = &messagesFromExpander[MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
+			auxReturns = &messagesFromExpander[Intf::MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			auxRetFadePan = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
 						
-			int value20i = clamp((int)(messagesFromExpander[MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
-			values20[value20i] = messagesFromExpander[MFA_VALUE20];
+			int value20i = clamp((int)(messagesFromExpander[Intf::MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
+			values20[value20i] = messagesFromExpander[Intf::MFA_VALUE20];
 			
 			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
-			memcpy(&directOutsModeLocalAux, &messagesFromExpander[MFA_AUX_DIR_OUTS], 4);
-			memcpy(&stereoPanModeLocalAux, &messagesFromExpander[MFA_AUX_STEREO_PANS], 4);
+			memcpy(&directOutsModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_DIR_OUTS], 4);
+			memcpy(&stereoPanModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_STEREO_PANS], 4);
 		}
 		else {
 			muteTrackWhenSoloAuxRetSlewer.reset();
@@ -461,31 +460,31 @@ struct MixMaster : Module {
 			
 			// Slow
 			
-			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[AFM_UPDATE_SLOW]);
+			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[Intf::AFM_UPDATE_SLOW]);
 			*updateSlow = 0;
 			if (slowExpander) {
 				// Track names
 				*updateSlow = 1;
-				memcpy(&messageToExpander[AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
+				memcpy(&messageToExpander[Intf::AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
 				// Panel theme
 				int32_t tmp = panelTheme;
-				memcpy(&messageToExpander[AFM_PANEL_THEME], &tmp, 4);
+				memcpy(&messageToExpander[Intf::AFM_PANEL_THEME], &tmp, 4);
 				// Color theme
-				memcpy(&messageToExpander[AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
+				memcpy(&messageToExpander[Intf::AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
 				// Direct outs mode global and Stereo pan mode global
 				PackedBytes4 directAndPan;
 				directAndPan.cc4[0] = gInfo.directOutsMode;
 				directAndPan.cc4[1] = gInfo.panLawStereo;
-				memcpy(&messageToExpander[AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
+				memcpy(&messageToExpander[Intf::AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
 				// Track move
-				memcpy(&messageToExpander[AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
+				memcpy(&messageToExpander[Intf::AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
 				trackMoveInAuxRequest = 0;
 				// Aux send mute when grouped return lights
-				messageToExpander[AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
+				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
 				// Display colors (when per track)
-				PackedBytes4 tmpDispCols[5];
+				PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
 				if (gInfo.colorAndCloak.cc4[dispColor] < 7) {
-					for (int i = 0; i < 5; i++) {
+					for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 						tmpDispCols[i].cc1 = 0;
 					}
 				}
@@ -496,31 +495,31 @@ struct MixMaster : Module {
 						}	
 					}
 					for (int j = 0; j < N_GRP; j++) {
-						tmpDispCols[4].cc4[j] = groups[ j ].dispColorLocal;
+						tmpDispCols[N_TRK / 4].cc4[j] = groups[ j ].dispColorLocal;
 					}
 				}	
-				memcpy(&messageToExpander[AFM_TRK_DISP_COL], tmpDispCols, 5 * 4);
+				memcpy(&messageToExpander[Intf::AFM_TRK_DISP_COL], tmpDispCols, (N_TRK / 4 + 1) * 4);
 				// Eco mode
 				tmp = gInfo.ecoMode;
-				memcpy(&messageToExpander[AFM_ECO_MODE], &tmp, 4);
+				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 4);
 				// auxFadeGains
 				for (int auxi = 0; auxi < 4; auxi++) {
-					messageToExpander[AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
+					messageToExpander[Intf::AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
 				}
 				// momentaryCvButtons
 				tmp = gInfo.momentaryCvButtons;
-				memcpy(&messageToExpander[AFM_MOMENTARY_CVBUTTONS], &tmp, 4);			
+				memcpy(&messageToExpander[Intf::AFM_MOMENTARY_CVBUTTONS], &tmp, 4);			
 			}
 			
 			// Fast
 			
 			// 16+4 (8+2) stereo signals to be used to make sends in aux expander
-			writeAuxSends(&messageToExpander[AFM_AUX_SENDS]);						
+			writeAuxSends(&messageToExpander[Intf::AFM_AUX_SENDS]);						
 			// Aux VUs
 			for (int i = 0; i < 4; i++) {
 				// send tap 4 of the aux return signal flows
-				messageToExpander[AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];
-				messageToExpander[AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];
+				messageToExpander[Intf::AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];
+				messageToExpander[Intf::AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];
 			}
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
