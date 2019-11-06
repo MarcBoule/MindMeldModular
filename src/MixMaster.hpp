@@ -1513,8 +1513,8 @@ struct MixerTrack {
 		}
 		
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
-		taps[0] = (inSig[0].getVoltageSum() * inGainSlewer.out);
-		taps[1] = stereo ? (inSig[1].getVoltageSum() * inGainSlewer.out) : taps[0];
+		taps[0] = (clamp20V(inSig[0].getVoltageSum()) * inGainSlewer.out);
+		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum()) * inGainSlewer.out) : taps[0];
 		
 		int insertPortIndex = trackNum >> 3;
 		

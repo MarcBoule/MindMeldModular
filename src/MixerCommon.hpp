@@ -132,6 +132,14 @@ static inline float calcDimGainIntegerDB(float dimGain) {
 	return std::pow(10.0f, integerDB / 20.0f);
 }
 
+static inline float clamp20V(float in) {// meant to catch invalid values like -inf, +inf, strong overvoltage only.
+	//return in;
+	if (in >= -20.0f && in <= 20.0f) {
+		return in;
+	}
+	return 0.0f;
+}
+
 
 
 //*****************************************************************************

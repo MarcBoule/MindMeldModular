@@ -105,8 +105,8 @@ struct AuxspanderAux {
 			mix[0] = mix[1] = 0.0f;
 			return;
 		}
-		mix[0] = inSig[0].getVoltage();
-		mix[1] = inSig[1].isConnected() ? inSig[1].getVoltage() : mix[0];
+		mix[0] = clamp20V(inSig[0].getVoltage());
+		mix[1] = inSig[1].isConnected() ? clamp20V(inSig[1].getVoltage()) : mix[0];
 		// Filters
 		// HPF
 		if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
