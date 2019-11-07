@@ -1830,8 +1830,8 @@ struct MixerAux {
 		
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((auxNum << 1) + N_GRP * 2 + 0);
-			taps[9] = inInsert->getVoltage((auxNum << 1) + N_GRP * 2 + 1);
+			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
+			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
 		}
 		else {
 			taps[8] = taps[0];

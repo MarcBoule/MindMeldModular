@@ -626,12 +626,7 @@ struct MixMaster : Module {
 	void SetDirectGroupAuxOuts() {
 		int outputNum = DIRECT_OUTPUTS + N_TRK / 8;
 		if (outputs[outputNum].isConnected()) {
-			if (auxExpanderPresent) {
-				outputs[outputNum].setChannels(N_GRP == 4 ? numChannels16 : 12);
-			}
-			else {
-				outputs[outputNum].setChannels(N_GRP * 2);
-			}
+			outputs[outputNum].setChannels(auxExpanderPresent ? numChannels16 : 8);
 
 			// Groups
 			int tapIndex = gInfo.directOutsMode;			
@@ -667,14 +662,14 @@ struct MixMaster : Module {
 			if (auxExpanderPresent) {
 				if (gInfo.directOutsMode < 4) {// global direct outs
 					int tapIndex = gInfo.directOutsMode;
-					memcpy(outputs[outputNum].getVoltages(N_GRP * 2), &auxTaps[(tapIndex << 3)], 4 * 8);
+					memcpy(outputs[outputNum].getVoltages(8), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
 				else {// per aux direct outs
 					for (unsigned int i = 0; i < 4; i++) {
 						int tapIndex = directOutsModeLocalAux.cc4[i];
 						int offset = (tapIndex << 3) + (i << 1);
-						outputs[outputNum].setVoltage(auxTaps[offset + 0], N_GRP * 2 + 2 * i);
-						outputs[outputNum].setVoltage(auxTaps[offset + 1], N_GRP * 2 + 2 * i + 1);
+						outputs[outputNum].setVoltage(auxTaps[offset + 0], 8 + 2 * i);
+						outputs[outputNum].setVoltage(auxTaps[offset + 1], 8 + 2 * i + 1);
 					}
 				}		
 			}
@@ -693,15 +688,10 @@ struct MixMaster : Module {
 
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
+			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(auxExpanderPresent ? numChannels16 : 8);
+			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupTaps, 4 *  N_GRP * 2);// insert out for groups is directly tap0
 			if (auxExpanderPresent) {
-				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(N_GRP == 4 ? numChannels16 : 12);
-			}
-			else {
-				outputs[INSERT_GRP_AUX_OUTPUT].setChannels(N_GRP * 2);
-			}
-			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupTaps, 4 * N_GRP * 2);// insert out for groups is directly tap0
-			if (auxExpanderPresent) {
-				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(N_GRP * 2), auxTaps, 4 * 8);// insert out for aux is directly tap0
+				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(8), auxTaps, 4 * 8);// insert out for aux is directly tap0
 			}
 		}
 	}
