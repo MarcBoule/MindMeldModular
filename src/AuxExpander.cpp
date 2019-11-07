@@ -473,12 +473,11 @@ struct AuxExpander : Module {
 						if (inputs[inputNum].isConnected()) {
 							// Knob CV (adding, pre-scaling)
 							if (N_GRP == 4) {
-								val += inputs[inputNum].getVoltage(trk);
+								val += inputs[inputNum].getVoltage(trk) * 0.1f * maxAGIndivSendFader;
 							}
 							else {
-								val += inputs[inputNum].getVoltage(trk + (((auxi & 0x1) != 0) ? 8 : 0));
+								val += inputs[inputNum].getVoltage(trk + (((auxi & 0x1) != 0) ? 8 : 0)) * 0.1f * maxAGIndivSendFader;
 							}
-							val *= 0.1f * maxAGIndivSendFader;
 							val = clamp(val, 0.0f, maxAGIndivSendFader);
 							indivTrackSendWithCv[(trk << 2) + auxi] = val;
 						}
