@@ -137,7 +137,7 @@ static inline float clamp20V(float in) {// meant to catch invalid values like -i
 	if (in >= -20.0f && in <= 20.0f) {
 		return in;
 	}
-	return 0.0f;
+	return in > 20.0f ? 20.0f : -20.0f;
 }
 
 
