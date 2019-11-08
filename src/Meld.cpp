@@ -179,8 +179,7 @@ struct MeldWidget : ModuleWidget {
 		Meld *module = (Meld*)(this->module);
 		assert(module);
 
-		MenuLabel *spacerLabel = new MenuLabel();
-		menu->addChild(spacerLabel);
+		menu->addChild(new MenuSeparator());
 
 		MenuLabel *themeLabel = new MenuLabel();
 		themeLabel->text = "Panel";

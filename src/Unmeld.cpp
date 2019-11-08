@@ -162,9 +162,8 @@ struct UnmeldWidget : ModuleWidget {
 		Unmeld *module = (Unmeld*)(this->module);
 		assert(module);
 
-		MenuLabel *spacerLabel = new MenuLabel();
-		menu->addChild(spacerLabel);
-
+		menu->addChild(new MenuSeparator());
+		
 		MenuLabel *themeLabel = new MenuLabel();
 		themeLabel->text = "Panel";
 		menu->addChild(themeLabel);
