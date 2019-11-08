@@ -126,15 +126,15 @@ struct Meld : Module {
 		// Lights
 		if (refresh.processLights()) {
 			for (int i = 0; i < 16; i++) {
-				float whiteBright = 0.0f;
+				float greenBright = 0.0f;
 				float blueBright = 0.0f;
 				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected()) {
-					whiteBright = 1.0f;
+					greenBright = 1.0f;
 				}
 				else if (i < numChan) {
 					blueBright = 1.0f;
 				}
-				lights[CHAN_LIGHTS + 2 * i + 0].setBrightness(whiteBright);
+				lights[CHAN_LIGHTS + 2 * i + 0].setBrightness(greenBright);
 				lights[CHAN_LIGHTS + 2 * i + 1].setBrightness(blueBright);
 			}
 		}
@@ -159,8 +159,8 @@ struct MeldWidget : ModuleWidget {
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
-			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(14.3, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 0)));
-			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
+			addChild(createLightCentered<TinyLight<MMGreenBlueLight>>(mm2px(Vec(14.3, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 0)));
+			addChild(createLightCentered<TinyLight<MMGreenBlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
 		}
 				
 		// merge signals
