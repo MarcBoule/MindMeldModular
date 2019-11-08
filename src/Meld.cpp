@@ -43,20 +43,21 @@ struct Meld : Module {
 	// none
 	
 	// No need to save, with reset
-	int lastMergeInputIndex;
+	int lastMergeInputIndex;// can be -1 when nothing connected
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	
 	
-	void calcLastMergeInputIndex() {
-		for (int i = 15; i >= 0; i--) {
+	void calcLastMergeInputIndex() {// can set to -1 when nothing connected
+		int i = 15;
+		for (; i >= 0; i--) {
 			if (inputs[MERGE_INPUTS + i].isConnected()) {
-				lastMergeInputIndex = i;
-				return;
+				break;
 			}
 		}
-		lastMergeInputIndex = 0;
+		lastMergeInputIndex = i;
+		return;
 	}
 	
 	
@@ -110,8 +111,10 @@ struct Meld : Module {
 		
 		
 		// Merge out
-		int numChan = std::max(inputs[POLY_INPUT].getChannels(), lastMergeInputIndex + 1);
-		outputs[OUT_OUTPUT].setChannels(numChan);
+		int numChan = inputs[POLY_INPUT].isConnected() ? inputs[POLY_INPUT].getChannels() : 0;
+		numChan = std::max(numChan, lastMergeInputIndex + 1);
+		// here numChan can be 0		
+		outputs[OUT_OUTPUT].setChannels(numChan);// clears all and sets num chan to 1 when numChan == 0
 		for (int c = 0; c < numChan; c++) {
 			float v;
 			if (inputs[MERGE_INPUTS + c].isConnected()) {
@@ -159,8 +162,8 @@ struct MeldWidget : ModuleWidget {
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
-			addChild(createLightCentered<TinyLight<MMGreenBlueLight>>(mm2px(Vec(14.3, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 0)));
-			addChild(createLightCentered<TinyLight<MMGreenBlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
+			addChild(createLightCentered<TinyLight<MMYellowBlueLight>>(mm2px(Vec(14.3, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 0)));
+			addChild(createLightCentered<TinyLight<MMYellowBlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
 		}
 				
 		// merge signals
