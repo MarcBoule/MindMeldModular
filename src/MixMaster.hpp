@@ -898,8 +898,8 @@ struct MixerGroup {
 		
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
-			taps[N_GRP * 2 + 0] = inInsert->getVoltage((groupNum << 1) + 0);
-			taps[N_GRP * 2 + 1] = inInsert->getVoltage((groupNum << 1) + 1);
+			taps[N_GRP * 2 + 0] = clamp20V(inInsert->getVoltage((groupNum << 1) + 0));
+			taps[N_GRP * 2 + 1] = clamp20V(inInsert->getVoltage((groupNum << 1) + 1));
 		}
 		else {
 			taps[N_GRP * 2 + 0] = taps[0];
@@ -1525,8 +1525,8 @@ struct MixerTrack {
 			
 			// Post insert (taps[32..33] are provisional, since not yet filtered)
 			if (inInsert[insertPortIndex].isConnected()) {
-				taps[N_TRK * 2 + 0] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
-				taps[N_TRK * 2 + 1] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
+				taps[N_TRK * 2 + 1] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1));
 			}
 			else {
 				taps[N_TRK * 2 + 0] = taps[0];
@@ -1830,8 +1830,8 @@ struct MixerAux {
 		
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
-			taps[8] = inInsert->getVoltage((auxNum << 1) + 8);
-			taps[9] = inInsert->getVoltage((auxNum << 1) + 9);
+			taps[8] = clamp20V(inInsert->getVoltage((auxNum << 1) + 8));
+			taps[9] = clamp20V(inInsert->getVoltage((auxNum << 1) + 9));
 		}
 		else {
 			taps[8] = taps[0];
