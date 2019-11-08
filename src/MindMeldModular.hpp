@@ -32,6 +32,8 @@ extern Model *modelMixMasterJr;
 extern Model *modelAuxExpanderJr;
 extern Model *modelMixMaster;
 extern Model *modelAuxExpander;
+extern Model *modelMeld;
+extern Model *modelUnmeld;
 
 
 

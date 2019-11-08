@@ -40,6 +40,18 @@
 			"description": "4-aux FX bus expander for MixMaster",
 			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf",
 			"tags": ["Mixer", "Expander"]
+		},
+		{
+			"slug": "Meld",
+			"name": "Meld",
+			"description": "8-track stereo merge for MixMaster",
+			"tags": ["Polyphonic", "Utility"]
+		},
+		{
+			"slug": "Unmeld",
+			"name": "Unmeld",
+			"description": "8-track stereo splitter for MixMaster",
+			"tags": ["Polyphonic", "Utility"]
 		}
 	]
 }
