@@ -38,6 +38,7 @@ struct Unmeld : Module {
 
 	// Need to save, no reset
 	int panelTheme;
+	int facePlate;
 	
 	// Need to save, with reset
 	// none
@@ -53,6 +54,7 @@ struct Unmeld : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
 		panelTheme = 0;
+		facePlate = 0;
 	}
   
 	void onReset() override {
@@ -72,6 +74,9 @@ struct Unmeld : Module {
 		// panelTheme
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 		
+		// facePlate
+		json_object_set_new(rootJ, "facePlate", json_integer(facePlate));
+		
 		return rootJ;
 	}
 
@@ -82,8 +87,12 @@ struct Unmeld : Module {
 		if (panelThemeJ)
 			panelTheme = json_integer_value(panelThemeJ);
 
-		resetNonJson(true);
-	}
+		// facePlate
+		json_t *facePlateJ = json_object_get(rootJ, "facePlate");
+		if (facePlateJ)
+			facePlate = json_integer_value(facePlateJ);
+
+		resetNonJson(true);	}
 
 
 	void onSampleRateChange() override {
@@ -133,12 +142,60 @@ struct Unmeld : Module {
 
 
 struct UnmeldWidget : ModuleWidget {
+	SvgPanel* facePlates[3];
+		
+	struct PanelThemeItem : MenuItem {
+		Unmeld *module;
+		int plate;
+		void onAction(const event::Action &e) override {
+			module->facePlate = plate;
+		}
+	};
+	
+	std::string facePlateNames[3] = {
+		"1-8",
+		"9-16",
+		"Group/Aux"
+	};
+
+	void appendContextMenu(Menu *menu) override {
+		Unmeld *module = (Unmeld*)(this->module);
+		assert(module);
+
+		MenuLabel *spacerLabel = new MenuLabel();
+		menu->addChild(spacerLabel);
+
+		MenuLabel *themeLabel = new MenuLabel();
+		themeLabel->text = "Panel";
+		menu->addChild(themeLabel);
+
+		for (int i = 0; i < 3; i++) {
+			PanelThemeItem *aItem = new PanelThemeItem();
+			aItem->text = facePlateNames[i];
+			aItem->rightText = CHECKMARK(module->facePlate == i);
+			aItem->module = module;
+			aItem->plate = i;
+			menu->addChild(aItem);
+		}
+	}	
+	
 	
 	UnmeldWidget(Unmeld *module) {
 		setModule(module);
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-1-8.svg")));
+        if (module) {
+			facePlates[0] = (SvgPanel*)panel;
+			facePlates[1] = new SvgPanel();
+			facePlates[1]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-9-16.svg")));
+			facePlates[1]->visible = false;
+			addChild(facePlates[1]);
+			facePlates[2] = new SvgPanel();
+			facePlates[2]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-grp-aux.svg")));
+			facePlates[2]->visible = false;
+			addChild(facePlates[2]);
+		}		
 		
 		// poly in/thru
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(6.84, 18.35)), true, module, Unmeld::POLY_INPUT, module ? &module->panelTheme : NULL));
@@ -155,8 +212,16 @@ struct UnmeldWidget : ModuleWidget {
 			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * i)), false, module, Unmeld::SPLIT_OUTPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));
 			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), false, module, Unmeld::SPLIT_OUTPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));
 		}
-
 	}
+	
+	void step() override {
+		if (module) {
+			for (int i = 0; i < 3; i++) {
+				facePlates[i]->visible = ((((Unmeld*)module)->facePlate) == i);
+			}
+		}
+		Widget::step();
+	}	
 };
 
 
