@@ -736,6 +736,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int numChars = 4;
 	int textSize = 12;
 	bool doubleClick = false;
+	Widget* tabNextFocus = NULL;
 	PackedBytes4* colorAndCloak = NULL;
 	int8_t* dispColorLocal;
 
@@ -773,6 +774,15 @@ struct EditableDisplayBase : LedDisplayTextField {
 			bndSetFont(APP->window->uiFont->handle);
 		}
 		nvgResetScissor(args.vg);
+	}
+
+	void onSelectKey(const event::SelectKey& e) override {
+		if (e.action == GLFW_PRESS && e.key == GLFW_KEY_TAB && tabNextFocus != NULL) {
+			APP->event->setSelected(tabNextFocus);
+			e.consume(this);
+			return;			
+		}
+		LedDisplayTextField::onSelectKey(e);
 	}
 	
 	// don't want spaces since leading spaces are stripped by nanovg (which oui-blendish calls), so convert to dashes
@@ -898,7 +908,6 @@ struct TrackDisplay : EditableDisplayBase {
 	int *updateTrackLabelRequestPtr;
 	int *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
-	
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {

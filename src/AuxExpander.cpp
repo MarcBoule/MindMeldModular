@@ -756,6 +756,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
+				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
 				auxDisplays[i]->srcAux = &(module->aux[i]);
@@ -843,6 +844,9 @@ struct AuxExpanderWidget : ModuleWidget {
 				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
 				groupSelectDisplay->numGroups = N_GRP;
 			}
+		}
+		for (int i = 0; i < 4; i++) {
+			auxDisplays[i]->tabNextFocus = auxDisplays[(i + 1) % 4];
 		}
 
 		// Global send knobs
@@ -1065,6 +1069,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			// Labels
 			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
+				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
 				auxDisplays[i]->srcAux = &(module->aux[i]);
@@ -1152,6 +1157,9 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
 				groupSelectDisplay->numGroups = N_GRP;
 			}
+		}
+		for (int i = 0; i < 4; i++) {
+			auxDisplays[i]->tabNextFocus = auxDisplays[(i + 1) % 4];
 		}
 
 		// Global send knobs

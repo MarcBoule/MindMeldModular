@@ -846,10 +846,11 @@ struct MixMasterWidget : ModuleWidget {
 	
 		// Tracks
 		static const float xTrck1 = 11.43 + 20.32;
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < N_TRK; i++) {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
+				// trackDisplays[i]->tabNextFocus = // done after the for loop
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
 				trackDisplays[i]->tracks = module->tracks;
@@ -945,10 +946,13 @@ struct MixMasterWidget : ModuleWidget {
 				groupSelectDisplay->numGroups = N_GRP;
 			}
 		}
+		for (int i = 0; i < N_TRK; i++) {
+			trackDisplays[i]->tabNextFocus = trackDisplays[(i + 1) % N_TRK];
+		}
 		
 		// Monitor outputs and groups
 		static const float xGrp1 = 217.17 + 20.32;
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < N_GRP; i++) {
 			// Monitor outputs
 			if (i > 0) {
 				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, TMixMaster::DIRECT_OUTPUTS + i - 1, module ? &module->panelTheme : NULL));
@@ -959,6 +963,7 @@ struct MixMasterWidget : ModuleWidget {
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
+				// groupDisplays[i]->tabNextFocus = // done after the for loop
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
@@ -1019,6 +1024,9 @@ struct MixMasterWidget : ModuleWidget {
 			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
 			newSoloButton->numTracks = N_TRK;
 			newSoloButton->numGroups = N_GRP;
+		}
+		for (int i = 0; i < N_GRP; i++) {
+			groupDisplays[i]->tabNextFocus = groupDisplays[(i + 1) % N_GRP];
 		}
 	
 		// Master inputs
@@ -1122,6 +1130,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Labels
 			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
 			if (module) {
+				// trackDisplays[i]->tabNextFocus = // done after the for loop
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
 				trackDisplays[i]->tracks = module->tracks;
@@ -1217,6 +1226,9 @@ struct MixMasterJrWidget : ModuleWidget {
 				groupSelectDisplay->numGroups = N_GRP;
 			}
 		}
+		for (int i = 0; i < N_TRK; i++) {
+			trackDisplays[i]->tabNextFocus = trackDisplays[(i + 1) % N_TRK];
+		}
 		
 		// Monitor outputs and groups
 		static const float xGrp1 = 217.17 - 12.7 * 8 + 20.32;
@@ -1226,6 +1238,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
 			if (module) {
+				// groupDisplays[i]->tabNextFocus = // done after the for loop
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
@@ -1286,6 +1299,9 @@ struct MixMasterJrWidget : ModuleWidget {
 			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
 			newSoloButton->numTracks = N_TRK;
 			newSoloButton->numGroups = N_GRP;
+		}
+		for (int i = 0; i < N_GRP; i++) {
+			groupDisplays[i]->tabNextFocus = groupDisplays[(i + 1) % N_GRP];
 		}
 	
 		// Master inputs
