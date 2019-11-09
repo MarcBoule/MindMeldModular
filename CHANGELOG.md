@@ -1,6 +1,7 @@
 ### 1.1.3 (in development)
 
 - Added two new modules: MixMasterJr and AuxSpanderJr (8-track versions)
+- Added two new modules: Meld and Unmeld (useful for managing direct outs and inserts); each has three panels available in the right-click menu: 1-8, 9-16, Grp-Aux
 - Added menu entries for pan cv input attenuation in tracks, groups and aux
 - Implemented fade in aux returns in AuxSpander
 - Added setting for buttons' CV inputs that are of type Gate high/low, with the original Toggle trigger as the default setting
