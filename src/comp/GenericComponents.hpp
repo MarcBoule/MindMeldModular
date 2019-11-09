@@ -135,13 +135,13 @@ struct MomentarySvgSwitchNoParam : OpaqueWidget {
 
 
 template <typename TBase = GrayModuleLightWidget>
-struct TMMYellowBlueLight : TBase {
-	TMMYellowBlueLight() {
-		this->addBaseColor(SCHEME_YELLOW);
+struct TMMWhiteBlueLight : TBase {
+	TMMWhiteBlueLight() {
+		this->addBaseColor(SCHEME_WHITE);
 		this->addBaseColor(SCHEME_BLUE);
 	}
 };
-typedef TMMYellowBlueLight<> MMYellowBlueLight;
+typedef TMMWhiteBlueLight<> MMWhiteBlueLight;
 
 
 
