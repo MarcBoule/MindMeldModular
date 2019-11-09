@@ -827,11 +827,9 @@ struct MasterDisplay : EditableDisplayBase {
 	float* fadeRate;
 	float* fadeProfile;
 	int8_t* vuColorThemeLocal;
-	int8_t* dispColorLocal;
 	float* dimGain;
 	char* masterLabel;
 	float* dimGainIntegerDB;
-	PackedBytes4* colorAndCloak;
 	
 	MasterDisplay() {
 		numChars = 6;
