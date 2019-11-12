@@ -1513,8 +1513,8 @@ struct MixerTrack {
 		}
 		
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
-		taps[0] = (clamp20V(inSig[0].getVoltageSum()) * inGainSlewer.out);
-		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum()) * inGainSlewer.out) : taps[0];
+		taps[0] = (clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out));
+		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out)) : taps[0];
 		
 		int insertPortIndex = trackNum >> 3;
 		
@@ -1566,8 +1566,8 @@ struct MixerTrack {
 			
 			// Tap[32],[33]: pre-fader (post insert)
 			if (inInsert[insertPortIndex].isConnected()) {
-				taps[N_TRK * 2 + 0] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0);
-				taps[N_TRK * 2 + 1] = inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1);
+				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
+				taps[N_TRK * 2 + 1] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1));
 			}
 			else {
 				taps[N_TRK * 2 + 0] = filtered[0];
