@@ -12,6 +12,7 @@
 struct Meld : Module {
 	
 	enum ParamIds {
+		ENUMS(BYPASS_PARAMS, 8),
 		NUM_PARAMS
 	};
 	
@@ -27,7 +28,8 @@ struct Meld : Module {
 	};
 	
 	enum LightIds {
-		ENUMS(CHAN_LIGHTS, 32),
+		ENUMS(CHAN_LIGHTS, 16 * 2),// room for white-blue lights
+		ENUMS(BYPASS_LIGHTS, 8 * 2),// room for red-green lights
 		NUM_LIGHTS
 	};
 	
@@ -64,9 +66,15 @@ struct Meld : Module {
 	
 	Meld() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+
+		facePlate = 0;
+		
+		for (int i = 0; i < 8; i++) {
+			// bypass
+			configParam(BYPASS_PARAMS + i, 0.0f, 1.0f, 0.0f, string::f("Bypass %i", i + 1));
+		}
 		
 		panelTheme = 0;
-		facePlate = 0;
 	}
   
 	void onReset() override {
@@ -127,7 +135,7 @@ struct Meld : Module {
 		outputs[OUT_OUTPUT].setChannels(numChan);// clears all and sets num chan to 1 when numChan == 0
 		for (int c = 0; c < numChan; c++) {
 			float v;
-			if (inputs[MERGE_INPUTS + c].isConnected()) {
+			if (inputs[MERGE_INPUTS + c].isConnected() && (params[BYPASS_PARAMS + (c >> 1)].getValue() < 0.5f)) {
 				v = inputs[MERGE_INPUTS + c].getVoltage();
 			}
 			else {
@@ -138,10 +146,11 @@ struct Meld : Module {
 		
 		// Lights
 		if (refresh.processLights()) {
+			// channel lights
 			for (int i = 0; i < 16; i++) {
 				float greenBright = 0.0f;
 				float blueBright = 0.0f;
-				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected()) {
+				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected() && (params[BYPASS_PARAMS + (i >> 1)].getValue() < 0.5f)) {
 					greenBright = 1.0f;
 				}
 				else if (i < numChan) {
@@ -149,6 +158,11 @@ struct Meld : Module {
 				}
 				lights[CHAN_LIGHTS + 2 * i + 0].setBrightness(greenBright);
 				lights[CHAN_LIGHTS + 2 * i + 1].setBrightness(blueBright);
+			}
+			// bypass lights
+			for (int i = 0; i < 8; i++) {
+				lights[BYPASS_LIGHTS + 2 * i + 0].setBrightness(params[BYPASS_PARAMS + i].getValue() <  0.5f ? 1.0f : 0.0f);// green
+				lights[BYPASS_LIGHTS + 2 * i + 1].setBrightness(params[BYPASS_PARAMS + i].getValue() >= 0.5f ? 1.0f : 0.0f);// red
 			}
 		}
 	}// process()
@@ -160,6 +174,7 @@ struct Meld : Module {
 
 struct MeldWidget : ModuleWidget {
 	SvgPanel* facePlates[3];
+	int lastFacePlate = 0;
 		
 	struct PanelThemeItem : MenuItem {
 		Meld *module;
@@ -223,17 +238,41 @@ struct MeldWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
 		}
 				
-		// merge signals
 		for (int i = 0; i < 8; i++) {
+			// merge signals
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * i)), true, module, Meld::MERGE_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), true, module, Meld::MERGE_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));
+			
+			// bypass led-buttons
+			addParam(createParamCentered<LedButtonToggle>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_PARAMS+ i));
+			addChild(createLightCentered<SmallLight<GreenRedLight>>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_LIGHTS + 2 * i));
 		}
 	}
 	
 	void step() override {
 		if (module) {
-			for (int i = 0; i < 3; i++) {
-				facePlates[i]->visible = ((((Meld*)module)->facePlate) == i);
+			int facePlate = (((Meld*)module)->facePlate);
+			if (facePlate != lastFacePlate) {
+				facePlates[lastFacePlate]->visible = false;
+				facePlates[facePlate]->visible = true;
+				lastFacePlate = facePlate;
+				// update bypass tooltips
+				for (int i = 0; i < 8; i++) {
+					if (facePlate == 0) {
+						module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass %i", i + 1);
+					}
+					else if (facePlate == 1) {
+						module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass %i", i + 1 + 8);
+					}
+					else {
+						if (i < 4) {
+							module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass G%i", i + 1);
+						}
+						else {
+							module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass A%i", i + 1 - 4);
+						}
+					}
+				}
 			}
 		}
 		Widget::step();

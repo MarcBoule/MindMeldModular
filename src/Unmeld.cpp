@@ -143,6 +143,7 @@ struct Unmeld : Module {
 
 struct UnmeldWidget : ModuleWidget {
 	SvgPanel* facePlates[3];
+	int lastFacePlate = 0;
 		
 	struct PanelThemeItem : MenuItem {
 		Unmeld *module;
@@ -215,12 +216,15 @@ struct UnmeldWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			for (int i = 0; i < 3; i++) {
-				facePlates[i]->visible = ((((Unmeld*)module)->facePlate) == i);
+			int facePlate = (((Unmeld*)module)->facePlate);
+			if (facePlate != lastFacePlate) {
+				facePlates[lastFacePlate]->visible = false;
+				facePlates[facePlate]->visible = true;
+				lastFacePlate = facePlate;
 			}
 		}
 		Widget::step();
-	}	
+	}
 };
 
 

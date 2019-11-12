@@ -37,6 +37,13 @@ extern Plugin *pluginInstance;
 
 // Buttons and switches
 
+struct LedButtonToggle : app::SvgSwitch {
+	LedButtonToggle() {
+		momentary = false;
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/led-button.svg")));
+	}
+};
+
 struct MomentarySvgSwitchNoParam : OpaqueWidget {
 	int state = 0;
 
