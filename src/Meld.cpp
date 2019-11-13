@@ -43,13 +43,17 @@ struct Meld : Module {
 	int facePlate;
 	
 	// Need to save, with reset
-	// none
+	int bypassState[8];// 0 = none, 1 = bypassed, 2 = pass
+		// when unconnect last cable of track, set bypass to none
+		// when unconnected, can be toggled between none and bypass
+		// when connected, can be toggled between bypass and pass
 	
 	// No need to save, with reset
 	int lastMergeInputIndex;// can be -1 when nothing connected
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
+	Trigger bypassTriggers[8];
 	
 	
 	void calcLastMergeInputIndex() {// can set to -1 when nothing connected
@@ -78,6 +82,9 @@ struct Meld : Module {
 	}
   
 	void onReset() override {
+		for (int trk = 0; trk < 8; trk++) {
+			bypassState[trk] = 2;
+		}
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -98,6 +105,15 @@ struct Meld : Module {
 		// facePlate
 		json_object_set_new(rootJ, "facePlate", json_integer(facePlate));
 		
+		// bypassState
+		json_t *bypassStateJ = json_array();
+		for (int i = 0; i < 8; i++) {
+			json_array_insert_new(bypassStateJ, i, json_integer(bypassState[i]));
+		}
+		json_object_set_new(rootJ, "bypassState", bypassStateJ);
+		
+		// INFO("to json: %i", inputs[MERGE_INPUTS + 0].isConnected());
+		
 		return rootJ;
 	}
 
@@ -113,6 +129,19 @@ struct Meld : Module {
 		if (facePlateJ)
 			facePlate = json_integer_value(facePlateJ);
 
+		// bypassState
+		json_t *bypassStateJ = json_object_get(rootJ, "bypassState");
+		if (bypassStateJ) {
+			for (int i = 0; i < 8; i++) {
+				json_t *bypassStateArrayJ = json_array_get(bypassStateJ, i);
+				if (bypassStateArrayJ) {
+					bypassState[i] = json_integer_value(bypassStateArrayJ);
+				}
+			}			
+		}
+
+		// INFO("from json: %i", inputs[MERGE_INPUTS + 0].isConnected());
+
 		resetNonJson(true);
 	}
 
@@ -125,6 +154,13 @@ struct Meld : Module {
 		// Controls
 		if (refresh.processInputs()) {
 			calcLastMergeInputIndex();
+			
+			for (int trk = 0; trk < 8; trk++) {
+				if (bypassTriggers[trk].process(params[BYPASS_PARAMS + trk].getValue())) {
+					if (bypassState[trk] == 2) bypassState[trk] = 1;
+					else bypassState[trk] = 2;
+				}
+			}
 		}// userInputs refresh
 		
 		
@@ -135,7 +171,7 @@ struct Meld : Module {
 		outputs[OUT_OUTPUT].setChannels(numChan);// clears all and sets num chan to 1 when numChan == 0
 		for (int c = 0; c < numChan; c++) {
 			float v;
-			if (inputs[MERGE_INPUTS + c].isConnected() && (params[BYPASS_PARAMS + (c >> 1)].getValue() < 0.5f)) {
+			if (inputs[MERGE_INPUTS + c].isConnected() && (bypassState[c >> 1] == 2)) {
 				v = inputs[MERGE_INPUTS + c].getVoltage();
 			}
 			else {
@@ -150,7 +186,7 @@ struct Meld : Module {
 			for (int i = 0; i < 16; i++) {
 				float greenBright = 0.0f;
 				float blueBright = 0.0f;
-				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected() && (params[BYPASS_PARAMS + (i >> 1)].getValue() < 0.5f)) {
+				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected() && (bypassState[i >> 1] == 2)) {
 					greenBright = 1.0f;
 				}
 				else if (i < numChan) {
@@ -161,8 +197,8 @@ struct Meld : Module {
 			}
 			// bypass lights
 			for (int i = 0; i < 8; i++) {
-				lights[BYPASS_LIGHTS + 2 * i + 0].setBrightness(params[BYPASS_PARAMS + i].getValue() <  0.5f ? 1.0f : 0.0f);// green
-				lights[BYPASS_LIGHTS + 2 * i + 1].setBrightness(params[BYPASS_PARAMS + i].getValue() >= 0.5f ? 1.0f : 0.0f);// red
+				lights[BYPASS_LIGHTS + 2 * i + 0].setBrightness(bypassState[i] == 2 ? 1.0f : 0.0f);// green
+				lights[BYPASS_LIGHTS + 2 * i + 1].setBrightness(bypassState[i] != 2 ? 1.0f : 0.0f);// red
 			}
 		}
 	}// process()
@@ -244,7 +280,7 @@ struct MeldWidget : ModuleWidget {
 			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), true, module, Meld::MERGE_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));
 			
 			// bypass led-buttons
-			addParam(createParamCentered<LedButtonToggle>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_PARAMS+ i));
+			addParam(createParamCentered<LedButton>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_PARAMS + i));
 			addChild(createLightCentered<SmallLight<GreenRedLight>>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_LIGHTS + 2 * i));
 		}
 	}
