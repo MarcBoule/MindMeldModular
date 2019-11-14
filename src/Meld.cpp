@@ -43,13 +43,11 @@ struct Meld : Module {
 	int facePlate;
 	
 	// Need to save, with reset
-	int bypassState[8];// 0 = none, 1 = bypassed, 2 = pass
-		// when unconnect last cable of track, set bypass to none
-		// when unconnected, can be toggled between none and bypass
-		// when connected, can be toggled between bypass and pass
+	int bypassState[8];// 0 = pass, 1 = bypass
 	
 	// No need to save, with reset
 	int lastMergeInputIndex;// can be -1 when nothing connected
+	dsp::SlewLimiter bypassSlewers[16];
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -67,6 +65,10 @@ struct Meld : Module {
 		return;
 	}
 	
+	bool trackInUse(int trk) {// trk is 0 to 7
+		return inputs[MERGE_INPUTS + trk * 2 + 0].isConnected() || inputs[MERGE_INPUTS + trk * 2 + 1].isConnected();
+	}
+	
 	
 	Meld() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -78,17 +80,24 @@ struct Meld : Module {
 			configParam(BYPASS_PARAMS + i, 0.0f, 1.0f, 0.0f, string::f("Bypass %i", i + 1));
 		}
 		
+		for (int i = 0; i < 16; i++) {
+			bypassSlewers[i].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)			
+		}
+		
 		panelTheme = 0;
 	}
   
 	void onReset() override {
 		for (int trk = 0; trk < 8; trk++) {
-			bypassState[trk] = 2;
+			bypassState[trk] = 0;
 		}
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
 		calcLastMergeInputIndex();
+		for (int i = 0; i < 16; i++) {
+			bypassSlewers[i].out = (float)bypassState[i >> 1];
+		}
 	}
 
 
@@ -111,8 +120,6 @@ struct Meld : Module {
 			json_array_insert_new(bypassStateJ, i, json_integer(bypassState[i]));
 		}
 		json_object_set_new(rootJ, "bypassState", bypassStateJ);
-		
-		// INFO("to json: %i", inputs[MERGE_INPUTS + 0].isConnected());
 		
 		return rootJ;
 	}
@@ -140,8 +147,6 @@ struct Meld : Module {
 			}			
 		}
 
-		// INFO("from json: %i", inputs[MERGE_INPUTS + 0].isConnected());
-
 		resetNonJson(true);
 	}
 
@@ -157,26 +162,23 @@ struct Meld : Module {
 			
 			for (int trk = 0; trk < 8; trk++) {
 				if (bypassTriggers[trk].process(params[BYPASS_PARAMS + trk].getValue())) {
-					if (bypassState[trk] == 2) bypassState[trk] = 1;
-					else bypassState[trk] = 2;
+					if (trackInUse(trk)) {
+						bypassState[trk] ^= 0x1;
+					}
 				}
 			}
 		}// userInputs refresh
 		
 		
-		// Merge out
+		// Meld poly output
 		int numChan = inputs[POLY_INPUT].isConnected() ? inputs[POLY_INPUT].getChannels() : 0;
 		numChan = std::max(numChan, lastMergeInputIndex + 1);
 		// here numChan can be 0		
 		outputs[OUT_OUTPUT].setChannels(numChan);// clears all and sets num chan to 1 when numChan == 0
 		for (int c = 0; c < numChan; c++) {
-			float v;
-			if (inputs[MERGE_INPUTS + c].isConnected() && (bypassState[c >> 1] == 2)) {
-				v = inputs[MERGE_INPUTS + c].getVoltage();
-			}
-			else {
-				v = inputs[POLY_INPUT].getVoltage(c);
-			}
+			bool bypass = !inputs[MERGE_INPUTS + c].isConnected() || (bypassState[c >> 1] == 1);
+			float bypassGain = bypassSlewers[c].process(args.sampleTime, bypass ? 1.0f : 0.0f);
+			float v = crossfade(inputs[MERGE_INPUTS + c].getVoltage(), inputs[POLY_INPUT].getVoltage(c), bypassGain);
 			outputs[OUT_OUTPUT].setVoltage(v, c);
 		}
 		
@@ -186,7 +188,7 @@ struct Meld : Module {
 			for (int i = 0; i < 16; i++) {
 				float greenBright = 0.0f;
 				float blueBright = 0.0f;
-				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected() && (bypassState[i >> 1] == 2)) {
+				if (i <= lastMergeInputIndex && inputs[MERGE_INPUTS + i].isConnected() && (bypassState[i >> 1] == 0)) {
 					greenBright = 1.0f;
 				}
 				else if (i < numChan) {
@@ -196,9 +198,10 @@ struct Meld : Module {
 				lights[CHAN_LIGHTS + 2 * i + 1].setBrightness(blueBright);
 			}
 			// bypass lights
-			for (int i = 0; i < 8; i++) {
-				lights[BYPASS_LIGHTS + 2 * i + 0].setBrightness(bypassState[i] == 2 ? 1.0f : 0.0f);// green
-				lights[BYPASS_LIGHTS + 2 * i + 1].setBrightness(bypassState[i] != 2 ? 1.0f : 0.0f);// red
+			for (int trk = 0; trk < 8; trk++) {
+				bool ledEnable = trackInUse(trk);
+				lights[BYPASS_LIGHTS + 2 * trk + 0].setBrightness(ledEnable && bypassState[trk] == 0 ? 1.0f : 0.0f);// green
+				lights[BYPASS_LIGHTS + 2 * trk + 1].setBrightness(ledEnable && bypassState[trk] != 0 ? 1.0f : 0.0f);// red
 			}
 		}
 	}// process()
