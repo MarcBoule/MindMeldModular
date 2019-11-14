@@ -434,11 +434,11 @@ struct AuxExpander : Module {
 				}
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
 					// Knob CV (adding, pre-scaling)
-					simd::float_4 cvVoltages{inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(0), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(1),
-					inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(2), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(3)};
+					simd::float_4 cvVoltages(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(0), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(1),
+					inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(2), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(3));
 					globalSends += cvVoltages * 0.1f * maxAGGlobSendFader;
 					// lines above replace commented line below since templating AuxExpander broke it for some strange reason
-					//globalSends += (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0)) * 0.1f * maxAGGlobSendFader;
+					// globalSends += (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0)) * 0.1f * maxAGGlobSendFader;
 					globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
 					globalSendsWithCV = globalSends;
 				}
