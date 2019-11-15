@@ -8,6 +8,7 @@ Version 1.1.2
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
+
 # Modules <a id="modules"></a>
 
 The following modules are part of the MindMeld module pack.
@@ -16,6 +17,15 @@ The following modules are part of the MindMeld module pack.
 
 * [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster, see MixMaster manual above.
 
+<!---
+
+* [MixMasterJr](#mixmasterjr): 8-track stereo mixer with 2 group busses, see MixMaster manual above.
+
+* [AuxSpanderJr](#auxspanderjr): 4-aux FX bus expander for MixMasterJr, see MixMaster manual above.
+
+* [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
+
+-->
 
 ## MixMaster <a id="mixmaster"></a>
 
@@ -53,8 +63,31 @@ Many labels contain separate menus that are different from the module's main men
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
+<!---
 
-# Videos <a id="auxspander"></a>
+## MixMasterJr <a id="mixmasterjr"></a>
+
+![IM](res/img/MixMasterJr.png)
+
+A smaller 8-track version of MixMaster, with 2 group busses. Functionality and options are identical to those found in MixMaster.
+
+
+## AuxSpanderJr <a id="auxspanderjr"></a>
+
+![IM](res/img/AuxspanderJr.png)
+
+4-aux FX bus expander for MixMasterJr, must be placed immediately to the right of the MixMasterJr module. Functionality and options are identical to those found in AuxSpander.
+
+
+## Meld / Unmeld <a id="meldunmeld"></a>
+
+![IM](res/img/MeldUnmeld.png)
+
+Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green).
+
+-->
+
+# Videos <a id="videos"></a>
 
 ### Promo
 * Eurikon (Latif Karoumi), [MindMeld Modular - Mixmaster for VCV Rack](https://www.youtube.com/watch?v=8g_BwxgEuSw)
