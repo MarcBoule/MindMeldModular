@@ -526,8 +526,17 @@ struct AuxExpander : Module {
 			}			
 			// Aux send outputs
 			for (int i = 0; i < 4; i++) {
-				outputs[SEND_OUTPUTS + i + 0].setVoltage(auxSends[0][i]);// L ABCD
-				outputs[SEND_OUTPUTS + i + 4].setVoltage(auxSends[1][i]);// R ABCD
+				if (outputs[SEND_OUTPUTS + i + 4].isConnected()) {
+					// stereo send
+					outputs[SEND_OUTPUTS + i + 0].setVoltage(auxSends[0][i]);// L ABCD
+					outputs[SEND_OUTPUTS + i + 4].setVoltage(auxSends[1][i]);// R ABCD
+				}
+				else {
+					// mono send (send (L+R)/2 into L send
+					float mix = (auxSends[0][i] + auxSends[1][i]) * 0.5f;
+					outputs[SEND_OUTPUTS + i + 0].setVoltage(mix);// L+R ABCD
+					outputs[SEND_OUTPUTS + i + 4].setVoltage(0.0f);
+				}
 			}			
 						
 			
