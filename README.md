@@ -4,28 +4,25 @@ Modules for [VCV Rack](https://vcvrack.com), available in the [plugin library](h
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 1.1.2
+Version 1.1.3
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
 
 # Modules <a id="modules"></a>
 
-The following modules are part of the MindMeld module pack.
+The following modules are part of the MindMeld module pack ([user manual](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-MixMaster-Manual-V1_1_3.pdf)):
 
-* [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses, [user manual](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-MixMaster-Manual-V1_1_2.pdf).
+* [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses.
 
-* [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster, see MixMaster manual above.
+* [AuxSpander](#auxspander): 4-aux FX bus expander for MixMaster.
 
-<!---
+* [MixMasterJr](#mixmasterjr): 8-track stereo mixer with 2 group busses.
 
-* [MixMasterJr](#mixmasterjr): 8-track stereo mixer with 2 group busses, see MixMaster manual above.
-
-* [AuxSpanderJr](#auxspanderjr): 4-aux FX bus expander for MixMasterJr, see MixMaster manual above.
+* [AuxSpanderJr](#auxspanderjr): 4-aux FX bus expander for MixMasterJr.
 
 * [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
 
--->
 
 ## MixMaster <a id="mixmaster"></a>
 
@@ -63,7 +60,6 @@ Many labels contain separate menus that are different from the module's main men
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
-<!---
 
 ## MixMasterJr <a id="mixmasterjr"></a>
 
@@ -85,7 +81,6 @@ A smaller 8-track version of MixMaster, with 2 group busses. Functionality and o
 
 Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green).
 
--->
 
 # Videos <a id="videos"></a>
 
