@@ -53,6 +53,8 @@ struct Unmeld : Module {
 	Unmeld() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
+		onReset();
+		
 		panelTheme = 0;
 		facePlate = 0;
 	}

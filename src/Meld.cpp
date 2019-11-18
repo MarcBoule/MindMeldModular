@@ -87,6 +87,8 @@ struct Meld : Module {
 		for (int i = 0; i < 4; i++) {
 			bypassSlewersVect[i].setRiseFall(simd::float_4(100.0f), simd::float_4(100.0f)); // slew rate is in input-units per second (ex: V/s)			
 		}
+
+		onReset();
 		
 		panelTheme = 0;
 	}
@@ -167,6 +169,7 @@ struct Meld : Module {
 			
 			for (int trk = 0; trk < 8; trk++) {
 				if (bypassTriggers[trk].process(params[BYPASS_PARAMS + trk].getValue())) {
+					INFO("bypass trig %i, in use %i, bypassstate %i", trk, trackInUse(trk), bypassState[trk]);
 					if (trackInUse(trk)) {
 						bypassState[trk] ^= 0x1;
 					}
