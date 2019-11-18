@@ -169,7 +169,6 @@ struct Meld : Module {
 			
 			for (int trk = 0; trk < 8; trk++) {
 				if (bypassTriggers[trk].process(params[BYPASS_PARAMS + trk].getValue())) {
-					INFO("bypass trig %i, in use %i, bypassstate %i", trk, trackInUse(trk), bypassState[trk]);
 					if (trackInUse(trk)) {
 						bypassState[trk] ^= 0x1;
 					}
