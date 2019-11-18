@@ -126,7 +126,7 @@ struct Meld : Module {
 		for (int i = 0; i < 8; i++) {
 			json_array_insert_new(bypassStateJ, i, json_integer(bypassState[i]));
 		}
-		json_object_set_new(rootJ, "bypassState", bypassStateJ);
+		json_object_set_new(rootJ, "bypassState2", bypassStateJ);// 2 to avoid loading corrupt values in 1.1.3's bug
 		
 		return rootJ;
 	}
@@ -144,7 +144,7 @@ struct Meld : Module {
 			facePlate = json_integer_value(facePlateJ);
 
 		// bypassState
-		json_t *bypassStateJ = json_object_get(rootJ, "bypassState");
+		json_t *bypassStateJ = json_object_get(rootJ, "bypassState2");// 2 to avoid loading corrupt values in 1.1.3's bug
 		if (bypassStateJ) {
 			for (int i = 0; i < 8; i++) {
 				json_t *bypassStateArrayJ = json_array_get(bypassStateJ, i);
