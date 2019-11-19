@@ -1,4 +1,8 @@
-### 1.1.3 (in development)
+### 1.1.4 (2019-11-20)
+
+- Fixed a critical bug in the Meld module
+
+### 1.1.3 (2019-11-17)
 
 - Added two new modules: MixMasterJr and AuxSpanderJr (8-track versions)
 - Added two new modules: Meld and Unmeld (useful for managing direct outs and inserts); each has three panels available in the right-click menu: 1-8, 9-16, Grp-Aux
