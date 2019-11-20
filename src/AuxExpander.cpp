@@ -847,7 +847,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
-			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i - 0.1, 123.1)), module, TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i, 123.1)), module, TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
@@ -1160,7 +1160,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
-			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i - 0.1, 123.1)), module, TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i, 123.1)), module, TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);

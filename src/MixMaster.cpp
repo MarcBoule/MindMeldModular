@@ -939,7 +939,7 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
-			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
@@ -1219,7 +1219,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			}
 			// Group select displays
 			GroupSelectDisplay* groupSelectDisplay;
-			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i - 0.1, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
+			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);

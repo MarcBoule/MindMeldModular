@@ -459,9 +459,9 @@ struct GroupSelectDisplay : ParamWidget {
 	int numGroups;// N_GRP
 	
 	GroupSelectDisplay() {
-		box.size = Vec(18, 16);
+		box.size = Vec(15, 16);
 		ldc.box.size = box.size;
-		ldc.textOffset = math::Vec(6.6f, 11.7f);
+		ldc.textOffset = math::Vec(4.9f, 11.7f);
 		ldc.bgColor.a = 0.0f;
 		ldc.text = "-";
 	};
