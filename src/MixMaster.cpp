@@ -848,7 +848,7 @@ struct MixMasterWidget : ModuleWidget {
 		static const float xTrck1 = 11.43 + 20.32;
 		for (int i = 0; i < N_TRK; i++) {
 			// Labels
-			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i, 4.7))));
 			if (module) {
 				// trackDisplays[i]->tabNextFocus = // done after the for loop
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
@@ -961,7 +961,7 @@ struct MixMasterWidget : ModuleWidget {
 				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), false, module, TMixMaster::FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));				
 			}
 			// Labels
-			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
+			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i, 23.5))));
 			if (module) {
 				// groupDisplays[i]->tabNextFocus = // done after the for loop
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
@@ -1038,7 +1038,7 @@ struct MixMasterWidget : ModuleWidget {
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, TMixMaster::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
-		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 + 1.2, 128.5 - 97.0))));
+		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.82, 128.5 - 97.15))));
 		if (module) {
 			masterDisplay->dcBlock = &(module->master.dcBlock);
 			masterDisplay->clipping = &(module->master.clipping);
@@ -1128,7 +1128,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		static const float xTrck1 = 11.43 + 20.32;
 		for (int i = 0; i < N_TRK; i++) {
 			// Labels
-			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i + 0.4, 4.7))));
+			addChild(trackDisplays[i] = createWidgetCentered<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i, 4.7))));
 			if (module) {
 				// trackDisplays[i]->tabNextFocus = // done after the for loop
 				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
@@ -1236,7 +1236,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Monitor outputs
 			addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, TMixMaster::DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
 			// Labels
-			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i + 0.4, 23.5))));
+			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i, 23.5))));
 			if (module) {
 				// groupDisplays[i]->tabNextFocus = // done after the for loop
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
@@ -1313,7 +1313,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12 - 12.7 * 10, 21.8)), false, module, TMixMaster::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
 		
 		// Master label
-		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 - 12.7 * 10 + 1.2, 128.5 - 97.0))));
+		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 - 12.7 * 10, 128.5 - 97.15))));
 		if (module) {
 			masterDisplay->dcBlock = &(module->master.dcBlock);
 			masterDisplay->clipping = &(module->master.clipping);

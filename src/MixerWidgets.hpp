@@ -432,8 +432,8 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	int8_t* dispColorLocalPtr;
 	
 	TrackAndGroupLabel() {
-		box.size = Vec(38, 16);
-		textOffset = Vec(7.5, 12);
+		box.size = mm2px(Vec(10.6f, 5.0f));
+		textOffset = Vec(4.2f, 11.3f);
 		text = "-00-";
 	};
 	
@@ -741,8 +741,8 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int8_t* dispColorLocal;
 
 	EditableDisplayBase() {
-		box.size = Vec(38, 16);
-		textOffset = Vec(2.4f, -2.2f);
+		box.size = mm2px(Vec(10.6f, 5.0f));
+		textOffset = Vec(0.2f, -2.7f);
 		text = "-00-";
 	};
 	
@@ -768,7 +768,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 			int begin = std::min(cursor, selection);
 			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
 			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
-				box.size.x - 2*textOffset.x, box.size.y - 2*textOffset.y,
+				box.size.x * 2, box.size.y,// allow overlap so no CR-LF
 				-1, color, textSize, text.c_str(), highlightColor, begin, end);
 
 			bndSetFont(APP->window->uiFont->handle);
@@ -834,8 +834,8 @@ struct MasterDisplay : EditableDisplayBase {
 	MasterDisplay() {
 		numChars = 6;
 		textSize = 13;
-		box.size.x = mm2px(18.3f);
-		textOffset.x = 1.4f;// 2.4f
+		box.size = mm2px(Vec(16.0f, 5.3f));
+		textOffset = Vec(0.9f, -2.0f);
 		text = "-0000-";
 	}
 	

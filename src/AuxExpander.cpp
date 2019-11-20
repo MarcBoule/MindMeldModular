@@ -763,7 +763,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
 			// Labels
-			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
+			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
 			if (module) {
 				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
@@ -1076,7 +1076,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
 			// Labels
-			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i + 0.4, 4.7))));
+			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
 			if (module) {
 				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
