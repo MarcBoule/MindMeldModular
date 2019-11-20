@@ -32,8 +32,8 @@
      inkscape:window-maximized="1"
      inkscape:window-y="-8"
      inkscape:window-x="-8"
-     inkscape:cy="242.83464"
-     inkscape:cx="57.599998"
+     inkscape:cy="188.03805"
+     inkscape:cx="42.204479"
      inkscape:zoom="1.6616245"
      units="mm"
      inkscape:document-units="mm"
@@ -92,105 +92,120 @@
        x2="57.119999"
        y1="271.13"
        x1="57.119999"
-       id="linear-gradient-3" />
+       id="linear-gradient-3"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="262.76999"
        x2="57.119999"
        y1="240.38"
        x1="57.119999"
-       id="linear-gradient-4" />
+       id="linear-gradient-4"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="232.02"
        x2="57.119999"
        y1="209.62"
        x1="57.119999"
-       id="linear-gradient-5" />
+       id="linear-gradient-5"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="201.25999"
        x2="57.119999"
        y1="178.87"
        x1="57.119999"
-       id="linear-gradient-6" />
+       id="linear-gradient-6"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="170.5"
        x2="57.119999"
        y1="148.11"
        x1="57.119999"
-       id="linear-gradient-7" />
+       id="linear-gradient-7"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="139.75"
        x2="57.119999"
        y1="117.35"
        x1="57.119999"
-       id="linear-gradient-8" />
+       id="linear-gradient-8"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="108.99"
        x2="57.119999"
        y1="86.599998"
        x1="57.119999"
-       id="linear-gradient-9" />
+       id="linear-gradient-9"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="324.28"
        x2="29.280001"
        y1="301.89001"
        x1="29.280001"
-       id="linear-gradient-10" />
+       id="linear-gradient-10"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="293.53"
        x2="29.280001"
        y1="271.13"
        x1="29.280001"
-       id="linear-gradient-11" />
+       id="linear-gradient-11"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="262.76999"
        x2="29.280001"
        y1="240.38"
        x1="29.280001"
-       id="linear-gradient-12" />
+       id="linear-gradient-12"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="232.02"
        x2="29.280001"
        y1="209.62"
        x1="29.280001"
-       id="linear-gradient-13" />
+       id="linear-gradient-13"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="201.25999"
        x2="29.280001"
        y1="178.87"
        x1="29.280001"
-       id="linear-gradient-14" />
+       id="linear-gradient-14"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="170.5"
        x2="29.280001"
        y1="148.11"
        x1="29.280001"
-       id="linear-gradient-15" />
+       id="linear-gradient-15"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="139.75"
        x2="29.280001"
        y1="117.35"
        x1="29.280001"
-       id="linear-gradient-16" />
+       id="linear-gradient-16"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        y2="108.99"
        x2="29.280001"
        y1="86.599998"
        x1="29.280001"
-       id="linear-gradient-17" />
+       id="linear-gradient-17"
+       gradientTransform="scale(1.3333333,1.3333406)" />
     <linearGradient
        xlink:href="#linear-gradient-2"
        gradientTransform="matrix(1,0,0,-1,0,365.75)"
@@ -231,15 +246,6 @@
        y1="321.03"
        x1="19.389999"
        id="linear-gradient-21" />
-    <linearGradient
-       y2="324.28"
-       x2="57.119999"
-       y1="301.89001"
-       x1="57.119999"
-       gradientUnits="userSpaceOnUse"
-       id="linearGradient596"
-       xlink:href="#linear-gradient-2"
-       inkscape:collect="always" />
     <linearGradient
        y2="306.42999"
        x2="67.010002"
@@ -621,1061 +627,6 @@
        width="22.68"
        height="1"
        id="rect192" />
-  </g>
-  <g
-     id="Uni_Jacks"
-     data-name="Uni Jacks"
-     transform="scale(1.3333333,1.3333406)">
-    <path
-       class="cls-9"
-       d="M 57.12,324.28 A 11.2,11.2 0 1 1 68.31,313.09 11.21,11.21 0 0 1 57.12,324.28 Z"
-       id="path195"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linearGradient596)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="M 57.12,302 A 11.06,11.06 0 1 1 46.06,313.06 11.07,11.07 0 0 1 57.12,302 m 0,-0.28 a 11.34,11.34 0 1 0 11.33,11.34 11.33,11.33 0 0 0 -11.33,-11.34 z"
-       id="path197"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,321.45 a 8.37,8.37 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path199"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,304.87 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.5,8.51 8.51,8.51 0 0 0 -8.5,-8.51 z"
-       id="path201"
-       inkscape:connector-curvature="0" />
-    <path
-       d="M 57.12,319 A 5.89,5.89 0 1 1 63,313.09 5.89,5.89 0 0 1 57.12,319 Z"
-       id="path203"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,308.62 a 4.47,4.47 0 1 1 -4.47,4.47 4.47,4.47 0 0 1 4.47,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path205"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="313.09"
-       r="5.0999999"
-       id="circle207" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="312.54001"
-       width="0.69999999"
-       height="1.2"
-       id="rect209" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,314.27 68.19,312 66.43,312 66.43,314.27 "
-       id="polygon211" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="312.54001"
-       width="0.69999999"
-       height="1.2"
-       id="rect213" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,314.27 47.82,312 46.05,312 46.05,314.27 "
-       id="polygon215" />
-    <path
-       class="cls-13"
-       d="m 57.12,293.53 a 11.2,11.2 0 1 1 11.19,-11.2 11.21,11.21 0 0 1 -11.19,11.2 z"
-       id="path217"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-3)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 57.12,271.28 a 11.06,11.06 0 1 1 -11.06,11.05 11.06,11.06 0 0 1 11.06,-11.05 m 0,-0.29 A 11.34,11.34 0 1 0 68.45,282.33 11.34,11.34 0 0 0 57.12,271 Z"
-       id="path219"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,290.69 a 8.36,8.36 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path221"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,274.11 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.5,8.5 0 1 0 8.5,8.5 8.5,8.5 0 0 0 -8.5,-8.5 z"
-       id="path223"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 57.12,288.21 a 5.88,5.88 0 1 1 5.88,-5.88 5.89,5.89 0 0 1 -5.88,5.88 z"
-       id="path225"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,277.87 a 4.47,4.47 0 1 1 -4.47,4.46 4.46,4.46 0 0 1 4.47,-4.46 m 0,-2.84 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path227"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="282.32999"
-       r="5.0999999"
-       id="circle229" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="281.78"
-       width="0.69999999"
-       height="1.2"
-       id="rect231" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,283.52 68.19,281.25 66.43,281.25 66.43,283.52 "
-       id="polygon233" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="281.78"
-       width="0.69999999"
-       height="1.2"
-       id="rect235" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,283.52 47.82,281.25 46.05,281.25 46.05,283.52 "
-       id="polygon237" />
-    <path
-       class="cls-14"
-       d="M 57.12,262.77 A 11.2,11.2 0 1 1 68.31,251.58 11.21,11.21 0 0 1 57.12,262.77 Z"
-       id="path239"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-4)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 57.12,240.52 a 11.06,11.06 0 1 1 -11.06,11 11.07,11.07 0 0 1 11.06,-11 m 0,-0.28 a 11.34,11.34 0 1 0 11.33,11.33 11.33,11.33 0 0 0 -11.33,-11.33 z"
-       id="path241"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,259.94 a 8.37,8.37 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path243"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,243.35 a 8.23,8.23 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.51,8.51 0 1 0 8.5,8.5 8.51,8.51 0 0 0 -8.5,-8.5 z"
-       id="path245"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 57.12,257.46 a 5.89,5.89 0 1 1 5.88,-5.88 5.89,5.89 0 0 1 -5.88,5.88 z"
-       id="path247"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,247.11 a 4.47,4.47 0 1 1 -4.47,4.46 4.46,4.46 0 0 1 4.47,-4.46 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.29 7.29,7.29 0 0 0 -7.3,-7.29 z"
-       id="path249"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="251.57001"
-       r="5.0999999"
-       id="circle251" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="251.03"
-       width="0.69999999"
-       height="1.2"
-       id="rect253" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,252.76 68.19,250.49 66.43,250.49 66.43,252.76 "
-       id="polygon255" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="251.03"
-       width="0.69999999"
-       height="1.2"
-       id="rect257" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,252.76 47.82,250.49 46.05,250.49 46.05,252.76 "
-       id="polygon259" />
-    <path
-       class="cls-15"
-       d="M 57.12,232 A 11.2,11.2 0 1 1 68.31,220.8 11.21,11.21 0 0 1 57.12,232 Z"
-       id="path261"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-5)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 57.12,209.76 a 11.06,11.06 0 1 1 -11.06,11.06 11.07,11.07 0 0 1 11.06,-11.06 m 0,-0.28 a 11.34,11.34 0 1 0 11.33,11.34 11.34,11.34 0 0 0 -11.33,-11.34 z"
-       id="path263"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,229.18 a 8.36,8.36 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path265"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,212.6 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.5,8.51 8.51,8.51 0 0 0 -8.5,-8.51 z"
-       id="path267"
-       inkscape:connector-curvature="0" />
-    <path
-       d="M 57.12,226.7 A 5.88,5.88 0 1 1 63,220.82 5.89,5.89 0 0 1 57.12,226.7 Z"
-       id="path269"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,216.35 a 4.47,4.47 0 1 1 -4.47,4.47 4.47,4.47 0 0 1 4.47,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path271"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="220.82001"
-       r="5.0999999"
-       id="circle273" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="220.27"
-       width="0.69999999"
-       height="1.2"
-       id="rect275" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,222 68.19,219.74 66.43,219.74 66.43,222 "
-       id="polygon277" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="220.27"
-       width="0.69999999"
-       height="1.2"
-       id="rect279" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,222 47.82,219.74 46.05,219.74 46.05,222 "
-       id="polygon281" />
-    <path
-       class="cls-16"
-       d="m 57.12,201.26 a 11.2,11.2 0 1 1 11.19,-11.2 11.21,11.21 0 0 1 -11.19,11.2 z"
-       id="path283"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-6)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="M 57.12,179 A 11.06,11.06 0 1 1 46.06,190.05 11.07,11.07 0 0 1 57.12,179 m 0,-0.29 a 11.34,11.34 0 1 0 11.33,11.34 11.34,11.34 0 0 0 -11.33,-11.34 z"
-       id="path285"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,198.43 a 8.37,8.37 0 1 1 8.36,-8.37 8.38,8.38 0 0 1 -8.36,8.37 z"
-       id="path287"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,181.84 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.51,8.51 0 1 0 8.5,8.5 8.51,8.51 0 0 0 -8.5,-8.5 z"
-       id="path289"
-       inkscape:connector-curvature="0" />
-    <path
-       d="M 57.12,196 A 5.89,5.89 0 1 1 63,190.06 5.89,5.89 0 0 1 57.12,196 Z"
-       id="path291"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,185.6 a 4.47,4.47 0 1 1 -4.47,4.46 4.46,4.46 0 0 1 4.47,-4.46 m 0,-2.84 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path293"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="190.06"
-       r="5.0999999"
-       id="circle295" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="189.50999"
-       width="0.69999999"
-       height="1.2"
-       id="rect297" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,191.25 68.19,188.98 66.43,188.98 66.43,191.25 "
-       id="polygon299" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="189.50999"
-       width="0.69999999"
-       height="1.2"
-       id="rect301" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,191.25 47.82,188.98 46.05,188.98 46.05,191.25 "
-       id="polygon303" />
-    <path
-       class="cls-17"
-       d="M 57.12,170.5 A 11.2,11.2 0 1 1 68.31,159.31 11.21,11.21 0 0 1 57.12,170.5 Z"
-       id="path305"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-7)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 57.12,148.25 a 11.06,11.06 0 1 1 -11.06,11.06 11.07,11.07 0 0 1 11.06,-11.06 m 0,-0.28 A 11.34,11.34 0 1 0 68.45,159.31 11.33,11.33 0 0 0 57.12,148 Z"
-       id="path307"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,167.67 a 8.37,8.37 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path309"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,151.09 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.5,8.51 8.51,8.51 0 0 0 -8.5,-8.51 z"
-       id="path311"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 57.12,165.19 a 5.88,5.88 0 1 1 5.88,-5.88 5.89,5.89 0 0 1 -5.88,5.88 z"
-       id="path313"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,154.84 a 4.47,4.47 0 1 1 -4.47,4.47 4.47,4.47 0 0 1 4.47,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path315"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="159.31"
-       r="5.0999999"
-       id="circle317" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="158.75999"
-       width="0.69999999"
-       height="1.2"
-       id="rect319" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,160.49 68.19,158.22 66.43,158.22 66.43,160.49 "
-       id="polygon321" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="158.75999"
-       width="0.69999999"
-       height="1.2"
-       id="rect323" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,160.49 47.82,158.22 46.05,158.22 46.05,160.49 "
-       id="polygon325" />
-    <path
-       class="cls-18"
-       d="m 57.12,139.75 a 11.2,11.2 0 1 1 11.19,-11.2 11.21,11.21 0 0 1 -11.19,11.2 z"
-       id="path327"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-8)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="M 57.12,117.5 A 11.06,11.06 0 1 1 46.06,128.55 11.07,11.07 0 0 1 57.12,117.5 m 0,-0.29 a 11.34,11.34 0 1 0 11.33,11.34 11.34,11.34 0 0 0 -11.33,-11.34 z"
-       id="path329"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,136.91 a 8.36,8.36 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path331"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,120.33 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.51,8.51 0 1 0 8.5,8.5 8.5,8.5 0 0 0 -8.5,-8.5 z"
-       id="path333"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 57.12,134.43 a 5.88,5.88 0 1 1 5.88,-5.88 5.89,5.89 0 0 1 -5.88,5.88 z"
-       id="path335"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,124.09 a 4.47,4.47 0 1 1 -4.47,4.46 4.46,4.46 0 0 1 4.47,-4.46 m 0,-2.84 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path337"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="128.55"
-       r="5.0999999"
-       id="circle339" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="128"
-       width="0.69999999"
-       height="1.2"
-       id="rect341" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,129.74 68.19,127.47 66.43,127.47 66.43,129.74 "
-       id="polygon343" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="128"
-       width="0.69999999"
-       height="1.2"
-       id="rect345" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,129.74 47.82,127.47 46.05,127.47 46.05,129.74 "
-       id="polygon347" />
-    <path
-       class="cls-19"
-       d="M 57.12,109 A 11.2,11.2 0 1 1 68.31,97.8 11.21,11.21 0 0 1 57.12,109 Z"
-       id="path349"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-9)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="M 57.12,86.74 A 11.06,11.06 0 1 1 46.06,97.8 11.07,11.07 0 0 1 57.12,86.74 m 0,-0.28 A 11.34,11.34 0 1 0 68.45,97.8 11.33,11.33 0 0 0 57.12,86.46 Z"
-       id="path351"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 57.12,106.16 a 8.37,8.37 0 1 1 8.36,-8.36 8.37,8.37 0 0 1 -8.36,8.36 z"
-       id="path353"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 57.12,89.57 a 8.23,8.23 0 1 1 -8.22,8.23 8.23,8.23 0 0 1 8.22,-8.23 m 0,-0.28 a 8.51,8.51 0 1 0 8.5,8.51 8.51,8.51 0 0 0 -8.5,-8.51 z"
-       id="path355"
-       inkscape:connector-curvature="0" />
-    <path
-       d="M 57.12,103.68 A 5.89,5.89 0 1 1 63,97.8 a 5.89,5.89 0 0 1 -5.88,5.88 z"
-       id="path357"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 57.12,93.33 a 4.47,4.47 0 1 1 -4.47,4.47 4.47,4.47 0 0 1 4.47,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.29,7.29 0 0 0 -7.3,-7.3 z"
-       id="path359"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="57.119999"
-       cy="97.800003"
-       r="5.0999999"
-       id="circle361" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="66.959999"
-       y="97.25"
-       width="0.69999999"
-       height="1.2"
-       id="rect363" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="68.19,98.98 68.19,96.71 66.43,96.71 66.43,98.98 "
-       id="polygon365" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="46.59"
-       y="97.25"
-       width="0.69999999"
-       height="1.2"
-       id="rect367" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="47.82,98.98 47.82,96.71 46.05,96.71 46.05,98.98 "
-       id="polygon369" />
-    <path
-       class="cls-20"
-       d="m 29.28,324.28 a 11.2,11.2 0 1 1 11.2,-11.19 11.2,11.2 0 0 1 -11.2,11.19 z"
-       id="path371"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-10)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,302 a 11.06,11.06 0 1 1 -11,11.06 11.07,11.07 0 0 1 11,-11.06 m 0,-0.28 a 11.34,11.34 0 1 0 11.34,11.34 11.33,11.33 0 0 0 -11.34,-11.34 z"
-       id="path373"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="313.09"
-       r="8.3599997"
-       id="circle375" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,304.87 a 8.22,8.22 0 1 1 -8.22,8.22 8.22,8.22 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.51,8.51 8.51,8.51 0 0 0 -8.51,-8.51 z"
-       id="path377"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 29.28,319 a 5.89,5.89 0 1 1 5.89,-5.88 5.89,5.89 0 0 1 -5.89,5.88 z"
-       id="path379"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,308.62 a 4.47,4.47 0 1 1 -4.46,4.47 4.47,4.47 0 0 1 4.46,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path381"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="313.09"
-       r="5.0999999"
-       id="circle383" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="312.54001"
-       width="0.69999999"
-       height="1.2"
-       id="rect385" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,314.27 40.36,312 38.6,312 38.6,314.27 "
-       id="polygon387" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="312.54001"
-       width="0.69999999"
-       height="1.2"
-       id="rect389" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,314.27 19.98,312 18.22,312 18.22,314.27 "
-       id="polygon391" />
-    <path
-       class="cls-21"
-       d="m 29.28,293.53 a 11.2,11.2 0 1 1 11.2,-11.2 11.21,11.21 0 0 1 -11.2,11.2 z"
-       id="path393"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-11)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,271.28 a 11.06,11.06 0 1 1 -11,11.05 11.06,11.06 0 0 1 11.05,-11.05 m 0,-0.29 A 11.34,11.34 0 1 0 40.67,282.33 11.34,11.34 0 0 0 29.28,271 Z"
-       id="path395"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="282.32999"
-       r="8.3599997"
-       id="circle397" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,274.11 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.5,8.5 0 1 0 8.51,8.5 8.5,8.5 0 0 0 -8.51,-8.5 z"
-       id="path399"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 29.28,288.21 a 5.88,5.88 0 1 1 5.89,-5.88 5.89,5.89 0 0 1 -5.89,5.88 z"
-       id="path401"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,277.87 a 4.47,4.47 0 1 1 -4.46,4.46 4.47,4.47 0 0 1 4.46,-4.46 m 0,-2.84 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path403"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="282.32999"
-       r="5.0999999"
-       id="circle405" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="281.78"
-       width="0.69999999"
-       height="1.2"
-       id="rect407" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,283.52 40.36,281.25 38.6,281.25 38.6,283.52 "
-       id="polygon409" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="281.78"
-       width="0.69999999"
-       height="1.2"
-       id="rect411" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,283.52 19.98,281.25 18.22,281.25 18.22,283.52 "
-       id="polygon413" />
-    <path
-       class="cls-22"
-       d="m 29.28,262.77 a 11.2,11.2 0 1 1 11.2,-11.19 11.2,11.2 0 0 1 -11.2,11.19 z"
-       id="path415"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-12)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,240.52 a 11.06,11.06 0 1 1 -11,11 11.07,11.07 0 0 1 11.05,-11 m 0,-0.28 a 11.34,11.34 0 1 0 11.34,11.33 11.33,11.33 0 0 0 -11.34,-11.33 z"
-       id="path417"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="251.58"
-       r="8.3599997"
-       id="circle419" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,243.35 a 8.23,8.23 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.51,8.51 0 1 0 8.51,8.5 8.51,8.51 0 0 0 -8.51,-8.5 z"
-       id="path421"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 29.28,257.46 a 5.89,5.89 0 1 1 5.89,-5.88 5.89,5.89 0 0 1 -5.89,5.88 z"
-       id="path423"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,247.11 a 4.47,4.47 0 1 1 -4.46,4.46 4.47,4.47 0 0 1 4.46,-4.46 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.29 7.29,7.29 0 0 0 -7.3,-7.29 z"
-       id="path425"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="251.57001"
-       r="5.0999999"
-       id="circle427" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="251.03"
-       width="0.69999999"
-       height="1.2"
-       id="rect429" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,252.76 40.36,250.49 38.6,250.49 38.6,252.76 "
-       id="polygon431" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="251.03"
-       width="0.69999999"
-       height="1.2"
-       id="rect433" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,252.76 19.98,250.49 18.22,250.49 18.22,252.76 "
-       id="polygon435" />
-    <path
-       class="cls-23"
-       d="M 29.28,232 A 11.2,11.2 0 1 1 40.48,220.8 11.21,11.21 0 0 1 29.28,232 Z"
-       id="path437"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-13)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,209.76 a 11.06,11.06 0 1 1 -11,11.06 11.07,11.07 0 0 1 11.05,-11.06 m 0,-0.28 a 11.34,11.34 0 1 0 11.34,11.34 11.34,11.34 0 0 0 -11.34,-11.34 z"
-       id="path439"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="220.82001"
-       r="8.3599997"
-       id="circle441" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,212.6 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.51,8.51 8.51,8.51 0 0 0 -8.51,-8.51 z"
-       id="path443"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 29.28,226.7 a 5.88,5.88 0 1 1 5.89,-5.88 5.89,5.89 0 0 1 -5.89,5.88 z"
-       id="path445"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,216.35 a 4.47,4.47 0 1 1 -4.46,4.47 4.47,4.47 0 0 1 4.46,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path447"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="220.82001"
-       r="5.0999999"
-       id="circle449" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="220.27"
-       width="0.69999999"
-       height="1.2"
-       id="rect451" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,222 40.36,219.74 38.6,219.74 38.6,222 "
-       id="polygon453" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="220.27"
-       width="0.69999999"
-       height="1.2"
-       id="rect455" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,222 19.98,219.74 18.22,219.74 18.22,222 "
-       id="polygon457" />
-    <path
-       class="cls-24"
-       d="m 29.28,201.26 a 11.2,11.2 0 1 1 11.2,-11.2 11.21,11.21 0 0 1 -11.2,11.2 z"
-       id="path459"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-14)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,179 a 11.06,11.06 0 1 1 -11,11.05 11.07,11.07 0 0 1 11,-11.05 m 0,-0.29 a 11.34,11.34 0 1 0 11.34,11.34 11.34,11.34 0 0 0 -11.34,-11.34 z"
-       id="path461"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#1e1e1e"
-       class="cls-10"
-       d="m 29.28,198.43 a 8.37,8.37 0 1 1 8.37,-8.37 8.38,8.38 0 0 1 -8.37,8.37 z"
-       id="path463"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,181.84 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.51,8.51 0 1 0 8.51,8.5 8.51,8.51 0 0 0 -8.51,-8.5 z"
-       id="path465"
-       inkscape:connector-curvature="0" />
-    <path
-       d="m 29.28,196 a 5.89,5.89 0 1 1 5.89,-5.89 5.89,5.89 0 0 1 -5.89,5.89 z"
-       id="path467"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,185.6 a 4.47,4.47 0 1 1 -4.46,4.46 4.47,4.47 0 0 1 4.46,-4.46 m 0,-2.84 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path469"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="190.06"
-       r="5.0999999"
-       id="circle471" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="189.50999"
-       width="0.69999999"
-       height="1.2"
-       id="rect473" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,191.25 40.36,188.98 38.6,188.98 38.6,191.25 "
-       id="polygon475" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="189.50999"
-       width="0.69999999"
-       height="1.2"
-       id="rect477" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,191.25 19.98,188.98 18.22,188.98 18.22,191.25 "
-       id="polygon479" />
-    <path
-       class="cls-25"
-       d="m 29.28,170.5 a 11.2,11.2 0 1 1 11.2,-11.19 11.2,11.2 0 0 1 -11.2,11.19 z"
-       id="path481"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-15)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,148.25 a 11.06,11.06 0 1 1 -11,11.06 11.07,11.07 0 0 1 11.05,-11.06 m 0,-0.28 A 11.34,11.34 0 1 0 40.67,159.31 11.33,11.33 0 0 0 29.28,148 Z"
-       id="path483"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="159.31"
-       r="8.3599997"
-       id="circle485" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,151.09 a 8.22,8.22 0 1 1 -8.22,8.22 8.22,8.22 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.51,8.51 8.51,8.51 0 0 0 -8.51,-8.51 z"
-       id="path487"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="159.31"
-       r="5.8800001"
-       id="circle489" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,154.84 a 4.47,4.47 0 1 1 -4.46,4.47 4.47,4.47 0 0 1 4.46,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path491"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="159.31"
-       r="5.0999999"
-       id="circle493" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="158.75999"
-       width="0.69999999"
-       height="1.2"
-       id="rect495" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,160.49 40.36,158.22 38.6,158.22 38.6,160.49 "
-       id="polygon497" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="158.75999"
-       width="0.69999999"
-       height="1.2"
-       id="rect499" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,160.49 19.98,158.22 18.22,158.22 18.22,160.49 "
-       id="polygon501" />
-    <path
-       class="cls-26"
-       d="m 29.28,139.75 a 11.2,11.2 0 1 1 11.2,-11.2 11.21,11.21 0 0 1 -11.2,11.2 z"
-       id="path503"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-16)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,117.5 a 11.06,11.06 0 1 1 -11,11.05 11.07,11.07 0 0 1 11,-11.05 m 0,-0.29 a 11.34,11.34 0 1 0 11.34,11.34 11.34,11.34 0 0 0 -11.34,-11.34 z"
-       id="path505"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="128.55"
-       r="8.3599997"
-       id="circle507" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,120.33 a 8.22,8.22 0 1 1 -8.22,8.22 8.23,8.23 0 0 1 8.22,-8.22 m 0,-0.28 a 8.51,8.51 0 1 0 8.51,8.5 8.5,8.5 0 0 0 -8.51,-8.5 z"
-       id="path509"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="128.55"
-       r="5.8800001"
-       id="circle511" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,124.09 a 4.47,4.47 0 1 1 -4.46,4.46 4.47,4.47 0 0 1 4.46,-4.46 m 0,-2.84 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path513"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="128.55"
-       r="5.0999999"
-       id="circle515" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="128"
-       width="0.69999999"
-       height="1.2"
-       id="rect517" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,129.74 40.36,127.47 38.6,127.47 38.6,129.74 "
-       id="polygon519" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="128"
-       width="0.69999999"
-       height="1.2"
-       id="rect521" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,129.74 19.98,127.47 18.22,127.47 18.22,129.74 "
-       id="polygon523" />
-    <path
-       class="cls-27"
-       d="M 29.28,109 A 11.2,11.2 0 1 1 40.48,97.8 11.2,11.2 0 0 1 29.28,109 Z"
-       id="path525"
-       inkscape:connector-curvature="0"
-       style="fill:url(#linear-gradient-17)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="m 29.28,86.74 a 11.06,11.06 0 1 1 -11,11.06 11.07,11.07 0 0 1 11,-11.06 m 0,-0.28 A 11.34,11.34 0 1 0 40.62,97.8 11.33,11.33 0 0 0 29.28,86.46 Z"
-       id="path527"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="29.280001"
-       cy="97.800003"
-       r="8.3599997"
-       id="circle529" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 29.28,89.57 a 8.23,8.23 0 1 1 -8.22,8.23 8.23,8.23 0 0 1 8.22,-8.23 m 0,-0.28 a 8.51,8.51 0 1 0 8.51,8.51 8.51,8.51 0 0 0 -8.51,-8.51 z"
-       id="path531"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="97.800003"
-       r="5.8800001"
-       id="circle533" />
-    <path
-       style="fill:#646464"
-       class="cls-12"
-       d="m 29.28,93.33 a 4.47,4.47 0 1 1 -4.46,4.47 4.47,4.47 0 0 1 4.46,-4.47 m 0,-2.83 a 7.3,7.3 0 1 0 7.3,7.3 7.3,7.3 0 0 0 -7.3,-7.3 z"
-       id="path535"
-       inkscape:connector-curvature="0" />
-    <circle
-       cx="29.280001"
-       cy="97.800003"
-       r="5.0999999"
-       id="circle537" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="39.130001"
-       y="97.25"
-       width="0.69999999"
-       height="1.2"
-       id="rect539" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="40.36,98.98 40.36,96.71 38.6,96.71 38.6,98.98 "
-       id="polygon541" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="18.76"
-       y="97.25"
-       width="0.69999999"
-       height="1.2"
-       id="rect543" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="19.98,98.98 19.98,96.71 18.22,96.71 18.22,98.98 "
-       id="polygon545" />
   </g>
   <g
      id="Poly_Jacks"

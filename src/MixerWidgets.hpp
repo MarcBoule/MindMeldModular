@@ -742,7 +742,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 
 	EditableDisplayBase() {
 		box.size = Vec(38, 16);
-		textOffset = Vec(2.6f, -2.2f);
+		textOffset = Vec(2.4f, -2.2f);
 		text = "-00-";
 	};
 	
