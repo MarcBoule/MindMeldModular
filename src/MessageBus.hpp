@@ -55,8 +55,8 @@ class MessageBus {
 	}
 
 	Message<T>* receive(std::string id) {// id of sender, not receiver. caller must delete returned value when non null
-		//std::lock_guard<std::mutex> lock(memberMutex);
-		std::unique_lock<std::mutex> lock(memberMutex, std::try_to_lock);
+		std::lock_guard<std::mutex> lock(memberMutex);
+		//std::unique_lock<std::mutex> lock(memberMutex, std::try_to_lock);
 		Message<T> *message = NULL;
 		
 		if (members[id]) {

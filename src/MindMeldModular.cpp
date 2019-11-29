@@ -9,11 +9,10 @@
 
 
 Plugin *pluginInstance;
-// MessageBus<Payload> *messages;
+MessageBus<MixerPayload> mixerMessages;
 
 void init(rack::Plugin *p) {
 	pluginInstance = p;
-	// messages = new MessageBus<Payload>();
 
 	p->addModel(modelMixMasterJr);
 	p->addModel(modelAuxExpanderJr);

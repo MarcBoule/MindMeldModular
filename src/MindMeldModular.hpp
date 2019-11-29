@@ -20,11 +20,15 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
-// struct Payload {
-  // float values[8];
-// };
+struct MixerPayload {
+	int numTracks;// can be 8 or 16
+	int numGroups;// can be 2 or 4
+	int numAuxs;// can be 0 when no auxspander connected to the given mixmaster 
+	char trkGrpAuxNames[24 * 4];// room for maximum 16 tracks, 4 groups, 4 aux
+	char masterName[6];
+};
 
-// extern MessageBus<Payload> *messages;
+extern MessageBus<MixerPayload> mixerMessages;
 
 
 // All modules that are part of pluginInstance go here

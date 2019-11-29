@@ -137,6 +137,24 @@ void step() override {
 				groupDisplays[grp]->text = std::string(&(module->trackLabels[(N_TRK + grp) * 4]), 4);
 			}
 			module->updateTrackLabelRequest = 0;// all done pulling
+			
+			// Mixer Messages
+			Message<MixerPayload> *message = new Message<MixerPayload>();
+			if (message != NULL) {
+				// prepare payload
+				message->value.numTracks = N_TRK;
+				message->value.numGroups = N_GRP;
+				message->value.numGroups = module->auxExpanderPresent ? 4 : 0;
+				for (int i = 0; i < 6; i++) {
+					message->value.masterName[i] = module->master.masterLabel[i];
+				}			
+				memcpy(message->value.trkGrpAuxNames, module->trackLabels, (N_TRK + N_GRP) * 4);
+				// TODO: must get aux names from auxspander
+				// prepare message
+				message->id = module->busId;
+				// send message
+				mixerMessages.send(module->busId, message);
+			}
 		}
 		
 		// Borders

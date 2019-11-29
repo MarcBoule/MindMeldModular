@@ -102,7 +102,7 @@ struct MixMaster : Module {
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
-	// std::string busId;
+	std::string busId;
 	
 		
 	MixMaster() {
@@ -172,12 +172,12 @@ struct MixMaster : Module {
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
 		
-		// busId = messages->registerMember();
+		busId = mixerMessages.registerMember();
 	}
   
-	// ~MixMaster() {
-		// messages->deregisterMember(busId);
-	// }
+	~MixMaster() {
+		mixerMessages.deregisterMember(busId);
+	}
 
 	
 	void onReset() override {
@@ -347,13 +347,6 @@ struct MixMaster : Module {
 			}
 			
 			processMuteSoloCvTriggers();
-			
-			// Message bus test
-			// Message<Payload> *message = messages->receive("1");	
-			// if (message != NULL) {
-				// params[TRACK_PAN_PARAMS + 0].setValue(message->value.values[0]);
-				// delete message;
-			// }
 		}// userInputs refresh
 		
 		

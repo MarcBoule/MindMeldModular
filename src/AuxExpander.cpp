@@ -54,7 +54,7 @@ struct AuxExpander : Module {
 	
 
 	// Expander
-	float leftMessages[2][Intf::AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in Mixer.hpp
+	float leftMessages[2][Intf::AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in MixerCommon.hpp
 
 
 	// Constants
