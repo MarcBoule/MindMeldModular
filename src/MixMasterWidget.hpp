@@ -148,8 +148,9 @@ void step() override {
 				for (int i = 0; i < 6; i++) {
 					message->value.masterName[i] = module->master.masterLabel[i];
 				}			
-				memcpy(message->value.trkGrpAuxNames, module->trackLabels, (N_TRK + N_GRP) * 4);
-				// TODO: must get aux names from auxspander
+				memcpy(message->value.trackNames, module->trackLabels, N_TRK * 4);
+				memcpy(message->value.groupNames, &(module->trackLabels[N_TRK * 4]), N_GRP * 4);
+				memcpy(message->value.auxNames, module->auxLabels, 4 * 4);
 				// prepare message
 				message->id = module->busId;
 				// send message

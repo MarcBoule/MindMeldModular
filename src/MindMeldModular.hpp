@@ -24,7 +24,9 @@ struct MixerPayload {
 	int numTracks;// can be 8 or 16
 	int numGroups;// can be 2 or 4
 	int numAuxs;// can be 0 when no auxspander connected to the given mixmaster 
-	char trkGrpAuxNames[24 * 4];// room for maximum 16 tracks, 4 groups, 4 aux
+	char trackNames[16 * 4];
+	char groupNames[4 * 4];
+	char auxNames[4 * 4];
 	char masterName[6];
 };
 

@@ -101,9 +101,9 @@ struct MixMaster : Module {
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
+	alignas(4) char auxLabels[4 * 4 + 1];
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
 	std::string busId;
-	
 		
 	MixMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -155,6 +155,10 @@ struct MixMaster : Module {
 		// Mono
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "MASTER: mono");
 		
+
+		directOutsModeLocalAux.cc1 = 0;
+		stereoPanModeLocalAux.cc1 = 0;
+		snprintf(auxLabels, 16, "AUXAAUXBAUXCAUXD");
 
 		gInfo.construct(&params[0], values20);
 		for (int i = 0; i < N_TRK; i++) {
@@ -314,9 +318,15 @@ struct MixMaster : Module {
 			int value20i = clamp((int)(messagesFromExpander[Intf::MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
 			values20[value20i] = messagesFromExpander[Intf::MFA_VALUE20];
 			
-			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
-			memcpy(&directOutsModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_DIR_OUTS], 4);
-			memcpy(&stereoPanModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_STEREO_PANS], 4);
+			// Slow values from expander
+			uint32_t* mfaUpdateSlow = (uint32_t*)(&messagesFromExpander[Intf::MFA_UPDATE_SLOW]);
+			if (*mfaUpdateSlow != 0) {
+				// Direct outs and Stereo pan for each aux
+				memcpy(&directOutsModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_DIR_OUTS], 4);
+				memcpy(&stereoPanModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_STEREO_PANS], 4);
+				// Aux labels
+				memcpy(&auxLabels, &messagesFromExpander[Intf::AFM_AUX_NAMES], 4 * 4);
+			}
 		}
 		else {
 			muteTrackWhenSoloAuxRetSlewer.reset();
@@ -435,9 +445,7 @@ struct MixMaster : Module {
 
 		//********** Lights **********
 		
-		bool slowExpander = false;		
 		if (refresh.processLights()) {
-			slowExpander = true;
 			for (int i = 0; i < N_TRK; i++) {
 				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
 				lights[TRACK_LPF_LIGHTS + i].setBrightness(tracks[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
@@ -453,11 +461,11 @@ struct MixMaster : Module {
 			
 			// Slow
 			
-			uint32_t* updateSlow = (uint32_t*)(&messageToExpander[Intf::AFM_UPDATE_SLOW]);
-			*updateSlow = 0;
-			if (slowExpander) {
+			uint32_t* afmUpdateSlow = (uint32_t*)(&messageToExpander[Intf::AFM_UPDATE_SLOW]);
+			*afmUpdateSlow = 0;
+			if (refresh.refreshCounter == 0) {
 				// Track names
-				*updateSlow = 1;
+				*afmUpdateSlow = 1;
 				memcpy(&messageToExpander[Intf::AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
 				// Panel theme
 				int32_t tmp = panelTheme;

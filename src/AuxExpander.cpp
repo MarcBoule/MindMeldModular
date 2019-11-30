@@ -384,8 +384,8 @@ struct AuxExpander : Module {
 			// ***********
 			
 			// Slow values from mother
-			uint32_t* updateSlow = (uint32_t*)(&messagesFromMother[Intf::AFM_UPDATE_SLOW]);
-			if (*updateSlow != 0) {
+			uint32_t* afmUpdateSlow = (uint32_t*)(&messagesFromMother[Intf::AFM_UPDATE_SLOW]);
+			if (*afmUpdateSlow != 0) {
 				// Track labels
 				memcpy(trackLabels, &messagesFromMother[Intf::AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
 				updateTrackLabelRequest = 1;
@@ -561,9 +561,16 @@ struct AuxExpander : Module {
 				messagesToMother[Intf::MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
 			}
 			
-			// Direct outs and Stereo pan for each aux (could be SLOW but not worth setting up for just two floats)
-			memcpy(&messagesToMother[Intf::MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
-			memcpy(&messagesToMother[Intf::MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
+			uint32_t* mfaUpdateSlow = (uint32_t*)(&messagesToMother[Intf::MFA_UPDATE_SLOW]);
+			*mfaUpdateSlow = 0;
+			if (refresh.refreshCounter == 0) {
+				*mfaUpdateSlow = 1;
+				// Direct outs and Stereo pan for each aux
+				memcpy(&messagesToMother[Intf::MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
+				memcpy(&messagesToMother[Intf::MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
+				// Aux labels
+				memcpy(&messagesToMother[Intf::AFM_AUX_NAMES], &auxLabels, 4 * 4);
+			}
 			
 			// aux return pan
 			for (int i = 0; i < 4; i++) {
