@@ -9,7 +9,7 @@
 
 
 Plugin *pluginInstance;
-MessageBus<MixerPayload> mixerMessageBus;
+MessageBus<MixerMessage> mixerMessageBus;
 
 void init(rack::Plugin *p) {
 	pluginInstance = p;

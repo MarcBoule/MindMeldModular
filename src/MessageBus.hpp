@@ -18,99 +18,71 @@
 #include <unordered_map>
 #include <cstdint>
 
-template <typename T>
-struct Message {
-	std::string id;
-	T value;
+struct MessageBase {
+	int id;
+	char name[6];
 };
 
+
 template <typename T>
-class MessageBus {
+struct MessageBus {
 	std::mutex memberMutex;
-	std::unordered_map<std::string, Message<T> *> memberData;
-	std::unordered_map<std::string, bool> members;
-	// this would be better handled with a uuid
-	uint64_t busId = 0;
+	std::unordered_map<int, T> memberData;
+	std::unordered_map<int, bool> members;
+	int busId = 0;
 
-	public:
-	
-	MessageBus<T>() { }
 
-	void send(std::string id, Message<T> *message) {// id of sender
+	void send(T* message) {// id of sender is included in message, this method will delete the given message after copying it
 		std::lock_guard<std::mutex> lock(memberMutex);
-
-		if (members[id]) {
-			if (memberData[id]) {
-				Message<T> *old = memberData[id];
-				memberData.erase(id);
-
-				delete old;
-			}
-
-			memberData[id] = message;
+		if (members[message->id]) {
+			memberData[message->id] = *message;
 		} 
-		// else {
-			// fprintf(stderr, "Unknown member sent data to the MessageBus: %s\n", id.c_str());
-		// }
+		delete message;
 	}
 
-	Message<T>* receive(std::string id) {// id of sender, not receiver. caller must delete returned value when non null
+
+	void receive(T* message) {// id of sender we want to receive from must be in message->id, other fields will be filled by this method as the receive mechanism
 		std::lock_guard<std::mutex> lock(memberMutex);
-		//std::unique_lock<std::mutex> lock(memberMutex, std::try_to_lock);
-		Message<T> *message = NULL;
-		
-		if (members[id]) {
-			if (memberData[id]) {
-				message = memberData[id];
-				memberData.erase(id);
-			}
-		} 
-		// else {
-			// fprintf(stderr, "Tried to read data from unknown member from the MessageBus : %s\n", id.c_str());
-		// }
-		
-		return message;
+		if (members[message->id]) {
+			*message = memberData[message->id];
+		} 	
 	}
 
-	std::vector<T> *currentValues() {
-		std::vector<T> *data = new std::vector<T>();
 
+	std::vector<MessageBase>* surveyValues() {// caller must delete returned value when non null. Does not use type T since don't want all the data, just the header info (id and name)
 		std::lock_guard<std::mutex> lock(memberMutex);
 
+		std::vector<MessageBase> *data = new std::vector<MessageBase>();
 		for (const auto &e : memberData) {
-			Message<T> *message = (Message<T> *) e.second;
-			data->push_back(message->value);
+			MessageBase newMessage;
+			newMessage.id = e.second.id;
+			for (int i = 0; i < 6; i++) {
+				newMessage.name[i] = e.second.name[i];
+			}
+			data->push_back(newMessage);
 		}
 
 		return data;
 	}
 
-	std::string registerMember() {
+
+	int registerMember() {
 		std::lock_guard<std::mutex> lock(memberMutex);
 
-		std::string id = std::to_string(busId);
+		int newId = busId;
 		busId++;
-
-		members[id] = true;
-
-		return id;
+		members[newId] = true;
+		return newId;
 	}
 
-	void deregisterMember(std::string id) {
+
+	void deregisterMember(int id) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 
 		if (members[id]) {
-			if (memberData[id]) {
-				Message<T> *old = memberData[id];
-				delete old;
-				memberData.erase(id);
-			}
-
 			members.erase(id);
+			memberData.erase(id);
 		} 
-		// else {
-			// fprintf(stderr, "Unknown member tried to deregister: %s\n", id.c_str());
-		// }
 	}
 };
 

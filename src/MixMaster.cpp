@@ -103,7 +103,7 @@ struct MixMaster : Module {
 	PackedBytes4 stereoPanModeLocalAux;
 	alignas(4) char auxLabels[4 * 4 + 1];
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
-	std::string busId;
+	int busId;
 		
 	MixMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
