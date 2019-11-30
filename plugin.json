@@ -54,6 +54,13 @@
 			"description": "8-track stereo splitter for MixMaster",
 			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
 			"tags": ["Polyphonic", "Utility"]
+		},
+		{
+			"slug": "LabelTester",
+			"name": "LabelTester",
+			"description": "Development test module for reading MixMaster labels",
+			"manualUrl": "",
+			"tags": ["Blank"]
 		}
 	]
 }

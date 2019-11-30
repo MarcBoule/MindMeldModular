@@ -30,7 +30,7 @@ struct MixerPayload {
 	char masterName[6];
 };
 
-extern MessageBus<MixerPayload> mixerMessages;
+extern MessageBus<MixerPayload> mixerMessageBus;
 
 
 // All modules that are part of pluginInstance go here
@@ -40,6 +40,7 @@ extern Model *modelMixMaster;
 extern Model *modelAuxExpander;
 extern Model *modelMeld;
 extern Model *modelUnmeld;
+extern Model *modelLabelTester;
 
 
 

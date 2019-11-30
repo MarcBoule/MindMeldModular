@@ -137,25 +137,6 @@ void step() override {
 				groupDisplays[grp]->text = std::string(&(module->trackLabels[(N_TRK + grp) * 4]), 4);
 			}
 			module->updateTrackLabelRequest = 0;// all done pulling
-			
-			// Mixer Messages
-			Message<MixerPayload> *message = new Message<MixerPayload>();
-			if (message != NULL) {
-				// prepare payload
-				message->value.numTracks = N_TRK;
-				message->value.numGroups = N_GRP;
-				message->value.numGroups = module->auxExpanderPresent ? 4 : 0;
-				for (int i = 0; i < 6; i++) {
-					message->value.masterName[i] = module->master.masterLabel[i];
-				}			
-				memcpy(message->value.trackNames, module->trackLabels, N_TRK * 4);
-				memcpy(message->value.groupNames, &(module->trackLabels[N_TRK * 4]), N_GRP * 4);
-				memcpy(message->value.auxNames, module->auxLabels, 4 * 4);
-				// prepare message
-				message->id = module->busId;
-				// send message
-				mixerMessages.send(module->busId, message);
-			}
 		}
 		
 		// Borders
@@ -173,7 +154,7 @@ void step() override {
 			((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 		}
 		
-		// Update param tooltips at 1Hz
+		// Update param tooltips and message bus at 1Hz
 		time_t currentTime = time(0);
 		if (currentTime != oldTime) {
 			oldTime = currentTime;
@@ -240,6 +221,25 @@ void step() override {
 			// Mono
 			snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
 			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
+
+			// Mixer Messages
+			Message<MixerPayload> *message = new Message<MixerPayload>();
+			if (message != NULL) {
+				// prepare payload
+				message->value.numTracks = N_TRK;
+				message->value.numGroups = N_GRP;
+				message->value.numGroups = module->auxExpanderPresent ? 4 : 0;
+				for (int i = 0; i < 6; i++) {
+					message->value.masterName[i] = module->master.masterLabel[i];
+				}			
+				memcpy(message->value.trackNames, module->trackLabels, N_TRK * 4);
+				memcpy(message->value.groupNames, &(module->trackLabels[N_TRK * 4]), N_GRP * 4);
+				memcpy(message->value.auxNames, module->auxLabels, 4 * 4);
+				// prepare message
+				message->id = module->busId;
+				// send message
+				mixerMessageBus.send(module->busId, message);
+			}
 		}
 	}			
 	

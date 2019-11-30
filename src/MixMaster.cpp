@@ -176,11 +176,11 @@ struct MixMaster : Module {
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
 		
-		busId = mixerMessages.registerMember();
+		busId = mixerMessageBus.registerMember();
 	}
   
 	~MixMaster() {
-		mixerMessages.deregisterMember(busId);
+		mixerMessageBus.deregisterMember(busId);
 	}
 
 	
