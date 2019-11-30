@@ -28,24 +28,19 @@ template <typename T>
 struct MessageBus {
 	std::mutex memberMutex;
 	std::unordered_map<int, T> memberData;
-	std::unordered_map<int, bool> members;
-	int busId = 0;
+	int busId = 1;// 0 is reserved for no data (unseen member)
 
 
-	void send(T* message) {// id of sender is included in message, this method will delete the given message after copying it
+	void send(T* message) {// id of sender is included in message
 		std::lock_guard<std::mutex> lock(memberMutex);
-		if (members[message->id]) {
-			memberData[message->id] = *message;
-		} 
-		delete message;
+		memberData[message->id] = *message;
 	}
 
 
-	void receive(T* message) {// id of sender we want to receive from must be in message->id, other fields will be filled by this method as the receive mechanism
+	void receive(T* message) {// id of sender we want to receive from must be in message->id, other fields will be filled by this method as the receive mechanism. If non-existing sender is requested, a blank message with an id of 0 will be returned
 		std::lock_guard<std::mutex> lock(memberMutex);
-		if (members[message->id]) {
-			*message = memberData[message->id];
-		} 	
+		int id = message->id;
+		*message = memberData[id];
 	}
 
 
@@ -54,12 +49,12 @@ struct MessageBus {
 
 		std::vector<MessageBase> *data = new std::vector<MessageBase>();
 		for (const auto &e : memberData) {
-			MessageBase newMessage;
-			newMessage.id = e.second.id;
-			for (int i = 0; i < 6; i++) {
-				newMessage.name[i] = e.second.name[i];
+			if (e.second.id != 0) {
+				MessageBase newMessage;
+				newMessage.id = e.second.id;
+				memcpy(newMessage.name, e.second.name, 6);
+				data->push_back(newMessage);
 			}
-			data->push_back(newMessage);
 		}
 
 		return data;
@@ -68,21 +63,15 @@ struct MessageBus {
 
 	int registerMember() {
 		std::lock_guard<std::mutex> lock(memberMutex);
-
 		int newId = busId;
 		busId++;
-		members[newId] = true;
 		return newId;
 	}
 
 
 	void deregisterMember(int id) {
 		std::lock_guard<std::mutex> lock(memberMutex);
-
-		if (members[id]) {
-			members.erase(id);
-			memberData.erase(id);
-		} 
+		memberData.erase(id);
 	}
 };
 

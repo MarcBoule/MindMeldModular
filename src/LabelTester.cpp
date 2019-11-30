@@ -117,6 +117,12 @@ struct LabelTesterWidget : ModuleWidget {
 				std::vector<MessageBase>* mixerMessageSurvey = mixerMessageBus.surveyValues();
 				for (MessageBase pl : *mixerMessageSurvey) {
 					INFO("id_%i: master label = %s", pl.id, std::string(&(pl.name[0]), 6).c_str());
+					MixerMessage message;
+					message.id = pl.id;
+					mixerMessageBus.receive(&message);
+					if (message.id != 0) {
+						INFO("  track 0 label = %s", std::string(&(message.trackNames[0]), 4).c_str());
+					}
 				}
 				delete mixerMessageSurvey;
 			}

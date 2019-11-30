@@ -223,21 +223,17 @@ void step() override {
 			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
 
 			// Mixer Messages
-			MixerMessage *message = new MixerMessage();// deleted by mixerMessageBus.send()
-			if (message != NULL) {
-				message->id = module->busId;
-				message->numTracks = N_TRK;
-				message->numGroups = N_GRP;
-				message->numGroups = module->auxExpanderPresent ? 4 : 0;
-				for (int i = 0; i < 6; i++) {
-					message->name[i] = module->master.masterLabel[i];
-				}			
-				memcpy(message->trackNames, module->trackLabels, N_TRK * 4);
-				memcpy(message->groupNames, &(module->trackLabels[N_TRK * 4]), N_GRP * 4);
-				memcpy(message->auxNames, module->auxLabels, 4 * 4);
-				// send message
-				mixerMessageBus.send(message);
-			}
+			MixerMessage message;
+			message.id = module->busId;
+			memcpy(message.name, module->master.masterLabel, 6);	
+			message.numTracks = N_TRK;
+			message.numGroups = N_GRP;
+			message.numAuxs = module->auxExpanderPresent ? 4 : 0;
+			memcpy(message.trackNames, module->trackLabels, N_TRK * 4);
+			memcpy(message.groupNames, &(module->trackLabels[N_TRK * 4]), N_GRP * 4);
+			memcpy(message.auxNames, module->auxLabels, 4 * 4);
+			// send message
+			mixerMessageBus.send(&message);
 		}
 	}			
 	
