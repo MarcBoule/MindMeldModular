@@ -56,11 +56,11 @@
 			"tags": ["Polyphonic", "Utility"]
 		},
 		{
-			"slug": "LabelTester",
-			"name": "LabelTester",
-			"description": "Development test module for reading MixMaster labels",
+			"slug": "EqMaster",
+			"name": "EqMaster",
+			"description": "24-track EQ for MixMaster and MixMasterJr",
 			"manualUrl": "",
-			"tags": ["Blank"]
+			"tags": ["Equalizer"]
 		}
 	]
 }

@@ -222,18 +222,8 @@ void step() override {
 			snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
 			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
 
-			// Mixer Messages
-			MixerMessage message;
-			message.id = module->busId;
-			memcpy(message.name, module->master.masterLabel, 6);	
-			message.numTracks = N_TRK;
-			message.numGroups = N_GRP;
-			message.numAuxs = module->auxExpanderPresent ? 4 : 0;
-			memcpy(message.trackNames, module->trackLabels, N_TRK * 4);
-			memcpy(message.groupNames, &(module->trackLabels[N_TRK * 4]), N_GRP * 4);
-			memcpy(message.auxNames, module->auxLabels, 4 * 4);
-			// send message
-			mixerMessageBus.send(&message);
+			// Mixer Message Bus (for EQ and others)
+			mixerMessageBus.send(module->busId, N_TRK < 16, module->master.masterLabel, module->trackLabels, &(module->trackLabels[N_TRK * 4]), module->auxLabels);
 		}
 	}			
 	

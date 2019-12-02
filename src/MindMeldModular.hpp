@@ -12,7 +12,7 @@
 #include "rack.hpp"
 #include "comp/DynamicComponents.hpp"
 #include "comp/GenericComponents.hpp"
-#include "MessageBus.hpp"
+#include "MixerMessageBus.hpp"
 
 using namespace rack;
 
@@ -20,16 +20,8 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
-struct MixerMessage : MessageBase {
-	int numTracks;// can be 8 or 16
-	int numGroups;// can be 2 or 4
-	int numAuxs;// can be 0 when no auxspander connected to the given mixmaster 
-	char trackNames[16 * 4];
-	char groupNames[4 * 4];
-	char auxNames[4 * 4];
-};
 
-extern MessageBus<MixerMessage> mixerMessageBus;
+extern MixerMessageBus mixerMessageBus;
 
 
 // All modules that are part of pluginInstance go here
@@ -39,7 +31,7 @@ extern Model *modelMixMaster;
 extern Model *modelAuxExpander;
 extern Model *modelMeld;
 extern Model *modelUnmeld;
-extern Model *modelLabelTester;
+extern Model *modelEqMaster;
 
 
 

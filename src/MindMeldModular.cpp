@@ -9,7 +9,7 @@
 
 
 Plugin *pluginInstance;
-MessageBus<MixerMessage> mixerMessageBus;
+MixerMessageBus mixerMessageBus;
 
 void init(rack::Plugin *p) {
 	pluginInstance = p;
@@ -20,7 +20,7 @@ void init(rack::Plugin *p) {
 	p->addModel(modelAuxExpander);
 	p->addModel(modelMeld);
 	p->addModel(modelUnmeld);
-	p->addModel(modelLabelTester);
+	p->addModel(modelEqMaster);
 }
 
 

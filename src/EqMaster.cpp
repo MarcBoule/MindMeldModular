@@ -1,5 +1,5 @@
 //***********************************************************************************************
-//Mixer module for VCV Rack by Steve Baker and Marc Boulé 
+//EQ module for VCV Rack by Steve Baker and Marc Boulé 
 //
 //Based on code from the Fundamental plugin by Andrew Belt 
 //See ./LICENSE.md for all licenses
@@ -9,9 +9,10 @@
 #include "MindMeldModular.hpp"
 
 
-struct LabelTester : Module {
+struct EqMaster : Module {
 	
 	enum ParamIds {
+		TRACK_PARAM,// always have 1-8, 9-16 and 17-24 are added when input cables are present.
 		NUM_PARAMS
 	};
 	
@@ -36,7 +37,8 @@ struct LabelTester : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
-	// none
+	int mappedId;// 0 means manual
+	char trkGrpAuxLabels[(16 + 4 + 4) * 4];// needs to be saved in case we are detached
 	
 	// No need to save, with reset
 	// none
@@ -45,7 +47,7 @@ struct LabelTester : Module {
 	RefreshCounter refresh;	
 	
 	
-	LabelTester() {
+	EqMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
 		onReset();
@@ -96,10 +98,10 @@ struct LabelTester : Module {
 //-----------------------------------------------------------------------------
 
 
-struct LabelTesterWidget : ModuleWidget {
+struct EqMasterWidget : ModuleWidget {
 	time_t oldTime = 0;
 	
-	LabelTesterWidget(LabelTester *module) {
+	EqMasterWidget(EqMaster *module) {
 		setModule(module);
 
 		// Main panels from Inkscape
@@ -121,7 +123,7 @@ struct LabelTesterWidget : ModuleWidget {
 					message.id = pl.id;
 					mixerMessageBus.receive(&message);
 					if (message.id != 0) {
-						INFO("  track 0 label = %s", std::string(&(message.trackNames[0]), 4).c_str());
+						INFO("  track 0 label = %s", std::string(&(message.trkGrpAuxLabels[0]), 4).c_str());
 					}
 				}
 				delete mixerMessageSurvey;
@@ -132,4 +134,4 @@ struct LabelTesterWidget : ModuleWidget {
 };
 
 
-Model *modelLabelTester = createModel<LabelTester, LabelTesterWidget>("LabelTester");
+Model *modelEqMaster = createModel<EqMaster, EqMasterWidget>("EqMaster");
