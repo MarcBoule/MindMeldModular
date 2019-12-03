@@ -256,13 +256,22 @@ struct DynKnob : DynamicSVGKnob {
 		shadow->opacity = 0.0;
 	}
 };
+struct DynSnapKnob : DynKnob {
+	DynSnapKnob() {
+		snap = true;
+	}
+};
 struct DynSmallKnobGrey : DynKnob {
 	DynSmallKnobGrey() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-
+struct DynSnapKnobGrey : DynSnapKnob {
+	DynSnapKnobGrey() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
+	}
+};
 
 struct DynSmallFader : DynamicSVGSlider {
 	DynSmallFader() {

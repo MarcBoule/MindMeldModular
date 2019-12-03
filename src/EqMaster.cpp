@@ -12,7 +12,7 @@
 struct EqMaster : Module {
 	
 	enum ParamIds {
-		TRACK_PARAM,// always have 1-8, 9-16 and 17-24 are added when input cables are present.
+		TRACK_PARAM,// always have 1-8, but 9-16 and 17-24 are only added when input cables are present.
 		NUM_PARAMS
 	};
 	
@@ -38,10 +38,10 @@ struct EqMaster : Module {
 	
 	// Need to save, with reset
 	int mappedId;// 0 means manual
-	char trkGrpAuxLabels[(16 + 4 + 4) * 4];// needs to be saved in case we are detached
+	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
 	
 	// No need to save, with reset
-	// none
+	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -50,15 +50,23 @@ struct EqMaster : Module {
 	EqMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
+		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 1.0f);
+		
 		onReset();
 		
 		panelTheme = 0;
 	}
   
 	void onReset() override {
-		resetNonJson(false);
+		mappedId = 0;
+		for (int trk = 0; trk < 24; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		}
+		
+		resetNonJson();
 	}
-	void resetNonJson(bool recurseNonJson) {
+	void resetNonJson() {
+		updateTrackLabelRequest = 1;
 	}
 
 
@@ -72,6 +80,12 @@ struct EqMaster : Module {
 		// panelTheme
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 				
+		// mappedId
+		json_object_set_new(rootJ, "mappedId", json_integer(mappedId));
+				
+		// trackLabels
+		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
+		
 		return rootJ;
 	}
 
@@ -82,7 +96,18 @@ struct EqMaster : Module {
 		if (panelThemeJ)
 			panelTheme = json_integer_value(panelThemeJ);
 
-		resetNonJson(true);	}
+		// mappedId
+		json_t *mappedIdJ = json_object_get(rootJ, "mappedId");
+		if (mappedIdJ)
+			mappedId = json_integer_value(mappedIdJ);
+
+		// trackLabels
+		json_t *textJ = json_object_get(rootJ, "trackLabels");
+		if (textJ)
+			snprintf(trackLabels, 24 * 4 + 1, "%s", json_string_value(textJ));
+
+		resetNonJson();
+	}
 
 
 	void onSampleRateChange() override {
@@ -106,6 +131,14 @@ struct EqMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/labeltester.svg")));
+		
+		// Track label
+		
+		
+		// Track knob
+		addParam(createDynamicParamCentered<DynSnapKnobGrey>(mm2px(Vec(60, 60)), module, EqMaster::TRACK_PARAM, module ? &module->panelTheme : NULL));
+		
+		
 		
 
 	}
