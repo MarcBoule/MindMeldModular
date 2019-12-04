@@ -9,7 +9,8 @@
 #ifndef MMM_EQMENUS_HPP
 #define MMM_EQMENUS_HPP
 
-#include "MindMeldModular.hpp"
+
+#include "EqMasterCommon.hpp"
 
 
 // Module's context menu

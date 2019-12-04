@@ -68,6 +68,7 @@ struct TrackLabel : LedDisplayChoice {
 
 
 // Knobs and buttons
+// --------------------
 
 struct TrackKnob : DynSnapKnob {
 	int* updateTrackLabelRequestSrc = NULL;
@@ -82,5 +83,33 @@ struct TrackKnob : DynSnapKnob {
 		DynSnapKnob::onChange(e);
 	}
 };
+
+struct ActiveSwitch : MmSwitch {
+	Param* trackParamSrc;
+	TrackSettings* trackSettingsSrc;
+
+	void onChange(const event::Change& e) override {
+		MmSwitch::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackSettingsSrc[currTrk].active = paramQuantity->getValue() > 0.5f;
+		}
+	}
+};
+
+struct EqFreqKnob : DynSmallKnobGrey {
+	Param* trackParamSrc;
+	TrackSettings* trackSettingsSrc;
+	int eqNum;// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
+
+	void onChange(const event::Change& e) override {
+		DynSmallKnobGrey::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackSettingsSrc[currTrk].freq[eqNum] = paramQuantity->getValue();
+		}
+	}
+};
+
 
 #endif

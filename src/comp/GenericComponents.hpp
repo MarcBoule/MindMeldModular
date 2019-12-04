@@ -23,9 +23,12 @@ extern Plugin *pluginInstance;
 
 // Variations on existing knobs, lights, etc
 
-// Screws
-
-// none
+struct MmSwitch : app::SvgSwitch {
+	MmSwitch() {
+		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/CKSS_0.svg")));// TODO add new MindMeld graphics
+		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/CKSS_1.svg")));// TODO add new MindMeld graphics
+	}
+};
 
 
 
