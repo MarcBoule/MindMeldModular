@@ -36,18 +36,21 @@ struct MixerMessageBus {
 	int busId = 1;// 0 is reserved for no data (unseen member)
 
 
-	void send(int id, bool isJr, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels) {
+	void send(int id, char* masterLabel, char* trackLabels, char* auxLabels) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
-		memcpy(memberData[id].trkGrpAuxLabels, trackLabels, (isJr ? 8 : 16) * 4);
-		if (isJr) {
-			snprintf(&memberData[id].trkGrpAuxLabels[8 * 4], 8 * 4, "-09--10--11--12--13--14--15--16-");
-		}
-		memcpy(&memberData[id].trkGrpAuxLabels[16 * 4], groupLabels, (isJr ? 2 : 4) * 4);
-		if (isJr) {
-			snprintf(&memberData[id].trkGrpAuxLabels[(16 + 2) * 4], 2 * 4, "GRP3GRP4");
-		}
+		memberData[id].isJr = false;
+		memcpy(memberData[id].trkGrpAuxLabels, trackLabels, (16 + 4) * 4);// grabs groups also since contiguous
+		memcpy(&memberData[id].trkGrpAuxLabels[(16 + 4) * 4], auxLabels, 4 * 4);
+	}
+	void sendJr(int id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels) {// does not write to tracks 9-16 and groups 3-4 when jr.
+		std::lock_guard<std::mutex> lock(memberMutex);
+		memberData[id].id = id;
+		memcpy(memberData[id].name, masterLabel, 6);
+		memberData[id].isJr = true;
+		memcpy(memberData[id].trkGrpAuxLabels, trackLabels, 8 * 4);
+		memcpy(&memberData[id].trkGrpAuxLabels[16 * 4], groupLabels, 2 * 4);
 		memcpy(&memberData[id].trkGrpAuxLabels[(16 + 4) * 4], auxLabels, 4 * 4);
 	}
 

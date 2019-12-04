@@ -158,7 +158,7 @@ struct MixMaster : Module {
 
 		directOutsModeLocalAux.cc1 = 0;
 		stereoPanModeLocalAux.cc1 = 0;
-		snprintf(auxLabels, 16, "AUXAAUXBAUXCAUXD");
+		snprintf(auxLabels, 16 + 1, "AUXAAUXBAUXCAUXD");
 
 		gInfo.construct(&params[0], values20);
 		for (int i = 0; i < N_TRK; i++) {
