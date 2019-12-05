@@ -223,12 +223,7 @@ void step() override {
 			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
 
 			// Mixer Message Bus (for EQ and others)
-			if (N_TRK < 16) {
-				mixerMessageBus.sendJr(module->busId, module->master.masterLabel, module->trackLabels, &(module->trackLabels[N_TRK * 4]), module->auxLabels);
-			}
-			else {
-				mixerMessageBus.send(module->busId, module->master.masterLabel, module->trackLabels, module->auxLabels);
-			}
+			module->sendToMessageBus();
 		}
 	}			
 	

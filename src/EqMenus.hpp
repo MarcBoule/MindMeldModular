@@ -38,7 +38,8 @@ struct FetchLabelsItem : MenuItem {
 
 		std::vector<MessageBase>* mixerMessageSurvey = mixerMessageBus.surveyValues();
 		for (MessageBase pl : *mixerMessageSurvey) {
-			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(std::string(&(pl.name[0]), 6) + string::f(" (id %i)", pl.id), CHECKMARK(*mappedIdSrc == pl.id));
+			std::string mixerName = std::string(pl.name) + string::f("  (id %d)", pl.id);
+			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(*mappedIdSrc == pl.id));
 			idItem->mappedIdSrc = mappedIdSrc;
 			idItem->setId = pl.id;
 			menu->addChild(idItem);

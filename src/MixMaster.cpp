@@ -103,7 +103,18 @@ struct MixMaster : Module {
 	PackedBytes4 stereoPanModeLocalAux;
 	alignas(4) char auxLabels[4 * 4 + 1];
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
-	int busId;
+		
+		
+	void sendToMessageBus() { 
+		if (N_TRK < 16) {
+			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels);
+		}
+		else {
+			mixerMessageBus.send(id + 1, master.masterLabel, trackLabels, auxLabels);
+		}
+	}
+	
+		
 		
 	MixMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
@@ -175,12 +186,13 @@ struct MixMaster : Module {
 		onReset();
 
 		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
-		
-		busId = mixerMessageBus.registerMember();
+		sendToMessageBus();// register by just writing data
 	}
   
 	~MixMaster() {
-		mixerMessageBus.deregisterMember(busId);
+		if (id > -1) {
+			mixerMessageBus.deregisterMember(id + 1);
+		}
 	}
 
 	
@@ -1051,6 +1063,7 @@ struct MixMasterWidget : ModuleWidget {
 			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
 			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+			masterDisplay->idSrc = &(module->id);
 		}
 		
 		// Master fader
@@ -1326,6 +1339,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
 			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+			masterDisplay->idSrc = &(module->id);
 		}
 		
 		// Master fader

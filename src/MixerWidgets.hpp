@@ -830,6 +830,7 @@ struct MasterDisplay : EditableDisplayBase {
 	float* dimGain;
 	char* masterLabel;
 	float* dimGainIntegerDB;
+	int* idSrc;
 	
 	MasterDisplay() {
 		numChars = 6;
@@ -844,7 +845,7 @@ struct MasterDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Master settings: " + std::string(masterLabel, 6);
+			mastSetLabel->text = "Master settings: " + std::string(masterLabel) + string::f("  (id %d)", *idSrc + 1);
 			menu->addChild(mastSetLabel);
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);

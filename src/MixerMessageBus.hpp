@@ -21,7 +21,7 @@
 
 struct MessageBase {
 	int id;
-	char name[6];
+	char name[7] = {0};
 };
 
 struct MixerMessage : MessageBase {
@@ -32,8 +32,7 @@ struct MixerMessage : MessageBase {
 
 struct MixerMessageBus {
 	std::mutex memberMutex;
-	std::unordered_map<int, MixerMessage> memberData;
-	int busId = 1;// 0 is reserved for no data (unseen member)
+	std::unordered_map<int, MixerMessage> memberData;// first value is a "Module::id + 1" (so that 0 = deregistered, instead of -1)
 
 
 	void send(int id, char* masterLabel, char* trackLabels, char* auxLabels) {
@@ -77,15 +76,6 @@ struct MixerMessageBus {
 
 		return data;
 	}
-
-
-	int registerMember() {
-		std::lock_guard<std::mutex> lock(memberMutex);
-		int newId = busId;
-		busId++;
-		return newId;
-	}
-
 
 	void deregisterMember(int id) {
 		std::lock_guard<std::mutex> lock(memberMutex);

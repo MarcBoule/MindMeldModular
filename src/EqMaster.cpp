@@ -406,14 +406,20 @@ struct EqMasterWidget : ModuleWidget {
 					MixerMessage message;
 					message.id = module->mappedId;
 					mixerMessageBus.receive(&message);
-					if (message.isJr) {
-						module->initTrackLabels();// need this since message.trkGrpAuxLabels is not completely filled
-						memcpy(module->trackLabels, message.trkGrpAuxLabels, 8 * 4);
-						memcpy(&(module->trackLabels[16 * 4]), &(message.trkGrpAuxLabels[16 * 4]), 2 * 4);
-						memcpy(&(module->trackLabels[(16 + 4) * 4]), &(message.trkGrpAuxLabels[(16 + 4) * 4]), 4 * 4);
+					if (message.id == 0) {// if deregistered
+						module->initTrackLabels();
+						module->mappedId = 0;
 					}
 					else {
-						memcpy(module->trackLabels, message.trkGrpAuxLabels, 24 * 4);
+						if (message.isJr) {
+							module->initTrackLabels();// need this since message.trkGrpAuxLabels is not completely filled
+							memcpy(module->trackLabels, message.trkGrpAuxLabels, 8 * 4);
+							memcpy(&(module->trackLabels[16 * 4]), &(message.trkGrpAuxLabels[16 * 4]), 2 * 4);
+							memcpy(&(module->trackLabels[(16 + 4) * 4]), &(message.trkGrpAuxLabels[(16 + 4) * 4]), 4 * 4);
+						}
+						else {
+							memcpy(module->trackLabels, message.trkGrpAuxLabels, 24 * 4);
+						}
 					}
 				}
 				module->updateTrackLabelRequest = 1;
