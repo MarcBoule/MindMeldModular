@@ -13,6 +13,7 @@
 #include "dsp/QuattroBiQuad.hpp"
 #include "dsp/VuMeterAll.hpp"
 
+
 static const bool DEFAULT_active = false;
 static const bool DEFAULT_freqActive = false;
 static const float DEFAULT_freq = 0.5f;
@@ -32,18 +33,20 @@ class TrackEq {
 	bool highBP;// HF is band pass/cut when true (false is HPF)
 	// don't forget to also update to/from Json when adding to this struct
 	
+	QuattroBiQuad eqs[2];
+	
 	public:
 	
 	void init() {
-		active = DEFAULT_active;
+		setActive(DEFAULT_active);
 		for (int i = 0; i < 4; i++) {
-			freqActive[i] = DEFAULT_freqActive;
-			freq[i] = DEFAULT_freq;
-			gain[i] = DEFAULT_gain;
-			q[i] = DEFAULT_q;
+			setFreqActive(i, DEFAULT_freqActive);
+			setFreq(i, DEFAULT_freq);
+			setGain(i, DEFAULT_gain);
+			setQ(i, DEFAULT_q);
 		}
-		lowBP = DEFAULT_lowBP;
-		highBP = DEFAULT_highBP;
+		setLowBP(DEFAULT_lowBP);
+		setHighBP(DEFAULT_highBP);
 	}
 	
 	bool getActive() {return active;}
