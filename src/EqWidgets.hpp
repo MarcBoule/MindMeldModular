@@ -56,6 +56,7 @@ struct TrackLabel : LedDisplayChoice {
 				TrackSelectItem *tsItem = createMenuItem<TrackSelectItem>(std::string(&(trackLabelsSrc[i * 4]), 4), CHECKMARK(i == currTrk));
 				tsItem->trackParamSrc = trackParamSrc;
 				tsItem->trackNumber = i;
+				tsItem->disabled = i == currTrk;
 				menu->addChild(tsItem);
 			}
 			
@@ -86,27 +87,27 @@ struct TrackKnob : DynSnapKnob {
 
 struct ActiveSwitch : MmSwitch {
 	Param* trackParamSrc;
-	TrackSettings* trackSettingsSrc;
+	TrackEq* trackEqsSrc;
 
 	void onChange(const event::Change& e) override {
 		MmSwitch::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackSettingsSrc[currTrk].active = paramQuantity->getValue() > 0.5f;
+			trackEqsSrc[currTrk].setActive(paramQuantity->getValue() > 0.5f);
 		}
 	}
 };
 
 struct EqFreqKnob : DynSmallKnobGrey {
 	Param* trackParamSrc;
-	TrackSettings* trackSettingsSrc;
+	TrackEq* trackEqsSrc;
 	int eqNum;// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
 
 	void onChange(const event::Change& e) override {
 		DynSmallKnobGrey::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackSettingsSrc[currTrk].freq[eqNum] = paramQuantity->getValue();
+			trackEqsSrc[currTrk].setFreq(eqNum, paramQuantity->getValue());
 		}
 	}
 };

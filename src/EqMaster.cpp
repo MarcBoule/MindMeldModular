@@ -48,7 +48,7 @@ struct EqMaster : Module {
 	// Need to save, with reset
 	int mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
-	TrackSettings trackSettings[24];
+	TrackEq trackEqs[24];
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -71,16 +71,19 @@ struct EqMaster : Module {
 	EqMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
+		// Track knob
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
-		configParam(ACTIVE_PARAM, 0.0f, 1.0f, 0.0f, "Active");
+		
+		// Track settings
+		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Active");
 		for (int i = 0; i < 4; i++) {
-			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, 0.0f, "FreqActive");
-			configParam(FREQ_PARAMS + i, 0.0f, 1.0f, 0.5f, "Freq");
-			configParam(GAIN_PARAMS + i, 0.0f, 1.0f, 0.5f, "Gain");
-			configParam(Q_PARAMS + i, 0.0f, 1.0f, 0.5f, "Q");
+			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_freqActive ? 1.0f : 0.0f, "FreqActive");
+			configParam(FREQ_PARAMS + i, 0.0f, 1.0f, DEFAULT_freq, "Freq");
+			configParam(GAIN_PARAMS + i, 0.0f, 1.0f, DEFAULT_gain, "Gain");
+			configParam(Q_PARAMS + i, 0.0f, 1.0f, DEFAULT_q, "Q");
 		}
-		configParam(LOW_BP_PARAM, 0.0f, 1.0f, 0.0f, "Low is band pass");
-		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, 0.0f, "High is band pass");
+		configParam(LOW_BP_PARAM, 0.0f, 1.0f, DEFAULT_lowBP ? 1.0f : 0.0f, "Low is band pass");
+		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, DEFAULT_highBP ? 1.0f : 0.0f, "High is band pass");
 		
 		onReset();
 		
@@ -91,7 +94,7 @@ struct EqMaster : Module {
 		mappedId = 0;
 		initTrackLabels();
 		for (int t = 0; t < 24; t++) {
-			trackSettings[t].init();
+			trackEqs[t].init();
 		}
 		resetNonJson();
 	}
@@ -116,13 +119,13 @@ struct EqMaster : Module {
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 		
-		// trackSettings
+		// trackEqs
 		// -------------
 		
 		// active
 		json_t *activeJ = json_array();
 		for (int t = 0; t < 24; t++) {
-			json_array_insert_new(activeJ, t, json_boolean(trackSettings[t].active));
+			json_array_insert_new(activeJ, t, json_boolean(trackEqs[t].getActive()));
 		}
 		json_object_set_new(rootJ, "active", activeJ);		
 		
@@ -130,7 +133,7 @@ struct EqMaster : Module {
 		json_t *freqActiveJ = json_array();
 		for (int t = 0; t < 24; t++) {
 			for (int f = 0; f < 4; f++) {
-				json_array_insert_new(freqActiveJ, (t << 2) | f, json_boolean(trackSettings[t].freqActive[f]));
+				json_array_insert_new(freqActiveJ, (t << 2) | f, json_boolean(trackEqs[t].getFreqActive(f)));
 			}
 		}
 		json_object_set_new(rootJ, "freqActive", freqActiveJ);		
@@ -139,7 +142,7 @@ struct EqMaster : Module {
 		json_t *freqJ = json_array();
 		for (int t = 0; t < 24; t++) {
 			for (int f = 0; f < 4; f++) {
-				json_array_insert_new(freqJ, (t << 2) | f, json_real(trackSettings[t].freq[f]));
+				json_array_insert_new(freqJ, (t << 2) | f, json_real(trackEqs[t].getFreq(f)));
 			}
 		}
 		json_object_set_new(rootJ, "freq", freqJ);		
@@ -148,7 +151,7 @@ struct EqMaster : Module {
 		json_t *gainJ = json_array();
 		for (int t = 0; t < 24; t++) {
 			for (int f = 0; f < 4; f++) {
-				json_array_insert_new(gainJ, (t << 2) | f, json_real(trackSettings[t].gain[f]));
+				json_array_insert_new(gainJ, (t << 2) | f, json_real(trackEqs[t].getGain(f)));
 			}
 		}
 		json_object_set_new(rootJ, "gain", gainJ);		
@@ -157,7 +160,7 @@ struct EqMaster : Module {
 		json_t *qJ = json_array();
 		for (int t = 0; t < 24; t++) {
 			for (int f = 0; f < 4; f++) {
-				json_array_insert_new(qJ, (t << 2) | f, json_real(trackSettings[t].q[f]));
+				json_array_insert_new(qJ, (t << 2) | f, json_real(trackEqs[t].getQ(f)));
 			}
 		}
 		json_object_set_new(rootJ, "q", qJ);		
@@ -165,14 +168,14 @@ struct EqMaster : Module {
 		// lowBP
 		json_t *lowBPJ = json_array();
 		for (int t = 0; t < 24; t++) {
-			json_array_insert_new(lowBPJ, t, json_boolean(trackSettings[t].lowBP));
+			json_array_insert_new(lowBPJ, t, json_boolean(trackEqs[t].getLowBP()));
 		}
 		json_object_set_new(rootJ, "lowBP", lowBPJ);		
 		
 		// highBP
 		json_t *highBPJ = json_array();
 		for (int t = 0; t < 24; t++) {
-			json_array_insert_new(highBPJ, t, json_boolean(trackSettings[t].highBP));
+			json_array_insert_new(highBPJ, t, json_boolean(trackEqs[t].getHighBP()));
 		}
 		json_object_set_new(rootJ, "highBP", highBPJ);		
 				
@@ -198,7 +201,7 @@ struct EqMaster : Module {
 		if (textJ)
 			snprintf(trackLabels, 24 * 4 + 1, "%s", json_string_value(textJ));
 
-		// trackSettings
+		// trackEqs
 		// -------------
 
 		// active
@@ -207,7 +210,7 @@ struct EqMaster : Module {
 			for (int t = 0; t < 24; t++) {
 				json_t *activeArrayJ = json_array_get(activeJ, t);
 				if (activeArrayJ)
-					trackSettings[t].active = json_is_true(activeArrayJ);
+					trackEqs[t].setActive(json_is_true(activeArrayJ));
 			}
 		}
 
@@ -218,7 +221,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *freqActiveArrayJ = json_array_get(freqActiveJ, (t << 2) | f);
 					if (freqActiveArrayJ)
-						trackSettings[t].freqActive[f] = json_is_true(freqActiveArrayJ);
+						trackEqs[t].setFreqActive(f, json_is_true(freqActiveArrayJ));
 				}
 			}
 		}
@@ -230,7 +233,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *freqArrayJ = json_array_get(freqJ, (t << 2) | f);
 					if (freqArrayJ)
-						trackSettings[t].freq[f] = json_number_value(freqArrayJ);
+						trackEqs[t].setFreq(f, json_number_value(freqArrayJ));
 				}
 			}
 		}
@@ -242,7 +245,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *gainArrayJ = json_array_get(gainJ, (t << 2) | f);
 					if (gainArrayJ)
-						trackSettings[t].gain[f] = json_number_value(gainArrayJ);
+						trackEqs[t].setGain(f, json_number_value(gainArrayJ));
 				}
 			}
 		}
@@ -254,7 +257,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *qArrayJ = json_array_get(qJ, (t << 2) | f);
 					if (qArrayJ)
-						trackSettings[t].q[f] = json_number_value(qArrayJ);
+						trackEqs[t].setQ(f, json_number_value(qArrayJ));
 				}
 			}
 		}
@@ -265,7 +268,7 @@ struct EqMaster : Module {
 			for (int t = 0; t < 24; t++) {
 				json_t *lowBPArrayJ = json_array_get(lowBPJ, t);
 				if (lowBPArrayJ)
-					trackSettings[t].lowBP = json_is_true(lowBPArrayJ);
+					trackEqs[t].setLowBP(json_is_true(lowBPArrayJ));
 			}
 		}
 
@@ -275,7 +278,7 @@ struct EqMaster : Module {
 			for (int t = 0; t < 24; t++) {
 				json_t *highBPArrayJ = json_array_get(highBPJ, t);
 				if (highBPArrayJ)
-					trackSettings[t].highBP = json_is_true(highBPArrayJ);
+					trackEqs[t].setHighBP(json_is_true(highBPArrayJ));
 			}
 		}
 
@@ -350,7 +353,7 @@ struct EqMasterWidget : ModuleWidget {
 		addParam(activeSwitch = createParamCentered<ActiveSwitch>(mm2px(Vec(leftX, 40.0f)), module, EqMaster::ACTIVE_PARAM));
 		if (module) {
 			activeSwitch->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
-			activeSwitch->trackSettingsSrc = module->trackSettings;
+			activeSwitch->trackEqsSrc = module->trackEqs;
 		}
 		// Signal inputs
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, 60.0f)), true, module, EqMaster::SIG_INPUTS + 0, module ? &module->panelTheme : NULL));		
@@ -371,7 +374,7 @@ struct EqMasterWidget : ModuleWidget {
 			addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(ctrlX + ctrlDX * c, 100.0f)), module, EqMaster::Q_PARAMS + c, module ? &module->panelTheme : NULL));
 			if (module) {
 				freqKnob->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
-				freqKnob->trackSettingsSrc = module->trackSettings;
+				freqKnob->trackEqsSrc = module->trackEqs;
 				freqKnob->eqNum = c;
 			}
 		}
@@ -407,8 +410,9 @@ struct EqMasterWidget : ModuleWidget {
 					message.id = module->mappedId;
 					mixerMessageBus.receive(&message);
 					if (message.id == 0) {// if deregistered
-						module->initTrackLabels();
-						module->mappedId = 0;
+						// do nothing! since it may be possible that the eq is loaded and step executes before the mixer modules are finished loading
+						// module->initTrackLabels();
+						// module->mappedId = 0;
 					}
 					else {
 						if (message.isJr) {
@@ -434,9 +438,9 @@ struct EqMasterWidget : ModuleWidget {
 			}
 
 			if (oldSelectedTrack != trk) {// update controls when user selects another track
-				module->params[EqMaster::ACTIVE_PARAM].setValue(module->trackSettings[trk].active ? 1.0f : 0.0f);
+				module->params[EqMaster::ACTIVE_PARAM].setValue(module->trackEqs[trk].getActive() ? 1.0f : 0.0f);
 				for (int c = 0; c < 4; c++) {
-					module->params[EqMaster::FREQ_PARAMS + c].setValue(module->trackSettings[trk].freq[c]);
+					module->params[EqMaster::FREQ_PARAMS + c].setValue(module->trackEqs[trk].getFreq(c));
 				}				
 				oldSelectedTrack = trk;
 			}

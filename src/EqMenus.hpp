@@ -35,9 +35,13 @@ struct FetchLabelsItem : MenuItem {
 		id0Item->setId = 0;
 		menu->addChild(id0Item);
 
-
+		bool sawMappedId = *mappedIdSrc == 0;
+		
 		std::vector<MessageBase>* mixerMessageSurvey = mixerMessageBus.surveyValues();
 		for (MessageBase pl : *mixerMessageSurvey) {
+			if (*mappedIdSrc == pl.id) {
+				sawMappedId = true;
+			}
 			std::string mixerName = std::string(pl.name) + string::f("  (id %d)", pl.id);
 			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(*mappedIdSrc == pl.id));
 			idItem->mappedIdSrc = mappedIdSrc;
@@ -45,6 +49,15 @@ struct FetchLabelsItem : MenuItem {
 			menu->addChild(idItem);
 		}
 		delete mixerMessageSurvey;
+		
+		if (!sawMappedId) {
+			std::string mixerName = std::string("[deleted]") + string::f("  (id %d)", *mappedIdSrc);
+			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(true));
+			idItem->mappedIdSrc = mappedIdSrc;
+			idItem->setId = *mappedIdSrc;
+			idItem->disabled = true;
+			menu->addChild(idItem);
+		}
 		
 		return menu;
 	}
