@@ -76,13 +76,13 @@ struct EqMaster : Module {
 		// Track settings
 		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Active");
 		for (int i = 0; i < 4; i++) {
-			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_freqActive ? 1.0f : 0.0f, "FreqActive");
+			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, "Band active");
 			configParam(FREQ_PARAMS + i, 0.0f, 1.0f, DEFAULT_freq, "Freq");
 			configParam(GAIN_PARAMS + i, 0.0f, 1.0f, DEFAULT_gain, "Gain");
 			configParam(Q_PARAMS + i, 0.0f, 1.0f, DEFAULT_q, "Q");
 		}
-		configParam(LOW_BP_PARAM, 0.0f, 1.0f, DEFAULT_lowBP ? 1.0f : 0.0f, "Low is band pass");
-		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, DEFAULT_highBP ? 1.0f : 0.0f, "High is band pass");
+		configParam(LOW_BP_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "Low is peak type");
+		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "High is peak type");
 		
 		onReset();
 		
@@ -128,14 +128,14 @@ struct EqMaster : Module {
 		}
 		json_object_set_new(rootJ, "active", activeJ);		
 		
-		// freqActive
-		json_t *freqActiveJ = json_array();
+		// bandActive
+		json_t *bandActiveJ = json_array();
 		for (int t = 0; t < 24; t++) {
 			for (int f = 0; f < 4; f++) {
-				json_array_insert_new(freqActiveJ, (t << 2) | f, json_boolean(trackEqs[t].getFreqActive(f)));
+				json_array_insert_new(bandActiveJ, (t << 2) | f, json_boolean(trackEqs[t].getBandActive(f)));
 			}
 		}
-		json_object_set_new(rootJ, "freqActive", freqActiveJ);		
+		json_object_set_new(rootJ, "bandActive", bandActiveJ);		
 		
 		// freq
 		json_t *freqJ = json_array();
@@ -164,19 +164,19 @@ struct EqMaster : Module {
 		}
 		json_object_set_new(rootJ, "q", qJ);		
 		
-		// lowBP
-		json_t *lowBPJ = json_array();
+		// lowPeak
+		json_t *lowPeakJ = json_array();
 		for (int t = 0; t < 24; t++) {
-			json_array_insert_new(lowBPJ, t, json_boolean(trackEqs[t].getLowBP()));
+			json_array_insert_new(lowPeakJ, t, json_boolean(trackEqs[t].getLowPeak()));
 		}
-		json_object_set_new(rootJ, "lowBP", lowBPJ);		
+		json_object_set_new(rootJ, "lowPeak", lowPeakJ);		
 		
-		// highBP
-		json_t *highBPJ = json_array();
+		// highPeak
+		json_t *highPeakJ = json_array();
 		for (int t = 0; t < 24; t++) {
-			json_array_insert_new(highBPJ, t, json_boolean(trackEqs[t].getHighBP()));
+			json_array_insert_new(highPeakJ, t, json_boolean(trackEqs[t].getHighPeak()));
 		}
-		json_object_set_new(rootJ, "highBP", highBPJ);		
+		json_object_set_new(rootJ, "highPeak", highPeakJ);		
 				
 		// -------------
 				
@@ -213,14 +213,14 @@ struct EqMaster : Module {
 			}
 		}
 
-		// freqActive
-		json_t *freqActiveJ = json_object_get(rootJ, "freqActive");
-		if (freqActiveJ) {
+		// bandActive
+		json_t *bandActiveJ = json_object_get(rootJ, "bandActive");
+		if (bandActiveJ) {
 			for (int t = 0; t < 24; t++) {
 				for (int f = 0; f < 4; f++) {
-					json_t *freqActiveArrayJ = json_array_get(freqActiveJ, (t << 2) | f);
-					if (freqActiveArrayJ)
-						trackEqs[t].setFreqActive(f, json_is_true(freqActiveArrayJ));
+					json_t *bandActiveArrayJ = json_array_get(bandActiveJ, (t << 2) | f);
+					if (bandActiveArrayJ)
+						trackEqs[t].setBandActive(f, json_is_true(bandActiveArrayJ));
 				}
 			}
 		}
@@ -261,23 +261,23 @@ struct EqMaster : Module {
 			}
 		}
 
-		// lowBP
-		json_t *lowBPJ = json_object_get(rootJ, "lowBP");
-		if (lowBPJ) {
+		// lowPeak
+		json_t *lowPeakJ = json_object_get(rootJ, "lowPeak");
+		if (lowPeakJ) {
 			for (int t = 0; t < 24; t++) {
-				json_t *lowBPArrayJ = json_array_get(lowBPJ, t);
-				if (lowBPArrayJ)
-					trackEqs[t].setLowBP(json_is_true(lowBPArrayJ));
+				json_t *lowPeakArrayJ = json_array_get(lowPeakJ, t);
+				if (lowPeakArrayJ)
+					trackEqs[t].setLowPeak(json_is_true(lowPeakArrayJ));
 			}
 		}
 
-		// highBP
-		json_t *highBPJ = json_object_get(rootJ, "highBP");
-		if (highBPJ) {
+		// highPeak
+		json_t *highPeakJ = json_object_get(rootJ, "highPeak");
+		if (highPeakJ) {
 			for (int t = 0; t < 24; t++) {
-				json_t *highBPArrayJ = json_array_get(highBPJ, t);
-				if (highBPArrayJ)
-					trackEqs[t].setHighBP(json_is_true(highBPArrayJ));
+				json_t *highPeakArrayJ = json_array_get(highPeakJ, t);
+				if (highPeakArrayJ)
+					trackEqs[t].setHighPeak(json_is_true(highPeakArrayJ));
 			}
 		}
 
