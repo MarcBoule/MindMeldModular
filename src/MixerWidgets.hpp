@@ -603,8 +603,8 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 		momentary = false;
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-on.svg")));
-		addFrameAlt(asset::plugin(pluginInstance, "res/comp/fade-off.svg"));
-		addFrameAlt(asset::plugin(pluginInstance, "res/comp/fade-on.svg"));
+		addFrameAlt(asset::plugin(pluginInstance, "res/comp/mixer/fade-off.svg"));
+		addFrameAlt(asset::plugin(pluginInstance, "res/comp/mixer/fade-on.svg"));
 		shadow->opacity = 0.0;
 	}
 };
@@ -696,7 +696,7 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 
 struct DynSmallKnobAuxAWithArc : DynKnobWithArc {
 	DynSmallKnobAuxAWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxA.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(219, 65, 85);
 		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
@@ -704,7 +704,7 @@ struct DynSmallKnobAuxAWithArc : DynKnobWithArc {
 };
 struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
 	DynSmallKnobAuxBWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxB.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(255, 127, 42);
 		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
@@ -712,7 +712,7 @@ struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
 };
 struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
 	DynSmallKnobAuxCWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxC.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(113, 160, 255);
 		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
@@ -720,7 +720,7 @@ struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
 };
 struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 	DynSmallKnobAuxDWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-auxD.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(163, 93, 209);
 		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);

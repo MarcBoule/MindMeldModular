@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
+   height="3.7mm"
+   width="3.7mm"
+   sodipodi:docname="shelf-off.svg"
+   id="svg370"
+   version="1.1"
+   viewBox="0 0 13.984253 13.984253">
+  <metadata
+     id="metadata374">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Asset 17</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     inkscape:current-layer="svg370"
+     inkscape:window-maximized="0"
+     inkscape:window-y="413"
+     inkscape:window-x="0"
+     inkscape:cy="5.2449999"
+     inkscape:cx="5.2449999"
+     inkscape:zoom="25.929457"
+     inkscape:document-units="mm"
+     units="mm"
+     showgrid="false"
+     id="namedview372"
+     inkscape:window-height="726"
+     inkscape:window-width="996"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     inkscape:document-rotation="0"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <defs
+     id="defs360">
+    <style
+       id="style358">.cls-1{fill:#666;}.cls-2{fill:#333;}</style>
+  </defs>
+  <title
+     id="title362">Asset 17</title>
+  <g
+     transform="scale(1.3343753)"
+     data-name="Layer 2"
+     id="Layer_2">
+    <g
+       data-name="EQ Shelf / Peak icons"
+       id="EQ_Shelf_Peak_icons">
+      <circle
+         id="circle364"
+         r="5.2399998"
+         cy="5.2399998"
+         cx="5.2399998"
+         class="cls-1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path366"
+         d="m 4.12,5.45 a 4.86,4.86 0 0 0 2,1.8 0.33,0.33 0 0 0 0.17,0 H 9 V 6.48 H 6.41 A 4,4 0 0 1 4.82,5 4.07,4.07 0 0 1 6.41,3.6 H 9 V 2.8 H 6.32 a 0.47,0.47 0 0 0 -0.17,0 4.87,4.87 0 0 0 -2,1.81 H 0.9 v 0.81 z"
+         class="cls-2" />
+    </g>
+  </g>
+</svg>

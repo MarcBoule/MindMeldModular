@@ -14,25 +14,28 @@
 #include "dsp/VuMeterAll.hpp"
 
 
-static const bool DEFAULT_active = false;
-static const bool DEFAULT_bandActive = false;
-static const float DEFAULT_freq = 0.1f;
-static const float DEFAULT_gain = 1.0f;
-static const float DEFAULT_q = 0.707f;
+static const bool DEFAULT_active = true;
+static const bool DEFAULT_bandActive = true;
+static const float DEFAULT_freq = 1000.0f;// Hz
+static const float DEFAULT_gain = 0.0f;// dB
+static const float DEFAULT_q = 1.0f;
 static const bool DEFAULT_lowPeak = false;
 static const bool DEFAULT_highPeak = false;
+static const float DEFAULT_trackGain = 1.0f;
 
 
 class TrackEq {
+	float sampleRate;
 	
 	// need saving
 	bool active;
 	bool bandActive[4];// frequency band's eq is active, one for LF, LMF, HMF, HF
-	float freq[4];
-	float gain[4];// linear gain, should be from 0.1 to 10 (-20dB to +20dB). gain = 10^(dB/20)
-	float q[4];// 0.5 to 15 ?
+	float freq[4];// in Hz to match params
+	float gain[4];// in dB to match params, is converted to linear before pushing params to eqs
+	float q[4];
 	bool lowPeak;// LF is peak when true (false is lowshelf)
 	bool highPeak;// HF is peak when true (false is highshelf)
+	float trackGain;
 
 	// dependants
 	QuattroBiQuad::Type bandTypes[4]; 
@@ -41,7 +44,9 @@ class TrackEq {
 	
 	public:
 	
-	void init() {
+	void init(float _sampleRate) {
+		sampleRate = _sampleRate;
+		
 		// need saving
 		setActive(DEFAULT_active);
 		for (int i = 0; i < 4; i++) {
@@ -52,6 +57,7 @@ class TrackEq {
 		}
 		setLowPeak(DEFAULT_lowPeak);
 		setHighPeak(DEFAULT_highPeak);
+		trackGain = DEFAULT_trackGain;
 		
 		// dependants
 		initBandTypes();
@@ -67,9 +73,16 @@ class TrackEq {
 	float getQ(int b) {return q[b];}
 	float getLowPeak() {return lowPeak;}
 	float getHighPeak() {return highPeak;}
+	float getTrackGain() {return trackGain;}
 	
-	void setActive(bool _active) {active = _active;}
-	void setBandActive(int b, bool _bandActive) {bandActive[b] = _bandActive;}
+	void setActive(bool _active) {
+		active = _active;
+		pushAllParametersToEqs();
+	}
+	void setBandActive(int b, bool _bandActive) {
+		bandActive[b] = _bandActive;
+		pushBandParametersToEqs(b);
+	}
 	void setFreq(int b, float _freq) {
 		freq[b] = _freq;
 		pushBandParametersToEqs(b);
@@ -92,7 +105,14 @@ class TrackEq {
 		setBand3Type();
 		pushBandParametersToEqs(3);
 	}
+	void setTrackGain(float _trackGain) {
+		trackGain = _trackGain;
+	}
 	
+	void updateSampleRate(float _sampleRate) {
+		sampleRate = _sampleRate;
+		pushAllParametersToEqs();
+	}		
 	float processL(float inL) {return eqs[0].process(inL);}
 	float processR(float inR) {return eqs[1].process(inR);}
 	
@@ -118,8 +138,10 @@ class TrackEq {
 		}
 	}
 	void pushBandParametersToEqs(int b) {
-		eqs[0].setParameters(bandTypes[b], b, freq[b], gain[b], q[b]);
-		eqs[1].setParameters(bandTypes[b], b, freq[b], gain[b], q[b]);
+		float linearGain = (active && bandActive[b]) ? std::pow(10.0f, gain[b] / 20.0f) : 1.0f;
+		float normalizedFreq = std::min(0.5f, freq[b] / sampleRate);
+		eqs[0].setParameters(bandTypes[b], b, normalizedFreq, linearGain, q[b]);
+		eqs[1].setParameters(bandTypes[b], b, normalizedFreq, linearGain, q[b]);
 	}
 };
 

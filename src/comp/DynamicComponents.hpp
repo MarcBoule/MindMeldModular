@@ -165,8 +165,8 @@ struct DynMuteButton : DynamicSVGSwitch {
 	
 	DynMuteButton() {
 		momentary = false;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-on.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
@@ -176,8 +176,8 @@ struct DynMuteButton : DynamicSVGSwitch {
 struct DynSoloButton : DynamicSVGSwitch {
 	DynSoloButton() {
 		momentary = false;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/solo-off.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/solo-on.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-on.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
@@ -188,8 +188,8 @@ struct DynSoloButton : DynamicSVGSwitch {
 struct DynDimButton : DynamicSVGSwitch {
 	DynDimButton() {
 		momentary = false;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dim-off.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dim-on.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-on.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
@@ -199,8 +199,8 @@ struct DynDimButton : DynamicSVGSwitch {
 struct DynMonoButton : DynamicSVGSwitch {
 	DynMonoButton() {
 		momentary = false;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mono-off.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mono-on.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-on.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
@@ -211,8 +211,8 @@ struct DynMonoButton : DynamicSVGSwitch {
 struct DynGroupMinusButton : DynamicSVGSwitch {
 	DynGroupMinusButton() {
 		momentary = true;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-minus.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-minus-active.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-minus.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-minus-active.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
@@ -222,8 +222,8 @@ struct DynGroupMinusButton : DynamicSVGSwitch {
 struct DynGroupPlusButton : DynamicSVGSwitch {
 	DynGroupPlusButton() {
 		momentary = true;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-plus.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/group-plus-active.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-plus.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-plus-active.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
@@ -261,19 +261,13 @@ struct DynSnapKnob : DynKnob {
 		snap = true;
 	}
 };
-struct DynSmallKnobGrey : DynKnob {
-	DynSmallKnobGrey() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
-	}
-};
 
 
 struct DynSmallFader : DynamicSVGSlider {
 	DynSmallFader() {
 		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
-		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel-bg.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel.svg")));
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel-bg.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel.svg")));
 		setupSlider();
 	}
 };
@@ -281,7 +275,7 @@ struct DynSmallFader : DynamicSVGSlider {
 struct DynSmallerFader : DynamicSVGSlider {
 	DynSmallerFader() {
 		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
-		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-aux-bg.svg")));
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-aux-bg.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-channel.svg")));
 		setupSlider();
 	}
@@ -290,8 +284,8 @@ struct DynSmallerFader : DynamicSVGSlider {
 struct DynBigFader : DynamicSVGSlider {
 	DynBigFader() {
 		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
-		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-master-bg.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/fader-master.svg")));
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-master-bg.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-master.svg")));
 		setupSlider();
 	}
 };

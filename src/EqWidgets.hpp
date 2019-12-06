@@ -75,13 +75,29 @@ struct TrackKnob : DynSnapKnob {
 	int* updateTrackLabelRequestSrc = NULL;
 	
 	TrackKnob() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/track-knob.svg")));
 	}
 	void onChange(const event::Change& e) override {
 		if (updateTrackLabelRequestSrc) {
 			*updateTrackLabelRequestSrc = 1;
 		}
 		DynSnapKnob::onChange(e);
+	}
+};
+
+struct TrackGainKnob : DynKnob {
+	Param* trackParamSrc;
+	TrackEq* trackEqsSrc;
+	
+	TrackGainKnob() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/gain-knob.svg")));
+	}
+	void onChange(const event::Change& e) override {
+		DynKnob::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue() > 0.5f);
+		}
 	}
 };
 
@@ -98,16 +114,63 @@ struct ActiveSwitch : MmSwitch {
 	}
 };
 
-struct EqFreqKnob : DynSmallKnobGrey {
+struct BandKnob : DynKnob {
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc;
-	int eqNum;// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
-
+	
+	void loadGraphics(int band) {
+		if (band == 0) 
+			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lf-knob.svg")));
+		else if (band == 1) 
+			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lmf-knob.svg")));
+		else if (band == 2) 
+			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hmf-knob.svg")));
+		else
+			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hf-knob.svg")));
+	}
+};
+	
+template<int BAND>// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
+struct EqFreqKnob : BandKnob {
+	EqFreqKnob() {
+		loadGraphics(BAND);
+	}
+		
 	void onChange(const event::Change& e) override {
-		DynSmallKnobGrey::onChange(e);
+		DynKnob::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setFreq(eqNum, paramQuantity->getValue());
+			trackEqsSrc[currTrk].setFreq(BAND, paramQuantity->getValue());
+		}
+	}
+};
+
+template<int BAND>// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
+struct EqGainKnob : BandKnob {
+	EqGainKnob() {
+		loadGraphics(BAND);
+	}
+
+	void onChange(const event::Change& e) override {
+		DynKnob::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackEqsSrc[currTrk].setGain(BAND, paramQuantity->getValue());
+		}
+	}
+};
+
+template<int BAND>// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
+struct EqQKnob : BandKnob {
+	EqQKnob() {
+		loadGraphics(BAND);
+	}
+	
+	void onChange(const event::Change& e) override {
+		DynKnob::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackEqsSrc[currTrk].setQ(BAND, paramQuantity->getValue());
 		}
 	}
 };

@@ -14,6 +14,7 @@ struct EqMaster : Module {
 	enum ParamIds {
 		TRACK_PARAM,
 		ACTIVE_PARAM,
+		TRACK_GAIN_PARAM,
 		ENUMS(FREQ_ACTIVE_PARAMS, 4),
 		ENUMS(FREQ_PARAMS, 4),
 		ENUMS(GAIN_PARAMS, 4),
@@ -75,11 +76,12 @@ struct EqMaster : Module {
 		
 		// Track settings
 		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Active");
+		configParam(TRACK_GAIN_PARAM, 0.0f, 2.0f, DEFAULT_trackGain, "Track gain");
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, "Band active");
-			configParam(FREQ_PARAMS + i, 0.0f, 1.0f, DEFAULT_freq, "Freq");
-			configParam(GAIN_PARAMS + i, 0.0f, 1.0f, DEFAULT_gain, "Gain");
-			configParam(Q_PARAMS + i, 0.0f, 1.0f, DEFAULT_q, "Q");
+			configParam(FREQ_PARAMS + i, 20.0f, 20000.0f, DEFAULT_freq, "Freq", " Hz");
+			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, "Gain", " dB");
+			configParam(Q_PARAMS + i, 0.5f, 15.0f, DEFAULT_q, "Q");
 		}
 		configParam(LOW_BP_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "Low is peak type");
 		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "High is peak type");
@@ -93,7 +95,7 @@ struct EqMaster : Module {
 		mappedId = 0;
 		initTrackLabels();
 		for (int t = 0; t < 24; t++) {
-			trackEqs[t].init();
+			trackEqs[t].init(APP->engine->getSampleRate());
 		}
 		resetNonJson();
 	}
@@ -178,6 +180,13 @@ struct EqMaster : Module {
 		}
 		json_object_set_new(rootJ, "highPeak", highPeakJ);		
 				
+		// trackGain
+		json_t *trackGainJ = json_array();
+		for (int t = 0; t < 24; t++) {
+			json_array_insert_new(trackGainJ, t, json_real(trackEqs[t].getTrackGain()));
+		}
+		json_object_set_new(rootJ, "trackGain", trackGainJ);		
+		
 		// -------------
 				
 		return rootJ;
@@ -281,6 +290,16 @@ struct EqMaster : Module {
 			}
 		}
 
+		// trackGain
+		json_t *trackGainJ = json_object_get(rootJ, "trackGain");
+		if (trackGainJ) {
+			for (int t = 0; t < 24; t++) {
+				json_t *trackGainArrayJ = json_array_get(trackGainJ, t);
+				if (trackGainArrayJ)
+					trackEqs[t].setTrackGain(json_number_value(trackGainArrayJ));
+			}
+		}
+
 		// -------------
 
 		resetNonJson();
@@ -288,6 +307,9 @@ struct EqMaster : Module {
 
 
 	void onSampleRateChange() override {
+		for (int t = 0; t < 24; t++) {
+			trackEqs[t].updateSampleRate(APP->engine->getSampleRate());
+		}
 	}
 	
 
@@ -306,13 +328,15 @@ struct EqMaster : Module {
 		//********** Outputs **********
 
 		for (int i = 0; i < 3; i++) {
-			for (int t = 0; t < 8; t++) {
-				float inL = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 0);
-				float inR = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 1);
-				float outL = trackEqs[(i << 3) + t].processL(inL);
-				float outR = trackEqs[(i << 3) + t].processR(inR);
-				outputs[SIG_OUTPUTS + i].setVoltage(outL, (t << 1) + 0);
-				outputs[SIG_OUTPUTS + i].setVoltage(outR, (t << 1) + 1);
+			if (inputs[SIG_INPUTS + i].isConnected()) {
+				for (int t = 0; t < 8; t++) {
+					float inL = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 0);
+					float inR = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 1);
+					float outL = trackEqs[(i << 3) + t].processL(inL);
+					float outR = trackEqs[(i << 3) + t].processR(inR);
+					outputs[SIG_OUTPUTS + i].setVoltage(outL, (t << 1) + 0);
+					outputs[SIG_OUTPUTS + i].setVoltage(outR, (t << 1) + 1);
+				}
 			}
 		}
 		
@@ -356,63 +380,91 @@ struct EqMasterWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/labeltester.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EQmaster.svg")));
 		
 		
 		// Left side controls and inputs
 		// ------------------
-		static const float leftX = 10.0f;
+		static const float leftX = 8.29f;
 		// Track label
-		addChild(trackLabel = createWidgetCentered<TrackLabel>(mm2px(Vec(leftX, 4.7))));
+		addChild(trackLabel = createWidgetCentered<TrackLabel>(mm2px(Vec(leftX, 11.5f))));
 		if (module) {
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
 		}
 		// Track knob
 		TrackKnob* trackKnob;
-		addParam(trackKnob = createDynamicParamCentered<TrackKnob>(mm2px(Vec(leftX, 20.0f)), module, EqMaster::TRACK_PARAM, module ? &module->panelTheme : NULL));
+		addParam(trackKnob = createDynamicParamCentered<TrackKnob>(mm2px(Vec(leftX, 22.7f)), module, EqMaster::TRACK_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			trackKnob->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
 		}
 		// Active switch
 		ActiveSwitch* activeSwitch;
-		addParam(activeSwitch = createParamCentered<ActiveSwitch>(mm2px(Vec(leftX, 40.0f)), module, EqMaster::ACTIVE_PARAM));
+		addParam(activeSwitch = createParamCentered<ActiveSwitch>(mm2px(Vec(leftX, 48.775f)), module, EqMaster::ACTIVE_PARAM));
 		if (module) {
 			activeSwitch->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
 			activeSwitch->trackEqsSrc = module->trackEqs;
 		}
 		// Signal inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, 60.0f)), true, module, EqMaster::SIG_INPUTS + 0, module ? &module->panelTheme : NULL));		
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, 80.0f)), true, module, EqMaster::SIG_INPUTS + 1, module ? &module->panelTheme : NULL));		
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, 100.0f)), true, module, EqMaster::SIG_INPUTS + 2, module ? &module->panelTheme : NULL));		
+		static const float jackY = 84.35f;
+		static const float jackDY = 12.8f;
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, jackY)), true, module, EqMaster::SIG_INPUTS + 0, module ? &module->panelTheme : NULL));		
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, jackY + jackDY)), true, module, EqMaster::SIG_INPUTS + 1, module ? &module->panelTheme : NULL));		
+		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, jackY + jackDY * 2)), true, module, EqMaster::SIG_INPUTS + 2, module ? &module->panelTheme : NULL));		
 		
 		
 		// Center part
 		// Screen
 		// todo
 		// Controls
-		static const float ctrlX = 25.0f;
-		static const float ctrlDX = 12.0f;
-		for (int c = 0; c < 4; c++) {
-			EqFreqKnob* freqKnob;
-			addParam(freqKnob = createDynamicParamCentered<EqFreqKnob>(mm2px(Vec(ctrlX + ctrlDX * c, 60.0f)), module, EqMaster::FREQ_PARAMS + c, module ? &module->panelTheme : NULL));
-			addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(ctrlX + ctrlDX * c + 6.0f, 80.0f)), module, EqMaster::GAIN_PARAMS + c, module ? &module->panelTheme : NULL));
-			addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(ctrlX + ctrlDX * c, 100.0f)), module, EqMaster::Q_PARAMS + c, module ? &module->panelTheme : NULL));
-			if (module) {
-				freqKnob->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
-				freqKnob->trackEqsSrc = module->trackEqs;
-				freqKnob->eqNum = c;
+		static const float ctrlX = 23.94f;
+		static const float ctrlDX = 27.74f;
+		BandKnob* freqKnobs[4];
+		BandKnob* gainKnobs[4];
+		BandKnob* qKnobs[4];
+		// freq
+		addParam(freqKnobs[0] = createDynamicParamCentered<EqFreqKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 91.2f)), module, EqMaster::FREQ_PARAMS + 0, module ? &module->panelTheme : NULL));
+		addParam(freqKnobs[1] = createDynamicParamCentered<EqFreqKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 91.2f)), module, EqMaster::FREQ_PARAMS + 1, module ? &module->panelTheme : NULL));
+		addParam(freqKnobs[2] = createDynamicParamCentered<EqFreqKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 91.2f)), module, EqMaster::FREQ_PARAMS + 2, module ? &module->panelTheme : NULL));
+		addParam(freqKnobs[3] = createDynamicParamCentered<EqFreqKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 91.2f)), module, EqMaster::FREQ_PARAMS + 3, module ? &module->panelTheme : NULL));
+		// gain
+		addParam(gainKnobs[0] = createDynamicParamCentered<EqGainKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0 + 11.04f, 101.78f)), module, EqMaster::GAIN_PARAMS + 0, module ? &module->panelTheme : NULL));
+		addParam(gainKnobs[1] = createDynamicParamCentered<EqGainKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1 + 11.04f, 101.78f)), module, EqMaster::GAIN_PARAMS + 1, module ? &module->panelTheme : NULL));
+		addParam(gainKnobs[2] = createDynamicParamCentered<EqGainKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2 + 11.04f, 101.78f)), module, EqMaster::GAIN_PARAMS + 2, module ? &module->panelTheme : NULL));
+		addParam(gainKnobs[3] = createDynamicParamCentered<EqGainKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3 + 11.04f, 101.78f)), module, EqMaster::GAIN_PARAMS + 3, module ? &module->panelTheme : NULL));
+		// q
+		addParam(qKnobs[0] = createDynamicParamCentered<EqQKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 112.37f)), module, EqMaster::Q_PARAMS + 0, module ? &module->panelTheme : NULL));
+		addParam(qKnobs[1] = createDynamicParamCentered<EqQKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 112.37f)), module, EqMaster::Q_PARAMS + 1, module ? &module->panelTheme : NULL));
+		addParam(qKnobs[2] = createDynamicParamCentered<EqQKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 112.37f)), module, EqMaster::Q_PARAMS + 2, module ? &module->panelTheme : NULL));
+		addParam(qKnobs[3] = createDynamicParamCentered<EqQKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 112.37f)), module, EqMaster::Q_PARAMS + 3, module ? &module->panelTheme : NULL));
+		
+		if (module) {
+			for (int c = 0; c < 4; c++) {
+				freqKnobs[c]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+				freqKnobs[c]->trackEqsSrc = module->trackEqs;
+				gainKnobs[c]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+				gainKnobs[c]->trackEqsSrc = module->trackEqs;
+				qKnobs[c]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+				qKnobs[c]->trackEqsSrc = module->trackEqs;
 			}
 		}
 		
 				
 		// Right side VU and outputs
 		// ------------------
-		static const float rightX = 80.0f;
+		static const float rightX = 133.95f;
+		// VU TODO
+		// Gain knob
+		TrackGainKnob* trackGainKnob;
+		addParam(trackGainKnob = createDynamicParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, EqMaster::TRACK_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		if (module) {
+			trackGainKnob->trackParamSrc = &(module->params[EqMaster::TRACK_GAIN_PARAM]);
+			trackGainKnob->trackEqsSrc = module->trackEqs;
+		}		
 		// Signal outputs
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, 60)), false, module, EqMaster::SIG_OUTPUTS + 0, module ? &module->panelTheme : NULL));		
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, 80)), false, module, EqMaster::SIG_OUTPUTS + 1, module ? &module->panelTheme : NULL));		
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, 100)), false, module, EqMaster::SIG_OUTPUTS + 2, module ? &module->panelTheme : NULL));		
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, jackY)), false, module, EqMaster::SIG_OUTPUTS + 0, module ? &module->panelTheme : NULL));		
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, jackY + jackDY)), false, module, EqMaster::SIG_OUTPUTS + 1, module ? &module->panelTheme : NULL));		
+		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, jackY + jackDY * 2)), false, module, EqMaster::SIG_OUTPUTS + 2, module ? &module->panelTheme : NULL));		
 		
 	}
 	
@@ -467,6 +519,8 @@ struct EqMasterWidget : ModuleWidget {
 				module->params[EqMaster::ACTIVE_PARAM].setValue(module->trackEqs[trk].getActive() ? 1.0f : 0.0f);
 				for (int c = 0; c < 4; c++) {
 					module->params[EqMaster::FREQ_PARAMS + c].setValue(module->trackEqs[trk].getFreq(c));
+					module->params[EqMaster::GAIN_PARAMS + c].setValue(module->trackEqs[trk].getGain(c));
+					module->params[EqMaster::Q_PARAMS + c].setValue(module->trackEqs[trk].getQ(c));
 				}				
 				oldSelectedTrack = trk;
 			}
