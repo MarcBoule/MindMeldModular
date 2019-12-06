@@ -47,6 +47,16 @@ class TrackEq {
 		}
 		setLowBP(DEFAULT_lowBP);
 		setHighBP(DEFAULT_highBP);
+		eqs[0].reset();
+		eqs[1].reset();
+		eqs[0].setParameters(dsp::BiquadFilter::LOWSHELF, 0, 0.1f, 1.0f, 0.707f);
+		eqs[1].setParameters(dsp::BiquadFilter::LOWSHELF, 0, 0.1f, 1.0f, 0.707f);
+		eqs[0].setParameters(dsp::BiquadFilter::PEAK, 1, 0.1f, 1.0f, 0.707f);
+		eqs[1].setParameters(dsp::BiquadFilter::PEAK, 1, 0.1f, 1.0f, 0.707f);
+		eqs[0].setParameters(dsp::BiquadFilter::PEAK, 2, 0.1f, 1.0f, 0.707f);
+		eqs[1].setParameters(dsp::BiquadFilter::PEAK, 2, 0.1f, 1.0f, 0.707f);
+		eqs[0].setParameters(dsp::BiquadFilter::HIGHSHELF, 3, 0.01f, 0.1f, 0.707f);
+		eqs[1].setParameters(dsp::BiquadFilter::HIGHSHELF, 3, 0.01f, 0.1f, 0.707f);
 	}
 	
 	bool getActive() {return active;}
@@ -64,6 +74,9 @@ class TrackEq {
 	void setQ(int eqNum, float _q) {q[eqNum] = _q;}
 	void setLowBP(bool _lowBP) {lowBP = _lowBP;}
 	void setHighBP(bool _highBP) {highBP = _highBP;}
+	
+	float processL(float inL) {return eqs[0].process(inL);}
+	float processR(float inR) {return eqs[1].process(inR);}
 };
 
 

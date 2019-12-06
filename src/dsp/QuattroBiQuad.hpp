@@ -51,13 +51,12 @@ struct QuattroBiQuad {
 	}	
 	
 		
-	void setParameters(dsp::BiquadFilter::Type type, int i, float f, float Q, float V) {
+	void setParameters(dsp::BiquadFilter::Type type, int i, float f, float V, float Q) {
 		// type: type of filter/eq, see Type enum in dsp::TBiquadFilter
 		// i: eq index (0 to 3),
 		// f: normalized frequency (fc/sampleRate)
+		// V: linearGain for peak or shelving
 		// Q: quality (0.1 to 10 ?)
-		// V: linearGain for peak or shelving. If dB gain is to be given, add this next line:
-		// V = pow(10, fabs(V) / 20.0);
 		float K = std::tan(M_PI * f);
 		switch (type) {
 			case dsp::BiquadFilter::LOWSHELF: {

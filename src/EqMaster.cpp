@@ -39,8 +39,7 @@ struct EqMaster : Module {
 	
 
 	// Constants
-	// none
-
+	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
 	int panelTheme;
@@ -295,7 +294,34 @@ struct EqMaster : Module {
 	void process(const ProcessArgs &args) override {
 		//int selectedTrack = getSelectedTrack();
 		
+		//********** Inputs **********
 		
+		if (refresh.processInputs()) {
+			outputs[SIG_OUTPUTS + 0].setChannels(numChannels16);
+			outputs[SIG_OUTPUTS + 1].setChannels(numChannels16);
+			outputs[SIG_OUTPUTS + 2].setChannels(numChannels16);
+		}// userInputs refresh
+		
+		
+		//********** Outputs **********
+
+		for (int i = 0; i < 3; i++) {
+			for (int t = 0; t < 8; t++) {
+				float inL = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 0);
+				float inR = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 1);
+				float outL = trackEqs[(i << 3) + t].processL(inL);
+				float outR = trackEqs[(i << 3) + t].processR(inR);
+				outputs[SIG_OUTPUTS + i].setVoltage(outL, (t << 1) + 0);
+				outputs[SIG_OUTPUTS + i].setVoltage(outR, (t << 1) + 1);
+			}
+		}
+		
+		
+		//********** Lights **********
+		
+		if (refresh.processLights()) {
+		}
+
 	}// process()
 };
 
