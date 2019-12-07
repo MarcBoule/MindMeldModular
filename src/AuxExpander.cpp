@@ -816,6 +816,9 @@ struct AuxExpanderWidget : ModuleWidget {
 				newVU->srcLevels = &(module->vu[i]);
 				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->vuColorThemeLocal.cc4[i]);
+				newVU->faderMaxLinearGain = GlobalConst::trkAndGrpFaderMaxLinearGain;
+				newVU->faderScalingExponent = GlobalConst::trkAndGrpFaderScalingExponent;
+				newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerAuxRet *newFP = createWidgetCentered<CvAndFadePointerAuxRet>(mm2px(Vec(6.35 - 2.95 + 12.7 * i, 87.2)));
@@ -1129,6 +1132,9 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newVU->srcLevels = &(module->vu[i]);
 				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->vuColorThemeLocal.cc4[i]);
+				newVU->faderMaxLinearGain = GlobalConst::trkAndGrpFaderMaxLinearGain;
+				newVU->faderScalingExponent = GlobalConst::trkAndGrpFaderScalingExponent;
+				newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerAuxRet *newFP = createWidgetCentered<CvAndFadePointerAuxRet>(mm2px(Vec(6.35 - 2.95 + 12.7 * i, 87.2)));

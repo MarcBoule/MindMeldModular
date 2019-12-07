@@ -10,6 +10,7 @@
 #define MMM_EQWIDGETS_HPP
 
 #include "EqMenus.hpp"
+#include "VuMeters.hpp"
 
 
 // Labels

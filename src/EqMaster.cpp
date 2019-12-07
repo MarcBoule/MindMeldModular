@@ -41,6 +41,8 @@ struct EqMaster : Module {
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
+	int8_t vuColorGlobal = 0;
+	int8_t vuColorThemeLocal = 0;
 
 	// Need to save, no reset
 	int panelTheme;
@@ -52,6 +54,7 @@ struct EqMaster : Module {
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
+	VuMeterAllDual trackVu;
 
 	// No need to save, no reset
 	RefreshCounter refresh;
@@ -78,9 +81,12 @@ struct EqMaster : Module {
 		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Active");
 		float maxTGFader = std::pow(trackGainKnobMaxLinearGain, 1.0f / trackGainKnobScalingExponent);
 		configParam(TRACK_GAIN_PARAM, 0.0f, maxTGFader, DEFAULT_trackGain, "Track gain", " dB", -10, 20.0f * trackGainKnobScalingExponent);
+		configParam(FREQ_PARAMS + 0, 20.0f, 500.0f, DEFAULT_freq[0], "Freq", " Hz");
+		configParam(FREQ_PARAMS + 1, 60.0f, 2000.0f, DEFAULT_freq[1], "Freq", " Hz");
+		configParam(FREQ_PARAMS + 2, 500.0f, 5000.0f, DEFAULT_freq[2], "Freq", " Hz");
+		configParam(FREQ_PARAMS + 3, 1000.0f, 20000.0f, DEFAULT_freq[3], "Freq", " Hz");
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, "Band active");
-			configParam(FREQ_PARAMS + i, 20.0f, 20000.0f, DEFAULT_freq, "Freq", " Hz");
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, "Gain", " dB");
 			configParam(Q_PARAMS + i, 0.5f, 15.0f, DEFAULT_q, "Q");
 		}
@@ -102,6 +108,7 @@ struct EqMaster : Module {
 	}
 	void resetNonJson() {
 		updateTrackLabelRequest = 1;
+		trackVu.reset();
 	}
 
 
@@ -315,7 +322,7 @@ struct EqMaster : Module {
 	
 
 	void process(const ProcessArgs &args) override {
-		//int selectedTrack = getSelectedTrack();
+		int selectedTrack = getSelectedTrack();
 		
 		//********** Inputs **********
 		
@@ -328,6 +335,7 @@ struct EqMaster : Module {
 		
 		//********** Outputs **********
 
+		bool vuProcessed = false;
 		for (int i = 0; i < 3; i++) {
 			if (inputs[SIG_INPUTS + i].isConnected()) {
 				for (int t = 0; t < 8; t++) {
@@ -337,8 +345,15 @@ struct EqMaster : Module {
 					trackEqs[(i << 3) + t].process(out, inL, inR);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
+					if ( ((i << 3) + t) == selectedTrack ) {
+						trackVu.process(args.sampleTime, out);
+						vuProcessed = true;
+					}
 				}
 			}
+		}
+		if (!vuProcessed) {
+			trackVu.reset();
 		}
 		
 		
@@ -454,7 +469,17 @@ struct EqMasterWidget : ModuleWidget {
 		// Right side VU and outputs
 		// ------------------
 		static const float rightX = 133.95f;
-		// VU TODO
+		// VU meter
+		if (module) {
+			VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(rightX, 37.5f)));
+			newVU->srcLevels = &(module->trackVu);
+			newVU->colorThemeGlobal = &(module->vuColorGlobal);
+			newVU->colorThemeLocal = &(module->vuColorThemeLocal);
+			newVU->faderMaxLinearGain = trackGainKnobMaxLinearGain;
+			newVU->faderScalingExponent = trackGainKnobScalingExponent;
+			newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
+			addChild(newVU);
+		}
 		// Gain knob
 		TrackGainKnob* trackGainKnob;
 		addParam(trackGainKnob = createDynamicParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, EqMaster::TRACK_GAIN_PARAM, module ? &module->panelTheme : NULL));

@@ -14,13 +14,13 @@
 #include "dsp/VuMeterAll.hpp"
 
 
-static const float trackGainKnobMaxLinearGain = 4.0f;
-static const int trackGainKnobScalingExponent = 2; 
+static const float trackGainKnobMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
+static const int trackGainKnobScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
 
 
 static const bool DEFAULT_active = true;
 static const bool DEFAULT_bandActive = true;
-static const float DEFAULT_freq = 1000.0f;// Hz
+static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
 static const float DEFAULT_gain = 0.0f;// dB
 static const float DEFAULT_q = 1.0f;
 static const bool DEFAULT_lowPeak = false;
@@ -55,7 +55,7 @@ class TrackEq {
 		setActive(DEFAULT_active);
 		for (int i = 0; i < 4; i++) {
 			setBandActive(i, DEFAULT_bandActive);
-			setFreq(i, DEFAULT_freq);
+			setFreq(i, DEFAULT_freq[i]);
 			setGain(i, DEFAULT_gain);
 			setQ(i, DEFAULT_q);
 		}

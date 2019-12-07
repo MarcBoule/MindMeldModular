@@ -25,8 +25,8 @@ extern Plugin *pluginInstance;
 
 struct MmSwitch : app::SvgSwitch {
 	MmSwitch() {
-		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/CKSS_0.svg")));// TODO add new MindMeld graphics
-		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/CKSS_1.svg")));// TODO add new MindMeld graphics
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-bypass.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-active.svg")));
 	}
 };
 

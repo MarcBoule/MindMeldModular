@@ -74,41 +74,6 @@ struct GlobalConst {
 };
 
 
-// Colors
-
-static const NVGcolor DISP_COLORS[] = {
-	nvgRGB(0xff, 0xd7, 0x14),// yellow
-	nvgRGB(240, 240, 240),// light-gray			
-	nvgRGB(140, 235, 107),// green
-	nvgRGB(102, 245, 207),// aqua
-	nvgRGB(102, 207, 245),// cyan
-	nvgRGB(102, 183, 245),// blue
-	nvgRGB(177, 107, 235)// purple
-};
-
-static const int numThemes = 5;
-static const NVGcolor VU_THEMES_TOP[numThemes][2] =  
-									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
-										{nvgRGB(68, 164, 122), 	nvgRGB(102, 245, 182)}, // teal: peak (darker), rms (lighter)
-										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // light blue: peak (darker), rms (lighter)
-										{nvgRGB(68, 125, 164), 	nvgRGB(102, 180, 245)}, // blue: peak (darker), rms (lighter)
-										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_THEMES_BOT[numThemes][2] =  
-									   {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
-										{nvgRGB(68, 164, 156), 	nvgRGB(102, 245, 232)}, // teal: peak (darker), rms (lighter)
-										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // light blue: peak (darker), rms (lighter)
-										{nvgRGB(68,  92, 164), 	nvgRGB(102, 130, 245)}, // blue: peak (darker), rms (lighter)
-										{nvgRGB(85,  70, 130), 	nvgRGB(135, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
-static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
-static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
-
-static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
-static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
-
-static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
-static const int greyArc = 120;
-
 
 
 //*****************************************************************************
