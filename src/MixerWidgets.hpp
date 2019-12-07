@@ -304,8 +304,8 @@ struct DynamicSVGSwitchDual : SvgSwitch {
 struct DynMuteFadeButton : DynamicSVGSwitchDual {
 	DynMuteFadeButton() {
 		momentary = false;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-off.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mute-on.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
 		addFrameAlt(asset::plugin(pluginInstance, "res/comp/mixer/fade-off.svg"));
 		addFrameAlt(asset::plugin(pluginInstance, "res/comp/mixer/fade-on.svg"));
 		shadow->opacity = 0.0;
