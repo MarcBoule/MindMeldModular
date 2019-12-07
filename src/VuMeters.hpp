@@ -7,7 +7,7 @@
 
 
 #ifndef MMM_VUMETERS_HPP
-#define MMM_MIXERWIDGETS_HPP
+#define MMM_VUMETERS_HPP
 
 
 
