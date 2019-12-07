@@ -96,7 +96,7 @@ struct TrackGainKnob : DynKnob {
 		DynKnob::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue() > 0.5f);
+			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue());
 		}
 	}
 };

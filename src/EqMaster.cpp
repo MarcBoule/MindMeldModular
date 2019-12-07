@@ -76,7 +76,8 @@ struct EqMaster : Module {
 		
 		// Track settings
 		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Active");
-		configParam(TRACK_GAIN_PARAM, 0.0f, 2.0f, DEFAULT_trackGain, "Track gain");
+		float maxTGFader = std::pow(trackGainKnobMaxLinearGain, 1.0f / trackGainKnobScalingExponent);
+		configParam(TRACK_GAIN_PARAM, 0.0f, maxTGFader, DEFAULT_trackGain, "Track gain", " dB", -10, 20.0f * trackGainKnobScalingExponent);
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, "Band active");
 			configParam(FREQ_PARAMS + i, 20.0f, 20000.0f, DEFAULT_freq, "Freq", " Hz");
@@ -332,10 +333,10 @@ struct EqMaster : Module {
 				for (int t = 0; t < 8; t++) {
 					float inL = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 0);
 					float inR = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 1);
-					float outL = trackEqs[(i << 3) + t].processL(inL);
-					float outR = trackEqs[(i << 3) + t].processR(inR);
-					outputs[SIG_OUTPUTS + i].setVoltage(outL, (t << 1) + 0);
-					outputs[SIG_OUTPUTS + i].setVoltage(outR, (t << 1) + 1);
+					float out[2];
+					trackEqs[(i << 3) + t].process(out, inL, inR);
+					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
+					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
 				}
 			}
 		}
@@ -458,7 +459,7 @@ struct EqMasterWidget : ModuleWidget {
 		TrackGainKnob* trackGainKnob;
 		addParam(trackGainKnob = createDynamicParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, EqMaster::TRACK_GAIN_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
-			trackGainKnob->trackParamSrc = &(module->params[EqMaster::TRACK_GAIN_PARAM]);
+			trackGainKnob->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
 			trackGainKnob->trackEqsSrc = module->trackEqs;
 		}		
 		// Signal outputs

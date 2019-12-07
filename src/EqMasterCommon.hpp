@@ -14,6 +14,10 @@
 #include "dsp/VuMeterAll.hpp"
 
 
+static const float trackGainKnobMaxLinearGain = 4.0f;
+static const int trackGainKnobScalingExponent = 2; 
+
+
 static const bool DEFAULT_active = true;
 static const bool DEFAULT_bandActive = true;
 static const float DEFAULT_freq = 1000.0f;// Hz
@@ -113,8 +117,11 @@ class TrackEq {
 		sampleRate = _sampleRate;
 		pushAllParametersToEqs();
 	}		
-	float processL(float inL) {return eqs[0].process(inL);}
-	float processR(float inR) {return eqs[1].process(inR);}
+	void process(float* out, float inL, float inR) {
+		float linearTrackGain = std::pow(trackGain, trackGainKnobScalingExponent);
+		out[0] = eqs[0].process(inL) * linearTrackGain;
+		out[1] = eqs[1].process(inR) * linearTrackGain;
+	}
 	
 	
 	private: 
