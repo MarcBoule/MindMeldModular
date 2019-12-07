@@ -14,18 +14,19 @@
 #include "dsp/VuMeterAll.hpp"
 
 
-static const float trackGainKnobMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
-static const int trackGainKnobScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
+static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
+static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
 
+static const std::string bandNames[4] = {"LF", "LMF", "HMF", "HF"};
 
 static const bool DEFAULT_active = true;
 static const bool DEFAULT_bandActive = true;
 static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
 static const float DEFAULT_gain = 0.0f;// dB
-static const float DEFAULT_q = 1.0f;
+static const float DEFAULT_q = 3.0f;
 static const bool DEFAULT_lowPeak = false;
 static const bool DEFAULT_highPeak = false;
-static const float DEFAULT_trackGain = 1.0f;
+static const float DEFAULT_trackGain = 0.0f;// dB
 
 
 class TrackEq {
@@ -39,7 +40,7 @@ class TrackEq {
 	float q[4];
 	bool lowPeak;// LF is peak when true (false is lowshelf)
 	bool highPeak;// HF is peak when true (false is highshelf)
-	float trackGain;
+	float trackGain;// in dB to match params, is converted to linear before applying to post
 
 	// dependants
 	QuattroBiQuad::Type bandTypes[4]; 
@@ -118,7 +119,7 @@ class TrackEq {
 		pushAllParametersToEqs();
 	}		
 	void process(float* out, float inL, float inR) {
-		float linearTrackGain = std::pow(trackGain, trackGainKnobScalingExponent);
+		float linearTrackGain = std::pow(10.0f, trackGain / 20.0f);
 		out[0] = eqs[0].process(inL) * linearTrackGain;
 		out[1] = eqs[1].process(inR) * linearTrackGain;
 	}

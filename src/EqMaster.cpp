@@ -78,17 +78,16 @@ struct EqMaster : Module {
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
 		
 		// Track settings
-		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Active");
-		float maxTGFader = std::pow(trackGainKnobMaxLinearGain, 1.0f / trackGainKnobScalingExponent);
-		configParam(TRACK_GAIN_PARAM, 0.0f, maxTGFader, DEFAULT_trackGain, "Track gain", " dB", -10, 20.0f * trackGainKnobScalingExponent);
-		configParam(FREQ_PARAMS + 0, 20.0f, 500.0f, DEFAULT_freq[0], "Freq", " Hz");
-		configParam(FREQ_PARAMS + 1, 60.0f, 2000.0f, DEFAULT_freq[1], "Freq", " Hz");
-		configParam(FREQ_PARAMS + 2, 500.0f, 5000.0f, DEFAULT_freq[2], "Freq", " Hz");
-		configParam(FREQ_PARAMS + 3, 1000.0f, 20000.0f, DEFAULT_freq[3], "Freq", " Hz");
+		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Track EQ active");
+		configParam(TRACK_GAIN_PARAM, -20.0f, 20.0f, DEFAULT_gain, "Track gain", " dB");
+		configParam(FREQ_PARAMS + 0, 20.0f, 500.0f, DEFAULT_freq[0], "LF freq", " Hz");
+		configParam(FREQ_PARAMS + 1, 60.0f, 2000.0f, DEFAULT_freq[1], "LMF freq", " Hz");
+		configParam(FREQ_PARAMS + 2, 500.0f, 5000.0f, DEFAULT_freq[2], "HMF freq", " Hz");
+		configParam(FREQ_PARAMS + 3, 1000.0f, 20000.0f, DEFAULT_freq[3], "HF freq", " Hz");
 		for (int i = 0; i < 4; i++) {
-			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, "Band active");
-			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, "Gain", " dB");
-			configParam(Q_PARAMS + i, 0.5f, 15.0f, DEFAULT_q, "Q");
+			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, bandNames[i] + " active");
+			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
+			configParam(Q_PARAMS + i, 0.5f, 15.0f, DEFAULT_q, bandNames[i] + " Q");
 		}
 		configParam(LOW_BP_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "Low is peak type");
 		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "High is peak type");
@@ -475,8 +474,8 @@ struct EqMasterWidget : ModuleWidget {
 			newVU->srcLevels = &(module->trackVu);
 			newVU->colorThemeGlobal = &(module->vuColorGlobal);
 			newVU->colorThemeLocal = &(module->vuColorThemeLocal);
-			newVU->faderMaxLinearGain = trackGainKnobMaxLinearGain;
-			newVU->faderScalingExponent = trackGainKnobScalingExponent;
+			newVU->faderMaxLinearGain = trackVuMaxLinearGain;
+			newVU->faderScalingExponent = trackVuScalingExponent;
 			newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 			addChild(newVU);
 		}
