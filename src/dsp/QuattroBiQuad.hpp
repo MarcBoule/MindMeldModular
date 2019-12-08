@@ -46,9 +46,18 @@ struct QuattroBiQuad {
 		gainsDifferentThanOne = 0xF;
 	}
 	
-	
+
 	float process(float in) {
+		x2 = x1;
+		x1 = x0;
+		
 		x0[0] = in;
+		x0[1] = y0[0];
+		x0[2] = y0[1];
+		x0[3] = y0[2];
+
+		y2 = y1;
+		y1 = y0;
 		
 		if (gainsDifferentThanOne == 0) {
 			y0 = x0;
@@ -56,39 +65,9 @@ struct QuattroBiQuad {
 		else {
 			y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;// https://en.wikipedia.org/wiki/Infinite_impulse_response
 		}
-
-		x2 = x1;
-		x1 = x0;
-		x0[1] = y0[0];
-		x0[2] = y0[1];
-		x0[3] = y0[2];
-		
-		y2 = y1;
-		y1 = y0;
 		
 		return y0[3];
-	}		
-/*	float process2(float in) {
-		x0[0] = in;
-		
-		if (gainsDifferentThanOne == 0) {
-			y0 = x0;
-		}
-		else {
-			y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;// https://en.wikipedia.org/wiki/Infinite_impulse_response
-		}
-
-		x2 = x1;
-		x1 = x0;
-		x0[1] = y0[0];
-		x0[2] = y0[1];
-		x0[3] = y0[2];
-		
-		y2 = y1;
-		y1 = y0;
-		
-		return y0[3];
-	}	*/
+	}	
 	
 		
 	void setParameters(Type type, int i, float f, float V, float Q) {
