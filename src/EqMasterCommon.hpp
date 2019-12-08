@@ -112,6 +112,26 @@ class TrackEq {
 		trackGain = _trackGain;
 	}
 	
+	void copyFrom(TrackEq* srcTrack) {
+		// need saving
+		setActive(srcTrack->active);
+		for (int i = 0; i < 4; i++) {
+			setBandActive(i, srcTrack->bandActive[i]);
+			setFreq(i, srcTrack->freq[i]);
+			setGain(i, srcTrack->gain[i]);
+			setQ(i, srcTrack->q[i]);
+		}
+		setLowPeak(srcTrack->lowPeak);
+		setHighPeak(srcTrack->highPeak);
+		trackGain = srcTrack->trackGain;
+		
+		// dependants
+		initBandTypes();
+		//eqs.reset();
+		pushAllParametersToEqs();		
+	}
+	
+	
 	void updateSampleRate(float _sampleRate) {
 		sampleRate = _sampleRate;
 		pushAllParametersToEqs();

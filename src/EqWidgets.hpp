@@ -21,6 +21,7 @@ struct TrackLabel : LedDisplayChoice {
 	// int8_t* dispColorLocalPtr;
 	char* trackLabelsSrc;
 	Param* trackParamSrc;
+	TrackEq *trackEqsSrc;
 	
 	TrackLabel() {
 		box.size = mm2px(Vec(10.6f, 5.0f));
@@ -48,16 +49,24 @@ struct TrackLabel : LedDisplayChoice {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
+			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track settings to:", RIGHT_ARROW);
+			copyItem->trackLabelsSrc = trackLabelsSrc;
+			copyItem->trackEqsSrc = trackEqsSrc;
+			copyItem->trackNumSrc = (int)(trackParamSrc->getValue() + 0.5f);
+			menu->addChild(copyItem);
+
+
 			MenuLabel *trkSelLabel = new MenuLabel();
 			trkSelLabel->text = "Select Track: ";
 			menu->addChild(trkSelLabel);
 			
-			for (int i = 0; i < 24; i++) {
+			for (int trk = 0; trk < 24; trk++) {
 				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-				TrackSelectItem *tsItem = createMenuItem<TrackSelectItem>(std::string(&(trackLabelsSrc[i * 4]), 4), CHECKMARK(i == currTrk));
+				bool onSource = (trk == currTrk);
+				TrackSelectItem *tsItem = createMenuItem<TrackSelectItem>(std::string(&(trackLabelsSrc[trk * 4]), 4), CHECKMARK(onSource));
 				tsItem->trackParamSrc = trackParamSrc;
-				tsItem->trackNumber = i;
-				tsItem->disabled = i == currTrk;
+				tsItem->trackNumber = trk;
+				tsItem->disabled = onSource;
 				menu->addChild(tsItem);
 			}
 			

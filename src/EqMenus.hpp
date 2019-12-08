@@ -63,4 +63,39 @@ struct FetchLabelsItem : MenuItem {
 	}
 };
 
+
+struct CopyTrackSettingsItem : MenuItem {
+	char* trackLabelsSrc;
+	TrackEq *trackEqsSrc;
+	int trackNumSrc;
+
+	struct CopyTrackSettingsSubItem : MenuItem {
+		TrackEq *trackEqsSrc;
+		int trackNumSrc;	
+		int trackNumDest;
+
+		void onAction(const event::Action &e) override {
+			trackEqsSrc[trackNumDest].copyFrom(&trackEqsSrc[trackNumSrc]);
+		}
+	};
+	
+	
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		for (int trk = 0; trk < 24; trk++) {
+			bool onSource = (trk == trackNumSrc);
+			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(&(trackLabelsSrc[trk * 4]), 4), CHECKMARK(onSource));
+			reo0Item->trackEqsSrc = trackEqsSrc;
+			reo0Item->trackNumSrc = trackNumSrc;
+			reo0Item->trackNumDest = trk;
+			reo0Item->disabled = onSource;
+			menu->addChild(reo0Item);
+		}
+
+		return menu;
+	}		
+};
+
+
 #endif

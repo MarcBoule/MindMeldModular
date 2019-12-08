@@ -386,7 +386,7 @@ struct EqMasterWidget : ModuleWidget {
 		
 		FetchLabelsItem *fetchItem = createMenuItem<FetchLabelsItem>("Fetch track labels from Mixer", RIGHT_ARROW);
 		fetchItem->mappedIdSrc = &(module->mappedId);
-		menu->addChild(fetchItem);
+		menu->addChild(fetchItem);	
 	}
 	
 	
@@ -405,6 +405,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+			trackLabel->trackEqsSrc = module->trackEqs;
 		}
 		// Track knob
 		TrackKnob* trackKnob;
