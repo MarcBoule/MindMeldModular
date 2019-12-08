@@ -45,14 +45,13 @@ struct QuattroBiQuad {
 	
 	
 	float process(float in) {
-		x0[0] = in;
-		
 		if (gainsDifferentThanOne == 0) {
 			x0 = in;
 			y0 = in;
 			return in;
 		}
 		else {
+			x0[0] = in;
 			y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;// https://en.wikipedia.org/wiki/Infinite_impulse_response
 		
 			x2 = x1;
@@ -65,7 +64,6 @@ struct QuattroBiQuad {
 			y1 = y0;
 			return y0[3];
 		}
-		
 	}	
 	
 		

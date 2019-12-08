@@ -412,6 +412,7 @@ struct EqMasterWidget : ModuleWidget {
 		addParam(trackKnob = createDynamicParamCentered<TrackKnob>(mm2px(Vec(leftX, 22.7f)), module, EqMaster::TRACK_PARAM, module ? &module->panelTheme : NULL));
 		if (module) {
 			trackKnob->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
+			trackKnob->trackEqsSrc = module->trackEqs;
 		}
 		// Active switch
 		ActiveSwitch* activeSwitch;
@@ -542,6 +543,7 @@ struct EqMasterWidget : ModuleWidget {
 
 			if (oldSelectedTrack != trk) {// update controls when user selects another track
 				module->params[EqMaster::ACTIVE_PARAM].setValue(module->trackEqs[trk].getActive() ? 1.0f : 0.0f);
+				module->params[EqMaster::TRACK_GAIN_PARAM].setValue(module->trackEqs[trk].getTrackGain());
 				for (int c = 0; c < 4; c++) {
 					module->params[EqMaster::FREQ_PARAMS + c].setValue(module->trackEqs[trk].getFreq(c));
 					module->params[EqMaster::GAIN_PARAMS + c].setValue(module->trackEqs[trk].getGain(c));

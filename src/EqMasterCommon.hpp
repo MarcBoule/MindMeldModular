@@ -19,7 +19,7 @@ static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Tr
 
 static const std::string bandNames[4] = {"LF", "LMF", "HMF", "HF"};
 
-static const bool DEFAULT_active = true;
+static const bool DEFAULT_active = false;
 static const bool DEFAULT_bandActive = true;
 static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
 static const float DEFAULT_gain = 0.0f;// dB
@@ -118,6 +118,18 @@ class TrackEq {
 		sampleRate = _sampleRate;
 		pushAllParametersToEqs();
 	}		
+	bool isNonDefaultState() {
+		for (int b = 0; b < 4; b++) {
+			if (bandActive[b] != DEFAULT_bandActive) return true;
+			if (freq[b] != DEFAULT_freq[b]) return true;
+			if (gain[b] != DEFAULT_gain) return true;
+			if (q[b] != DEFAULT_q) return true;
+		}
+		if (lowPeak != DEFAULT_lowPeak) return true;
+		if (highPeak != DEFAULT_highPeak) return true;
+		if (trackGain != DEFAULT_trackGain) return true;
+		return false;
+	}
 	void process(float* out, float inL, float inR) {
 		float linearTrackGain = std::pow(10.0f, trackGain / 20.0f);
 		out[0] = eqs[0].process(inL) * linearTrackGain;

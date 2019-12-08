@@ -71,9 +71,13 @@ struct TrackLabel : LedDisplayChoice {
 
 // Knobs and buttons
 // --------------------
+static const NVGcolor COL_GRAY = nvgRGB(111, 111, 111);
+static const NVGcolor COL_GREEN = nvgRGB(127, 200, 68);
+static const NVGcolor COL_RED = nvgRGB(247, 23, 41);
 
 struct TrackKnob : DynSnapKnob {
 	int* updateTrackLabelRequestSrc = NULL;
+	TrackEq* trackEqsSrc;
 	
 	TrackKnob() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/track-knob.svg")));
@@ -84,6 +88,40 @@ struct TrackKnob : DynSnapKnob {
 		}
 		DynSnapKnob::onChange(e);
 	}
+	
+	
+	void draw(const DrawArgs &args) override {
+		static const float radius = 18.0f;
+		DynamicSVGKnob::draw(args);
+		if (paramQuantity) {
+			float totAng = maxAngle - minAngle;
+			float maxTrack = paramQuantity->getMaxValue();
+			int selectedTrack = (int)(paramQuantity->getValue() + 0.5f);
+			float deltAng = totAng / maxTrack;
+			float ang = minAngle;
+			Vec cVec = box.size.div(2.0f);
+			for (int i = 0; i <= (int)(maxTrack + 0.5f); i++) {
+				float px = cVec.x + radius * std::sin(ang);
+				float py = cVec.y - radius * std::cos(ang);
+				nvgBeginPath(args.vg);
+				nvgCircle(args.vg, px, py, 1.0f);
+				if (i == selectedTrack) {
+					nvgFillColor(args.vg, SCHEME_WHITE);
+				}
+				else if (trackEqsSrc[i].getActive()) {
+					nvgFillColor(args.vg, COL_GREEN);
+				}
+				else if (trackEqsSrc[i].isNonDefaultState()) {
+					nvgFillColor(args.vg, COL_RED);
+				}
+				else {
+					nvgFillColor(args.vg, COL_GRAY);
+				}
+				nvgFill(args.vg);		
+				ang += deltAng;
+			}
+		}
+	}	
 };
 
 struct TrackGainKnob : DynKnob {
