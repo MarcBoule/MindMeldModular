@@ -475,9 +475,6 @@ struct EqMasterWidget : ModuleWidget {
 			newVU->srcLevels = &(module->trackVu);
 			newVU->colorThemeGlobal = &(module->vuColorGlobal);
 			newVU->colorThemeLocal = &(module->vuColorThemeLocal);
-			newVU->faderMaxLinearGain = trackVuMaxLinearGain;
-			newVU->faderScalingExponent = trackVuScalingExponent;
-			newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 			addChild(newVU);
 		}
 		// Gain knob

@@ -11,7 +11,6 @@
 
 #include "MindMeldModular.hpp"
 #include "dsp/OnePole.hpp"
-#include "dsp/VuMeterAll.hpp"
 
 
 
@@ -56,19 +55,20 @@ struct ExpansionInterface {
 
 // Global
 struct GlobalConst {
-	static const int trkAndGrpFaderScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float trkAndGrpFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
-	static const int individualAuxSendScalingExponent = 2; // for example, 3 is x^3 scaling
-	static constexpr float individualAuxSendMaxLinearGain = 1.0f; // for example, 2.0f is +6 dB
-	static const int globalAuxSendScalingExponent = 2; // for example, 2 is x^2 scaling
-	static constexpr float globalAuxSendMaxLinearGain = 4.0f; // for example, 2.0f is +6 dB
-	static const int globalAuxReturnScalingExponent = 3.0f; // for example, 3.0f is x^3 scaling
-	static constexpr float globalAuxReturnMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static const int 		masterFaderScalingExponent = 3; // for example, 3 is x^3 scaling
+	static constexpr float 	masterFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
+	static const int 		trkAndGrpFaderScalingExponent = 3; 
+	static constexpr float 	trkAndGrpFaderMaxLinearGain = 2.0f; 
+	static const int 		globalAuxReturnScalingExponent = 3; 
+	static constexpr float 	globalAuxReturnMaxLinearGain = 2.0f; 
+	static const int 		individualAuxSendScalingExponent = 2;
+	static constexpr float 	individualAuxSendMaxLinearGain = 1.0f;
+	static const int 		globalAuxSendScalingExponent = 2; 
+	static constexpr float 	globalAuxSendMaxLinearGain = 4.0f; 
+	
 	static constexpr float antipopSlewFast = 125.0f;// for mute/solo
 	static constexpr float antipopSlewSlow = 25.0f;// for pan/fader
 	static constexpr float minFadeRate = 0.1f;
-	static constexpr float masterFaderMaxLinearGain = 2.0f;
-	static const int masterFaderScalingExponent = 3; 
 	static constexpr float minHPFCutoffFreq = 20.0f;
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
 };

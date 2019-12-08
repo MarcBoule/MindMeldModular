@@ -75,12 +75,23 @@ static const NVGcolor COL_GRAY = nvgRGB(111, 111, 111);
 static const NVGcolor COL_GREEN = nvgRGB(127, 200, 68);
 static const NVGcolor COL_RED = nvgRGB(247, 23, 41);
 
+
 struct TrackKnob : DynSnapKnob {
+	// user must setup:
 	int* updateTrackLabelRequestSrc = NULL;
 	TrackEq* trackEqsSrc;
 	
+	// internal
+	int refresh = 0;// 0 to 23
+	float px[24];
+	float py[24];
+	Vec cVec;
+	float totAng;
+	
 	TrackKnob() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/track-knob.svg")));
+		cVec = box.size.div(2.0f);
+		totAng = maxAngle - minAngle;
 	}
 	void onChange(const event::Change& e) override {
 		if (updateTrackLabelRequestSrc) {
@@ -94,24 +105,24 @@ struct TrackKnob : DynSnapKnob {
 		static const float radius = 18.0f;
 		DynamicSVGKnob::draw(args);
 		if (paramQuantity) {
-			float totAng = maxAngle - minAngle;
 			float maxTrack = paramQuantity->getMaxValue();
 			int selectedTrack = (int)(paramQuantity->getValue() + 0.5f);
 			float deltAng = totAng / maxTrack;
 			float ang = minAngle;
-			Vec cVec = box.size.div(2.0f);
-			for (int i = 0; i <= (int)(maxTrack + 0.5f); i++) {
-				float px = cVec.x + radius * std::sin(ang);
-				float py = cVec.y - radius * std::cos(ang);
+			for (int trk = 0; trk <= (int)(maxTrack + 0.5f); trk++) {
+				//if (refresh == trk) { // TODO optimize this more
+					px[trk] = cVec.x + radius * std::sin(ang);
+					py[trk] = cVec.y - radius * std::cos(ang);
+				//}
 				nvgBeginPath(args.vg);
-				nvgCircle(args.vg, px, py, 1.0f);
-				if (i == selectedTrack) {
+				nvgCircle(args.vg, px[trk], py[trk], 1.1f);
+				if (trk == selectedTrack) {
 					nvgFillColor(args.vg, SCHEME_WHITE);
 				}
-				else if (trackEqsSrc[i].getActive()) {
+				else if (trackEqsSrc[trk].getActive()) {
 					nvgFillColor(args.vg, COL_GREEN);
 				}
-				else if (trackEqsSrc[i].isNonDefaultState()) {
+				else if (trackEqsSrc[trk].isNonDefaultState()) {
 					nvgFillColor(args.vg, COL_RED);
 				}
 				else {
@@ -121,6 +132,8 @@ struct TrackKnob : DynSnapKnob {
 				ang += deltAng;
 			}
 		}
+		refresh++;
+		if (refresh > 23) refresh = 0;
 	}	
 };
 

@@ -9,7 +9,55 @@
 #ifndef MMM_VUMETERS_HPP
 #define MMM_VUMETERS_HPP
 
+#include "MindMeldModular.hpp"
 
+
+// VuMeter signal processing code for peak/rms
+// ----------------------------------------------------------------------------
+
+// Code below adapted from Andrew Belt's dsp::VuMeter2 struct in VCV Rack's source code
+
+enum VuIds {VU_PEAK_L, VU_PEAK_R, VU_RMS_L, VU_RMS_R};
+
+struct VuMeterAllDual {
+	float vuValues[4];// organized according to VuIds
+	static constexpr float lambda = 30.f;// Inverse time constant in 1/seconds
+
+	void reset() {
+		for (int i = 0; i < 4; i++) {
+			vuValues[i] = 0.0f;
+		}
+	}
+
+	void process(float deltaTime, const float *values) {// L and R
+		for (int i = 0; i < 2; i++) {
+			// RMS
+			float valueSquared = std::pow(values[i], 2);
+			vuValues[VU_RMS_L + i] += (valueSquared - vuValues[VU_RMS_L + i]) * lambda * deltaTime;
+
+			// PEAK
+			float valueAbs = std::fabs(values[i]);
+			if (valueAbs >= vuValues[VU_PEAK_L + i]) {
+				vuValues[VU_PEAK_L + i] = valueAbs;
+			}
+			else {
+				vuValues[VU_PEAK_L + i] += (valueAbs - vuValues[VU_PEAK_L + i]) * lambda * deltaTime;
+			}
+		}
+	}
+	
+	float getPeak(int chan) {// chan0 is L, chan1 is R
+		return vuValues[VU_PEAK_L + chan];
+	}
+	float getRms(int chan) {// chan0 is L, chan1 is R
+		return std::sqrt(vuValues[VU_RMS_L + chan]);
+	}
+};
+
+
+
+// VuMeter displays
+// ----------------------------------------------------------------------------
 
 // Colors
 
@@ -51,13 +99,13 @@ static const int greyArc = 120;
 struct VuMeterBase : OpaqueWidget {
 	static constexpr float epsilon = 0.0001f;// don't show VUs below 0.1mV
 	static constexpr float peakHoldThick = 1.0f;// in px
+	static const int faderScalingExponent = 3;
+	static constexpr float faderMaxLinearGain = 2.0f;
 	
 	// instantiator must setup:
 	VuMeterAllDual *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
 	int8_t *colorThemeGlobal;
 	int8_t *colorThemeLocal;
-	float faderMaxLinearGain;
-	float faderScalingExponent;
 	
 	// derived class must setup:
 	float gapX;// in px
@@ -77,6 +125,7 @@ struct VuMeterBase : OpaqueWidget {
 	VuMeterBase() {
 	}
 	
+	// derived class must call after setting its :
 	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb) {
 		float maxLin = std::pow(faderMaxLinearGain, 1.0f / faderScalingExponent);
 		float yellowLin = std::pow(std::pow(10.0f, yellowMinDb / 20.0f), 1.0f / faderScalingExponent);
@@ -137,70 +186,14 @@ struct VuMeterTrack : VuMeterBase {//
 		barY = mm2px(42.0);
 		box.size = Vec(barX * 2 + gapX, barY);
 		zeroDbVoltage = 5.0f;// V
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
 
 	// used for RMS or PEAK
-	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override {
-		if (vuValue >= epsilon) {
-
-			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
-			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
-			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
-			vuHeight *= barY;
-
-			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_THEMES_TOP[colorTheme][colorIndex], VU_THEMES_BOT[colorTheme][colorIndex]);
-			if (vuHeight > redThreshold) {
-				// Yellow-Red gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight - sepYtrack, barX, vuHeight - redThreshold);
-				nvgFillPaint(args.vg, gradTop);
-				nvgFill(args.vg);
-				// Green
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
-				//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFillPaint(args.vg, gradGreen);
-				nvgFill(args.vg);			
-			}
-			else {
-				// Green
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-				//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-				nvgFillPaint(args.vg, gradGreen);
-				nvgFill(args.vg);
-			}
-
-		}
-	}
+	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override;
 	
-	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override {
-		if (holdValue >= epsilon) {
-			float vuHeight = holdValue / (faderMaxLinearGain * zeroDbVoltage);
-			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
-			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
-			vuHeight *= barY;
-			
-			if (vuHeight > redThreshold) {
-				// Yellow-Red gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[1], VU_YELLOW[1]);
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight - sepYtrack - peakHoldThick, barX, peakHoldThick);
-				nvgFillPaint(args.vg, gradTop);
-				nvgFill(args.vg);	
-			}
-			else {
-				// Green
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_THEMES_TOP[colorTheme][1], VU_THEMES_BOT[colorTheme][1]);
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, peakHoldThick);
-				nvgFillPaint(args.vg, gradGreen);
-				//nvgFillColor(args.vg, VU_GREEN[1]);
-				nvgFill(args.vg);
-			}
-		}		
-	}
+	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override;
+
 };
 
 
@@ -220,98 +213,14 @@ struct VuMeterMaster : VuMeterBase {
 		box.size = Vec(barX * 2 + gapX, barY);
 		zeroDbVoltage = 10.0f;// V
 		hardRedVoltage = 10.0f;
+		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
 	
 	// used for RMS or PEAK
-	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override {
-		if (posX == 0) { // draw the separator for master since depends on softclip on/off. draw only once per vu pair
-			nvgBeginPath(args.vg);
-			nvgRect(args.vg, 0 - 1, barY - redThreshold - sepYmaster, box.size.x + 2, sepYmaster);
-			nvgFillColor(args.vg, nvgRGB(53, 53, 53));
-			nvgFill(args.vg);
-		}
-
-		if (vuValue >= epsilon) {
-			float vuHeight = vuValue / (faderMaxLinearGain * zeroDbVoltage);
-			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
-			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
-			vuHeight *= barY;
-			
-			float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
-			if (vuHeight > redThreshold || peakHoldVal > hardRedVoltage) {
-				// Full red
-				nvgBeginPath(args.vg);
-				if (vuHeight > redThreshold) {
-					nvgRect(args.vg, posX, barY - vuHeight - sepYmaster, barX, vuHeight - redThreshold);
-					nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
-				}
-				else {
-					nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-				}
-				nvgFillColor(args.vg, VU_RED[colorIndex]);
-				nvgFill(args.vg);
-			}
-			else {
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_THEMES_TOP[colorTheme][colorIndex], VU_THEMES_BOT[colorTheme][colorIndex]);
-				if (vuHeight > yellowThreshold) {
-					// Yellow-Orange gradient
-					NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[colorIndex], VU_YELLOW[colorIndex]);
-					nvgBeginPath(args.vg);
-					nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight - yellowThreshold);
-					nvgFillPaint(args.vg, gradTop);
-					nvgFill(args.vg);
-					// Green
-					nvgBeginPath(args.vg);
-					nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
-					//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-					nvgFillPaint(args.vg, gradGreen);
-					nvgFill(args.vg);			
-				}
-				else {
-					// Green
-					nvgBeginPath(args.vg);
-					nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-					//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
-					nvgFillPaint(args.vg, gradGreen);
-					nvgFill(args.vg);
-				}
-			}
-		}
-	}	
+	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override;
 	
-	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override {
-		if (holdValue >= epsilon) {
-			float vuHeight = holdValue / (faderMaxLinearGain * zeroDbVoltage);
-			vuHeight = std::pow(vuHeight, 1.0f / faderScalingExponent);
-			vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
-			vuHeight *= barY;
-			
-			float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
-			if (vuHeight > redThreshold || peakHoldVal > hardRedVoltage) {
-				// Full red
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight - sepYmaster - peakHoldThick, barX, peakHoldThick);
-				nvgFillColor(args.vg, VU_RED[1]);
-				nvgFill(args.vg);
-			} else if (vuHeight > yellowThreshold) {
-				// Yellow-Orange gradient
-				NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[1], VU_YELLOW[1]);
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
-				nvgFillPaint(args.vg, gradTop);
-				nvgFill(args.vg);	
-			}
-			else {
-				// Green
-				NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_THEMES_TOP[colorTheme][1], VU_THEMES_BOT[colorTheme][1]);
-				nvgBeginPath(args.vg);
-				nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
-				//nvgFillColor(args.vg, VU_GREEN[1]);
-				nvgFillPaint(args.vg, gradGreen);
-				nvgFill(args.vg);
-			}
-		}
-	}
+	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override;
+
 	void step() override {
 		if (*clippingPtr != oldClipping) {
 			oldClipping = *clippingPtr;

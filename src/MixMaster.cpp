@@ -907,9 +907,6 @@ struct MixMasterWidget : ModuleWidget {
 				newVU->srcLevels = &(module->tracks[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
-				newVU->faderMaxLinearGain = GlobalConst::trkAndGrpFaderMaxLinearGain;
-				newVU->faderScalingExponent = GlobalConst::trkAndGrpFaderScalingExponent;
-				newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
@@ -1012,9 +1009,6 @@ struct MixMasterWidget : ModuleWidget {
 				newVU->srcLevels = &(module->groups[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
-				newVU->faderMaxLinearGain = GlobalConst::trkAndGrpFaderMaxLinearGain;
-				newVU->faderScalingExponent = GlobalConst::trkAndGrpFaderScalingExponent;
-				newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
@@ -1081,9 +1075,6 @@ struct MixMasterWidget : ModuleWidget {
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			newVU->clippingPtr = &(module->master.clipping);
-			newVU->faderMaxLinearGain = GlobalConst::masterFaderMaxLinearGain;
-			newVU->faderScalingExponent = GlobalConst::masterFaderScalingExponent;
-			newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
@@ -1197,9 +1188,6 @@ struct MixMasterJrWidget : ModuleWidget {
 				newVU->srcLevels = &(module->tracks[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
-				newVU->faderMaxLinearGain = GlobalConst::trkAndGrpFaderMaxLinearGain;
-				newVU->faderScalingExponent = GlobalConst::trkAndGrpFaderScalingExponent;
-				newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
@@ -1297,9 +1285,6 @@ struct MixMasterJrWidget : ModuleWidget {
 				newVU->srcLevels = &(module->groups[i].vu);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
-				newVU->faderMaxLinearGain = GlobalConst::trkAndGrpFaderMaxLinearGain;
-				newVU->faderScalingExponent = GlobalConst::trkAndGrpFaderScalingExponent;
-				newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
@@ -1366,9 +1351,6 @@ struct MixMasterJrWidget : ModuleWidget {
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			newVU->clippingPtr = &(module->master.clipping);
-			newVU->faderMaxLinearGain = GlobalConst::masterFaderMaxLinearGain;
-			newVU->faderScalingExponent = GlobalConst::masterFaderScalingExponent;
-			newVU->prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 12.7 * 10 - 3.4, 70.3)));

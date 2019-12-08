@@ -11,7 +11,6 @@
 
 #include "MindMeldModular.hpp"
 #include "dsp/QuattroBiQuad.hpp"
-#include "dsp/VuMeterAll.hpp"
 
 
 static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
