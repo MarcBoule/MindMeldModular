@@ -77,22 +77,45 @@ static const NVGcolor COL_RED = nvgRGB(247, 23, 41);
 
 
 struct TrackKnob : DynSnapKnob {
+	static constexpr float radius = 18.0f;
+	static constexpr float dotSize = 1.1f;
+
 	// user must setup:
 	int* updateTrackLabelRequestSrc = NULL;
 	TrackEq* trackEqsSrc;
 	
 	// internal
-	int refresh = 0;// 0 to 23
-	float px[24];
-	float py[24];
+	int refresh;// 0 to 23
+	int numTracks;// typically 24
 	Vec cVec;
 	float totAng;
+	float px[24];
+	float py[24];
+	bool nonDefaultState[24];
+	
 	
 	TrackKnob() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/track-knob.svg")));
+		
+		refresh = 0;
+		numTracks = -1;// force fillDotPosAndDefState() in first pass in draw() where paramQuantity is non null
 		cVec = box.size.div(2.0f);
 		totAng = maxAngle - minAngle;
 	}
+	
+	void fillDotPosAndDefState() {
+		// requires numTracks to be up to date
+		float deltAng = totAng / ((float)numTracks - 1.0f);
+		float ang = minAngle;
+		for (int trk = 0; trk < numTracks; trk++) {
+			px[trk] = cVec.x + radius * std::sin(ang);
+			py[trk] = cVec.y - radius * std::cos(ang);
+			ang += deltAng;
+			nonDefaultState[trk] = trackEqsSrc[trk].isNonDefaultState();
+		}
+	}
+	
+	
 	void onChange(const event::Change& e) override {
 		if (updateTrackLabelRequestSrc) {
 			*updateTrackLabelRequestSrc = 1;
@@ -102,34 +125,33 @@ struct TrackKnob : DynSnapKnob {
 	
 	
 	void draw(const DrawArgs &args) override {
-		static const float radius = 18.0f;
 		DynamicSVGKnob::draw(args);
 		if (paramQuantity) {
-			float maxTrack = paramQuantity->getMaxValue();
+			int newNumTracks = (int)(paramQuantity->getMaxValue() + 1.5f);
+			if (newNumTracks != numTracks) {
+				numTracks = newNumTracks;
+				fillDotPosAndDefState();
+			}
 			int selectedTrack = (int)(paramQuantity->getValue() + 0.5f);
-			float deltAng = totAng / maxTrack;
-			float ang = minAngle;
-			for (int trk = 0; trk <= (int)(maxTrack + 0.5f); trk++) {
-				//if (refresh == trk) { // TODO optimize this more
-					px[trk] = cVec.x + radius * std::sin(ang);
-					py[trk] = cVec.y - radius * std::cos(ang);
-				//}
+			for (int trk = 0; trk < numTracks; trk++) {
+				if (trk == refresh) {
+					nonDefaultState[trk] = trackEqsSrc[trk].isNonDefaultState();
+				}
 				nvgBeginPath(args.vg);
-				nvgCircle(args.vg, px[trk], py[trk], 1.1f);
+				nvgCircle(args.vg, px[trk], py[trk], dotSize);
 				if (trk == selectedTrack) {
 					nvgFillColor(args.vg, SCHEME_WHITE);
 				}
 				else if (trackEqsSrc[trk].getActive()) {
 					nvgFillColor(args.vg, COL_GREEN);
 				}
-				else if (trackEqsSrc[trk].isNonDefaultState()) {
+				else if (nonDefaultState[trk]) {
 					nvgFillColor(args.vg, COL_RED);
 				}
 				else {
 					nvgFillColor(args.vg, COL_GRAY);
 				}
 				nvgFill(args.vg);		
-				ang += deltAng;
 			}
 		}
 		refresh++;

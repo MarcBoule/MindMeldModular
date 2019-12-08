@@ -18,21 +18,24 @@ struct QuattroBiQuad {
 		PEAK,
 	};
 	
+	// coefficients
 	simd::float_4 b0;
 	simd::float_4 b1;
 	simd::float_4 b2;
 	simd::float_4 a1;
 	simd::float_4 a2;
 	
-	simd::float_4 x0;
+	// input/output shift registers
+	simd::float_4 x0;// input is x0[0]
 	simd::float_4 x1;
 	simd::float_4 x2;
+	simd::float_4 y0;// output is y0[3]
 	simd::float_4 y1;
 	simd::float_4 y2;
 	
-	simd::float_4 y0;
-	
+	// other
 	int8_t gainsDifferentThanOne; // 4 ls bits are bool bits, when all zero, can bypass filter calc
+	
 	
 	void reset() {
 		x0 = 0.0f;
@@ -68,11 +71,11 @@ struct QuattroBiQuad {
 	
 		
 	void setParameters(Type type, int i, float f, float V, float Q) {
-		// type: type of filter/eq, see Type enum in dsp::TBiquadFilter
+		// type: type of filter/eq
 		// i: eq index (0 to 3),
 		// f: normalized frequency (fc/sampleRate)
 		// V: linearGain for peak or shelving
-		// Q: quality (0.1 to 10 ?)
+		// Q: quality factor
 		float K = std::tan(M_PI * f);
 		if (V == 1.0f) {
 			gainsDifferentThanOne &= ~(0x1 << i);

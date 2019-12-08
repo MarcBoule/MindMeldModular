@@ -56,7 +56,7 @@ struct VuMeterAllDual {
 
 
 
-// VuMeter displays
+// VuMeter displays (and colors)
 // ----------------------------------------------------------------------------
 
 // Colors
@@ -125,50 +125,11 @@ struct VuMeterBase : OpaqueWidget {
 	VuMeterBase() {
 	}
 	
-	// derived class must call after setting its :
-	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb) {
-		float maxLin = std::pow(faderMaxLinearGain, 1.0f / faderScalingExponent);
-		float yellowLin = std::pow(std::pow(10.0f, yellowMinDb / 20.0f), 1.0f / faderScalingExponent);
-		yellowThreshold = barY * (yellowLin / maxLin);
-		float redLin = std::pow(std::pow(10.0f, redMinDb / 20.0f), 1.0f / faderScalingExponent);
-		redThreshold = barY * (redLin / maxLin);
-	}
+	// derived class must call after setting its constructor values:
+	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb);
 	
-	
-	void processPeakHold() {
-		long newTime = time(0);
-		if ( (newTime != oldTime) && ((newTime & 0x1) == 0) ) {
-			oldTime = newTime;
-			peakHold[0] = 0.0f;
-			peakHold[1] = 0.0f;
-		}		
-		for (int i = 0; i < 2; i++) {
-			if (srcLevels->getPeak(i) > peakHold[i]) {
-				peakHold[i] = srcLevels->getPeak(i);
-			}
-		}
-	}
-
-	
-	void draw(const DrawArgs &args) override {
-		processPeakHold();
-		
-		colorTheme = (*colorThemeGlobal >= numThemes) ? *colorThemeLocal : *colorThemeGlobal;
-		
-		// PEAK
-		drawVu(args, srcLevels->getPeak(0), 0, 0);
-		drawVu(args, srcLevels->getPeak(1), barX + gapX, 0);
-
-		// RMS
-		drawVu(args, srcLevels->getRms(0), 0, 1);
-		drawVu(args, srcLevels->getRms(1), barX + gapX, 1);
-		
-		// PEAK_HOLD
-		drawPeakHold(args, peakHold[0], 0);
-		drawPeakHold(args, peakHold[1], barX + gapX);
-				
-		Widget::draw(args);
-	}
+	void processPeakHold();
+	void draw(const DrawArgs &args) override;
 	
 	// used for RMS or PEAK
 	virtual void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) {};
