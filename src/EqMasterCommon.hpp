@@ -43,7 +43,7 @@ class TrackEq {
 
 	// dependants
 	QuattroBiQuad::Type bandTypes[4]; 
-	QuattroBiQuad eqs[2];
+	QuattroBiQuad eqs;
 	
 	
 	public:
@@ -65,8 +65,7 @@ class TrackEq {
 		
 		// dependants
 		initBandTypes();
-		eqs[0].reset();
-		eqs[1].reset();
+		eqs.reset();
 		pushAllParametersToEqs();
 	}
 
@@ -129,10 +128,11 @@ class TrackEq {
 		if (trackGain != DEFAULT_trackGain) return true;
 		return false;
 	}
-	void process(float* out, float inL, float inR) {
+	void process(float* out, float* in) {
+		eqs.process(out, in); 
 		float linearTrackGain = std::pow(10.0f, trackGain / 20.0f);
-		out[0] = eqs[0].process(inL) * linearTrackGain;
-		out[1] = eqs[1].process(inR) * linearTrackGain;
+		out[0] *= linearTrackGain;
+		out[1] *= linearTrackGain;
 	}
 	
 	
@@ -159,8 +159,7 @@ class TrackEq {
 	void pushBandParametersToEqs(int b) {
 		float linearGain = (active && bandActive[b]) ? std::pow(10.0f, gain[b] / 20.0f) : 1.0f;
 		float normalizedFreq = std::min(0.5f, freq[b] / sampleRate);
-		eqs[0].setParameters(bandTypes[b], b, normalizedFreq, linearGain, q[b]);
-		eqs[1].setParameters(bandTypes[b], b, normalizedFreq, linearGain, q[b]);
+		eqs.setParameters(bandTypes[b], b, normalizedFreq, linearGain, q[b]);
 	}
 };
 

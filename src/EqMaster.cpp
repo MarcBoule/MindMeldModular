@@ -338,10 +338,9 @@ struct EqMaster : Module {
 		for (int i = 0; i < 3; i++) {
 			if (inputs[SIG_INPUTS + i].isConnected()) {
 				for (int t = 0; t < 8; t++) {
-					float inL = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 0);
-					float inR = inputs[SIG_INPUTS + i].getVoltage((t << 1) + 1);
+					float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
 					float out[2];
-					trackEqs[(i << 3) + t].process(out, inL, inR);
+					trackEqs[(i << 3) + t].process(out, in);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
 					if ( ((i << 3) + t) == selectedTrack ) {
