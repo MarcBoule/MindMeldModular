@@ -7,7 +7,7 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
    height="3.7mm"
    width="3.7mm"
    sodipodi:docname="bell-off.svg"
@@ -32,7 +32,7 @@
      inkscape:window-y="413"
      inkscape:window-x="0"
      inkscape:cy="5.2449999"
-     inkscape:cx="5.2449999"
+     inkscape:cx="-1.7933272"
      inkscape:zoom="25.929457"
      inkscape:document-units="mm"
      units="mm"
@@ -57,28 +57,27 @@
   <title
      id="title194">Asset 7</title>
   <g
-     transform="scale(1.3343753)"
-     data-name="Layer 2"
-     id="Layer_2">
-    <g
-       data-name="EQ Shelf / Peak icons"
-       id="EQ_Shelf_Peak_icons">
-      <circle
-         id="circle196"
-         r="5.2399998"
-         cy="5.2399998"
-         cx="5.2399998"
-         class="cls-1" />
-      <path
-         inkscape:connector-curvature="0"
-         id="path198"
-         d="M 9.44,5.41 H 7.16 C 7.16,5.41 6.35,3 5.37,3 c -1.13,0 -2,2.41 -2,2.41 H 1.05"
-         class="cls-2" />
-      <path
-         inkscape:connector-curvature="0"
-         id="path200"
-         d="M 9.44,5.41 H 7.16 c 0,0 -0.81,2.4 -1.79,2.4 -1.13,0 -2,-2.4 -2,-2.4 H 1.05"
-         class="cls-2" />
-    </g>
+     id="EQ_Shelf_Peak_icons"
+     data-name="EQ Shelf / Peak icons"
+     transform="scale(1.3343753)">
+    <circle
+       style="fill:#666666"
+       class="cls-1"
+       cx="5.2399998"
+       cy="5.2399998"
+       r="5.2399998"
+       id="circle196" />
+    <path
+       style="fill:none;stroke:#333333;stroke-width:0.69999999px;stroke-linejoin:round"
+       class="cls-2"
+       d="M 9.44,5.41 H 7.16 C 7.16,5.41 6.35,3 5.37,3 c -1.13,0 -2,2.41 -2,2.41 H 1.05"
+       id="path198"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#333333;stroke-width:0.69999999px;stroke-linejoin:round"
+       class="cls-2"
+       d="M 9.44,5.41 H 7.16 c 0,0 -0.81,2.4 -1.79,2.4 -1.13,0 -2,-2.4 -2,-2.4 H 1.05"
+       id="path200"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>

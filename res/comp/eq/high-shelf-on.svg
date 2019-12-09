@@ -7,10 +7,10 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   inkscape:version="1.0beta1 (32d4812, 2019-09-19)"
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
    height="3.7mm"
    width="3.7mm"
-   sodipodi:docname="shelf-on.svg"
+   sodipodi:docname="high-shelf-on.svg"
    id="svg316"
    version="1.1"
    viewBox="0 0 13.984253 13.984253">
@@ -28,18 +28,18 @@
   </metadata>
   <sodipodi:namedview
      inkscape:current-layer="svg316"
-     inkscape:window-maximized="0"
-     inkscape:window-y="413"
-     inkscape:window-x="0"
+     inkscape:window-maximized="1"
+     inkscape:window-y="-8"
+     inkscape:window-x="-8"
      inkscape:cy="5.2449999"
-     inkscape:cx="5.2449999"
+     inkscape:cx="-8.8316543"
      inkscape:zoom="25.929457"
      inkscape:document-units="mm"
      units="mm"
      showgrid="false"
      id="namedview318"
-     inkscape:window-height="754"
-     inkscape:window-width="1218"
+     inkscape:window-height="1017"
+     inkscape:window-width="1920"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
      guidetolerance="10"
@@ -57,23 +57,21 @@
   <title
      id="title308">Asset 2</title>
   <g
-     transform="scale(1.3343753)"
-     data-name="Layer 2"
-     id="Layer_2">
-    <g
-       data-name="EQ Shelf / Peak icons"
-       id="EQ_Shelf_Peak_icons">
-      <circle
-         id="circle310"
-         r="5.2399998"
-         cy="5.2399998"
-         cx="5.2399998"
-         class="cls-1" />
-      <path
-         inkscape:connector-curvature="0"
-         id="path312"
-         d="m 6.58,4.64 a 4.8,4.8 0 0 0 -2,-1.81 0.47,0.47 0 0 0 -0.17,0 H 1.74 v 0.8 H 4.29 A 4.15,4.15 0 0 1 5.88,5 3.93,3.93 0 0 1 4.29,6.48 H 1.74 v 0.81 h 2.64 a 0.33,0.33 0 0 0 0.17,0 4.79,4.79 0 0 0 2,-1.8 H 9.81 V 4.64 Z"
-         class="cls-2" />
-    </g>
+     id="EQ_Shelf_Peak_icons"
+     data-name="EQ Shelf / Peak icons"
+     transform="matrix(-1.3343753,0,0,1.3343753,13.984253,0)">
+    <circle
+       style="fill:#cccccc"
+       class="cls-1"
+       cx="5.2399998"
+       cy="5.2399998"
+       r="5.2399998"
+       id="circle310" />
+    <path
+       style="fill:#333333"
+       class="cls-2"
+       d="m 6.58,4.64 a 4.8,4.8 0 0 0 -2,-1.81 0.47,0.47 0 0 0 -0.17,0 H 1.74 v 0.8 H 4.29 A 4.15,4.15 0 0 1 5.88,5 3.93,3.93 0 0 1 4.29,6.48 H 1.74 v 0.81 h 2.64 a 0.33,0.33 0 0 0 0.17,0 4.79,4.79 0 0 0 2,-1.8 H 9.81 V 4.64 Z"
+       id="path312"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>

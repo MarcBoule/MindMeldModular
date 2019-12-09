@@ -19,8 +19,8 @@ struct EqMaster : Module {
 		ENUMS(FREQ_PARAMS, 4),
 		ENUMS(GAIN_PARAMS, 4),
 		ENUMS(Q_PARAMS, 4),
-		LOW_BP_PARAM,
-		HIGH_BP_PARAM,
+		LOW_PEAK_PARAM,
+		HIGH_PEAK_PARAM,
 		NUM_PARAMS
 	};
 	
@@ -89,8 +89,8 @@ struct EqMaster : Module {
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
 			configParam(Q_PARAMS + i, 0.5f, 15.0f, DEFAULT_q, bandNames[i] + " Q");
 		}
-		configParam(LOW_BP_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "Low is peak type");
-		configParam(HIGH_BP_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "High is peak type");
+		configParam(LOW_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "LF peak/shelf");
+		configParam(HIGH_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "HF peak/shelf");
 		
 		onReset();
 		
@@ -435,6 +435,23 @@ struct EqMasterWidget : ModuleWidget {
 		// Controls
 		static const float ctrlX = 23.94f;
 		static const float ctrlDX = 27.74f;
+		PeakShelfBase* peakShelfSwitches[4];
+		// LF shelf:
+		addParam(peakShelfSwitches[0] = createParamCentered<ShelfLowSwitch>(mm2px(Vec(19.39f, 81.55f)), module, EqMaster::LOW_PEAK_PARAM));
+		// LF peak:
+		addParam(peakShelfSwitches[1] = createParamCentered<PeakSwitch>(mm2px(Vec(39.63f, 81.55f)), module, EqMaster::LOW_PEAK_PARAM));
+		// HF peak:
+		addParam(peakShelfSwitches[2] = createParamCentered<PeakSwitch>(mm2px(Vec(102.6f, 81.55f)), module, EqMaster::HIGH_PEAK_PARAM));
+		// HF shelf:
+		addParam(peakShelfSwitches[3] = createParamCentered<ShelfHighSwitch>(mm2px(Vec(122.85f, 81.55f)), module, EqMaster::HIGH_PEAK_PARAM));
+		if (module) {
+			for (int b = 0; b < 4; b++) {
+				peakShelfSwitches[b]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+				peakShelfSwitches[b]->trackEqsSrc = module->trackEqs;
+				peakShelfSwitches[b]->isLF = (b < 2);
+			}
+		}
+		
 		BandKnob* freqKnobs[4];
 		BandKnob* gainKnobs[4];
 		BandKnob* qKnobs[4];
@@ -545,7 +562,9 @@ struct EqMasterWidget : ModuleWidget {
 					module->params[EqMaster::FREQ_PARAMS + c].setValue(module->trackEqs[trk].getFreq(c));
 					module->params[EqMaster::GAIN_PARAMS + c].setValue(module->trackEqs[trk].getGain(c));
 					module->params[EqMaster::Q_PARAMS + c].setValue(module->trackEqs[trk].getQ(c));
-				}				
+				}	
+				module->params[EqMaster::LOW_PEAK_PARAM].setValue(module->trackEqs[trk].getLowPeak() ? 1.0f : 0.0f);
+				module->params[EqMaster::HIGH_PEAK_PARAM].setValue(module->trackEqs[trk].getHighPeak() ? 1.0f : 0.0f);
 				oldSelectedTrack = trk;
 			}
 		}

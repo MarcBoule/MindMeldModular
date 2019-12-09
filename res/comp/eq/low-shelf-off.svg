@@ -10,36 +10,36 @@
    inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
    height="3.7mm"
    width="3.7mm"
-   sodipodi:docname="bell-on.svg"
-   id="svg242"
+   sodipodi:docname="low-shelf-off.svg"
+   id="svg370"
    version="1.1"
    viewBox="0 0 13.984253 13.984253">
   <metadata
-     id="metadata246">
+     id="metadata374">
     <rdf:RDF>
       <cc:Work
          rdf:about="">
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title>Asset 6</dc:title>
+        <dc:title>Asset 17</dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <sodipodi:namedview
-     inkscape:current-layer="svg242"
-     inkscape:window-maximized="0"
-     inkscape:window-y="413"
-     inkscape:window-x="0"
+     inkscape:current-layer="svg370"
+     inkscape:window-maximized="1"
+     inkscape:window-y="300"
+     inkscape:window-x="1912"
      inkscape:cy="5.2449999"
-     inkscape:cx="-1.7933272"
+     inkscape:cx="-0.44351104"
      inkscape:zoom="25.929457"
      inkscape:document-units="mm"
      units="mm"
      showgrid="false"
-     id="namedview244"
-     inkscape:window-height="704"
-     inkscape:window-width="967"
+     id="namedview372"
+     inkscape:window-height="705"
+     inkscape:window-width="1366"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
      guidetolerance="10"
@@ -50,34 +50,28 @@
      bordercolor="#666666"
      pagecolor="#ffffff" />
   <defs
-     id="defs230">
+     id="defs360">
     <style
-       id="style228">.cls-1{fill:#ccc;}.cls-2{fill:none;stroke:#333;stroke-linejoin:round;stroke-width:0.7px;}</style>
+       id="style358">.cls-1{fill:#666;}.cls-2{fill:#333;}</style>
   </defs>
   <title
-     id="title232">Asset 6</title>
+     id="title362">Asset 17</title>
   <g
      id="EQ_Shelf_Peak_icons"
      data-name="EQ Shelf / Peak icons"
-     transform="scale(1.3343753)">
+     transform="matrix(-1.3343753,0,0,1.3343753,13.984253,0)">
     <circle
-       style="fill:#cccccc"
+       style="fill:#666666"
        class="cls-1"
        cx="5.2399998"
        cy="5.2399998"
        r="5.2399998"
-       id="circle234" />
+       id="circle364" />
     <path
-       style="fill:none;stroke:#333333;stroke-width:0.69999999px;stroke-linejoin:round"
+       style="fill:#333333"
        class="cls-2"
-       d="M 9.44,5.41 H 7.15 C 7.15,5.41 6.35,3 5.37,3 c -1.13,0 -2,2.41 -2,2.41 H 1.05"
-       id="path236"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:none;stroke:#333333;stroke-width:0.69999999px;stroke-linejoin:round"
-       class="cls-2"
-       d="M 9.44,5.41 H 7.15 c 0,0 -0.8,2.4 -1.78,2.4 -1.13,0 -2,-2.4 -2,-2.4 H 1.05"
-       id="path238"
+       d="m 4.12,5.45 a 4.86,4.86 0 0 0 2,1.8 0.33,0.33 0 0 0 0.17,0 H 9 V 6.48 H 6.41 A 4,4 0 0 1 4.82,5 4.07,4.07 0 0 1 6.41,3.6 H 9 V 2.8 H 6.32 a 0.47,0.47 0 0 0 -0.17,0 4.87,4.87 0 0 0 -2,1.81 H 0.9 v 0.81 z"
+       id="path366"
        inkscape:connector-curvature="0" />
   </g>
 </svg>

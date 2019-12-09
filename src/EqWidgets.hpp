@@ -78,8 +78,9 @@ struct TrackLabel : LedDisplayChoice {
 };
 
 
-// Knobs and buttons
+// Knobs
 // --------------------
+
 static const NVGcolor COL_GRAY = nvgRGB(111, 111, 111);
 static const NVGcolor COL_GREEN = nvgRGB(127, 200, 68);
 static const NVGcolor COL_RED = nvgRGB(247, 23, 41);
@@ -184,19 +185,6 @@ struct TrackGainKnob : DynKnob {
 	}
 };
 
-struct ActiveSwitch : MmSwitch {
-	Param* trackParamSrc;
-	TrackEq* trackEqsSrc;
-
-	void onChange(const event::Change& e) override {
-		MmSwitch::onChange(e);
-		if (paramQuantity) {
-			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setActive(paramQuantity->getValue() > 0.5f);
-		}
-	}
-};
-
 struct BandKnob : DynKnob {
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc;
@@ -257,6 +245,63 @@ struct EqQKnob : BandKnob {
 		}
 	}
 };
+
+
+
+// Switches and buttons
+// --------------------
+
+struct ActiveSwitch : MmSwitch {
+	Param* trackParamSrc;
+	TrackEq* trackEqsSrc;
+
+	void onChange(const event::Change& e) override {
+		MmSwitch::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackEqsSrc[currTrk].setActive(paramQuantity->getValue() > 0.5f);
+		}
+	}
+};
+
+struct PeakShelfBase : app::SvgSwitch {
+	Param* trackParamSrc;
+	TrackEq* trackEqsSrc;
+	bool isLF;
+};
+struct PeakSwitch : PeakShelfBase {
+	PeakSwitch() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/bell-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/bell-on.svg")));
+	}
+	void onChange(const event::Change& e) override {
+		SvgSwitch::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			bool state = paramQuantity->getValue() > 0.5f;
+			if (isLF) {
+				trackEqsSrc[currTrk].setLowPeak(state);
+			}
+			else {
+				trackEqsSrc[currTrk].setHighPeak(state);
+			}
+		}
+	}
+};
+struct ShelfLowSwitch : PeakShelfBase {
+	ShelfLowSwitch() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/low-shelf-on.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/low-shelf-off.svg")));
+	}
+};
+struct ShelfHighSwitch : PeakShelfBase {
+	ShelfHighSwitch() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/high-shelf-on.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/high-shelf-off.svg")));
+	}
+};
+
+
 
 
 #endif
