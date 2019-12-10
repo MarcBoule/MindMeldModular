@@ -85,7 +85,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 	int8_t* colorGlobalSrc = NULL;
 	int8_t* colorLocalSrc;
 	char* trackLabelsSrc;
-	Param* trackParamSrc;
+	Param* trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	int band;
 	
@@ -101,7 +101,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		color = DISP_COLORS[0];
 		textOffset = Vec(4.2f, 11.3f);
-		text = "";
+		text = "---";
 	};
 	
 	virtual void prepareText() {}
@@ -120,7 +120,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 
-			nvgFontSize(args.vg, 8);
+			nvgFontSize(args.vg, 9);
 			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
 		}
 		nvgResetScissor(args.vg);		
@@ -139,26 +139,39 @@ struct BandLabelBase : widget::OpaqueWidget {
 
 struct BandLabelFreq : BandLabelBase {
 	void prepareText() override {
-		int trk = (int)(trackParamSrc->getValue() + 0.5f);
-		float freq = trackEqsSrc[trk].getFreq(band);
-		if (freq < 10000.0f) {
-			text = string::f("%i Hz", (int)(freq + 0.5f));
-		}
-		else {
-			freq /= 10000.0f;
-			text = string::f("%.2f kHz", freq);
+		if (trackParamSrc) {
+			int trk = (int)(trackParamSrc->getValue() + 0.5f);
+			float freq = trackEqsSrc[trk].getFreq(band);
+			if (freq < 10000.0f) {
+				text = string::f("%i", (int)(freq + 0.5f));
+			}
+			else {
+				freq /= 1000.0f;
+				text = string::f("%.2fk", freq);
+			}
 		}
 	}
 };
 struct BandLabelGain : BandLabelBase {
 	void prepareText() override {
-		int trk = (int)(trackParamSrc->getValue() + 0.5f);
-		float gain = trackEqsSrc[trk].getGain(band);
-		if (std::fabs(gain) < 10.0f) {
-			text = string::f("%.2f dB", math::normalizeZero(gain));
+		if (trackParamSrc) {
+			int trk = (int)(trackParamSrc->getValue() + 0.5f);
+			float gain = trackEqsSrc[trk].getGain(band);
+			if (std::fabs(gain) < 10.0f) {
+				text = string::f("%.2f dB", math::normalizeZero(gain));
+			}
+			else {
+				text = string::f("%.1f dB", math::normalizeZero(gain));
+			}
 		}
-		else {
-			text = string::f("%.1f dB", math::normalizeZero(gain));
+	}
+};
+struct BandLabelQ : BandLabelBase {
+	void prepareText() override {
+		if (trackParamSrc) {
+			int trk = (int)(trackParamSrc->getValue() + 0.5f);
+			float q = trackEqsSrc[trk].getQ(band);
+			text = string::f("%.2f", math::normalizeZero(q));
 		}
 	}
 };
