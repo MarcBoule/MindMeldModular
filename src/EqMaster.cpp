@@ -508,9 +508,9 @@ struct EqMasterWidget : ModuleWidget {
 		// Freq, gain and q labels
 		BandLabelBase* bandLabels[12];// 4 freqs, 4 gains, 4 qs
 		for (int b = 0; b < 4; b++) {
-			addChild(bandLabels[b + 0] = createWidgetCentered<BandLabelFreq>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f, 91.2f + 0.8f))));
-			addChild(bandLabels[b + 4] = createWidgetCentered<BandLabelGain>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f - 12.2f, 101.78f + 0.8f))));
-			addChild(bandLabels[b + 8] = createWidgetCentered<BandLabelQ>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f, 112.37f + 0.8f))));
+			addChild(bandLabels[b + 0] = createWidgetCentered<BandLabelFreq>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f, 91.2f + 0.85f))));
+			addChild(bandLabels[b + 4] = createWidgetCentered<BandLabelGain>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f - 12.3f, 101.78f + 0.85f))));
+			addChild(bandLabels[b + 8] = createWidgetCentered<BandLabelQ>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f, 112.37f + 0.85f))));
 		}
 		if (module) {
 			for (int i = 0; i < 12; i++) {

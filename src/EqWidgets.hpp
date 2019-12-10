@@ -120,7 +120,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 
-			nvgFontSize(args.vg, 9);
+			nvgFontSize(args.vg, 10);
 			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
 		}
 		nvgResetScissor(args.vg);		
@@ -158,10 +158,10 @@ struct BandLabelGain : BandLabelBase {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
 			float gain = trackEqsSrc[trk].getGain(band);
 			if (std::fabs(gain) < 10.0f) {
-				text = string::f("%.2f dB", math::normalizeZero(gain));
+				text = string::f("%.2fdB", math::normalizeZero(gain));
 			}
 			else {
-				text = string::f("%.1f dB", math::normalizeZero(gain));
+				text = string::f("%.1fdB", math::normalizeZero(gain));
 			}
 		}
 	}
