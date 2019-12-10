@@ -284,48 +284,6 @@ struct CloakedModeItem : MenuItem {
 	}
 };
 
-// struct ExpansionItem : MenuItem {
-	// int *expansionPtr;
-	// void onAction(const event::Action &e) override {
-		// *expansionPtr ^= 0x1;
-	// }
-// };
-
-struct VuColorItem : MenuItem {
-	int8_t *srcColor;
-	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
-
-	struct VuColorSubItem : MenuItem {
-		int8_t *srcColor;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			*srcColor = setVal;
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-
-		std::string vuColorNames[6] = {
-			"Green (default)",
-			"Aqua",
-			"Cyan",
-			"Blue",
-			"Purple",
-			"Set per track"
-		};
-		
-		for (int i = 0; i < (isGlobal ? 6 : 5); i++) {
-			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColor == i));
-			vuColItem->srcColor = srcColor;
-			vuColItem->setVal = i;
-			menu->addChild(vuColItem);
-		}
-
-		return menu;
-	}
-};
-
 
 struct DispColorItem : MenuItem {
 	int8_t *srcColor;

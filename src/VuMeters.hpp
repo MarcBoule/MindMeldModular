@@ -56,20 +56,50 @@ struct VuMeterAllDual {
 
 
 
+// VuMeter menu for color selection
+// ----------------------------------------------------------------------------
+
+struct VuColorItem : MenuItem {
+	int8_t *srcColor;
+	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group/master context menu
+
+	struct VuColorSubItem : MenuItem {
+		int8_t *srcColor;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			*srcColor = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		std::string vuColorNames[6] = {
+			"Green (default)",
+			"Aqua",
+			"Cyan",
+			"Blue",
+			"Purple",
+			"Set per track"
+		};
+		
+		for (int i = 0; i < (isGlobal ? 6 : 5); i++) {
+			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColor == i));
+			vuColItem->srcColor = srcColor;
+			vuColItem->setVal = i;
+			menu->addChild(vuColItem);
+		}
+
+		return menu;
+	}
+};
+
+
+
 // VuMeter displays (and colors)
 // ----------------------------------------------------------------------------
 
 // Colors
-
-static const NVGcolor DISP_COLORS[] = {
-	nvgRGB(0xff, 0xd7, 0x14),// yellow
-	nvgRGB(240, 240, 240),// light-gray			
-	nvgRGB(140, 235, 107),// green
-	nvgRGB(102, 245, 207),// aqua
-	nvgRGB(102, 207, 245),// cyan
-	nvgRGB(102, 183, 245),// blue
-	nvgRGB(177, 107, 235)// purple
-};
 
 static const int numThemes = 5;
 static const NVGcolor VU_THEMES_TOP[numThemes][2] =  

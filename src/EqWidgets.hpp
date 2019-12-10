@@ -17,8 +17,8 @@
 // --------------------
 
 struct TrackLabel : LedDisplayChoice {
-	// int8_t* dispColorPtr = NULL;
-	// int8_t* dispColorLocalPtr;
+	int8_t* colorGlobalSrc = NULL;
+	int8_t* colorLocalSrc;
 	char* trackLabelsSrc;
 	Param* trackParamSrc;
 	TrackEq *trackEqsSrc;
@@ -29,13 +29,13 @@ struct TrackLabel : LedDisplayChoice {
 		text = "-00-";
 	};
 	
-	// void draw(const DrawArgs &args) override {
-		// if (dispColorPtr) {
-			// int colorIndex = *dispColorPtr < 7 ? *dispColorPtr : *dispColorLocalPtr;
-			// color = DISP_COLORS[colorIndex];
-		// }	
-		// LedDisplayChoice::draw(args);
-	// }
+	void draw(const DrawArgs &args) override {
+		if (colorGlobalSrc) {
+			int colorIndex = *colorGlobalSrc < 7 ? *colorGlobalSrc : *colorLocalSrc;
+			color = DISP_COLORS[colorIndex];
+		}	
+		LedDisplayChoice::draw(args);
+	}
 	
 	struct TrackSelectItem : MenuItem {
 		Param* trackParamSrc;

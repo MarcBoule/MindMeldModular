@@ -41,8 +41,7 @@ struct EqMaster : Module {
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
-	int8_t vuColorGlobal = 0;
-	int8_t vuColorThemeLocal = 0;
+	int8_t colorThemeLocal = 0;// not used in EQ, but using VU code of MixMaster so need this even though it will never be read
 
 	// Need to save, no reset
 	int panelTheme;
@@ -50,6 +49,7 @@ struct EqMaster : Module {
 	// Need to save, with reset
 	int mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
+	PackedBytes4 colorThemes;// cc4[0] is labels, cc4[1] is labels
 	TrackEq trackEqs[24];
 	
 	// No need to save, with reset
@@ -87,7 +87,7 @@ struct EqMaster : Module {
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, bandNames[i] + " active");
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
-			configParam(Q_PARAMS + i, 0.5f, 15.0f, DEFAULT_q, bandNames[i] + " Q");
+			configParam(Q_PARAMS + i, 0.3f, 20.0f, DEFAULT_q, bandNames[i] + " Q");
 		}
 		configParam(LOW_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "LF peak/shelf");
 		configParam(HIGH_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "HF peak/shelf");
@@ -103,6 +103,7 @@ struct EqMaster : Module {
 		for (int t = 0; t < 24; t++) {
 			trackEqs[t].init(APP->engine->getSampleRate());
 		}
+		colorThemes.cc1 = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -127,6 +128,9 @@ struct EqMaster : Module {
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 		
+		// colorThemes
+		json_object_set_new(rootJ, "colorThemes", json_integer(colorThemes.cc1));
+				
 		// trackEqs
 		// -------------
 		
@@ -215,6 +219,11 @@ struct EqMaster : Module {
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
 		if (textJ)
 			snprintf(trackLabels, 24 * 4 + 1, "%s", json_string_value(textJ));
+
+		// colorThemes
+		json_t *colorThemesJ = json_object_get(rootJ, "colorThemes");
+		if (colorThemesJ)
+			colorThemes.cc1 = json_integer_value(colorThemesJ);
 
 		// trackEqs
 		// -------------
@@ -386,7 +395,16 @@ struct EqMasterWidget : ModuleWidget {
 		
 		FetchLabelsItem *fetchItem = createMenuItem<FetchLabelsItem>("Fetch track labels from Mixer", RIGHT_ARROW);
 		fetchItem->mappedIdSrc = &(module->mappedId);
-		menu->addChild(fetchItem);	
+		menu->addChild(fetchItem);
+		
+		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
+		dispColItem->srcColor = &(module->colorThemes.cc4[0]);
+		menu->addChild(dispColItem);
+		
+		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
+		vuColItem->srcColor = &(module->colorThemes.cc4[1]);
+		vuColItem->isGlobal = false;
+		menu->addChild(vuColItem);
 	}
 	
 	
@@ -403,6 +421,8 @@ struct EqMasterWidget : ModuleWidget {
 		// Track label
 		addChild(trackLabel = createWidgetCentered<TrackLabel>(mm2px(Vec(leftX, 11.5f))));
 		if (module) {
+			trackLabel->colorGlobalSrc = &(module->colorThemes.cc4[0]);
+			trackLabel->colorLocalSrc = &(module->colorThemeLocal);
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
 			trackLabel->trackEqsSrc = module->trackEqs;
@@ -490,8 +510,8 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(rightX, 37.5f)));
 			newVU->srcLevels = &(module->trackVu);
-			newVU->colorThemeGlobal = &(module->vuColorGlobal);
-			newVU->colorThemeLocal = &(module->vuColorThemeLocal);
+			newVU->colorThemeGlobal = &(module->colorThemes.cc4[1]);
+			newVU->colorThemeLocal = &(module->colorThemeLocal);
 			addChild(newVU);
 		}
 		// Gain knob

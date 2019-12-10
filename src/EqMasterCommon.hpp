@@ -28,6 +28,11 @@ static const bool DEFAULT_highPeak = false;
 static const float DEFAULT_trackGain = 0.0f;// dB
 
 
+union PackedBytes4 {
+	int32_t cc1;
+	int8_t cc4[4];
+};
+
 class TrackEq {
 	float sampleRate;
 	
