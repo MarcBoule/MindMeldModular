@@ -10,14 +10,8 @@
 // Code below adapted from Andrew Belt's dsp::TBiquadFilter struct in VCV Rack's source code
 
 // Four stereo biquad filters in pipeline series, where each biquad's parameters can be set separately
-struct QuattroBiQuad {
-	
-	enum Type {
-		LOWSHELF,
-		HIGHSHELF,
-		PEAK,
-	};
-	
+class QuattroBiQuad {
+
 	// coefficients
 	simd::float_4 b0;
 	simd::float_4 b1;
@@ -36,6 +30,16 @@ struct QuattroBiQuad {
 	// other
 	int8_t gainsDifferentThanOne; // 4 ls bits are bool bits, when all zero, can bypass y0 math
 	bool optResetDone;
+	
+	
+	public:
+
+
+	enum Type {
+		LOWSHELF,
+		HIGHSHELF,
+		PEAK,
+	};
 	
 	void reset() {
 		x0L = x0R = 0.0f;

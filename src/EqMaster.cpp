@@ -403,7 +403,6 @@ struct EqMasterWidget : ModuleWidget {
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
 		vuColItem->srcColor = &(module->colorThemes.cc4[1]);
-		vuColItem->isGlobal = false;
 		menu->addChild(vuColItem);
 	}
 	
@@ -433,6 +432,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			trackKnob->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
 			trackKnob->trackEqsSrc = module->trackEqs;
+			trackKnob->polyInputs = &(module->inputs[EqMaster::SIG_INPUTS]);
 		}
 		// Active switch
 		ActiveSwitch* activeSwitch;
@@ -455,6 +455,8 @@ struct EqMasterWidget : ModuleWidget {
 		// Controls
 		static const float ctrlX = 23.94f;
 		static const float ctrlDX = 27.74f;
+		
+		// Peak/shelf buttons for LF and HF
 		PeakShelfBase* peakShelfSwitches[4];
 		// LF shelf:
 		addParam(peakShelfSwitches[0] = createParamCentered<ShelfLowSwitch>(mm2px(Vec(19.39f, 81.55f)), module, EqMaster::LOW_PEAK_PARAM));
@@ -472,6 +474,7 @@ struct EqMasterWidget : ModuleWidget {
 			}
 		}
 		
+		// Freq, gain and q knobs
 		BandKnob* freqKnobs[4];
 		BandKnob* gainKnobs[4];
 		BandKnob* qKnobs[4];
@@ -490,7 +493,7 @@ struct EqMasterWidget : ModuleWidget {
 		addParam(qKnobs[1] = createDynamicParamCentered<EqQKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 112.37f)), module, EqMaster::Q_PARAMS + 1, module ? &module->panelTheme : NULL));
 		addParam(qKnobs[2] = createDynamicParamCentered<EqQKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 112.37f)), module, EqMaster::Q_PARAMS + 2, module ? &module->panelTheme : NULL));
 		addParam(qKnobs[3] = createDynamicParamCentered<EqQKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 112.37f)), module, EqMaster::Q_PARAMS + 3, module ? &module->panelTheme : NULL));
-		
+		//
 		if (module) {
 			for (int c = 0; c < 4; c++) {
 				freqKnobs[c]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
@@ -499,6 +502,23 @@ struct EqMasterWidget : ModuleWidget {
 				gainKnobs[c]->trackEqsSrc = module->trackEqs;
 				qKnobs[c]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
 				qKnobs[c]->trackEqsSrc = module->trackEqs;
+			}
+		}
+		
+		// Freq, gain and q labels
+		BandLabelBase* bandLabels[12];// 4 freqs, 4 gains, 4 qs
+		for (int b = 0; b < 4; b++) {
+			addChild(bandLabels[b + 0] = createWidgetCentered<BandLabelFreq>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f, 91.2f + 0.7f))));
+			addChild(bandLabels[b + 4] = createWidgetCentered<BandLabelGain>(mm2px(Vec(ctrlX + ctrlDX * b + 11.4f - 12.1f, 101.78f + 0.7f))));
+		}
+		if (module) {
+			for (int i = 0; i < 8; i++) {
+				bandLabels[i]->colorGlobalSrc = &(module->colorThemes.cc4[0]);
+				bandLabels[i]->colorLocalSrc = &(module->colorThemeLocal);
+				bandLabels[i]->trackLabelsSrc = module->trackLabels;
+				bandLabels[i]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+				bandLabels[i]->trackEqsSrc = module->trackEqs;
+				bandLabels[i]->band = (i % 4);
 			}
 		}
 		

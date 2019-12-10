@@ -78,6 +78,91 @@ struct TrackLabel : LedDisplayChoice {
 };
 
 
+struct BandLabelBase : widget::OpaqueWidget {
+	// This struct is adapted from Rack's LedDisplayChoice in app/LedDisplay.{c,h}pp
+
+	// user must set up
+	int8_t* colorGlobalSrc = NULL;
+	int8_t* colorLocalSrc;
+	char* trackLabelsSrc;
+	Param* trackParamSrc;
+	TrackEq *trackEqsSrc;
+	int band;
+	
+	// local
+	std::string text;
+	std::shared_ptr<Font> font;
+	math::Vec textOffset;
+	NVGcolor color;
+	
+	
+	BandLabelBase() {
+		box.size = mm2px(Vec(10.6f, 5.0f));
+		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+		color = DISP_COLORS[0];
+		textOffset = Vec(4.2f, 11.3f);
+		text = "";
+	};
+	
+	virtual void prepareText() {}
+	
+	void draw(const DrawArgs &args) override {
+		prepareText();
+		
+		if (colorGlobalSrc) {
+			int colorIndex = *colorGlobalSrc < 7 ? *colorGlobalSrc : *colorLocalSrc;
+			color = DISP_COLORS[colorIndex];
+		}	
+
+		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+		if (font->handle >= 0) {
+			nvgFillColor(args.vg, color);
+			nvgFontFaceId(args.vg, font->handle);
+			nvgTextLetterSpacing(args.vg, 0.0);
+
+			nvgFontSize(args.vg, 8);
+			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+		}
+		nvgResetScissor(args.vg);		
+	}
+	
+	void onButton(const event::Button& e) override {
+		OpaqueWidget::onButton(e);
+
+		if (e.action == GLFW_PRESS && (e.button == GLFW_MOUSE_BUTTON_LEFT || e.button == GLFW_MOUSE_BUTTON_RIGHT)) {
+			event::Action eAction;
+			onAction(eAction);
+			e.consume(this);
+		}	
+	}
+};
+
+struct BandLabelFreq : BandLabelBase {
+	void prepareText() override {
+		int trk = (int)(trackParamSrc->getValue() + 0.5f);
+		float freq = trackEqsSrc[trk].getFreq(band);
+		if (freq < 10000.0f) {
+			text = string::f("%i Hz", (int)(freq + 0.5f));
+		}
+		else {
+			freq /= 10000.0f;
+			text = string::f("%.2f kHz", freq);
+		}
+	}
+};
+struct BandLabelGain : BandLabelBase {
+	void prepareText() override {
+		int trk = (int)(trackParamSrc->getValue() + 0.5f);
+		float gain = trackEqsSrc[trk].getGain(band);
+		if (std::fabs(gain) < 10.0f) {
+			text = string::f("%.2f dB", math::normalizeZero(gain));
+		}
+		else {
+			text = string::f("%.1f dB", math::normalizeZero(gain));
+		}
+	}
+};
+
 // Knobs
 // --------------------
 
@@ -93,6 +178,7 @@ struct TrackKnob : DynSnapKnob {
 	// user must setup:
 	int* updateTrackLabelRequestSrc = NULL;
 	TrackEq* trackEqsSrc;
+	Input* polyInputs;
 	
 	// internal
 	int refresh;// 0 to 23
@@ -151,6 +237,9 @@ struct TrackKnob : DynSnapKnob {
 				nvgCircle(args.vg, px[trk], py[trk], dotSize);
 				if (trk == selectedTrack) {
 					nvgFillColor(args.vg, SCHEME_WHITE);
+				}
+				else if (!polyInputs[trk >> 3].isConnected()) {
+					nvgFillColor(args.vg, COL_GRAY);
 				}
 				else if (trackEqsSrc[trk].getActive()) {
 					nvgFillColor(args.vg, COL_GREEN);
