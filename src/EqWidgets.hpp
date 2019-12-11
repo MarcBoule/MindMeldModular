@@ -176,6 +176,80 @@ struct BandLabelQ : BandLabelBase {
 	}
 };
 
+
+
+// Displays
+// --------------------
+
+struct BigNumbers : TransparentWidget {
+	// user must set up
+	Param* trackParamSrc = NULL;
+	TrackEq* trackEqsSrc;
+	int* lastMovedKnobIdSrc;
+	time_t* lastMovedKnobTimeSrc;
+	
+	
+	// local
+	std::shared_ptr<Font> font;
+	NVGcolor color;
+	std::string text;
+	math::Vec textOffset;
+	
+	
+	BigNumbers() {
+		box.size = mm2px(Vec(40.0f, 15.0f));
+		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+		color = SCHEME_LIGHT_GRAY;
+		textOffset = Vec(box.size.div(2.0f));
+	}
+	
+	void draw(const DrawArgs &args) override {
+		if (trackParamSrc != NULL) {
+			time_t currTime = time(0);
+			if (currTime - *lastMovedKnobTimeSrc < 5) {
+				text = "";
+				int srcId = *lastMovedKnobIdSrc;
+				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+				if (srcId >= FREQ_PARAMS && srcId < FREQ_PARAMS + 4) {
+					float freq = trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS);
+					if (freq < 10000.0f) {
+						text = string::f("%i Hz", (int)(freq + 0.5f));
+					}
+					else {
+						freq /= 1000.0f;
+						text = string::f("%.2f kHz", freq);
+					}
+				}				
+				else if (srcId >= GAIN_PARAMS && srcId < GAIN_PARAMS + 4) {
+					float gain = trackEqsSrc[currTrk].getGain(srcId - GAIN_PARAMS);
+					if (std::fabs(gain) < 10.0f) {
+						text = string::f("%.2f dB", math::normalizeZero(gain));
+					}
+					else {
+						text = string::f("%.1f dB", math::normalizeZero(gain));
+					}
+				}
+				else if (srcId >= Q_PARAMS && srcId < Q_PARAMS + 4) {
+					float q = trackEqsSrc[currTrk].getQ(srcId - Q_PARAMS);
+					text = string::f("%.2f", math::normalizeZero(q));
+				}
+
+			
+				if (font->handle >= 0 && text.compare("") != 0) {
+					nvgFillColor(args.vg, color);
+					nvgFontFaceId(args.vg, font->handle);
+					nvgTextLetterSpacing(args.vg, 0.0);
+					nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+					nvgFontSize(args.vg, 24.0f);
+					nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+				}
+			}
+		}
+	}
+};
+
+
+
 // Knobs
 // --------------------
 
@@ -287,6 +361,8 @@ struct TrackGainKnob : DynKnob {
 struct BandKnob : DynKnob {
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc;
+	int* lastMovedKnobIdSrc;
+	time_t* lastMovedKnobTimeSrc;
 	
 	void loadGraphics(int band) {
 		if (band == 0) 
@@ -297,6 +373,14 @@ struct BandKnob : DynKnob {
 			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hmf-knob.svg")));
 		else
 			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hf-knob.svg")));
+	}
+	
+	void onDragMove(const event::DragMove& e) override {
+		DynKnob::onDragMove(e);
+		if (paramQuantity) {
+			*lastMovedKnobIdSrc = paramQuantity->paramId;
+			*lastMovedKnobTimeSrc = time(0);
+		}
 	}
 };
 	
@@ -436,6 +520,8 @@ struct ShelfHighSwitch : PeakShelfBase {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/high-shelf-off.svg")));
 	}
 };
+
+
 
 
 

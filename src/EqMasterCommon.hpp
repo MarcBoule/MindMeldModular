@@ -13,6 +13,21 @@
 #include "dsp/QuattroBiQuad.hpp"
 
 
+
+enum EqParamIds {
+	TRACK_PARAM,
+	ACTIVE_PARAM,
+	TRACK_GAIN_PARAM,
+	ENUMS(FREQ_ACTIVE_PARAMS, 4),
+	ENUMS(FREQ_PARAMS, 4),
+	ENUMS(GAIN_PARAMS, 4),
+	ENUMS(Q_PARAMS, 4),
+	LOW_PEAK_PARAM,
+	HIGH_PEAK_PARAM,
+	NUM_EQ_PARAMS
+};
+
+
 static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
 static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
 
