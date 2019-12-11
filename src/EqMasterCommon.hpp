@@ -18,7 +18,7 @@ static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Tr
 
 static const std::string bandNames[4] = {"LF", "LMF", "HMF", "HF"};
 
-static const bool DEFAULT_active = false;
+static const bool DEFAULT_active = true;
 static const bool DEFAULT_bandActive = true;
 static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
 static const float DEFAULT_gain = 0.0f;// dB

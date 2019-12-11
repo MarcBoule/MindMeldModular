@@ -474,6 +474,9 @@ struct EqMasterWidget : ModuleWidget {
 			}
 		}
 		
+		// band enable buttons
+		//addParam(createParamCentered<BandActiveSwitchLF>(mm2px(Vec(ctrlX + ctrlDX * 0 + 1.5f, 81.55f)), module, EqMaster::FREQ_ACTIVE_PARAMS + 0));
+		
 		// Freq, gain and q knobs
 		BandKnob* freqKnobs[4];
 		BandKnob* gainKnobs[4];

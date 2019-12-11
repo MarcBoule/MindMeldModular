@@ -42,11 +42,18 @@ class QuattroBiQuad {
 	};
 	
 	void reset() {
-		x0L = x0R = 0.0f;
-		x1L = x1R = 0.0f;
-		x2L = x2R = 0.0f;
-		y1L = y1R = 0.0f;
-		y2L = y2R = 0.0f;
+		x0L = 0.0f;
+		x0R = 0.0f;
+		x1L = 0.0f;
+		x1R = 0.0f;
+		x2L = 0.0f;
+		x2R = 0.0f;
+		y0L = 0.0f;
+		y0R = 0.0f;
+		y1L = 0.0f;
+		y1R = 0.0f;
+		y2L = 0.0f;
+		y2R = 0.0f;
 		gainsDifferentThanOne = 0xF;
 		optResetDone = false;
 	}
@@ -55,10 +62,14 @@ class QuattroBiQuad {
 	void process(float* out, float* in) {
 		if (gainsDifferentThanOne == 0) {
 			if (!optResetDone) {
-				x2L = x2R = 0.0f;
-				x1L = x1R = 0.0f;
-				y2L = y2R = 0.0f;
-				y1L = y1R = 0.0f;
+				x2L = 0.0f;
+				x2R = 0.0f;
+				x1L = 0.0f;
+				x1R = 0.0f;
+				y2L = 0.0f;
+				y2R = 0.0f;
+				y1L = 0.0f;
+				y1R = 0.0f;
 				optResetDone = true;
 			}
 			

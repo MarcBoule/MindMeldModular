@@ -251,17 +251,14 @@ struct TrackKnob : DynSnapKnob {
 				if (trk == selectedTrack) {
 					nvgFillColor(args.vg, SCHEME_WHITE);
 				}
-				else if (!polyInputs[trk >> 3].isConnected()) {
+				else if (!polyInputs[trk >> 3].isConnected() || !nonDefaultState[trk]) {// if unconnected or in default state
 					nvgFillColor(args.vg, COL_GRAY);
 				}
-				else if (trackEqsSrc[trk].getActive()) {
+				else if (trackEqsSrc[trk].getActive()) {// here we are connected and not in default state
 					nvgFillColor(args.vg, COL_GREEN);
 				}
-				else if (nonDefaultState[trk]) {
-					nvgFillColor(args.vg, COL_RED);
-				}
 				else {
-					nvgFillColor(args.vg, COL_GRAY);
+					nvgFillColor(args.vg, COL_RED);
 				}
 				nvgFill(args.vg);		
 			}
@@ -363,6 +360,13 @@ struct ActiveSwitch : MmSwitch {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setActive(paramQuantity->getValue() > 0.5f);
 		}
+	}
+};
+
+struct BandActiveSwitchLF : app::SvgSwitch {
+	BandActiveSwitchLF() {
+		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
+		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
 	}
 };
 
