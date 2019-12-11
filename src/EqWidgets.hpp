@@ -363,10 +363,40 @@ struct ActiveSwitch : MmSwitch {
 	}
 };
 
-struct BandActiveSwitchLF : app::SvgSwitch {
-	BandActiveSwitchLF() {
-		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
-		addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+struct BandSwitch : app::SvgSwitch {
+	Param* trackParamSrc;
+	TrackEq* trackEqsSrc;
+
+	void loadGraphics(int band) {
+		if (band == 0) {
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+		}
+		else if (band == 1) {
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+		}
+		else if (band == 2) {
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+		}
+		else {
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
+			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+		}
+	}
+};
+template<int BAND>
+struct BandActiveSwitch : BandSwitch {
+	BandActiveSwitch() {
+		loadGraphics(BAND);
+	}
+	void onChange(const event::Change& e) override {
+		BandSwitch::onChange(e);
+		if (paramQuantity) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			trackEqsSrc[currTrk].setBandActive(BAND, paramQuantity->getValue() > 0.5f);
+		}
 	}
 };
 

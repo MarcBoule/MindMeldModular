@@ -475,7 +475,17 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		
 		// band enable buttons
-		//addParam(createParamCentered<BandActiveSwitchLF>(mm2px(Vec(ctrlX + ctrlDX * 0 + 1.5f, 81.55f)), module, EqMaster::FREQ_ACTIVE_PARAMS + 0));
+		BandSwitch* bandSwitches[4];	
+		addParam(bandSwitches[0] = createParamCentered<BandActiveSwitch<0>>(mm2px(Vec(ctrlX + ctrlDX * 0 + 1.5f, 81.55f)), module, EqMaster::FREQ_ACTIVE_PARAMS + 0));
+		addParam(bandSwitches[1] = createParamCentered<BandActiveSwitch<1>>(mm2px(Vec(ctrlX + ctrlDX * 1 + 1.5f, 81.55f)), module, EqMaster::FREQ_ACTIVE_PARAMS + 1));
+		addParam(bandSwitches[2] = createParamCentered<BandActiveSwitch<2>>(mm2px(Vec(ctrlX + ctrlDX * 2 + 1.5f, 81.55f)), module, EqMaster::FREQ_ACTIVE_PARAMS + 2));
+		addParam(bandSwitches[3] = createParamCentered<BandActiveSwitch<3>>(mm2px(Vec(ctrlX + ctrlDX * 3 + 1.5f, 81.55f)), module, EqMaster::FREQ_ACTIVE_PARAMS + 3));
+		if (module) {
+			for (int b = 0; b < 4; b++) {
+				bandSwitches[b]->trackParamSrc = &(module->params[EqMaster::TRACK_PARAM]);
+				bandSwitches[b]->trackEqsSrc = module->trackEqs;
+			}
+		}	
 		
 		// Freq, gain and q knobs
 		BandKnob* freqKnobs[4];
@@ -603,6 +613,7 @@ struct EqMasterWidget : ModuleWidget {
 				module->params[EqMaster::ACTIVE_PARAM].setValue(module->trackEqs[trk].getActive() ? 1.0f : 0.0f);
 				module->params[EqMaster::TRACK_GAIN_PARAM].setValue(module->trackEqs[trk].getTrackGain());
 				for (int c = 0; c < 4; c++) {
+					module->params[EqMaster::FREQ_ACTIVE_PARAMS + c].setValue(module->trackEqs[trk].getBandActive(c) ? 1.0f : 0.0f);
 					module->params[EqMaster::FREQ_PARAMS + c].setValue(module->trackEqs[trk].getFreq(c));
 					module->params[EqMaster::GAIN_PARAMS + c].setValue(module->trackEqs[trk].getGain(c));
 					module->params[EqMaster::Q_PARAMS + c].setValue(module->trackEqs[trk].getQ(c));
