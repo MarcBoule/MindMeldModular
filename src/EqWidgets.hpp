@@ -206,7 +206,7 @@ struct BigNumbers : TransparentWidget {
 	void draw(const DrawArgs &args) override {
 		if (trackParamSrc != NULL) {
 			time_t currTime = time(0);
-			if (currTime - *lastMovedKnobTimeSrc < 5) {
+			if (currTime - *lastMovedKnobTimeSrc < 4) {
 				text = "";
 				int srcId = *lastMovedKnobIdSrc;
 				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
@@ -240,7 +240,7 @@ struct BigNumbers : TransparentWidget {
 					nvgFontFaceId(args.vg, font->handle);
 					nvgTextLetterSpacing(args.vg, 0.0);
 					nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-					nvgFontSize(args.vg, 24.0f);
+					nvgFontSize(args.vg, 26.0f);
 					nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
 				}
 			}

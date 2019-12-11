@@ -64,6 +64,7 @@ class TrackEq {
 	// dependants
 	QuattroBiQuad::Type bandTypes[4]; 
 	QuattroBiQuad eqs;
+	dsp::TSlewLimiter<simd::float_4> gainSlewers;
 	
 	
 	public:
@@ -86,6 +87,8 @@ class TrackEq {
 		// dependants
 		initBandTypes();
 		eqs.reset();
+		gainSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers.reset();
 		pushAllParametersToEqs();
 	}
 
@@ -169,6 +172,12 @@ class TrackEq {
 		return false;
 	}
 	void process(float* out, float* in) {
+		// if (movemask(gain == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			// gainSlewers.process(gInfo->sampleTime, gain);
+		// }
+		
+		
+		
 		eqs.process(out, in); 
 		float linearTrackGain = std::pow(10.0f, trackGain / 20.0f);
 		out[0] *= linearTrackGain;
