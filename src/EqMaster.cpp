@@ -67,14 +67,14 @@ struct EqMaster : Module {
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
 		
 		// Track settings
-		configParam(ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_active ? 1.0f : 0.0f, "Track EQ active");
+		configParam(TRACK_ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_trackActive ? 1.0f : 0.0f, "Track EQ active");
 		configParam(TRACK_GAIN_PARAM, -20.0f, 20.0f, DEFAULT_gain, "Track gain", " dB");
 		configParam(FREQ_PARAMS + 0, 20.0f, 500.0f, DEFAULT_freq[0], "LF freq", " Hz");
 		configParam(FREQ_PARAMS + 1, 60.0f, 2000.0f, DEFAULT_freq[1], "LMF freq", " Hz");
 		configParam(FREQ_PARAMS + 2, 500.0f, 5000.0f, DEFAULT_freq[2], "HMF freq", " Hz");
 		configParam(FREQ_PARAMS + 3, 1000.0f, 20000.0f, DEFAULT_freq[3], "HF freq", " Hz");
 		for (int i = 0; i < 4; i++) {
-			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive ? 1.0f : 0.0f, bandNames[i] + " active");
+			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive, bandNames[i] + " active");
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
 			configParam(Q_PARAMS + i, 0.3f, 20.0f, DEFAULT_q, bandNames[i] + " Q");
 		}
@@ -126,7 +126,7 @@ struct EqMaster : Module {
 		// active
 		json_t *activeJ = json_array();
 		for (int t = 0; t < 24; t++) {
-			json_array_insert_new(activeJ, t, json_boolean(trackEqs[t].getActive()));
+			json_array_insert_new(activeJ, t, json_boolean(trackEqs[t].getTrackActive()));
 		}
 		json_object_set_new(rootJ, "active", activeJ);		
 		
@@ -134,7 +134,7 @@ struct EqMaster : Module {
 		json_t *bandActiveJ = json_array();
 		for (int t = 0; t < 24; t++) {
 			for (int f = 0; f < 4; f++) {
-				json_array_insert_new(bandActiveJ, (t << 2) | f, json_boolean(trackEqs[t].getBandActive(f)));
+				json_array_insert_new(bandActiveJ, (t << 2) | f, json_real(trackEqs[t].getBandActive(f)));
 			}
 		}
 		json_object_set_new(rootJ, "bandActive", bandActiveJ);		
@@ -223,7 +223,7 @@ struct EqMaster : Module {
 			for (int t = 0; t < 24; t++) {
 				json_t *activeArrayJ = json_array_get(activeJ, t);
 				if (activeArrayJ)
-					trackEqs[t].setActive(json_is_true(activeArrayJ));
+					trackEqs[t].setTrackActive(json_is_true(activeArrayJ));
 			}
 		}
 
@@ -234,7 +234,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *bandActiveArrayJ = json_array_get(bandActiveJ, (t << 2) | f);
 					if (bandActiveArrayJ)
-						trackEqs[t].setBandActive(f, json_is_true(bandActiveArrayJ));
+						trackEqs[t].setBandActive(f, json_number_value(bandActiveArrayJ));
 				}
 			}
 		}
@@ -426,7 +426,7 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		// Active switch
 		ActiveSwitch* activeSwitch;
-		addParam(activeSwitch = createParamCentered<ActiveSwitch>(mm2px(Vec(leftX, 48.775f)), module, ACTIVE_PARAM));
+		addParam(activeSwitch = createParamCentered<ActiveSwitch>(mm2px(Vec(leftX, 48.775f)), module, TRACK_ACTIVE_PARAM));
 		if (module) {
 			activeSwitch->trackParamSrc = &(module->params[TRACK_PARAM]);
 			activeSwitch->trackEqsSrc = module->trackEqs;
@@ -604,7 +604,7 @@ struct EqMasterWidget : ModuleWidget {
 			}
 
 			if (oldSelectedTrack != trk) {// update controls when user selects another track
-				module->params[ACTIVE_PARAM].setValue(module->trackEqs[trk].getActive() ? 1.0f : 0.0f);
+				module->params[TRACK_ACTIVE_PARAM].setValue(module->trackEqs[trk].getTrackActive() ? 1.0f : 0.0f);
 				module->params[TRACK_GAIN_PARAM].setValue(module->trackEqs[trk].getTrackGain());
 				for (int c = 0; c < 4; c++) {
 					module->params[FREQ_ACTIVE_PARAMS + c].setValue(module->trackEqs[trk].getBandActive(c) ? 1.0f : 0.0f);

@@ -240,7 +240,7 @@ struct BigNumbers : TransparentWidget {
 					nvgFontFaceId(args.vg, font->handle);
 					nvgTextLetterSpacing(args.vg, 0.0);
 					nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-					nvgFontSize(args.vg, 26.0f);
+					nvgFontSize(args.vg, 24.0f);
 					nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
 				}
 			}
@@ -328,7 +328,7 @@ struct TrackKnob : DynSnapKnob {
 				else if (!polyInputs[trk >> 3].isConnected() || !nonDefaultState[trk]) {// if unconnected or in default state
 					nvgFillColor(args.vg, COL_GRAY);
 				}
-				else if (trackEqsSrc[trk].getActive()) {// here we are connected and not in default state
+				else if (trackEqsSrc[trk].getTrackActive()) {// here we are connected and not in default state
 					nvgFillColor(args.vg, COL_GREEN);
 				}
 				else {
@@ -442,7 +442,7 @@ struct ActiveSwitch : MmSwitch {
 		MmSwitch::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setActive(paramQuantity->getValue() > 0.5f);
+			trackEqsSrc[currTrk].setTrackActive(paramQuantity->getValue() > 0.5f);
 		}
 	}
 };
@@ -479,7 +479,7 @@ struct BandActiveSwitch : BandSwitch {
 		BandSwitch::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setBandActive(BAND, paramQuantity->getValue() > 0.5f);
+			trackEqsSrc[currTrk].setBandActive(BAND, paramQuantity->getValue());
 		}
 	}
 };
