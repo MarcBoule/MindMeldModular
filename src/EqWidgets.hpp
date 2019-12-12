@@ -170,8 +170,13 @@ struct BandLabelQ : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
-			float q = trackEqsSrc[trk].getQ(band);
-			text = string::f("%.2f", math::normalizeZero(q));
+			if (! ( (band == 0 && !trackEqsSrc[trk].getLowPeak()) || (band == 3 && !trackEqsSrc[trk].getHighPeak())) ) {
+				float q = trackEqsSrc[trk].getQ(band);
+				text = string::f("%.2f", math::normalizeZero(q));
+			}
+			else {
+				text = "---";
+			}
 		}
 	}
 };
@@ -230,8 +235,14 @@ struct BigNumbers : TransparentWidget {
 					}
 				}
 				else if (srcId >= Q_PARAMS && srcId < Q_PARAMS + 4) {
-					float q = trackEqsSrc[currTrk].getQ(srcId - Q_PARAMS);
-					text = string::f("%.2f", math::normalizeZero(q));
+					int band = srcId - Q_PARAMS;
+					if (! ( (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || (band == 3 && !trackEqsSrc[currTrk].getHighPeak())) ) {
+						float q = trackEqsSrc[currTrk].getQ(band);
+						text = string::f("%.2f", math::normalizeZero(q));
+					}
+					else {
+						text = "---";
+					}
 				}
 
 			
