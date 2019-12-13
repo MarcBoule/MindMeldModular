@@ -440,7 +440,15 @@ struct EqMasterWidget : ModuleWidget {
 		
 		
 		// Center part
-		// Screen
+		// Screen - EQ curve and grid
+		EqCurveAndGrid* eqCurveAndGrid;
+		addChild(eqCurveAndGrid = createWidgetCentered<EqCurveAndGrid>(mm2px(Vec(71.12f, 45.47f))));
+		if (module) {
+			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
+			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
+		}
+		
+		// Screen - Big Numbers
 		BigNumbers* bigNumbers;
 		addChild(bigNumbers = createWidgetCentered<BigNumbers>(mm2px(Vec(71.12f, 68.0f))));
 		if (module) {
@@ -449,6 +457,7 @@ struct EqMasterWidget : ModuleWidget {
 			bigNumbers->lastMovedKnobIdSrc = & lastMovedKnobId;
 			bigNumbers->lastMovedKnobTimeSrc = &lastMovedKnobTime;
 		}
+		
 		
 		// Controls
 		static const float ctrlX = 23.94f;

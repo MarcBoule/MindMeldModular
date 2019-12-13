@@ -260,6 +260,73 @@ struct BigNumbers : TransparentWidget {
 };
 
 
+struct EqCurveAndGrid : TransparentWidget {
+	static constexpr float minFreq = 20.0f;
+	static constexpr float maxFreq = 22000.0f;
+	static constexpr float minDb = -20.0f;
+	static constexpr float maxDb = 20.0f;
+	
+	// user must set up
+	Param* trackParamSrc = NULL;
+	TrackEq* trackEqsSrc;
+	
+	// internal
+	NVGcolor color;
+	float minLogFreq;
+	float maxLogFreq;
+	
+	
+	EqCurveAndGrid() {
+		box.size = mm2px(Vec(109.22f, 60.943f));
+		color = nvgRGB(0x37, 0x37, 0x37);	
+		minLogFreq = std::log10(minFreq);// 1.3
+		maxLogFreq = std::log10(maxFreq);// 4.3
+	}
+	
+	void vertLineAtFreq(const DrawArgs &args, float freq) {
+		float logFreq = std::log10(freq);
+		float lineX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
+		nvgMoveTo(args.vg, lineX, 0.0f);
+		nvgLineTo(args.vg, lineX, box.size.y);
+	}
+	void horzLineAtDb(const DrawArgs &args, float dB) {
+		float lineY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
+		nvgMoveTo(args.vg, 0.0f, lineY);
+		nvgLineTo(args.vg, box.size.x, lineY);
+	}
+	
+	
+	void draw(const DrawArgs &args) override {
+		// grid
+		nvgBeginPath(args.vg);
+		vertLineAtFreq(args, 100.0f);
+		vertLineAtFreq(args, 1000.0f);
+		vertLineAtFreq(args, 10000.0f);
+		horzLineAtDb(args, 20.0f);
+		horzLineAtDb(args, 12.0f);
+		horzLineAtDb(args, 0.0f);
+		horzLineAtDb(args, -12.0f);
+		//nvgRect(args.vg, 0.0f, 0.0f, box.size.x, box.size.y);
+		nvgClosePath(args.vg);
+		nvgStrokeColor(args.vg, color);//SCHEME_RED);
+		nvgStrokeWidth(args.vg, 1.0f);
+		nvgStroke(args.vg);		
+		
+		// curve
+		
+		if (trackParamSrc != NULL) {
+
+			// nvgFillColor(args.vg, color);
+			// nvgFontFaceId(args.vg, font->handle);
+			// nvgTextLetterSpacing(args.vg, 0.0);
+			// nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+			// nvgFontSize(args.vg, 24.0f);
+			// nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+		}
+	}
+};
+
+
 
 // Knobs
 // --------------------
