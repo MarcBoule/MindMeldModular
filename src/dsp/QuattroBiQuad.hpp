@@ -9,9 +9,10 @@
 
 // Code below adapted from Andrew Belt's dsp::TBiquadFilter struct in VCV Rack's source code
 
-// Four stereo biquad filters in pipeline series, where each biquad's parameters can be set separately
-class QuattroBiQuad {
 
+class QuattroBiQuadCoeff {
+	protected: 
+	
 	// coefficients
 	simd::float_4 b0;
 	simd::float_4 b1;
@@ -19,113 +20,22 @@ class QuattroBiQuad {
 	simd::float_4 a1;
 	simd::float_4 a2;
 	
-	// input/output shift registers
-	simd::float_4 x0L, x0R;// input is x0[0]
-	simd::float_4 x1L, x1R;
-	simd::float_4 x2L, x2R;
-	simd::float_4 y0L, y0R;// output is y0[3]
-	simd::float_4 y1L, y1R;
-	simd::float_4 y2L, y2R;
 	
-	// other
-	int8_t gainsDifferentThanOne; // 4 ls bits are bool bits, when all zero, can bypass y0 math
-	bool optResetDone;
+	public: 
 	
-	
-	public:
-
-
 	enum Type {
 		LOWSHELF,
 		HIGHSHELF,
 		PEAK,
 	};
 	
-	void reset() {
-		x0L = 0.0f;
-		x0R = 0.0f;
-		x1L = 0.0f;
-		x1R = 0.0f;
-		x2L = 0.0f;
-		x2R = 0.0f;
-		y0L = 0.0f;
-		y0R = 0.0f;
-		y1L = 0.0f;
-		y1R = 0.0f;
-		y2L = 0.0f;
-		y2R = 0.0f;
-		gainsDifferentThanOne = 0xF;
-		optResetDone = false;
-	}
-	
-
-	void process(float* out, float* in) {
-		if (gainsDifferentThanOne == 0) {
-			if (!optResetDone) {
-				x2L = 0.0f;
-				x2R = 0.0f;
-				x1L = 0.0f;
-				x1R = 0.0f;
-				y2L = 0.0f;
-				y2R = 0.0f;
-				y1L = 0.0f;
-				y1R = 0.0f;
-				optResetDone = true;
-			}
-			
-			x0L[0] = in[0];
-			x0L[1] = y0L[0];
-			x0L[2] = y0L[1];
-			x0L[3] = y0L[2];
-			y0L = x0L;
-			
-			x0R[0] = in[1];
-			x0R[1] = y0R[0];
-			x0R[2] = y0R[1];
-			x0R[3] = y0R[2];
-			y0R = x0R;
-		}
-		else {
-			optResetDone = false;
-			x2L = x1L;
-			x1L = x0L;
-			x0L[0] = in[0];
-			x0L[1] = y0L[0];
-			x0L[2] = y0L[1];
-			x0L[3] = y0L[2];
-			y2L = y1L;
-			y1L = y0L;
-			y0L = b0 * x0L + b1 * x1L + b2 * x2L - a1 * y1L - a2 * y2L;// https://en.wikipedia.org/wiki/Infinite_impulse_response
-
-			x2R = x1R;
-			x1R = x0R;
-			x0R[0] = in[1];
-			x0R[1] = y0R[0];
-			x0R[2] = y0R[1];
-			x0R[3] = y0R[2];
-			y2R = y1R;
-			y1R = y0R;
-			y0R = b0 * x0R + b1 * x1R + b2 * x2R - a1 * y1R - a2 * y2R;// https://en.wikipedia.org/wiki/Infinite_impulse_response
-		}
-		
-		out[0] = y0L[3];
-		out[1] = y0R[3];
-	}	
-
-		
-	void setParameters(Type type, int i, float f, float V, float Q) {
-		// type: type of filter/eq
+	void setParameters(int i, Type type, float f, float V, float Q) {
 		// i: eq index (0 to 3),
+		// type: type of filter/eq
 		// f: normalized frequency (fc/sampleRate)
 		// V: linearGain for peak or shelving
 		// Q: quality factor
 		float K = std::tan(M_PI * f);
-		if (V == 1.0f) {
-			gainsDifferentThanOne &= ~(0x1 << i);
-		}
-		else {
-			gainsDifferentThanOne |= (0x1 << i);
-		}
 		switch (type) {
 			case LOWSHELF: {
 				float sqrtV = std::sqrt(V);
@@ -188,5 +98,136 @@ class QuattroBiQuad {
 
 			default: break;
 		}
+	}
+
+
+	// multiply all 4 values in float to get total gain since each is gain of one biquad
+	simd::float_4 getFrequencyResponse(float f) {
+		// Compute sum(a_k z^-k) / sum(b_k z^-k) where z = e^(i s)
+		
+		float s = 2 * M_PI * f;// s: normalized angular frequency equal to $2 \pi f / f_{sr}$ ($\pi$ is the Nyquist frequency)
+		
+		std::complex<simd::float_4> bSum(b0, 0);
+		std::complex<simd::float_4> aSum(1, 0);
+			
+		float p = -1 * s;
+		std::complex<simd::float_4> z1(std::cos(p), std::sin(p));
+		bSum += b1 * z1;
+		aSum += a1 * z1;
+	
+		p = -2 * s;
+		std::complex<simd::float_4> z2(std::cos(p), std::sin(p));
+		bSum += b2 * z2;
+		aSum += a2 * z2;
+		
+		return simd::abs(bSum / aSum);
+	}
+};
+
+
+
+
+// Four stereo biquad filters in pipeline series, where each biquad's parameters can be set separately
+class QuattroBiQuad : public QuattroBiQuadCoeff {
+	
+	// input/output shift registers
+	simd::float_4 x0L, x0R;// input is x0[0]
+	simd::float_4 x1L, x1R;
+	simd::float_4 x2L, x2R;
+	simd::float_4 y0L, y0R;// output is y0[3]
+	simd::float_4 y1L, y1R;
+	simd::float_4 y2L, y2R;
+	
+	// other
+	bool optResetDone;
+	int8_t gainsDifferentThanOne; // 4 ls bits are bool bits, when all zero, can bypass y0 math
+	
+	public:
+
+
+	void reset() {
+		x0L = 0.0f;
+		x0R = 0.0f;
+		x1L = 0.0f;
+		x1R = 0.0f;
+		x2L = 0.0f;
+		x2R = 0.0f;
+		y0L = 0.0f;
+		y0R = 0.0f;
+		y1L = 0.0f;
+		y1R = 0.0f;
+		y2L = 0.0f;
+		y2R = 0.0f;
+		gainsDifferentThanOne = 0xF;	
+		optResetDone = false;
+	}
+	
+
+	void process(float* out, float* in) {
+		if (gainsDifferentThanOne == 0) {
+			if (!optResetDone) {
+				x2L = 0.0f;
+				x2R = 0.0f;
+				x1L = 0.0f;
+				x1R = 0.0f;
+				y2L = 0.0f;
+				y2R = 0.0f;
+				y1L = 0.0f;
+				y1R = 0.0f;
+				optResetDone = true;
+			}
+			
+			x0L[0] = in[0];
+			x0L[1] = y0L[0];
+			x0L[2] = y0L[1];
+			x0L[3] = y0L[2];
+			y0L = x0L;
+			
+			x0R[0] = in[1];
+			x0R[1] = y0R[0];
+			x0R[2] = y0R[1];
+			x0R[3] = y0R[2];
+			y0R = x0R;
+		}
+		else {
+			optResetDone = false;
+			x2L = x1L;
+			x1L = x0L;
+			x0L[0] = in[0];
+			x0L[1] = y0L[0];
+			x0L[2] = y0L[1];
+			x0L[3] = y0L[2];
+			y2L = y1L;
+			y1L = y0L;
+			y0L = b0 * x0L + b1 * x1L + b2 * x2L - a1 * y1L - a2 * y2L;// https://en.wikipedia.org/wiki/Infinite_impulse_response
+
+			x2R = x1R;
+			x1R = x0R;
+			x0R[0] = in[1];
+			x0R[1] = y0R[0];
+			x0R[2] = y0R[1];
+			x0R[3] = y0R[2];
+			y2R = y1R;
+			y1R = y0R;
+			y0R = b0 * x0R + b1 * x1R + b2 * x2R - a1 * y1R - a2 * y2R;// https://en.wikipedia.org/wiki/Infinite_impulse_response
+		}
+		
+		out[0] = y0L[3];
+		out[1] = y0R[3];
+	}	
+	
+	void setParameters(int i, Type type, float f, float V, float Q) {
+		// type: type of filter/eq
+		// i: eq index (0 to 3),
+		// f: normalized frequency (fc/sampleRate)
+		// V: linearGain for peak or shelving
+		// Q: quality factor
+		if (V == 1.0f) {
+			gainsDifferentThanOne &= ~(0x1 << i);
+		}
+		else {
+			gainsDifferentThanOne |= (0x1 << i);
+		}
+		QuattroBiQuadCoeff::setParameters(i, type, f, V, Q);
 	}
 };

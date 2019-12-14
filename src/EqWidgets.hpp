@@ -274,6 +274,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	NVGcolor color;
 	float minLogFreq;
 	float maxLogFreq;
+	QuattroBiQuadCoeff drawEq;
 	
 	
 	EqCurveAndGrid() {
@@ -294,7 +295,11 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgMoveTo(args.vg, 0.0f, lineY);
 		nvgLineTo(args.vg, box.size.x, lineY);
 	}
-	
+	void dotAtLogFreqAndGain(const DrawArgs &args, float logFreq, float gain) {
+		float circX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
+		float circY = math::rescale(20.0f * std::log10(gain), minDb, maxDb, box.size.y, 0.0f);
+		nvgCircle(args.vg, circX, circY, 1.0f);
+	}
 	
 	void draw(const DrawArgs &args) override {
 		// grid
@@ -315,7 +320,39 @@ struct EqCurveAndGrid : TransparentWidget {
 		// curve
 		
 		if (trackParamSrc != NULL) {
-
+			// set eqCoefficients of separate drawEq according to active track
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			float sampleRate = trackEqsSrc[0].getSampleRate();
+			for (int b = 0; b < 4; b++) {
+				float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, trackEqsSrc[currTrk].getGain(b) / 20.0f) : 1.0f;
+				float normalizedFreq = std::min(0.5f, trackEqsSrc[currTrk].getFreq(b) / sampleRate);	
+				drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq, linearGain, trackEqsSrc[currTrk].getQ(b));
+			}
+			
+			// draw frequency response curve
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			nvgBeginPath(args.vg);
+			float delLogX = (maxLogFreq - minLogFreq) /  50.0f;
+			float logX = minLogFreq;
+			for (int x = 0; x < 51; x++) {
+				float logFreq = logX + delLogX * (float)x;
+				float freq = std::pow(10.0f, logFreq);
+				simd::float_4 gains = drawEq.getFrequencyResponse(freq / sampleRate);
+				dotAtLogFreqAndGain(args, logFreq, gains[0] * gains[1] * gains[2] * gains[3]);
+			}
+			nvgFillColor(args.vg, SCHEME_RED);
+			nvgFill(args.vg);	
+			nvgResetScissor(args.vg);		
+			
+			
+			
+			// nvgBeginPath(args.vg);
+			// horzLineAtDb(args, 20.0f * std::log10(gains[0]));
+			// nvgClosePath(args.vg);
+			// nvgStrokeColor(args.vg, SCHEME_RED);
+			// nvgStroke(args.vg);		
+			
+			
 			// nvgFillColor(args.vg, color);
 			// nvgFontFaceId(args.vg, font->handle);
 			// nvgTextLetterSpacing(args.vg, 0.0);

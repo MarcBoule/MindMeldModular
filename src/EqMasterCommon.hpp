@@ -105,6 +105,8 @@ class TrackEq {
 	float getLowPeak() {return lowPeak;}
 	float getHighPeak() {return highPeak;}
 	float getTrackGain() {return trackGain;}
+	QuattroBiQuad::Type getBandType(int b) {return bandTypes[b];}
+	float getSampleRate() {return sampleRate;}
 	
 	void setTrackActive(bool _trackActive) {
 		trackActive = _trackActive;
@@ -193,10 +195,10 @@ class TrackEq {
 			
 			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
 			simd::float_4 normalizedFreq = simd::fmin(0.5f, freq / sampleRate);
-			eqs.setParameters(bandTypes[0], 0, normalizedFreq[0], linearGain[0], q[0]);
-			eqs.setParameters(bandTypes[1], 1, normalizedFreq[1], linearGain[1], q[1]);
-			eqs.setParameters(bandTypes[2], 2, normalizedFreq[2], linearGain[2], q[2]);
-			eqs.setParameters(bandTypes[3], 3, normalizedFreq[3], linearGain[3], q[3]);
+			eqs.setParameters(0, bandTypes[0], normalizedFreq[0], linearGain[0], q[0]);
+			eqs.setParameters(1, bandTypes[1], normalizedFreq[1], linearGain[1], q[1]);
+			eqs.setParameters(2, bandTypes[2], normalizedFreq[2], linearGain[2], q[2]);
+			eqs.setParameters(3, bandTypes[3], normalizedFreq[3], linearGain[3], q[3]);
 		}
 				
 		eqs.process(out, in); 
@@ -233,7 +235,7 @@ class TrackEq {
 	void pushBandParametersToEqs(int b) {
 		float linearGain = (trackActive && (bandActive[b] > 0.5f)) ? std::pow(10.0f, gainSlewers.out[b] / 20.0f) : 1.0f;
 		float normalizedFreq = std::min(0.5f, freq[b] / sampleRate);
-		eqs.setParameters(bandTypes[b], b, normalizedFreq, linearGain, q[b]);
+		eqs.setParameters(b, bandTypes[b], normalizedFreq, linearGain, q[b]);
 	}
 };
 
