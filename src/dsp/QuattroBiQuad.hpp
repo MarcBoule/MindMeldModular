@@ -103,26 +103,32 @@ class QuattroBiQuadCoeff {
 
 	// multiply all 4 values in return vector to get total gain since each float is gain of one biquad
 	simd::float_4 getFrequencyResponse(float f) {
-		// Compute sum(a_k z^-k) / sum(b_k z^-k) where z = e^(i s)
+		// Compute sum(b_k z^-k) / sum(a_k z^-k) where z = e^(i s)
 		
 		float s = 2 * M_PI * f;// s: normalized angular frequency equal to $2 \pi f / f_{sr}$ ($\pi$ is the Nyquist frequency)
 		
-		std::complex<simd::float_4> bSum(b0, 0);
-		std::complex<simd::float_4> aSum(1, 0);
+		simd::float_4 bSum[2] = {b0, 0.0f};
+		simd::float_4 aSum[2] = {1.0f, 0.0f};
 			
 		float p = -1 * s;
-		std::complex<simd::float_4> z1(std::cos(p), std::sin(p));
-		bSum += b1 * z1;
-		aSum += a1 * z1;
+		simd::float_4 z1[2] = {std::cos(p), std::sin(p)};
+		bSum[0] += b1 * z1[0];
+		bSum[1] += b1 * z1[1];
+		aSum[0] += a1 * z1[0];
+		aSum[1] += a1 * z1[1];
 	
 		p = -2 * s;
-		std::complex<simd::float_4> z2(std::cos(p), std::sin(p));
-		bSum += b2 * z2;
-		aSum += a2 * z2;
+		simd::float_4 z2[2] = {std::cos(p), std::sin(p)};
+		bSum[0] += b2 * z2[0];// a
+		bSum[1] += b2 * z2[1];// b
+		aSum[0] += a2 * z2[0];// c
+		aSum[1] += a2 * z2[1];// d
 		
-		std::complex<simd::float_4> div = bSum / aSum;
-		return simd::abs(div);
+		simd::float_4 num[2] = {bSum[0] * aSum[0] +	bSum[1] * aSum[1],  bSum[1] * aSum[0] - bSum[0] * aSum[1]};
+		simd::float_4 denom = aSum[0] * aSum[0] + aSum[1] * aSum[1];
+		return simd::hypot(num[0] / denom,  num[1] / denom);
 	}
+
 };
 
 
