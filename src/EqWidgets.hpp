@@ -348,10 +348,8 @@ struct EqCurveAndGrid : TransparentWidget {
 			}
 			logFreqCursors = sortFloat4(simd::log10(logFreqCursors));
 			
-			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 			
 			// fill freq response curve data
-			nvgBeginPath(args.vg);
 			float delLogX = (maxLogFreq - minLogFreq) / ((float)numDrawSteps);
 			int c = 0;// index into logFreqCursors
 			for (int x = 0, i = 0; x <= numDrawSteps; x++, i++) {
@@ -365,13 +363,11 @@ struct EqCurveAndGrid : TransparentWidget {
 					stepLogFreqs[i] = logFreqX;
 				}
 				stepDbs[i] = drawEq.getFrequencyResponse(std::pow(10.0f, stepLogFreqs[i]) / sampleRate);
-				// dotAtLogFreqAndDb(args, stepLogFreqs[i] , stepDbs[i][0] + stepDbs[i][1] + stepDbs[i][2] + stepDbs[i][3] );
 			}
-			nvgFillColor(args.vg, SCHEME_RED);
-			nvgFill(args.vg);	
 
 
 			// draw frequency response curve
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 			if (miscSettingsSrc->cc4[0] != 0) {
 				drawEqCurveBand(0, args, nvgRGB(146, 32, 22));
 				drawEqCurveBand(1, args, nvgRGB(0, 155, 137));
