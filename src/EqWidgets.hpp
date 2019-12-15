@@ -265,10 +265,14 @@ struct EqCurveAndGrid : TransparentWidget {
 	static constexpr float maxFreq = 22000.0f;
 	static constexpr float minDb = -20.0f;
 	static constexpr float maxDb = 20.0f;
+	static const int numDrawSteps = 200;
+	float stepLogFreqs[numDrawSteps + 4 + 1];// 4 for cursors, 1 since will loop with "<= numDrawSteps"
+	simd::float_4 stepDbs[numDrawSteps + 4 + 1];// 4 for cursors, 1 since will loop with "<= numDrawSteps"
 	
 	// user must set up
 	Param* trackParamSrc = NULL;
 	TrackEq* trackEqsSrc;
+	PackedBytes4 *miscSettingsSrc;	
 	
 	// internal
 	NVGcolor color;
@@ -295,10 +299,20 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgMoveTo(args.vg, 0.0f, lineY);
 		nvgLineTo(args.vg, box.size.x, lineY);
 	}
-	void dotAtLogFreqAndGain(const DrawArgs &args, float logFreq, float gain) {
+	void dotAtLogFreqAndDb(const DrawArgs &args, float logFreq, float dB) {
 		float circX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
-		float circY = math::rescale(20.0f * std::log10(gain), minDb, maxDb, box.size.y, 0.0f);
-		nvgCircle(args.vg, circX, circY, 1.0f);
+		float circY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
+		nvgCircle(args.vg, circX, circY, 2.0f);
+	}
+	void lineToAtLogFreqAndDb(const DrawArgs &args, float logFreq, float dB) {
+		float pX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
+		float pY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
+		nvgLineTo(args.vg, pX, pY);
+	}
+	void moveToAtLogFreqAndDb(const DrawArgs &args, float logFreq, float dB) {
+		float pX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
+		float pY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
+		nvgMoveTo(args.vg, pX, pY);
 	}
 	
 	void draw(const DrawArgs &args) override {
@@ -320,47 +334,88 @@ struct EqCurveAndGrid : TransparentWidget {
 		// curve
 		
 		if (trackParamSrc != NULL) {
-			// set eqCoefficients of separate drawEq according to active track
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			float sampleRate = trackEqsSrc[0].getSampleRate();
+
+			// set eqCoefficients of separate drawEq according to active track
+			// get cursor points of each band		
+			simd::float_4 logFreqCursors;
 			for (int b = 0; b < 4; b++) {
-				float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, trackEqsSrc[currTrk].getGain(b) / 20.0f) : 1.0f;
+				logFreqCursors[b] = trackEqsSrc[currTrk].getFreq(b);// not log yet, do that after loop
 				float normalizedFreq = std::min(0.5f, trackEqsSrc[currTrk].getFreq(b) / sampleRate);	
+				float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, trackEqsSrc[currTrk].getGain(b) / 20.0f) : 1.0f;
 				drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq, linearGain, trackEqsSrc[currTrk].getQ(b));
 			}
+			logFreqCursors = sortFloat4(simd::log10(logFreqCursors));
 			
-			// draw frequency response curve
 			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			
+			// fill freq response curve data
 			nvgBeginPath(args.vg);
-			float delLogX = (maxLogFreq - minLogFreq) /  50.0f;
-			float logX = minLogFreq;
-			for (int x = 0; x < 51; x++) {
-				float logFreq = logX + delLogX * (float)x;
-				float freq = std::pow(10.0f, logFreq);
-				simd::float_4 gains = drawEq.getFrequencyResponse(freq / sampleRate);
-				dotAtLogFreqAndGain(args, logFreq, gains[0] * gains[1] * gains[2] * gains[3]);
+			float delLogX = (maxLogFreq - minLogFreq) / ((float)numDrawSteps);
+			int c = 0;// index into logFreqCursors
+			for (int x = 0, i = 0; x <= numDrawSteps; x++, i++) {
+				float logFreqX = minLogFreq + delLogX * (float)x;
+				if ( (c < 4) && (logFreqCursors[c] < logFreqX) ) {
+					stepLogFreqs[i] = logFreqCursors[c];
+					c++;
+					x--;
+				}
+				else {
+					stepLogFreqs[i] = logFreqX;
+				}
+				stepDbs[i] = drawEq.getFrequencyResponse(std::pow(10.0f, stepLogFreqs[i]) / sampleRate);
+				// dotAtLogFreqAndDb(args, stepLogFreqs[i] , stepDbs[i][0] + stepDbs[i][1] + stepDbs[i][2] + stepDbs[i][3] );
 			}
 			nvgFillColor(args.vg, SCHEME_RED);
 			nvgFill(args.vg);	
-			nvgResetScissor(args.vg);		
-			
-			
-			
-			// nvgBeginPath(args.vg);
-			// horzLineAtDb(args, 20.0f * std::log10(gains[0]));
-			// nvgClosePath(args.vg);
-			// nvgStrokeColor(args.vg, SCHEME_RED);
-			// nvgStroke(args.vg);		
-			
-			
-			// nvgFillColor(args.vg, color);
-			// nvgFontFaceId(args.vg, font->handle);
-			// nvgTextLetterSpacing(args.vg, 0.0);
-			// nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-			// nvgFontSize(args.vg, 24.0f);
-			// nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+
+
+			// draw frequency response curve
+			if (miscSettingsSrc->cc4[0] != 0) {
+				drawEqCurveBand(0, args, nvgRGB(146, 32, 22));
+				drawEqCurveBand(1, args, nvgRGB(0, 155, 137));
+				drawEqCurveBand(2, args, nvgRGB(50, 99, 148));
+				drawEqCurveBand(3, args, nvgRGB(111, 81, 113));
+			}
+			drawEqCurveTotal(args, SCHEME_LIGHT_GRAY);
+			nvgResetScissor(args.vg);					
 		}
 	}
+	
+	void drawEqCurveTotal(const DrawArgs &args, NVGcolor col) {
+		nvgBeginPath(args.vg);
+		nvgLineCap(args.vg, NVG_ROUND);
+		nvgMiterLimit(args.vg, 1.0f);
+		for (int x = 0; x <= (numDrawSteps + 4); x++) {	// TODO make + 4 when ready with extra steps
+			if (x == 0) {
+				moveToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][0] + stepDbs[x][1] + stepDbs[x][2] + stepDbs[x][3]);
+			}
+			else {
+				lineToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][0] + stepDbs[x][1] + stepDbs[x][2] + stepDbs[x][3]);
+			}
+		}
+		nvgStrokeColor(args.vg, col);
+		nvgStrokeWidth(args.vg, 1.25f);	
+		nvgStroke(args.vg);
+	}
+	void drawEqCurveBand(int band, const DrawArgs &args, NVGcolor col) {
+		nvgBeginPath(args.vg);
+		nvgLineCap(args.vg, NVG_ROUND);
+		nvgMiterLimit(args.vg, 1.0f);
+		for (int x = 0; x <= (numDrawSteps + 4); x++) {	// TODO make + 4 when ready with extra steps
+			if (x == 0) {
+				moveToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
+			}
+			else {
+				lineToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
+			}
+		}
+		nvgStrokeColor(args.vg, col);
+		nvgStrokeWidth(args.vg, 1.0f);	
+		nvgStroke(args.vg);
+	}
+
 };
 
 

@@ -101,7 +101,7 @@ class QuattroBiQuadCoeff {
 	}
 
 
-	// multiply all 4 values in return vector to get total gain since each float is gain of one biquad
+	// add all 4 values in return vector to get total gain (dB) since each float is gain (dB) of one biquad
 	simd::float_4 getFrequencyResponse(float f) {
 		// Compute sum(b_k z^-k) / sum(a_k z^-k) where z = e^(i s)
 		
@@ -111,22 +111,23 @@ class QuattroBiQuadCoeff {
 		simd::float_4 aSum[2] = {1.0f, 0.0f};
 			
 		float p = -1 * s;
-		simd::float_4 z1[2] = {std::cos(p), std::sin(p)};
-		bSum[0] += b1 * z1[0];
-		bSum[1] += b1 * z1[1];
-		aSum[0] += a1 * z1[0];
-		aSum[1] += a1 * z1[1];
+		simd::float_4 z[2] = {std::cos(p), std::sin(p)};
+		bSum[0] += b1 * z[0];
+		bSum[1] += b1 * z[1];
+		aSum[0] += a1 * z[0];
+		aSum[1] += a1 * z[1];
 	
 		p = -2 * s;
-		simd::float_4 z2[2] = {std::cos(p), std::sin(p)};
-		bSum[0] += b2 * z2[0];// a
-		bSum[1] += b2 * z2[1];// b
-		aSum[0] += a2 * z2[0];// c
-		aSum[1] += a2 * z2[1];// d
+		z[0] = std::cos(p); z[1] = std::sin(p);
+		bSum[0] += b2 * z[0];
+		bSum[1] += b2 * z[1];
+		aSum[0] += a2 * z[0];
+		aSum[1] += a2 * z[1];
 		
 		simd::float_4 num[2] = {bSum[0] * aSum[0] +	bSum[1] * aSum[1],  bSum[1] * aSum[0] - bSum[0] * aSum[1]};
 		simd::float_4 denom = aSum[0] * aSum[0] + aSum[1] * aSum[1];
-		return simd::hypot(num[0] / denom,  num[1] / denom);
+		simd::float_4 norm = simd::hypot(num[0] / denom,  num[1] / denom);
+		return 20.0f * simd::log10(norm);// return in dB
 	}
 
 };

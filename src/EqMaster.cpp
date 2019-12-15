@@ -38,7 +38,8 @@ struct EqMaster : Module {
 	// Need to save, with reset
 	int mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
-	PackedBytes4 colorThemes;// cc4[0] is labels, cc4[1] is labels
+	PackedBytes4 colorThemes;// cc4[0] is display labels, cc4[1] is VUs
+	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ
 	TrackEq trackEqs[24];
 	
 	// No need to save, with reset
@@ -93,6 +94,7 @@ struct EqMaster : Module {
 			trackEqs[t].init(APP->engine->getSampleRate());
 		}
 		colorThemes.cc1 = 0;
+		miscSettings.cc1 = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -119,6 +121,9 @@ struct EqMaster : Module {
 		
 		// colorThemes
 		json_object_set_new(rootJ, "colorThemes", json_integer(colorThemes.cc1));
+				
+		// miscSettings
+		json_object_set_new(rootJ, "miscSettings", json_integer(miscSettings.cc1));
 				
 		// trackEqs
 		// -------------
@@ -213,6 +218,11 @@ struct EqMaster : Module {
 		json_t *colorThemesJ = json_object_get(rootJ, "colorThemes");
 		if (colorThemesJ)
 			colorThemes.cc1 = json_integer_value(colorThemesJ);
+
+		// miscSettings
+		json_t *miscSettingsJ = json_object_get(rootJ, "miscSettings");
+		if (miscSettingsJ)
+			miscSettings.cc1 = json_integer_value(miscSettingsJ);
 
 		// trackEqs
 		// -------------
@@ -377,6 +387,13 @@ struct EqMasterWidget : ModuleWidget {
 	// Module's context menu
 	// --------------------
 
+	struct ShowBandCurvesEQItem : MenuItem {
+		PackedBytes4 *miscSettingsSrc;
+		void onAction(const event::Action &e) override {
+			miscSettingsSrc->cc4[0] ^= 0xFF;
+		}
+	};
+
 	void appendContextMenu(Menu *menu) override {		
 		EqMaster* module = (EqMaster*)(this->module);
 		assert(module);
@@ -394,6 +411,11 @@ struct EqMasterWidget : ModuleWidget {
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
 		vuColItem->srcColor = &(module->colorThemes.cc4[1]);
 		menu->addChild(vuColItem);
+		
+		ShowBandCurvesEQItem *bandEqItem = createMenuItem<ShowBandCurvesEQItem>("Show band curves", CHECKMARK(module->miscSettings.cc4[0]));
+		bandEqItem->miscSettingsSrc = &(module->miscSettings);
+		menu->addChild(bandEqItem);
+		
 	}
 	
 	
@@ -446,6 +468,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
+			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
 		}
 		
 		// Screen - Big Numbers

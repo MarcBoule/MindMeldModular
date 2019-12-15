@@ -195,6 +195,67 @@ struct HoldDetect {
 
 // General functions
 
+// sort the 4 floats in a float_4 in ascending order starting with index 0
+// adapted from https://stackoverflow.com/questions/6145364/sort-4-number-with-few-comparisons
+inline simd::float_4 sortFloat4(simd::float_4 in) {
+    float low1;
+	float high1;
+    float low2;
+	float high2;
+	
+	if (in[0] < in[1]) {
+        low1 = in[0];
+        high1 = in[1];
+	}
+    else {
+        low1 = in[1];
+        high1 = in[0];
+	}
+
+    if (in[2] < in[3]) {
+        low2 = in[2];
+        high2 = in[3];
+	}
+    else {
+        low2 = in[3];
+        high2 = in[2];
+	}
+
+    simd::float_4 ret;
+	float middle1;
+	float middle2;
+	
+	if (low1 < low2) {
+        ret[0] = low1;
+        middle1 = low2;
+	}
+    else {
+        ret[0] = low2;
+        middle1 = low1;
+	}
+
+    if (high1 > high2) {
+        ret[3] = high1;
+        middle2 = high2;
+	}
+    else {
+        ret[3] = high2;
+        middle2 = high1;
+	}
+
+    if (middle1 < middle2) {
+		ret[1] = middle1;
+		ret[2] = middle2;
+	}
+    else {
+		ret[1] = middle2;
+		ret[2] = middle1;
+	}
+	return ret;
+}
+
+
+
 // Remove Rack's standard border in the given widget's children
 // inline void removeBorder(Widget* widget) {
 	// for (auto it = widget->children.begin(); it != widget->children.end(); ) {
