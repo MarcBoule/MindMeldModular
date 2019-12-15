@@ -101,7 +101,7 @@ class QuattroBiQuadCoeff {
 	}
 
 
-	// multiply all 4 values in float to get total gain since each is gain of one biquad
+	// multiply all 4 values in return vector to get total gain since each float is gain of one biquad
 	simd::float_4 getFrequencyResponse(float f) {
 		// Compute sum(a_k z^-k) / sum(b_k z^-k) where z = e^(i s)
 		
@@ -120,7 +120,8 @@ class QuattroBiQuadCoeff {
 		bSum += b2 * z2;
 		aSum += a2 * z2;
 		
-		return simd::abs(bSum / aSum);
+		std::complex<simd::float_4> div = bSum / aSum;
+		return simd::abs(div);
 	}
 };
 
