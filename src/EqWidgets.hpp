@@ -275,19 +275,25 @@ struct EqCurveAndGrid : TransparentWidget {
 	PackedBytes4 *miscSettingsSrc;	
 	
 	// internal
-	NVGcolor color;
 	float minLogFreq;
 	float maxLogFreq;
 	QuattroBiQuadCoeff drawEq;
+	std::shared_ptr<Font> font;
 	
 	
 	EqCurveAndGrid() {
-		box.size = mm2px(Vec(109.22f, 60.943f));
-		color = nvgRGB(0x37, 0x37, 0x37);	
+		box.size = mm2px(Vec(109.22f, 60.943f));	
 		minLogFreq = std::log10(minFreq);// 1.3
 		maxLogFreq = std::log10(maxFreq);// 4.3
+		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
+	void textAtFreqAndDb(const DrawArgs &args, float freq, float dB, std::string text) {
+		float logFreq = std::log10(freq);
+		float textX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
+		float textY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
+		nvgText(args.vg, textX + 1.5f, textY - 3.0f, text.c_str(), NULL);
+	}
 	void vertLineAtFreq(const DrawArgs &args, float freq) {
 		float logFreq = std::log10(freq);
 		float lineX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
@@ -317,22 +323,47 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	void draw(const DrawArgs &args) override {
 		// grid
+		nvgStrokeColor(args.vg, nvgRGB(0x37, 0x37, 0x37));
+		nvgStrokeWidth(args.vg, 1.0f);
 		nvgBeginPath(args.vg);
-		vertLineAtFreq(args, 100.0f);
-		vertLineAtFreq(args, 1000.0f);
+		// vertical lines
+		vertLineAtFreq(args, 30.0f);
+		vertLineAtFreq(args, 40.0f);
+		vertLineAtFreq(args, 50.0f);
+		for (int i = 1; i <= 5; i++) {
+			vertLineAtFreq(args, 100.0f * (float)i);
+			vertLineAtFreq(args, 1000.0f * (float)i);
+		}
 		vertLineAtFreq(args, 10000.0f);
+		vertLineAtFreq(args, 20000.0f);
+		// horizontal lines
 		horzLineAtDb(args, 20.0f);
 		horzLineAtDb(args, 12.0f);
 		horzLineAtDb(args, 0.0f);
 		horzLineAtDb(args, -12.0f);
 		//nvgRect(args.vg, 0.0f, 0.0f, box.size.x, box.size.y);
-		nvgClosePath(args.vg);
-		nvgStrokeColor(args.vg, color);//SCHEME_RED);
-		nvgStrokeWidth(args.vg, 1.0f);
 		nvgStroke(args.vg);		
+		// text labels
+		if (font->handle >= 0) {
+			nvgFillColor(args.vg, nvgRGB(0x97, 0x97, 0x97));
+			nvgFontFaceId(args.vg, font->handle);
+			nvgTextLetterSpacing(args.vg, 0.0);
+			nvgFontSize(args.vg, 9.0f);
+			// frequency
+			textAtFreqAndDb(args, 100.0f, -20.0f, "100 Hz");
+			textAtFreqAndDb(args, 500.0f, -20.0f, "500 Hz");
+			textAtFreqAndDb(args, 1000.0f, -20.0f, "1 kHz");
+			textAtFreqAndDb(args, 5000.0f, -20.0f, "5 kHz");
+			textAtFreqAndDb(args, 10000.0f, -20.0f, "10 kHz");
+			// dB
+			textAtFreqAndDb(args, 20.0f, -12.0f, "-12 dB");
+			textAtFreqAndDb(args, 20.0f, 0.0f, "0 dB");
+			textAtFreqAndDb(args, 20.0f, 12.0f, "+12 dB");
+		}
+		
+		
 		
 		// curve
-		
 		if (trackParamSrc != NULL) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			float sampleRate = trackEqsSrc[0].getSampleRate();
@@ -368,11 +399,15 @@ struct EqCurveAndGrid : TransparentWidget {
 
 			// draw frequency response curve
 			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			nvgLineCap(args.vg, NVG_ROUND);
+			nvgMiterLimit(args.vg, 1.0f);
+			NVGcolor bandColors[4] = {nvgRGB(146, 32, 22), nvgRGB(0, 155, 137), nvgRGB(50, 99, 148),nvgRGB(111, 81, 113)};
 			if (miscSettingsSrc->cc4[0] != 0) {
-				drawEqCurveBand(0, args, nvgRGB(146, 32, 22));
-				drawEqCurveBand(1, args, nvgRGB(0, 155, 137));
-				drawEqCurveBand(2, args, nvgRGB(50, 99, 148));
-				drawEqCurveBand(3, args, nvgRGB(111, 81, 113));
+				for (int b = 0; b < 4; b++) {
+					if (trackEqsSrc[currTrk].getBandActive(b)) {
+						drawEqCurveBand(b, args, bandColors[b]);
+					}
+				}
 			}
 			drawEqCurveTotal(args, SCHEME_LIGHT_GRAY);
 			nvgResetScissor(args.vg);					
@@ -380,9 +415,9 @@ struct EqCurveAndGrid : TransparentWidget {
 	}
 	
 	void drawEqCurveTotal(const DrawArgs &args, NVGcolor col) {
+		nvgStrokeColor(args.vg, col);
+		nvgStrokeWidth(args.vg, 1.25f);	
 		nvgBeginPath(args.vg);
-		nvgLineCap(args.vg, NVG_ROUND);
-		nvgMiterLimit(args.vg, 1.0f);
 		for (int x = 0; x <= (numDrawSteps + 4); x++) {	// TODO make + 4 when ready with extra steps
 			if (x == 0) {
 				moveToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][0] + stepDbs[x][1] + stepDbs[x][2] + stepDbs[x][3]);
@@ -391,14 +426,12 @@ struct EqCurveAndGrid : TransparentWidget {
 				lineToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][0] + stepDbs[x][1] + stepDbs[x][2] + stepDbs[x][3]);
 			}
 		}
-		nvgStrokeColor(args.vg, col);
-		nvgStrokeWidth(args.vg, 1.25f);	
 		nvgStroke(args.vg);
 	}
 	void drawEqCurveBand(int band, const DrawArgs &args, NVGcolor col) {
+		nvgStrokeColor(args.vg, col);
+		nvgStrokeWidth(args.vg, 1.0f);	
 		nvgBeginPath(args.vg);
-		nvgLineCap(args.vg, NVG_ROUND);
-		nvgMiterLimit(args.vg, 1.0f);
 		for (int x = 0; x <= (numDrawSteps + 4); x++) {	// TODO make + 4 when ready with extra steps
 			if (x == 0) {
 				moveToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
@@ -407,8 +440,6 @@ struct EqCurveAndGrid : TransparentWidget {
 				lineToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
 			}
 		}
-		nvgStrokeColor(args.vg, col);
-		nvgStrokeWidth(args.vg, 1.0f);	
 		nvgStroke(args.vg);
 	}
 
