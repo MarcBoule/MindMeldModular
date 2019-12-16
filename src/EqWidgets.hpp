@@ -405,7 +405,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			if (miscSettingsSrc->cc4[0] != 0) {
 				for (int b = 0; b < 4; b++) {
 					if (trackEqsSrc[currTrk].getBandActive(b)) {
-						drawEqCurveBand(b, args, bandColors[b]);
+						drawEqCurveBandFill(b, args, bandColors[b]);
 					}
 				}
 			}
@@ -418,7 +418,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgStrokeColor(args.vg, col);
 		nvgStrokeWidth(args.vg, 1.25f);	
 		nvgBeginPath(args.vg);
-		for (int x = 0; x <= (numDrawSteps + 4); x++) {	// TODO make + 4 when ready with extra steps
+		for (int x = 0; x <= (numDrawSteps + 4); x++) {	
 			if (x == 0) {
 				moveToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][0] + stepDbs[x][1] + stepDbs[x][2] + stepDbs[x][3]);
 			}
@@ -432,7 +432,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgStrokeColor(args.vg, col);
 		nvgStrokeWidth(args.vg, 1.0f);	
 		nvgBeginPath(args.vg);
-		for (int x = 0; x <= (numDrawSteps + 4); x++) {	// TODO make + 4 when ready with extra steps
+		for (int x = 0; x <= (numDrawSteps + 4); x++) {	
 			if (x == 0) {
 				moveToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
 			}
@@ -441,6 +441,23 @@ struct EqCurveAndGrid : TransparentWidget {
 			}
 		}
 		nvgStroke(args.vg);
+	}	
+	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col) {
+		NVGcolor fillCol = col;
+		fillCol.a = 0.3f;
+		nvgFillColor(args.vg, fillCol);
+		nvgStrokeColor(args.vg, col);
+		nvgStrokeWidth(args.vg, 1.0f);	
+		nvgBeginPath(args.vg);
+		moveToAtLogFreqAndDb(args, minLogFreq, 0.0f);
+		for (int x = 0; x <= (numDrawSteps + 4); x++) {	
+			lineToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
+		}
+		lineToAtLogFreqAndDb(args, maxLogFreq, 0.0f);
+		nvgClosePath(args.vg);
+		nvgFill(args.vg);
+		nvgStroke(args.vg);
+		
 	}
 
 };
