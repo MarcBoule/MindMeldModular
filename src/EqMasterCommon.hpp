@@ -42,6 +42,8 @@ static const bool DEFAULT_lowPeak = false;
 static const bool DEFAULT_highPeak = false;
 static const float DEFAULT_trackGain = 0.0f;// dB
 
+static const int FFT_N = 256;// must be a multiple of 32
+
 
 union PackedBytes4 {
 	int32_t cc1;

@@ -274,6 +274,10 @@ struct EqCurveAndGrid : TransparentWidget {
 	Param* trackParamSrc = NULL;
 	TrackEq* trackEqsSrc;
 	PackedBytes4 *miscSettingsSrc;	
+	int* fftWriteHeadSrc;
+	PFFFT_Setup* ffts;
+	float* fftIn;
+	float* fftOut;
 	
 	// internal
 	float minLogFreq;
@@ -325,7 +329,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	void draw(const DrawArgs &args) override {
 		// grid
 		nvgStrokeColor(args.vg, nvgRGB(0x37, 0x37, 0x37));
-		nvgStrokeWidth(args.vg, 1.0f);
+		nvgStrokeWidth(args.vg, 0.7f);
 		nvgBeginPath(args.vg);
 		// vertical lines
 		vertLineAtFreq(args, 30.0f);
@@ -340,7 +344,9 @@ struct EqCurveAndGrid : TransparentWidget {
 		// horizontal lines
 		horzLineAtDb(args, 20.0f);
 		horzLineAtDb(args, 12.0f);
+		horzLineAtDb(args, 6.0f);
 		horzLineAtDb(args, 0.0f);
+		horzLineAtDb(args, -6.0f);
 		horzLineAtDb(args, -12.0f);
 		//nvgRect(args.vg, 0.0f, 0.0f, box.size.x, box.size.y);
 		nvgStroke(args.vg);		
@@ -351,21 +357,33 @@ struct EqCurveAndGrid : TransparentWidget {
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgFontSize(args.vg, 9.0f);
 			// frequency
-			textAtFreqAndDb(args, 100.0f, -20.0f, "100 Hz");
-			textAtFreqAndDb(args, 500.0f, -20.0f, "500 Hz");
-			textAtFreqAndDb(args, 1000.0f, -20.0f, "1 kHz");
-			textAtFreqAndDb(args, 5000.0f, -20.0f, "5 kHz");
-			textAtFreqAndDb(args, 10000.0f, -20.0f, "10 kHz");
+			textAtFreqAndDb(args, 50.0f, -20.0f, "50");
+			textAtFreqAndDb(args, 100.0f, -20.0f, "100");
+			textAtFreqAndDb(args, 500.0f, -20.0f, "500");
+			textAtFreqAndDb(args, 1000.0f, -20.0f, "1k");
+			textAtFreqAndDb(args, 5000.0f, -20.0f, "5k");
+			textAtFreqAndDb(args, 10000.0f, -20.0f, "10k");
 			// dB
-			textAtFreqAndDb(args, 20.0f, -12.0f, "-12 dB");
+			textAtFreqAndDb(args, 20.0f, -12.0f, "-12");
+			textAtFreqAndDb(args, 20.0f, -6.0f, "-6");
 			textAtFreqAndDb(args, 20.0f, 0.0f, "0 dB");
-			textAtFreqAndDb(args, 20.0f, 12.0f, "+12 dB");
+			textAtFreqAndDb(args, 20.0f, 6.0f, "+6");
+			textAtFreqAndDb(args, 20.0f, 12.0f, "+12");
 		}
 		
-		
-		
-		// curve
 		if (trackParamSrc != NULL) {
+		
+			// spectrum
+			// The frequency spectrum produced by an N point DFT consists of N/2 samples equally spaced between [zero ; fs/2[.
+			// https://www.dspguide.com/ch9/1.htm
+			if (*fftWriteHeadSrc >= FFT_N) {
+				pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
+				*fftWriteHeadSrc = 0;
+			}
+			drawSpectrum(args);
+			
+			
+			// curve
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			float sampleRate = trackEqsSrc[0].getSampleRate();
 
@@ -415,6 +433,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 	}
 	
+	
+	void drawSpectrum(const DrawArgs &args) {
+		
+	}
+	
+	
 	void drawEqCurveTotal(const DrawArgs &args, NVGcolor col) {
 		nvgStrokeColor(args.vg, col);
 		nvgStrokeWidth(args.vg, 1.25f);	
@@ -444,6 +468,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgStroke(args.vg);
 	}	
 	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col, float cursorDb) {
+		static const bool anchorGradientToCursor = true;
 		NVGcolor fillColCursor = col;
 		NVGcolor fillCol0 = col;
 		fillColCursor.a = 0.5f;
@@ -460,10 +485,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgClosePath(args.vg);
 		NVGpaint grad;
 		if (cursorDb > 0.0f) {
-			grad = nvgLinearGradient(args.vg, 0.0f, 0.0f, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
+			float topGrad = (anchorGradientToCursor ? (box.size.y / 2.0f * (1.0f - cursorDb / 20.0f)) : 0.0f);
+			grad = nvgLinearGradient(args.vg, 0.0f, topGrad, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
 		}
 		else {
-			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, box.size.y, fillCol0, fillColCursor);
+			float botGrad = (anchorGradientToCursor ? (box.size.y / 2.0f * (1.0f - cursorDb / 20.0f)) : box.size.y);
+			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, botGrad, fillCol0, fillColCursor);
 		}
 
 		nvgFillPaint(args.vg, grad);

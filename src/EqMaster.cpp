@@ -31,6 +31,7 @@ struct EqMaster : Module {
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 	int8_t colorThemeLocal = 0;// not used in EQ, but using VU code of MixMaster so need this even though it will never be read
+	enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
 
 	// Need to save, no reset
 	int panelTheme;
@@ -39,16 +40,19 @@ struct EqMaster : Module {
 	int mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
 	PackedBytes4 colorThemes;// cc4[0] is display labels, cc4[1] is VUs
-	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ
+	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = none, 1 = pre, 2 = post, 3 = freeze)
 	TrackEq trackEqs[24];
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	VuMeterAllDual trackVu;
+	int fftWriteHead;
 
 	// No need to save, no reset
 	RefreshCounter refresh;
-	
+	PFFFT_Setup* ffts;
+	float* fftIn;
+	float* fftOut;
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -85,6 +89,9 @@ struct EqMaster : Module {
 		onReset();
 		
 		panelTheme = 0;
+		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
+		fftIn = (float*)pffft_aligned_malloc(FFT_N * 4);
+		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
 	}
   
 	void onReset() override {
@@ -94,12 +101,14 @@ struct EqMaster : Module {
 			trackEqs[t].init(APP->engine->getSampleRate());
 		}
 		colorThemes.cc1 = 0;
-		miscSettings.cc1 = 0x1;
+		miscSettings.cc4[0] = 0x1;
+		miscSettings.cc4[1] = SPEC_POST;
 		resetNonJson();
 	}
 	void resetNonJson() {
 		updateTrackLabelRequest = 1;
 		trackVu.reset();
+		fftWriteHead = 0;
 	}
 
 
@@ -352,8 +361,23 @@ struct EqMaster : Module {
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
 					if ( ((i << 3) + t) == selectedTrack ) {
+						// VU
 						trackVu.process(args.sampleTime, out);
 						vuProcessed = true;
+						
+						// Spectrum
+						if ( (fftWriteHead < FFT_N) && (miscSettings.cc4[1] == SPEC_PRE || miscSettings.cc4[1] == SPEC_POST) ) {
+							if (miscSettings.cc4[1] == SPEC_PRE) {
+								fftIn[fftWriteHead] = (in[0] + in[1]) / 2.0f;
+							}
+							else {// automatically post when in here
+								fftIn[fftWriteHead] = (out[0] + out[1]) / 2.0f;
+							}
+							// if (fftWriteHead == FFT_N - 1) {
+								// pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
+							// }
+							fftWriteHead++;
+						}
 					}
 				}
 			}
@@ -469,6 +493,10 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
 			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
+			eqCurveAndGrid->fftWriteHeadSrc = &(module->fftWriteHead);
+			eqCurveAndGrid->ffts = module->ffts;
+			eqCurveAndGrid->fftIn = module->fftIn;
+			eqCurveAndGrid->fftOut = module->fftOut;
 		}
 		
 		// Screen - Big Numbers
