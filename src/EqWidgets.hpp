@@ -11,6 +11,7 @@
 
 #include "EqMenus.hpp"
 #include "VuMeters.hpp"
+#include "dsp/fft.hpp"
 
 
 // Labels
@@ -405,7 +406,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			if (miscSettingsSrc->cc4[0] != 0) {
 				for (int b = 0; b < 4; b++) {
 					if (trackEqsSrc[currTrk].getBandActive(b)) {
-						drawEqCurveBandFill(b, args, bandColors[b]);
+						drawEqCurveBandFill(b, args, bandColors[b], trackEqsSrc[currTrk].getGain(b));
 					}
 				}
 			}
@@ -442,10 +443,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		nvgStroke(args.vg);
 	}	
-	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col) {
-		NVGcolor fillCol = col;
-		fillCol.a = 0.3f;
-		nvgFillColor(args.vg, fillCol);
+	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col, float cursorDb) {
+		NVGcolor fillColCursor = col;
+		NVGcolor fillCol0 = col;
+		fillColCursor.a = 0.5f;
+		fillCol0.a = 0.1f;
+		nvgFillColor(args.vg, fillColCursor);
 		nvgStrokeColor(args.vg, col);
 		nvgStrokeWidth(args.vg, 1.0f);	
 		nvgBeginPath(args.vg);
@@ -455,11 +458,18 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		lineToAtLogFreqAndDb(args, maxLogFreq, 0.0f);
 		nvgClosePath(args.vg);
+		NVGpaint grad;
+		if (cursorDb > 0.0f) {
+			grad = nvgLinearGradient(args.vg, 0.0f, 0.0f, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
+		}
+		else {
+			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, box.size.y, fillCol0, fillColCursor);
+		}
+
+		nvgFillPaint(args.vg, grad);
 		nvgFill(args.vg);
 		nvgStroke(args.vg);
-		
 	}
-
 };
 
 

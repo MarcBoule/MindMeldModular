@@ -94,7 +94,7 @@ struct EqMaster : Module {
 			trackEqs[t].init(APP->engine->getSampleRate());
 		}
 		colorThemes.cc1 = 0;
-		miscSettings.cc1 = 0;
+		miscSettings.cc1 = 0x1;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -390,7 +390,7 @@ struct EqMasterWidget : ModuleWidget {
 	struct ShowBandCurvesEQItem : MenuItem {
 		PackedBytes4 *miscSettingsSrc;
 		void onAction(const event::Action &e) override {
-			miscSettingsSrc->cc4[0] ^= 0xFF;
+			miscSettingsSrc->cc4[0] ^= 0x1;
 		}
 	};
 
