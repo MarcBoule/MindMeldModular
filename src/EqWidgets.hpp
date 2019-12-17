@@ -411,9 +411,10 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgFillColor(args.vg, fillcol);
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, 0, box.size.y);
+		float specX;
 		for (int x = binFactor; x < FFT_N; x += binFactor) {	
 			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
-			float specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
+			specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
 			float specY = std::hypot(fftOut[x + 0], fftOut[x + 1]);// must grab more fftOut[] when binFactor > 2
 			specY = 2.0f * 20.0f * log10(specY);
 			if (x == binFactor) {
@@ -423,6 +424,7 @@ struct EqCurveAndGrid : TransparentWidget {
 				nvgLineTo(args.vg, specX, box.size.y - specY );
 			}
 		}
+		nvgLineTo(args.vg, specX, box.size.y );
 		nvgClosePath(args.vg);
 		nvgFill(args.vg);
 		//nvgStroke(args.vg);
