@@ -404,24 +404,28 @@ struct EqCurveAndGrid : TransparentWidget {
 	// spectrum
 	void drawSpectrum(const DrawArgs &args) {
 		static const int binFactor = 2;// FFT_N must be a multiple of this, and this must be min of 2 since want to grab real and imag to get norm
-		nvgStrokeColor(args.vg, SCHEME_YELLOW);
-		nvgStrokeWidth(args.vg, 1.0f);	
+		// nvgStrokeColor(args.vg, SCHEME_YELLOW);
+		// nvgStrokeWidth(args.vg, 1.0f);	
+		NVGcolor fillcol = VU_THEMES_TOP[0][1];// VU_THEMES_TOP[0][1] is the light green used in rms of VU meters
+		fillcol.a = 0.25f;
+		nvgFillColor(args.vg, fillcol);
 		nvgBeginPath(args.vg);
+		nvgMoveTo(args.vg, 0, box.size.y);
 		for (int x = binFactor; x < FFT_N; x += binFactor) {	
 			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
 			float specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
-			float specY = std::hypot(fftOut[x + 0], fftOut[x + 1]);// + std::hypot(fftOut[x + 2], fftOut[x + 3]);
-						  //std::hypot(fftOut[x + 5], fftOut[x + 6]) + std::hypot(fftOut[x + 7], fftOut[x + 8]);
-			specY *= 0.12f;
+			float specY = std::hypot(fftOut[x + 0], fftOut[x + 1]);// must grab more fftOut[] when binFactor > 2
+			specY = 2.0f * 20.0f * log10(specY);
 			if (x == binFactor) {
-				nvgMoveTo(args.vg, 0, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048
+				nvgLineTo(args.vg, 0, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048
 			}
 			else {
 				nvgLineTo(args.vg, specX, box.size.y - specY );
 			}
-			//INFO("%g, %g, %g, %g", freq, specX, specY, box.size.x);
 		}
-		nvgStroke(args.vg);
+		nvgClosePath(args.vg);
+		nvgFill(args.vg);
+		//nvgStroke(args.vg);
 	}
 
 	
