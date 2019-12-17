@@ -404,9 +404,11 @@ struct EqCurveAndGrid : TransparentWidget {
 	// spectrum
 	void drawSpectrum(const DrawArgs &args) {
 		static const int binFactor = 2;// FFT_N must be a multiple of this, and this must be min of 2 since want to grab real and imag to get norm
-		NVGcolor fillcol = SCHEME_LIGHT_GRAY;
-		fillcol.a = 0.25f;
-		nvgFillColor(args.vg, fillcol);
+		NVGcolor fillcolTop = SCHEME_LIGHT_GRAY;
+		NVGcolor fillcolBot = SCHEME_LIGHT_GRAY;
+		fillcolTop.a = 0.25f;
+		fillcolBot.a = 0.05f;
+		nvgFillColor(args.vg, fillcolTop);
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, 0, box.size.y);
 		float specX;
@@ -424,6 +426,8 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		nvgLineTo(args.vg, specX, box.size.y );
 		nvgClosePath(args.vg);
+		NVGpaint grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.3f, 0.0f, box.size.y, fillcolTop, fillcolBot);
+		nvgFillPaint(args.vg, grad);
 		nvgFill(args.vg);
 	}
 
