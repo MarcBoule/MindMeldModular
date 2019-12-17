@@ -404,9 +404,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	// spectrum
 	void drawSpectrum(const DrawArgs &args) {
 		static const int binFactor = 2;// FFT_N must be a multiple of this, and this must be min of 2 since want to grab real and imag to get norm
-		// nvgStrokeColor(args.vg, SCHEME_YELLOW);
-		// nvgStrokeWidth(args.vg, 1.0f);	
-		NVGcolor fillcol = VU_THEMES_TOP[0][1];// VU_THEMES_TOP[0][1] is the light green used in rms of VU meters
+		NVGcolor fillcol = SCHEME_LIGHT_GRAY;
 		fillcol.a = 0.25f;
 		nvgFillColor(args.vg, fillcol);
 		nvgBeginPath(args.vg);
@@ -427,7 +425,6 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgLineTo(args.vg, specX, box.size.y );
 		nvgClosePath(args.vg);
 		nvgFill(args.vg);
-		//nvgStroke(args.vg);
 	}
 
 	
