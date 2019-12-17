@@ -379,12 +379,21 @@ struct EqMaster : Module {
 						
 						// Spectrum
 						if ( (fftWriteHead < FFT_N) && (miscSettings.cc4[1] == SPEC_PRE || miscSettings.cc4[1] == SPEC_POST) ) {
+							// write pre or post into fft's input buffer
 							if (miscSettings.cc4[1] == SPEC_PRE) {
 								fftIn[fftWriteHead] = (in[0] + in[1]) / 2.0f;
 							}
 							else {// automatically post when in here
 								fftIn[fftWriteHead] = (out[0] + out[1]) / 2.0f;
 							}
+							// apply window
+							if ((fftWriteHead & 0x3) == 0x3) {
+								simd::float_4 p = {(float)(fftWriteHead - 3), (float)(fftWriteHead - 2), (float)(fftWriteHead - 1), (float)(fftWriteHead - 0)};
+								p /= (float)(FFT_N - 1);
+								simd::float_4* inp = ((simd::float_4*)(&(fftIn[fftWriteHead & ~0x3])));
+								*inp = *inp * dsp::blackmanHarris<simd::float_4>(p);
+							}
+							// perform fft
 							// if (fftWriteHead == FFT_N - 1) {
 								// pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
 							// }

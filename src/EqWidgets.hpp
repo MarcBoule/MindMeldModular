@@ -284,7 +284,8 @@ struct EqCurveAndGrid : TransparentWidget {
 	float maxLogFreq;
 	QuattroBiQuadCoeff drawEq;
 	std::shared_ptr<Font> font;
-	
+	float sampleRate;// use only in scope of it being set in draw()
+	int currTrk;// use only in scope of it being set in draw()
 	
 	EqCurveAndGrid() {
 		box.size = mm2px(Vec(109.22f, 60.943f));	
@@ -300,12 +301,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		drawGridtext(args);
 		
 		if (trackParamSrc != NULL) {
-			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			float sampleRate = trackEqsSrc[0].getSampleRate();
+			currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			sampleRate = trackEqsSrc[0].getSampleRate();
 		
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			
 			// spectrum
-			// The frequency spectrum produced by an N point DFT consists of N/2 samples equally spaced between [zero ; fs/2[.
-			// https://www.dspguide.com/ch9/1.htm
 			if (*fftWriteHeadSrc >= FFT_N) {
 				pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
 				*fftWriteHeadSrc = 0;
@@ -313,8 +314,10 @@ struct EqCurveAndGrid : TransparentWidget {
 			drawSpectrum(args);
 			
 			// EQ curves
-			calcCurveData(currTrk, sampleRate);
-			drawAllEqCurves(args, currTrk);
+			calcCurveData();
+			drawAllEqCurves(args);
+			
+			nvgResetScissor(args.vg);					
 		}
 	}
 	
@@ -400,12 +403,30 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	// spectrum
 	void drawSpectrum(const DrawArgs &args) {
-		
+		static const int binFactor = 2;// FFT_N must be a multiple of this, and this must be min of 2 since want to grab real and imag to get norm
+		nvgStrokeColor(args.vg, SCHEME_YELLOW);
+		nvgStrokeWidth(args.vg, 1.0f);	
+		nvgBeginPath(args.vg);
+		for (int x = binFactor; x < FFT_N; x += binFactor) {	
+			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
+			float specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
+			float specY = std::hypot(fftOut[x + 0], fftOut[x + 1]);// + std::hypot(fftOut[x + 2], fftOut[x + 3]);
+						  //std::hypot(fftOut[x + 5], fftOut[x + 6]) + std::hypot(fftOut[x + 7], fftOut[x + 8]);
+			specY *= 0.12f;
+			if (x == binFactor) {
+				nvgMoveTo(args.vg, 0, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048
+			}
+			else {
+				nvgLineTo(args.vg, specX, box.size.y - specY );
+			}
+			//INFO("%g, %g, %g, %g", freq, specX, specY, box.size.x);
+		}
+		nvgStroke(args.vg);
 	}
 
 	
 	// eq curves
-	void calcCurveData(int currTrk, float sampleRate) {
+	void calcCurveData() {
 		// contract: populate stepLogFreqs[] and stepDbs[]
 		
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
@@ -434,9 +455,8 @@ struct EqCurveAndGrid : TransparentWidget {
 			stepDbs[i] = drawEq.getFrequencyResponse(std::pow(10.0f, stepLogFreqs[i]) / sampleRate);
 		}
 	}
-	void drawAllEqCurves(const DrawArgs &args, int currTrk) {
+	void drawAllEqCurves(const DrawArgs &args) {
 		// draw frequency response curve
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		nvgLineCap(args.vg, NVG_ROUND);
 		nvgMiterLimit(args.vg, 1.0f);
 		NVGcolor bandColors[4] = {nvgRGB(146, 32, 22), nvgRGB(0, 155, 137), nvgRGB(50, 99, 148),nvgRGB(111, 81, 113)};
@@ -448,7 +468,6 @@ struct EqCurveAndGrid : TransparentWidget {
 			}
 		}
 		drawEqCurveTotal(args, SCHEME_LIGHT_GRAY);
-		nvgResetScissor(args.vg);					
 	}
 	void lineToAtLogFreqAndDb(const DrawArgs &args, float logFreq, float dB) {
 		float pX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
