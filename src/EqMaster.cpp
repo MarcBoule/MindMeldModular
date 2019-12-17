@@ -50,7 +50,7 @@ struct EqMaster : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;
-	PFFFT_Setup* ffts;
+	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
 	float* fftIn;
 	float* fftOut;
 	
@@ -59,8 +59,14 @@ struct EqMaster : Module {
 	}
 
 	void initTrackLabels() {
-		for (int trk = 0; trk < 24; trk++) {
+		for (int trk = 0; trk < 16; trk++) {
 			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		}
+		for (int trk = 16; trk < 20; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "GRP%1i", trk - 16 + 1);
+		}
+		for (int trk = 20; trk < 24; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "AUX%1i", trk - 20 + 1);
 		}
 	}
 	
@@ -92,6 +98,12 @@ struct EqMaster : Module {
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
 		fftIn = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
+	}
+  
+	~EqMaster() {
+		pffft_destroy_setup(ffts);
+		pffft_aligned_free(fftIn);
+		pffft_aligned_free(fftOut);
 	}
   
 	void onReset() override {
