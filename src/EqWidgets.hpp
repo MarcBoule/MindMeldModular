@@ -409,6 +409,9 @@ struct EqCurveAndGrid : TransparentWidget {
 		fillcolTop.a = 0.25f;
 		fillcolBot.a = 0.05f;
 		nvgFillColor(args.vg, fillcolTop);
+		nvgStrokeColor(args.vg, nvgRGB(79, 79, 79));
+		nvgStrokeWidth(args.vg, 1.0f);
+
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, 0, box.size.y);
 		float specX;
@@ -426,9 +429,11 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		nvgLineTo(args.vg, specX, box.size.y );
 		nvgClosePath(args.vg);
+		
 		NVGpaint grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.3f, 0.0f, box.size.y, fillcolTop, fillcolBot);
 		nvgFillPaint(args.vg, grad);
 		nvgFill(args.vg);
+		nvgStroke(args.vg);
 	}
 
 	
