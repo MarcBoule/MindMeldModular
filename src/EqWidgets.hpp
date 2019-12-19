@@ -298,7 +298,6 @@ struct EqCurveAndGrid : TransparentWidget {
 	void draw(const DrawArgs &args) override {
 		// grid
 		drawGrid(args);
-		drawGridtext(args);
 		
 		if (trackParamSrc != NULL) {
 			currTrk = (int)(trackParamSrc->getValue() + 0.5f);
@@ -312,6 +311,8 @@ struct EqCurveAndGrid : TransparentWidget {
 				*fftWriteHeadSrc = 0;
 			}
 			drawSpectrum(args);
+
+			drawGridtext(args);
 			
 			// EQ curves
 			calcCurveData();
@@ -418,8 +419,8 @@ struct EqCurveAndGrid : TransparentWidget {
 		for (int x = binFactor; x < FFT_N; x += binFactor) {	
 			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
 			specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
-			float specY = std::hypot(fftOut[x + 0], fftOut[x + 1]);// must grab more fftOut[] when binFactor > 2
-			specY = 2.0f * 20.0f * log10(specY);
+			float specY = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// must grab more fftOut[] when binFactor > 2, sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
+			specY = 20.0f * log10(specY);
 			if (x == binFactor) {
 				nvgLineTo(args.vg, 0, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048
 			}
