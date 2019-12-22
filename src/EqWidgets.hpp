@@ -280,6 +280,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	PFFFT_Setup* ffts;
 	float* fftIn;
 	float* fftOut;
+	bool* spectrumActiveSrc;
 	
 	// internal
 	float minLogFreq;
@@ -366,7 +367,9 @@ struct EqCurveAndGrid : TransparentWidget {
 					*fftWriteHeadSrc = 0;
 				}
 			}
-			drawSpectrum(args);
+			if (*spectrumActiveSrc) {
+				drawSpectrum(args);
+			}
 
 			drawGridtext(args);
 			

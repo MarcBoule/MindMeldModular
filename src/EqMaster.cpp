@@ -53,6 +53,8 @@ struct EqMaster : Module {
 	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
 	float* fftIn;
 	float* fftOut;
+	bool spectrumActive;// only for when input is unconnected
+	
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -393,10 +395,6 @@ struct EqMaster : Module {
 								simd::float_4* inp = ((simd::float_4*)(&(fftIn[fftWriteHead & ~0x3])));
 								*inp = *inp * dsp::blackmanHarris<simd::float_4>(p);
 							}
-							// perform fft
-							// if (fftWriteHead == FFT_N - 1) {
-								// pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
-							// }
 							fftWriteHead++;
 						}
 					}
@@ -406,6 +404,7 @@ struct EqMaster : Module {
 		if (!vuProcessed) {
 			trackVu.reset();
 		}
+		spectrumActive = vuProcessed;
 		
 		
 		//********** Lights **********
@@ -518,6 +517,7 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->ffts = module->ffts;
 			eqCurveAndGrid->fftIn = module->fftIn;
 			eqCurveAndGrid->fftOut = module->fftOut;
+			eqCurveAndGrid->spectrumActiveSrc = &(module->spectrumActive);
 		}
 		
 		// Screen - Big Numbers
