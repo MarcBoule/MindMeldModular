@@ -381,10 +381,10 @@ struct EqMaster : Module {
 						if ( (fftWriteHead < FFT_N) && (miscSettings.cc4[1] == SPEC_PRE || miscSettings.cc4[1] == SPEC_POST) ) {
 							// write pre or post into fft's input buffer
 							if (miscSettings.cc4[1] == SPEC_PRE) {
-								fftIn[fftWriteHead] = (in[0] + in[1]) / 2.0f;
+								fftIn[fftWriteHead] = (in[0] + in[1]);// no need to div by two, scaling done later
 							}
 							else {// automatically post when in here
-								fftIn[fftWriteHead] = (out[0] + out[1]) / 2.0f;
+								fftIn[fftWriteHead] = (out[0] + out[1]);// no need to div by two, scaling done later
 							}
 							// apply window
 							if ((fftWriteHead & 0x3) == 0x3) {

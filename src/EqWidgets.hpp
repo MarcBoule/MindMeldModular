@@ -12,6 +12,8 @@
 #include "EqMenus.hpp"
 #include "VuMeters.hpp"
 #include "dsp/fft.hpp"
+#include <condition_variable>
+#include <thread>
 
 
 // Labels
@@ -286,14 +288,55 @@ struct EqCurveAndGrid : TransparentWidget {
 	std::shared_ptr<Font> font;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
+	float drawBuf[FFT_N];// store magnitude only
 	
-	EqCurveAndGrid() {
+	// threading
+	std::mutex m;
+	std::condition_variable cv;
+	bool stop = false;
+	int stage = 0;
+	std::thread worker;
+	
+	
+	EqCurveAndGrid() : worker(&EqCurveAndGrid::worker_thread, this) {
 		box.size = mm2px(Vec(109.22f, 60.943f));	
 		minLogFreq = std::log10(minFreq);// 1.3
 		maxLogFreq = std::log10(maxFreq);// 4.3
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
+	~EqCurveAndGrid() {
+		{
+			std::lock_guard<std::mutex> lk(m);
+			stop = true;
+			stage = 1;
+		}
+		cv.notify_one();
+		worker.join();
+	}
+	
+	
+	void worker_thread()
+	{
+		while (!stop) {
+			{
+				std::unique_lock<std::mutex> lk(m);
+				cv.wait(lk);
+				lk.unlock();
+				if (stop) return;
+			}
+			if (stage == 1) {
+				pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
+				//std::this_thread::sleep_for(std::chrono::seconds(1));
+				
+				{
+					std::lock_guard<std::mutex> lk(m);
+					stage = 2;
+				}
+			}
+		}
+	}	
+
 	
 	void draw(const DrawArgs &args) override {
 		// grid
@@ -306,9 +349,22 @@ struct EqCurveAndGrid : TransparentWidget {
 			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 			
 			// spectrum
-			if (*fftWriteHeadSrc >= FFT_N) {
-				pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
-				*fftWriteHeadSrc = 0;
+			if (*fftWriteHeadSrc >= FFT_N) {// if we have a full sample buffer to process
+				if (stage == 0) {
+					{
+						std::lock_guard<std::mutex> lk(m);
+						stage = 1;
+					}
+					cv.notify_one();
+				}
+				else if (stage == 2) {
+					memcpy(drawBuf, fftOut, FFT_N * 4);
+					{
+						std::lock_guard<std::mutex> lk(m);
+						stage = 0;
+					}
+					*fftWriteHeadSrc = 0;
+				}
 			}
 			drawSpectrum(args);
 
@@ -414,13 +470,13 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgStrokeWidth(args.vg, 1.0f);
 
 		nvgBeginPath(args.vg);
-		nvgMoveTo(args.vg, 0, box.size.y);
+		nvgMoveTo(args.vg, 0, box.size.y + 3);// + 3 for proper enclosed region for fill
 		float specX;
 		for (int x = binFactor; x < FFT_N; x += binFactor) {	
 			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
 			specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
-			float specY = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// must grab more fftOut[] when binFactor > 2, sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
-			specY = 20.0f * log10(specY);
+			float specY = drawBuf[x + 0] * drawBuf[x + 0] + drawBuf[x + 1] * drawBuf[x + 1];// must grab more drawBuf[] when binFactor > 2, sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
+			specY = std::fmax(20.0f * std::log10(specY), -1.0f);// fmax for proper enclosed region for fill
 			if (x == binFactor) {
 				nvgLineTo(args.vg, 0, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048
 			}
@@ -428,7 +484,7 @@ struct EqCurveAndGrid : TransparentWidget {
 				nvgLineTo(args.vg, specX, box.size.y - specY );
 			}
 		}
-		nvgLineTo(args.vg, specX, box.size.y );
+		nvgLineTo(args.vg, specX, box.size.y + 3 );// + 3 for proper enclosed region for fill
 		nvgClosePath(args.vg);
 		
 		NVGpaint grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.3f, 0.0f, box.size.y, fillcolTop, fillcolBot);
