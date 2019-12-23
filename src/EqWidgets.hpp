@@ -289,7 +289,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	std::shared_ptr<Font> font;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
-	float drawBuf[FFT_N];// store magnitude only
+	float drawBuf[FFT_N];// store magnitude only in first half, freq in second half
 	
 	// threading
 	std::mutex m;
@@ -329,9 +329,24 @@ struct EqCurveAndGrid : TransparentWidget {
 			lk.unlock();
 			if (requestStop) break;
 
+			// compute fft
 			pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
 			*fftWriteHeadSrc = 0;
-			// std::this_thread::sleep_for(std::chrono::seconds(3)); 
+			// std::this_thread::sleep_for(std::chrono::seconds(3)); // for testing
+			
+			// calculate magnitude and store in 1st half of array
+			for (int x = 0; x < FFT_N ; x += 2) {	
+				fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
+			}
+			// calculate frequency and store in 2nd half of array
+			for (int x = 0; x < FFT_N / 2 ; x++) {	
+				fftOut[x + FFT_N / 2] = (((float)x) / ((float)(FFT_N - 1))) * sampleRate;
+			}
+			
+			// compact high frequency bins
+			// for (int x = 0; x < FFT_N / 2 ; x++) {
+				// if 
+			// }
 			
 			workerStatus = WAITING_DONE;
 		}
@@ -459,7 +474,6 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	// spectrum
 	void drawSpectrum(const DrawArgs &args) {
-		static const int binFactor = 2;// FFT_N must be a multiple of this, and this must be min of 2 since want to grab real and imag to get norm
 		NVGcolor fillcolTop = SCHEME_LIGHT_GRAY;
 		NVGcolor fillcolBot = SCHEME_LIGHT_GRAY;
 		fillcolTop.a = 0.25f;
@@ -472,17 +486,18 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgMoveTo(args.vg, -1.0f, box.size.y + 3.0f);// + 3.0f for proper enclosed region for fill, -1.0f is a hack to not show the side stroke
 		float specX;
 		float specY;
-		for (int x = binFactor; x < FFT_N; x += binFactor) {	
-			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
+		for (int x = 1; x < FFT_N / 2; x++) {	
+			float ampl = drawBuf[x];
+			float freq = drawBuf[x + FFT_N / 2];
 			specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
-			specY = drawBuf[x + 0] * drawBuf[x + 0] + drawBuf[x + 1] * drawBuf[x + 1];// must grab more drawBuf[] when binFactor > 2, sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
-			specY = std::fmax(20.0f * std::log10(specY), -1.0f);// fmax for proper enclosed region for fill
-			if (x == binFactor) {
+			specY = std::fmax(20.0f * std::log10(ampl), -1.0f);// fmax for proper enclosed region for fill
+			if (x == 1) {
 				nvgLineTo(args.vg, -1.0f, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048, bring to -1.0f though as a hack to not show the side stroke
 			}
 			else {
 				nvgLineTo(args.vg, specX, box.size.y - specY );
 			}
+			//INFO("*** x = %g, freq = %g ***", specX, freq);
 		}
 		nvgLineTo(args.vg, specX + 1.0f, box.size.y - specY );// +1.0f is a hack to not show the side stroke
 		nvgLineTo(args.vg, specX + 1.0f, box.size.y + 3.0f );// +3.0f for proper enclosed region for fill, +1.0f is a hack to not show the side stroke
