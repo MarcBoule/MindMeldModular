@@ -302,7 +302,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	
 	EqCurveAndGrid() : worker(&EqCurveAndGrid::worker_thread, this) {
-		box.size = mm2px(Vec(109.22f, 60.943f));	
+		box.size = mm2px(Vec(106.885f +.8f, 59.605f));	
 		minLogFreq = std::log10(minFreq);// 1.3
 		maxLogFreq = std::log10(maxFreq);// 4.3
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
@@ -469,21 +469,23 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgStrokeWidth(args.vg, 1.0f);
 
 		nvgBeginPath(args.vg);
-		nvgMoveTo(args.vg, 0, box.size.y + 3);// + 3 for proper enclosed region for fill
+		nvgMoveTo(args.vg, -1.0f, box.size.y + 3.0f);// + 3.0f for proper enclosed region for fill, -1.0f is a hack to not show the side stroke
 		float specX;
+		float specY;
 		for (int x = binFactor; x < FFT_N; x += binFactor) {	
 			float freq = (((float)x) / ((float)(FFT_N - 1))) * 0.5f * sampleRate;
 			specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
-			float specY = drawBuf[x + 0] * drawBuf[x + 0] + drawBuf[x + 1] * drawBuf[x + 1];// must grab more drawBuf[] when binFactor > 2, sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
+			specY = drawBuf[x + 0] * drawBuf[x + 0] + drawBuf[x + 1] * drawBuf[x + 1];// must grab more drawBuf[] when binFactor > 2, sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
 			specY = std::fmax(20.0f * std::log10(specY), -1.0f);// fmax for proper enclosed region for fill
 			if (x == binFactor) {
-				nvgLineTo(args.vg, 0, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048
+				nvgLineTo(args.vg, -1.0f, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048, bring to -1.0f though as a hack to not show the side stroke
 			}
 			else {
 				nvgLineTo(args.vg, specX, box.size.y - specY );
 			}
 		}
-		nvgLineTo(args.vg, specX, box.size.y + 3 );// + 3 for proper enclosed region for fill
+		nvgLineTo(args.vg, specX + 1.0f, box.size.y - specY );// +1.0f is a hack to not show the side stroke
+		nvgLineTo(args.vg, specX + 1.0f, box.size.y + 3.0f );// +3.0f for proper enclosed region for fill, +1.0f is a hack to not show the side stroke
 		nvgClosePath(args.vg);
 		
 		NVGpaint grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.3f, 0.0f, box.size.y, fillcolTop, fillcolBot);
@@ -571,11 +573,11 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgStrokeWidth(args.vg, 1.0f);
 		
 		nvgBeginPath(args.vg);
-		moveToAtLogFreqAndDb(args, minLogFreq, 0.0f);
+		moveToAtLogFreqAndDb(args, minLogFreq - 0.05f, 0.0f);// 0.05f is a hack to not show the side stroke
 		for (int x = 0; x <= (numDrawSteps + 4); x++) {	
 			lineToAtLogFreqAndDb(args, stepLogFreqs[x], stepDbs[x][band]);
 		}
-		lineToAtLogFreqAndDb(args, maxLogFreq, 0.0f);
+		lineToAtLogFreqAndDb(args, maxLogFreq + 0.05f, 0.0f);// 0.05f is a hack to not show the side stroke
 		nvgClosePath(args.vg);
 		
 		NVGpaint grad;
