@@ -294,8 +294,10 @@ struct EqCurveAndGrid : TransparentWidget {
 	// threading
 	std::mutex m;
 	std::condition_variable cv;
-	bool stop = false;
-	int stage = 0;
+	enum WorkerStatusId {WAITING, PROCESSING, WAITING_DONE};
+	WorkerStatusId workerStatus = WAITING;
+	bool requestWork = false;
+	bool requestStop = false;
 	std::thread worker;
 	
 	
@@ -307,11 +309,9 @@ struct EqCurveAndGrid : TransparentWidget {
 	}
 	
 	~EqCurveAndGrid() {
-		{
-			std::lock_guard<std::mutex> lk(m);
-			stop = true;
-			stage = 1;
-		}
+		std::unique_lock<std::mutex> lk(m);
+		requestStop = true;
+		lk.unlock();
 		cv.notify_one();
 		worker.join();
 	}
@@ -319,22 +319,21 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	void worker_thread()
 	{
-		while (!stop) {
-			{
-				std::unique_lock<std::mutex> lk(m);
+		while (true) {
+			std::unique_lock<std::mutex> lk(m);
+			while (!requestWork && !requestStop) {
 				cv.wait(lk);
-				lk.unlock();
-				if (stop) return;
 			}
-			if (stage == 1) {
-				pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
-				//std::this_thread::sleep_for(std::chrono::seconds(1));
-				
-				{
-					std::lock_guard<std::mutex> lk(m);
-					stage = 2;
-				}
-			}
+			requestWork = false;
+			workerStatus = PROCESSING;
+			lk.unlock();
+			if (requestStop) break;
+
+			pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
+			*fftWriteHeadSrc = 0;
+			// std::this_thread::sleep_for(std::chrono::seconds(3)); 
+			
+			workerStatus = WAITING_DONE;
 		}
 	}	
 
@@ -351,21 +350,18 @@ struct EqCurveAndGrid : TransparentWidget {
 			
 			// spectrum
 			if (*fftWriteHeadSrc >= FFT_N) {// if we have a full sample buffer to process
-				if (stage == 0) {
-					{
-						std::lock_guard<std::mutex> lk(m);
-						stage = 1;
-					}
-					cv.notify_one();
+				if (workerStatus == WAITING) {
+					std::unique_lock<std::mutex> lk(m);
+					requestWork = true;
+					lk.unlock();
+					cv.notify_one();	
 				}
-				else if (stage == 2) {
-					memcpy(drawBuf, fftOut, FFT_N * 4);
-					{
-						std::lock_guard<std::mutex> lk(m);
-						stage = 0;
-					}
-					*fftWriteHeadSrc = 0;
-				}
+			}
+			if (workerStatus == WAITING_DONE) {
+				memcpy(drawBuf, fftOut, FFT_N * 4);
+				std::unique_lock<std::mutex> lk(m);
+				workerStatus = WAITING;
+				lk.unlock();
 			}
 			if (*spectrumActiveSrc) {
 				drawSpectrum(args);
