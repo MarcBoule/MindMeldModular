@@ -501,7 +501,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		fillcolTop.a = 0.25f;
 		fillcolBot.a = 0.05f;
 		nvgFillColor(args.vg, fillcolTop);
-		nvgStrokeColor(args.vg, nvgRGB(79, 79, 79));
+		nvgStrokeColor(args.vg, nvgRGB(99, 99, 99));
 		nvgStrokeWidth(args.vg, 1.0f);
 
 		nvgBeginPath(args.vg);
