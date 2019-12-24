@@ -335,42 +335,60 @@ struct EqCurveAndGrid : TransparentWidget {
 			pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
 			*fftWriteHeadSrc = 0;
 			// std::this_thread::sleep_for(std::chrono::seconds(3)); // for testing
-			
-			// calculate log of magnitude and store in 1st half of array
-			for (int x = 0; x < FFT_N ; x += 2) {	
-				int xw = x >> 1;
-				fftOut[xw] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
-				if ((xw & 0x3) == 0x3) {
-					simd::float_4 vecp = simd::float_4::load(&fftOut[xw & ~0x3]);
-					vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
-					vecp.store(&fftOut[xw & ~0x3]);					
-				}
-			}
-			// calculate pixel scaled log of frequency and store in 2nd half of array
-			for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
-				int xt4 = x << 2;
-				simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
-				vecp = (vecp / ((float)(FFT_N - 1))) * sampleRate;// linear freq a this line
-				vecp = simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, box.size.x);// pixel scaled log freq at this line
-				vecp.store(&fftOut[xt4 + FFT_N / 2]);
-			}
-			
-			// compact frequency bins
-			int i = 1;
-			for (int x = 1; x < FFT_N / 2 ; x++) {
-				if (std::round(fftOut[i - 1 + FFT_N / 2]) == std::round(fftOut[x + FFT_N / 2])) {
-					fftOut[i - 1] = std::max(fftOut[x], fftOut[i - 1]);
-				}
-				else {
-					fftOut[i] = fftOut[x];
-					fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
-					i++;
-				}
-			}
-			compatedSize = i;
+			postProcessFFT();
 			
 			workerStatus = WAITING_DONE;
 		}
+	}	
+	
+	
+	void postProcessFFT() {
+		// calculate log of magnitude and store in 1st half of array
+		for (int x = 0; x < FFT_N ; x += 2) {	
+			fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
+		}
+		
+		// calculate pixel scaled log of frequency and store in 2nd half of array
+		for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
+			int xt4 = x << 2;
+			simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
+			vecp = (vecp / ((float)(FFT_N - 1))) * sampleRate;// linear freq a this line
+			vecp = simd::round(simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, box.size.x));// pixel scaled log freq at this line
+			vecp.store(&fftOut[xt4 + FFT_N / 2]);
+		}
+		
+		// compact frequency bins
+		int i = 1;// index into compacted bins 
+		// int count = 1;// used for compaction-averaging of a bin
+		for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
+			if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
+				fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
+				// fftOut[i - 1] += fftOut[x];
+				// count++;
+			}
+			else {
+				// if (count != 1) {
+					// fftOut[i - 1] = fftOut[i - 1] / (float)count;
+					// count = 1;
+				// }
+				fftOut[i] = fftOut[x];
+				fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
+				i++;
+				
+			}
+		}
+		// if (count != 1) {// do last bin's compaction-averaging separately
+			// fftOut[i - 1] = fftOut[i - 1] / (float)count;
+		// }
+		compatedSize = i;
+		
+		// calculate log of magnitude
+		for (int x = 0; x < ((compatedSize + 3) >> 2) ; x++) {
+			simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
+			vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+			vecp.store(&fftOut[x << 2]);					
+		}
+
 	}	
 
 	
