@@ -101,7 +101,7 @@ struct TapModeItem : MenuItem {
 			"Pre-insert",
 			"Pre-fader",
 			"Post-fader",
-			"Post-mute/solo",
+			"Post-mute/solo (default)",
 			"Set per track"
 		};
 		
@@ -218,7 +218,7 @@ struct ChainItem : MenuItem {
 		ch0Item->chainModeSrc = chainModeSrc;
 		menu->addChild(ch0Item);
 
-		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master", CHECKMARK(*chainModeSrc == 1));
+		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master (default)", CHECKMARK(*chainModeSrc == 1));
 		ch1Item->chainModeSrc = chainModeSrc;
 		ch1Item->setVal = 1;
 		menu->addChild(ch1Item);

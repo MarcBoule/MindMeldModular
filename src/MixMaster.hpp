@@ -1526,7 +1526,7 @@ struct MixerTrack {
 			// Post insert (taps[32..33] are provisional, since not yet filtered)
 			if (inInsert[insertPortIndex].isConnected()) {
 				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
-				taps[N_TRK * 2 + 1] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1));
+				taps[N_TRK * 2 + 1] = stereo ? clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
 			}
 			else {
 				taps[N_TRK * 2 + 0] = taps[0];
@@ -1567,7 +1567,7 @@ struct MixerTrack {
 			// Tap[32],[33]: pre-fader (post insert)
 			if (inInsert[insertPortIndex].isConnected()) {
 				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
-				taps[N_TRK * 2 + 1] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1));
+				taps[N_TRK * 2 + 1] = stereo ? clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
 			}
 			else {
 				taps[N_TRK * 2 + 0] = filtered[0];

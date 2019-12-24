@@ -605,36 +605,21 @@ struct MixMaster : Module {
 		if (outputs[DIRECT_OUTPUTS + outi].isConnected()) {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannels16);
 
-			int tapIndex = gInfo.directOutsMode;		
-			if (tapIndex < 4) {// global direct outs
+			for (unsigned int i = 0; i < 8; i++) {
+				int tapIndex = gInfo.directOutsMode < 4 ? gInfo.directOutsMode : tracks[base + i].directOutsMode;
+				int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
+				float leftSig = trackTaps[offset + 0];
+				float rightSig = (tapIndex < 2 && !inputs[((base + i) << 1) + 1].isConnected()) ? 0.0f : trackTaps[offset + 1];
 				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-					for (unsigned int i = 0; i < 8; i++) {
-						int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
-					}
+					leftSig *= muteTrackWhenSoloAuxRetSlewer.out;
+					rightSig *= muteTrackWhenSoloAuxRetSlewer.out;
 				}
-				else {
-					memcpy(outputs[DIRECT_OUTPUTS + outi].getVoltages(), &trackTaps[(tapIndex << (3 + N_TRK / 8)) + (base << 1)], 4 * 16);
-				}
-			}
-			else {// per track direct outs
-				for (unsigned int i = 0; i < 8; i++) {
-					tapIndex = tracks[base + i].directOutsMode;
-					int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
-					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
-					}
-					else {
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 0], 2 * i);
-						outputs[DIRECT_OUTPUTS + outi].setVoltage(trackTaps[offset + 1], 2 * i + 1);
-					}
-				}
+				outputs[DIRECT_OUTPUTS + outi].setVoltage(leftSig, 2 * i);
+				outputs[DIRECT_OUTPUTS + outi].setVoltage(rightSig, 2 * i + 1);
 			}
 		}
 	}
-	
+
 	
 	void SetDirectGroupAuxOuts() {
 		int outputNum = DIRECT_OUTPUTS + N_TRK / 8;
