@@ -189,6 +189,142 @@ struct BandLabelQ : BandLabelBase {
 // Displays
 // --------------------
 
+
+struct SpectrumSettingsButtons : OpaqueWidget {
+	const float textWidths[5] = {45.0f, 21.0f, 21.0f, 26.0f, 32.0f};
+	const std::string textStrings[5] = {"ANALYSER:", "OFF", "PRE", "POST", "FREEZE"};
+	
+	// user must set up
+	int8_t *settingSrc = NULL;
+	
+	// local
+	std::shared_ptr<Font> font;
+	NVGcolor colorOff;
+	NVGcolor colorOn;
+	
+	
+	SpectrumSettingsButtons() {
+		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2] + textWidths[3] + textWidths[4], 5.0f));
+		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+		colorOff = SCHEME_LIGHT_GRAY;
+		colorOn = SCHEME_YELLOW;
+	}
+	
+	void draw(const DrawArgs &args) override {
+		if (font->handle >= 0) {
+			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
+			// nvgStrokeWidth(args.vg, 0.7f);
+			
+			nvgFontFaceId(args.vg, font->handle);
+			nvgTextLetterSpacing(args.vg, 0.0);
+			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+			nvgFontSize(args.vg, 10.0f);
+			
+			float posx = 0.0f;
+			for (int l = 0; l < 5; l++) {
+				if (settingSrc != NULL && (*settingSrc == l - 1)) {
+					nvgFillColor(args.vg, colorOn);
+				}
+				else {
+					nvgFillColor(args.vg, colorOff);
+				}
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[l].c_str(), NULL);
+				// nvgBeginPath(args.vg);
+				// nvgRect(args.vg, posx, 0.0f, textWidths[l], box.size.y);
+				// nvgStroke(args.vg);	
+				posx += textWidths[l];
+			}
+		}
+	}
+	
+	void onButton(const event::Button& e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			float leftX = textWidths[0];
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
+				*settingSrc = SPEC_NONE;
+			}
+			leftX += textWidths[1];
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
+				*settingSrc = SPEC_PRE;
+			}
+			leftX += textWidths[2];
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[3]) {
+				*settingSrc = SPEC_POST;
+			}
+			leftX += textWidths[3];
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[4]) {
+				*settingSrc = SPEC_FREEZE;
+			}
+		}
+		OpaqueWidget::onButton(e);
+	}
+};
+
+
+
+struct ShowBandCurvesButtons : OpaqueWidget {
+	const float textWidths[3] = {33.0f, 24.0f, 29.0f};
+	const std::string textStrings[3] = {"BANDS:", "HIDE", "SHOW"};
+	
+	// user must set up
+	int8_t *settingSrc = NULL;
+	
+	// local
+	std::shared_ptr<Font> font;
+	NVGcolor colorOff;
+	NVGcolor colorOn;
+	
+	
+	ShowBandCurvesButtons() {
+		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2], 5.0f));
+		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+		colorOff = SCHEME_LIGHT_GRAY;
+		colorOn = SCHEME_YELLOW;
+	}
+	
+	void draw(const DrawArgs &args) override {
+		if (font->handle >= 0) {
+			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
+			// nvgStrokeWidth(args.vg, 0.7f);
+			
+			nvgFontFaceId(args.vg, font->handle);
+			nvgTextLetterSpacing(args.vg, 0.0);
+			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+			nvgFontSize(args.vg, 10.0f);
+			
+			float posx = 0.0f;
+			for (int l = 0; l < 3; l++) {
+				if (settingSrc != NULL && (*settingSrc == l - 1)) {
+					nvgFillColor(args.vg, colorOn);
+				}
+				else {
+					nvgFillColor(args.vg, colorOff);
+				}
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[l].c_str(), NULL);
+				// nvgBeginPath(args.vg);
+				// nvgRect(args.vg, posx, 0.0f, textWidths[l], box.size.y);
+				// nvgStroke(args.vg);	
+				posx += textWidths[l];
+			}
+		}
+	}
+	
+	void onButton(const event::Button& e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			float leftX = textWidths[0];
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
+				*settingSrc = 0;
+			}
+			leftX += textWidths[1];
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
+				*settingSrc = 1;
+			}
+		}
+		OpaqueWidget::onButton(e);
+	}
+};
+
+
 struct BigNumbers : TransparentWidget {
 	// user must set up
 	Param* trackParamSrc = NULL;
@@ -290,7 +426,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
 	float drawBuf[FFT_N];// store magnitude only in first half, freq in second half
-	int drawBufSize = FFT_N / 2;
+	int drawBufSize = FFT_N / 2;// only pessimistic value, will be overwriten to compacted size
 	
 	// threading
 	std::mutex m;
@@ -300,14 +436,17 @@ struct EqCurveAndGrid : TransparentWidget {
 	bool requestWork = false;
 	bool requestStop = false;
 	std::thread worker;
-	int compatedSize;
+	int compactedSize;
 	
 	
 	EqCurveAndGrid() : worker(&EqCurveAndGrid::worker_thread, this) {
-		box.size = mm2px(Vec(106.885f +.8f, 59.605f));	
+		box.size = mm2px(Vec(106.885f +.8f, 59.605f + 1.0f));	
 		minLogFreq = std::log10(minFreq);// 1.3
 		maxLogFreq = std::log10(maxFreq);// 4.3
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+		for (int i = 0; i < FFT_N / 2; i++) {
+			drawBuf[i] = -1.0f;
+		}
 	}
 	
 	~EqCurveAndGrid() {
@@ -333,7 +472,7 @@ struct EqCurveAndGrid : TransparentWidget {
 
 			// compute fft
 			pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
-			*fftWriteHeadSrc = 0;
+			*fftWriteHeadSrc = 0;// fftIn no longer needed, so start filling again
 			// std::this_thread::sleep_for(std::chrono::seconds(3)); // for testing
 			postProcessFFT();
 			
@@ -359,36 +498,24 @@ struct EqCurveAndGrid : TransparentWidget {
 		
 		// compact frequency bins
 		int i = 1;// index into compacted bins 
-		// int count = 1;// used for compaction-averaging of a bin
 		for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
 			if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
 				fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
-				// fftOut[i - 1] += fftOut[x];
-				// count++;
 			}
 			else {
-				// if (count != 1) {
-					// fftOut[i - 1] = fftOut[i - 1] / (float)count;
-					// count = 1;
-				// }
 				fftOut[i] = fftOut[x];
 				fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
 				i++;
-				
 			}
 		}
-		// if (count != 1) {// do last bin's compaction-averaging separately
-			// fftOut[i - 1] = fftOut[i - 1] / (float)count;
-		// }
-		compatedSize = i;
+		compactedSize = i;
 		
 		// calculate log of magnitude
-		for (int x = 0; x < ((compatedSize + 3) >> 2) ; x++) {
+		for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
 			simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
 			vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
 			vecp.store(&fftOut[x << 2]);					
 		}
-
 	}	
 
 	
@@ -403,21 +530,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 			
 			// spectrum
-			if (*fftWriteHeadSrc >= FFT_N) {// if we have a full sample buffer to process
-				if (workerStatus == WAITING) {
-					std::unique_lock<std::mutex> lk(m);
-					requestWork = true;
-					lk.unlock();
-					cv.notify_one();	
-				}
-			}
-			if (workerStatus == WAITING_DONE) {
-				memcpy(drawBuf, fftOut, FFT_N * 4);
-				drawBufSize = compatedSize;
-				std::unique_lock<std::mutex> lk(m);
-				workerStatus = WAITING;
-				lk.unlock();
-			}
+			calcSpectrum();
 			if (*spectrumActiveSrc) {
 				drawSpectrum(args);
 			}
@@ -513,6 +626,27 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	
 	// spectrum
+	void calcSpectrum() {
+		if (*fftWriteHeadSrc >= FFT_N) {// if we have a full sample buffer to process
+			if (workerStatus == WAITING) {
+				std::unique_lock<std::mutex> lk(m);
+				requestWork = true;
+				lk.unlock();
+				cv.notify_one();
+			}
+		}
+		if (workerStatus == WAITING_DONE) {
+			// memcpy(drawBuf, fftOut, compactedSize * 4);// log magnitude, compacted bins
+			for (int i = 0; i < compactedSize; i++) {
+				drawBuf[i] = (0.33f * drawBuf[i] + 0.67f * fftOut[i]);
+			}
+			memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
+			drawBufSize = compactedSize;
+			std::unique_lock<std::mutex> lk(m);
+			workerStatus = WAITING;
+			lk.unlock();
+		}
+	}
 	void drawSpectrum(const DrawArgs &args) {
 		NVGcolor fillcolTop = SCHEME_LIGHT_GRAY;
 		NVGcolor fillcolBot = SCHEME_LIGHT_GRAY;

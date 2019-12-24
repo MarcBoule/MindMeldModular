@@ -33,6 +33,7 @@ static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with 
 static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
 
 static const std::string bandNames[4] = {"LF", "LMF", "HMF", "HF"};
+enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
 
 static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
@@ -43,7 +44,7 @@ static const bool DEFAULT_lowPeak = false;
 static const bool DEFAULT_highPeak = false;
 static const float DEFAULT_trackGain = 0.0f;// dB
 
-static const int FFT_N = 2048;// must be a multiple of 32
+static const int FFT_N = 2048;// must be a multiple of 32 (if adjust this, should adjust left side spectrum cheating when drawing which was setup with 2048)
 
 
 union PackedBytes4 {

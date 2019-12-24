@@ -31,7 +31,6 @@ struct EqMaster : Module {
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 	int8_t colorThemeLocal = 0;// not used in EQ, but using VU code of MixMaster so need this even though it will never be read
-	enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
 
 	// Need to save, no reset
 	int panelTheme;
@@ -40,7 +39,7 @@ struct EqMaster : Module {
 	int mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
 	PackedBytes4 colorThemes;// cc4[0] is display labels, cc4[1] is VUs
-	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = none, 1 = pre, 2 = post, 3 = freeze)
+	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze)
 	TrackEq trackEqs[24];
 	
 	// No need to save, with reset
@@ -400,6 +399,9 @@ struct EqMaster : Module {
 							}
 							fftWriteHead++;
 						}
+						else if (miscSettings.cc4[1] == SPEC_NONE || miscSettings.cc4[1] == SPEC_FREEZE) {
+							fftWriteHead = 0;
+						}
 					}
 				}
 			}
@@ -407,7 +409,7 @@ struct EqMaster : Module {
 		if (!vuProcessed) {
 			trackVu.reset();
 		}
-		spectrumActive = vuProcessed;
+		spectrumActive = vuProcessed && miscSettings.cc4[1] != SPEC_NONE;
 		
 		
 		//********** Lights **********
@@ -434,12 +436,12 @@ struct EqMasterWidget : ModuleWidget {
 	// Module's context menu
 	// --------------------
 
-	struct ShowBandCurvesEQItem : MenuItem {
-		PackedBytes4 *miscSettingsSrc;
-		void onAction(const event::Action &e) override {
-			miscSettingsSrc->cc4[0] ^= 0x1;
-		}
-	};
+	// struct ShowBandCurvesEQItem : MenuItem {
+		// PackedBytes4 *miscSettingsSrc;
+		// void onAction(const event::Action &e) override {
+			// miscSettingsSrc->cc4[0] ^= 0x1;
+		// }
+	// };
 
 	void appendContextMenu(Menu *menu) override {		
 		EqMaster* module = (EqMaster*)(this->module);
@@ -459,9 +461,9 @@ struct EqMasterWidget : ModuleWidget {
 		vuColItem->srcColor = &(module->colorThemes.cc4[1]);
 		menu->addChild(vuColItem);
 		
-		ShowBandCurvesEQItem *bandEqItem = createMenuItem<ShowBandCurvesEQItem>("Show band curves", CHECKMARK(module->miscSettings.cc4[0]));
-		bandEqItem->miscSettingsSrc = &(module->miscSettings);
-		menu->addChild(bandEqItem);
+		// ShowBandCurvesEQItem *bandEqItem = createMenuItem<ShowBandCurvesEQItem>("Show band curves", CHECKMARK(module->miscSettings.cc4[0]));
+		// bandEqItem->miscSettingsSrc = &(module->miscSettings);
+		// menu->addChild(bandEqItem);
 		
 	}
 	
@@ -511,9 +513,18 @@ struct EqMasterWidget : ModuleWidget {
 		
 		
 		// Center part
+		// Screen - Spectrum settings buttons
+		SpectrumSettingsButtons *bandsButton;
+		addChild(bandsButton = createWidget<SpectrumSettingsButtons>(mm2px(Vec(18.0f, 9.5f))));
+		ShowBandCurvesButtons *specButtons;
+		addChild(specButtons = createWidget<ShowBandCurvesButtons>(mm2px(Vec(95.0f, 9.5f))));
+		if (module) {
+			specButtons->settingSrc = &module->miscSettings.cc4[0];
+			bandsButton->settingSrc = &module->miscSettings.cc4[1];
+		}
 		// Screen - EQ curve and grid
 		EqCurveAndGrid* eqCurveAndGrid;
-		addChild(eqCurveAndGrid = createWidgetCentered<EqCurveAndGrid>(mm2px(Vec(71.12f, 45.47f))));
+		addChild(eqCurveAndGrid = createWidgetCentered<EqCurveAndGrid>(mm2px(Vec(71.12f, 45.47f - 0.5f))));
 		if (module) {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
