@@ -93,6 +93,7 @@ struct EqMaster : Module {
 		}
 		configParam(LOW_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "LF peak/shelf");
 		configParam(HIGH_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "HF peak/shelf");
+		configParam(GLOBAL_BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Global bypass");
 		
 		onReset();
 		
@@ -366,12 +367,13 @@ struct EqMaster : Module {
 		//********** Outputs **********
 
 		bool vuProcessed = false;
+		bool globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 		for (int i = 0; i < 3; i++) {
 			if (inputs[SIG_INPUTS + i].isConnected()) {
 				for (int t = 0; t < 8; t++) {
 					float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
 					float out[2];
-					trackEqs[(i << 3) + t].process(out, in);
+					trackEqs[(i << 3) + t].process(out, in, globalEnable);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
 					if ( ((i << 3) + t) == selectedTrack ) {
@@ -498,6 +500,8 @@ struct EqMasterWidget : ModuleWidget {
 			activeSwitch->trackParamSrc = &(module->params[TRACK_PARAM]);
 			activeSwitch->trackEqsSrc = module->trackEqs;
 		}
+		// Bypass switch
+		addParam(createDynamicParamCentered<DynBypassButton>(mm2px(Vec(leftX, 68.0f)), module, GLOBAL_BYPASS_PARAM, module ? &module->panelTheme : NULL));
 		// Signal inputs
 		static const float jackY = 84.35f;
 		static const float jackDY = 12.8f;

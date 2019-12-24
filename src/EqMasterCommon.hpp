@@ -24,6 +24,7 @@ enum EqParamIds {
 	ENUMS(Q_PARAMS, 4),
 	LOW_PEAK_PARAM,
 	HIGH_PEAK_PARAM,
+	GLOBAL_BYPASS_PARAM,
 	NUM_EQ_PARAMS
 };
 
@@ -183,10 +184,10 @@ class TrackEq {
 		if (trackGain != DEFAULT_trackGain) return true;
 		return false;
 	}
-	void process(float* out, float* in) {
+	void process(float* out, float* in, bool globalEnable) {
 		
 		simd::float_4 newGain;// in dB
-		if (trackActive) {
+		if (trackActive && globalEnable) {
 			newGain = bandActive * gain;
 		}		
 		else {
