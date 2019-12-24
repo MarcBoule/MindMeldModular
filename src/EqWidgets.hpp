@@ -290,6 +290,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
 	float drawBuf[FFT_N];// store magnitude only in first half, freq in second half
+	int drawBufSize = FFT_N / 2;
 	
 	// threading
 	std::mutex m;
@@ -299,6 +300,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	bool requestWork = false;
 	bool requestStop = false;
 	std::thread worker;
+	int compatedSize;
 	
 	
 	EqCurveAndGrid() : worker(&EqCurveAndGrid::worker_thread, this) {
@@ -334,19 +336,38 @@ struct EqCurveAndGrid : TransparentWidget {
 			*fftWriteHeadSrc = 0;
 			// std::this_thread::sleep_for(std::chrono::seconds(3)); // for testing
 			
-			// calculate magnitude and store in 1st half of array
+			// calculate log of magnitude and store in 1st half of array
 			for (int x = 0; x < FFT_N ; x += 2) {	
-				fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed since when take log of this, it can be absorbed in scaling multiplier
+				int xw = x >> 1;
+				fftOut[xw] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
+				if ((xw & 0x3) == 0x3) {
+					simd::float_4 vecp = simd::float_4::load(&fftOut[xw & ~0x3]);
+					vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+					vecp.store(&fftOut[xw & ~0x3]);					
+				}
 			}
-			// calculate frequency and store in 2nd half of array
-			for (int x = 0; x < FFT_N / 2 ; x++) {	
-				fftOut[x + FFT_N / 2] = (((float)x) / ((float)(FFT_N - 1))) * sampleRate;
+			// calculate pixel scaled log of frequency and store in 2nd half of array
+			for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
+				int xt4 = x << 2;
+				simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
+				vecp = (vecp / ((float)(FFT_N - 1))) * sampleRate;// linear freq a this line
+				vecp = simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, box.size.x);// pixel scaled log freq at this line
+				vecp.store(&fftOut[xt4 + FFT_N / 2]);
 			}
 			
-			// compact high frequency bins
-			// for (int x = 0; x < FFT_N / 2 ; x++) {
-				// if 
-			// }
+			// compact frequency bins
+			int i = 1;
+			for (int x = 1; x < FFT_N / 2 ; x++) {
+				if (std::round(fftOut[i - 1 + FFT_N / 2]) == std::round(fftOut[x + FFT_N / 2])) {
+					fftOut[i - 1] = std::max(fftOut[x], fftOut[i - 1]);
+				}
+				else {
+					fftOut[i] = fftOut[x];
+					fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
+					i++;
+				}
+			}
+			compatedSize = i;
 			
 			workerStatus = WAITING_DONE;
 		}
@@ -374,6 +395,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			}
 			if (workerStatus == WAITING_DONE) {
 				memcpy(drawBuf, fftOut, FFT_N * 4);
+				drawBufSize = compatedSize;
 				std::unique_lock<std::mutex> lk(m);
 				workerStatus = WAITING;
 				lk.unlock();
@@ -484,20 +506,18 @@ struct EqCurveAndGrid : TransparentWidget {
 
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, -1.0f, box.size.y + 3.0f);// + 3.0f for proper enclosed region for fill, -1.0f is a hack to not show the side stroke
-		float specX;
-		float specY;
-		for (int x = 1; x < FFT_N / 2; x++) {	
+		float specX = 0.0f;
+		float specY = 0.0f;
+		for (int x = 1; x < drawBufSize; x++) {	
 			float ampl = drawBuf[x];
-			float freq = drawBuf[x + FFT_N / 2];
-			specX = math::rescale(std::log10(freq), minLogFreq, maxLogFreq, 0.0f, box.size.x);
-			specY = std::fmax(20.0f * std::log10(ampl), -1.0f);// fmax for proper enclosed region for fill
+			specX = drawBuf[x + FFT_N / 2];
+			specY = ampl;
 			if (x == 1) {
 				nvgLineTo(args.vg, -1.0f, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048, bring to -1.0f though as a hack to not show the side stroke
 			}
 			else {
 				nvgLineTo(args.vg, specX, box.size.y - specY );
 			}
-			//INFO("*** x = %g, freq = %g ***", specX, freq);
 		}
 		nvgLineTo(args.vg, specX + 1.0f, box.size.y - specY );// +1.0f is a hack to not show the side stroke
 		nvgLineTo(args.vg, specX + 1.0f, box.size.y + 3.0f );// +3.0f for proper enclosed region for fill, +1.0f is a hack to not show the side stroke

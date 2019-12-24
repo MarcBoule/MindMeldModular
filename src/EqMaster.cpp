@@ -385,15 +385,16 @@ struct EqMaster : Module {
 							if (miscSettings.cc4[1] == SPEC_PRE) {
 								fftIn[fftWriteHead] = (in[0] + in[1]);// no need to div by two, scaling done later
 							}
-							else {// automatically post when in here
+							else {// SPEC_POST
 								fftIn[fftWriteHead] = (out[0] + out[1]);// no need to div by two, scaling done later
 							}
 							// apply window
 							if ((fftWriteHead & 0x3) == 0x3) {
 								simd::float_4 p = {(float)(fftWriteHead - 3), (float)(fftWriteHead - 2), (float)(fftWriteHead - 1), (float)(fftWriteHead - 0)};
 								p /= (float)(FFT_N - 1);
-								simd::float_4* inp = ((simd::float_4*)(&(fftIn[fftWriteHead & ~0x3])));
-								*inp = *inp * dsp::blackmanHarris<simd::float_4>(p);
+								simd::float_4 windowed = simd::float_4::load(&(fftIn[fftWriteHead & ~0x3]));
+								windowed *= dsp::blackmanHarris<simd::float_4>(p);
+								windowed.store(&(fftIn[fftWriteHead & ~0x3]));
 							}
 							fftWriteHead++;
 						}
