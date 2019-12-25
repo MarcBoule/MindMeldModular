@@ -409,14 +409,15 @@ struct EqCurveAndGrid : TransparentWidget {
 	simd::float_4 stepDbs[numDrawSteps + 4 + 1];// 4 for cursors, 1 since will loop with "<= numDrawSteps"
 	
 	// user must set up
-	Param* trackParamSrc = NULL;
-	TrackEq* trackEqsSrc;
+	Param *trackParamSrc = NULL;
+	TrackEq *trackEqsSrc;
 	PackedBytes4 *miscSettingsSrc;	
-	int* fftWriteHeadSrc;
-	PFFFT_Setup* ffts;
-	float* fftIn;
-	float* fftOut;
-	bool* spectrumActiveSrc;
+	int *fftWriteHeadSrc;
+	PFFFT_Setup *ffts;
+	float *fftIn;
+	float *fftOut;
+	bool *spectrumActiveSrc;
+	bool *globalEnableSrc;
 	
 	// internal
 	float minLogFreq;
@@ -724,7 +725,7 @@ struct EqCurveAndGrid : TransparentWidget {
 				}
 			}
 		}
-		drawEqCurveTotal(args, SCHEME_LIGHT_GRAY);
+		drawEqCurveTotal(args);
 	}
 	void lineToAtLogFreqAndDb(const DrawArgs &args, float logFreq, float dB) {
 		float pX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
@@ -736,8 +737,13 @@ struct EqCurveAndGrid : TransparentWidget {
 		float pY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
 		nvgMoveTo(args.vg, pX, pY);
 	}
-	void drawEqCurveTotal(const DrawArgs &args, NVGcolor col) {
-		nvgStrokeColor(args.vg, col);
+	void drawEqCurveTotal(const DrawArgs &args) {
+		if (trackEqsSrc[currTrk].getTrackActive() && *globalEnableSrc) {
+			nvgStrokeColor(args.vg, SCHEME_LIGHT_GRAY);
+		}
+		else {
+			nvgStrokeColor(args.vg, nvgRGB(130, 130, 130));
+		}
 		nvgStrokeWidth(args.vg, 1.25f);	
 		nvgBeginPath(args.vg);
 		for (int x = 0; x <= (numDrawSteps + 4); x++) {	

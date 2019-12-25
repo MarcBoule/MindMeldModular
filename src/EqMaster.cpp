@@ -53,7 +53,7 @@ struct EqMaster : Module {
 	float* fftIn;
 	float* fftOut;
 	bool spectrumActive;// only for when input is unconnected
-	
+	bool globalEnable;
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -100,6 +100,8 @@ struct EqMaster : Module {
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
 		fftIn = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
+		spectrumActive = false;
+		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 	}
   
 	~EqMaster() {
@@ -366,7 +368,7 @@ struct EqMaster : Module {
 		//********** Outputs **********
 
 		bool vuProcessed = false;
-		bool globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
+		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 		for (int i = 0; i < 3; i++) {
 			if (inputs[SIG_INPUTS + i].isConnected()) {
 				for (int t = 0; t < 8; t++) {
@@ -534,6 +536,7 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->fftIn = module->fftIn;
 			eqCurveAndGrid->fftOut = module->fftOut;
 			eqCurveAndGrid->spectrumActiveSrc = &(module->spectrumActive);
+			eqCurveAndGrid->globalEnableSrc = &(module->globalEnable);
 		}
 		
 		// Screen - Big Numbers
