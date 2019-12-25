@@ -894,11 +894,13 @@ struct TrackGainKnob : DynKnob {
 
 struct BandKnob : DynKnob {
 	Param* trackParamSrc;
-	TrackEq* trackEqsSrc;
+	TrackEq* trackEqsSrc = NULL;
 	int* lastMovedKnobIdSrc;
 	time_t* lastMovedKnobTimeSrc;
+	int band;
 	
-	void loadGraphics(int band) {
+	void loadGraphics(int _band) {
+		band = _band;
 		if (band == 0) 
 			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lf-knob.svg")));
 		else if (band == 1) 
@@ -950,8 +952,13 @@ struct EqGainKnob : BandKnob {
 
 template<int BAND>// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
 struct EqQKnob : BandKnob {
+	int oldVisible = -1;
+	
 	EqQKnob() {
 		loadGraphics(BAND);
+		if (BAND == 0 || BAND == 3) {
+			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/blank-knob.svg")));
+		}
 	}
 	
 	void onChange(const event::Change& e) override {
@@ -959,6 +966,33 @@ struct EqQKnob : BandKnob {
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setQ(BAND, paramQuantity->getValue());
+		}
+	}
+	
+	void onDragMove(const event::DragMove& e) override {
+		int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+		if (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) return;			
+		if (band == 3 && !trackEqsSrc[currTrk].getHighPeak()) return;			
+		BandKnob::onDragMove(e);
+	}
+	
+	void step() override {
+		BandKnob::step();
+		if (trackEqsSrc != NULL) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			int newVisible = (!((band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || 
+								(band == 3 && !trackEqsSrc[currTrk].getHighPeak()))) ? 1 : 0;	
+			if (oldVisible != newVisible) {
+				if (newVisible == 1) {
+					setSvg(framesAll[0]);
+				}
+				else {
+					setSvg(framesAll[1]);	
+				}
+				fb->dirty = true;	
+				oldVisible = newVisible;
+			}
+						
 		}
 	}
 };
