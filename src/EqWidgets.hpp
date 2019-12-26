@@ -262,7 +262,9 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 			}
 			if (newSetting != -1) {		
 				if (newSetting == *settingSrc) {
-					*settingSrc = oldSetting;
+					if (oldSetting != -1) {
+						*settingSrc = oldSetting;
+					}
 					oldSetting = newSetting;
 				}
 				else {
