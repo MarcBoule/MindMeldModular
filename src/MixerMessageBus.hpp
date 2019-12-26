@@ -27,6 +27,8 @@ struct MessageBase {
 struct MixerMessage : MessageBase {
 	bool isJr;
 	char trkGrpAuxLabels[(16 + 4 + 4) * 4];
+	// int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+	// int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 };
 
 

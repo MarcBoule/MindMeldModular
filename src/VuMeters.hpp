@@ -101,14 +101,14 @@ struct VuColorItem : MenuItem {
 
 // Colors
 
-static const int numThemes = 5;
-static const NVGcolor VU_THEMES_TOP[numThemes][2] =  
+static const int numVuThemes = 5;
+static const NVGcolor VU_THEMES_TOP[numVuThemes][2] =  
 									   {{nvgRGB(110, 130, 70), 	nvgRGB(178, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(68, 164, 122), 	nvgRGB(102, 245, 182)}, // teal: peak (darker), rms (lighter)
 										{nvgRGB(64, 155, 160), 	nvgRGB(102, 233, 245)}, // light blue: peak (darker), rms (lighter)
 										{nvgRGB(68, 125, 164), 	nvgRGB(102, 180, 245)}, // blue: peak (darker), rms (lighter)
 										{nvgRGB(110, 70, 130), 	nvgRGB(178, 107, 235)}};// purple: peak (darker), rms (lighter)
-static const NVGcolor VU_THEMES_BOT[numThemes][2] =  
+static const NVGcolor VU_THEMES_BOT[numVuThemes][2] =  
 									   {{nvgRGB(50, 130, 70), 	nvgRGB(97, 235, 107)}, // green: peak (darker), rms (lighter)
 										{nvgRGB(68, 164, 156), 	nvgRGB(102, 245, 232)}, // teal: peak (darker), rms (lighter)
 										{nvgRGB(64, 108, 160), 	nvgRGB(102, 183, 245)}, // light blue: peak (darker), rms (lighter)

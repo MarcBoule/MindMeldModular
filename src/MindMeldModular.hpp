@@ -38,7 +38,8 @@ extern Model *modelEqMaster;
 // General constants
 
 // Display (label) colors
-static const NVGcolor DISP_COLORS[] = {
+static const int numDispThemes = 7;
+static const NVGcolor DISP_COLORS[numDispThemes] = {
 	nvgRGB(0xff, 0xd7, 0x14),// yellow
 	nvgRGB(240, 240, 240),// light-gray			
 	nvgRGB(140, 235, 107),// green

@@ -39,77 +39,43 @@ class QuattroBiQuadCoeff {
 		switch (type) {
 			case LOWSHELF: {
 				float sqrtV = std::sqrt(V);
-				// Original version with no Q
-				// if (V >= 1.f) {// when V = 1, b0 = 1, a1 = b1, a2 = b2
-					// float norm = 1.f / (1.f + M_SQRT2 * K + K * K);
-					// b0[i] = (1.f + M_SQRT2 * sqrtV * K + V * K * K) * norm;
-					// b1[i] = 2.f * (V * K * K - 1.f) * norm;
-					// b2[i] = (1.f - M_SQRT2 * sqrtV * K + V * K * K) * norm;
-					// a1[i] = 2.f * (K * K - 1.f) * norm;
-					// a2[i] = (1.f - M_SQRT2 * K + K * K) * norm;
-				// }
-				// else {
-					// float norm = 1.f / (1.f + M_SQRT2 / sqrtV * K + K * K / V);
-					// b0[i] = (1.f + M_SQRT2 * K + K * K) * norm;
-					// b1[i] = 2.f * (K * K - 1) * norm;
-					// b2[i] = (1.f - M_SQRT2 * K + K * K) * norm;
-					// a1[i] = 2.f * (K * K / V - 1.f) * norm;
-					// a2[i] = (1.f - M_SQRT2 / sqrtV * K + K * K / V) * norm;
-				// }
-				// New version with Q (replace M_SQRT2 with 1.f/Q)
+				Q = std::sqrt(Q) / M_SQRT2;
 				if (V >= 1.f) {// when V = 1, b0 = 1, a1 = b1, a2 = b2
-					float norm = 1.f / (1.f + 1.f/Q * K + K * K);
-					b0[i] = (1.f + 1.f/Q * sqrtV * K + V * K * K) * norm;
+					float norm = 1.f / (1.f + K / Q + K * K);
+					b0[i] = (1.f + sqrtV * K / Q + V * K * K) * norm;
 					b1[i] = 2.f * (V * K * K - 1.f) * norm;
-					b2[i] = (1.f - 1.f/Q * sqrtV * K + V * K * K) * norm;
+					b2[i] = (1.f - sqrtV * K / Q + V * K * K) * norm;
 					a1[i] = 2.f * (K * K - 1.f) * norm;
-					a2[i] = (1.f - 1.f/Q * K + K * K) * norm;
+					a2[i] = (1.f - K / Q + K * K) * norm;
 				}
 				else {
-					float norm = 1.f / (1.f + (1.f/Q) / sqrtV * K + K * K / V);
-					b0[i] = (1.f + 1.f/Q * K + K * K) * norm;
+					float norm = 1.f / (1.f + K / (Q * sqrtV) + K * K / V);
+					b0[i] = (1.f + K / Q + K * K) * norm;
 					b1[i] = 2.f * (K * K - 1) * norm;
-					b2[i] = (1.f - 1.f/Q * K + K * K) * norm;
+					b2[i] = (1.f - K / Q + K * K) * norm;
 					a1[i] = 2.f * (K * K / V - 1.f) * norm;
-					a2[i] = (1.f - (1.f/Q) / sqrtV * K + K * K / V) * norm;
+					a2[i] = (1.f - K / (Q * sqrtV) + K * K / V) * norm;
 				}
 			} break;
 
 			case HIGHSHELF: {
 				float sqrtV = std::sqrt(V);
-				// Original version with no Q
-				// if (V >= 1.f) {// when V = 1, b0 = 1, a1 = b1, a2 = b2
-					// float norm = 1.f / (1.f + M_SQRT2 * K + K * K);
-					// b0[i] = (V + M_SQRT2 * sqrtV * K + K * K) * norm;
-					// b1[i] = 2.f * (K * K - V) * norm;
-					// b2[i] = (V - M_SQRT2 * sqrtV * K + K * K) * norm;
-					// a1[i] = 2.f * (K * K - 1.f) * norm;
-					// a2[i] = (1.f - M_SQRT2 * K + K * K) * norm;
-				// }
-				// else {
-					// float norm = 1.f / (1.f / V + M_SQRT2 / sqrtV * K + K * K);
-					// b0[i] = (1.f + M_SQRT2 * K + K * K) * norm;
-					// b1[i] = 2.f * (K * K - 1.f) * norm;
-					// b2[i] = (1.f - M_SQRT2 * K + K * K) * norm;
-					// a1[i] = 2.f * (K * K - 1.f / V) * norm;
-					// a2[i] = (1.f / V - M_SQRT2 / sqrtV * K + K * K) * norm;
-				// }
-				// New version with Q (replace M_SQRT2 with 1.f/Q)
+				Q = std::sqrt(Q) / M_SQRT2;
 				if (V >= 1.f) {// when V = 1, b0 = 1, a1 = b1, a2 = b2
-					float norm = 1.f / (1.f + 1.f/Q * K + K * K);
-					b0[i] = (V + 1.f/Q * sqrtV * K + K * K) * norm;
+					float norm = 1.f / (1.f + K / Q + K * K);
+					b0[i] = (V + sqrtV * K / Q + K * K) * norm;
 					b1[i] = 2.f * (K * K - V) * norm;
-					b2[i] = (V - 1.f/Q * sqrtV * K + K * K) * norm;
+					b2[i] = (V - sqrtV * K / Q + K * K) * norm;
 					a1[i] = 2.f * (K * K - 1.f) * norm;
-					a2[i] = (1.f - 1.f/Q * K + K * K) * norm;
+					a2[i] = (1.f - K / Q + K * K) * norm;
 				}
 				else {
-					float norm = 1.f / (1.f / V + (1.f/Q) / sqrtV * K + K * K);
-					b0[i] = (1.f + 1.f/Q * K + K * K) * norm;
+					float norm = 1.f / (1.f / V + K / (Q * sqrtV) + K * K);
+					b0[i] = (1.f + K / Q + K * K) * norm;
 					b1[i] = 2.f * (K * K - 1.f) * norm;
-					b2[i] = (1.f - 1.f/Q * K + K * K) * norm;
+					b2[i] = (1.f - K / Q + K * K) * norm;
 					a1[i] = 2.f * (K * K - 1.f / V) * norm;
-					a2[i] = (1.f / V - (1.f/Q) / sqrtV * K + K * K) * norm;
+					a2[i] = (1.f / V - K / (Q * sqrtV) + K * K) * norm;
 				}
 			} break;
 

@@ -106,6 +106,15 @@ struct MixMaster : Module {
 		
 		
 	void sendToMessageBus() { 
+		// TODO: redo with tmpDispCols which is setup for expanders
+		// int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+		// int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+		// vuColors[0] = gInfo.colorAndCloak.cc4[vuColorGlobal];
+		// dispColors[0] = gInfo.colorAndCloak.cc4[dispColor];
+		// if (vuColors[0] >= numVuThemes) {
+			
+		// }
+		
 		if (N_TRK < 16) {
 			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels);
 		}
@@ -496,7 +505,7 @@ struct MixMaster : Module {
 				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
 				// Display colors (when per track)
 				PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
-				if (gInfo.colorAndCloak.cc4[dispColor] < 7) {
+				if (gInfo.colorAndCloak.cc4[dispColor] < numDispThemes) {
 					for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 						tmpDispCols[i].cc1 = 0;
 					}

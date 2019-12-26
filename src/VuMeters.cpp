@@ -48,7 +48,7 @@ void VuMeterBase::processPeakHold() {
 void VuMeterBase::draw(const DrawArgs &args) {
 	processPeakHold();
 	
-	colorTheme = (*colorThemeGlobal >= numThemes) ? *colorThemeLocal : *colorThemeGlobal;
+	colorTheme = (*colorThemeGlobal >= numVuThemes) ? *colorThemeLocal : *colorThemeGlobal;
 	
 	// PEAK
 	drawVu(args, srcLevels->getPeak(0), 0, 0);

@@ -34,7 +34,7 @@ struct TrackLabel : LedDisplayChoice {
 	
 	void draw(const DrawArgs &args) override {
 		if (colorGlobalSrc) {
-			int colorIndex = *colorGlobalSrc < 7 ? *colorGlobalSrc : *colorLocalSrc;
+			int colorIndex = *colorGlobalSrc < numDispThemes ? *colorGlobalSrc : *colorLocalSrc;
 			color = DISP_COLORS[colorIndex];
 		}	
 		LedDisplayChoice::draw(args);
@@ -113,7 +113,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 		prepareText();
 		
 		if (colorGlobalSrc) {
-			int colorIndex = *colorGlobalSrc < 7 ? *colorGlobalSrc : *colorLocalSrc;
+			int colorIndex = *colorGlobalSrc < numDispThemes ? *colorGlobalSrc : *colorLocalSrc;
 			color = DISP_COLORS[colorIndex];
 		}	
 

@@ -571,14 +571,14 @@ struct MasterDisplay : EditableDisplayBase {
 			clipItem->clippingSrc = clipping;
 			menu->addChild(clipItem);
 				
-			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
+			if (colorAndCloak->cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = vuColorThemeLocal;
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
 			
-			if (colorAndCloak->cc4[dispColor] >= 7) {
+			if (colorAndCloak->cc4[dispColor] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = dispColorLocal;
 				dispColItem->isGlobal = false;
@@ -677,14 +677,14 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (srcTrack->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
+			if (srcTrack->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcTrack->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
 
-			if (srcTrack->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
+			if (srcTrack->gInfo->colorAndCloak.cc4[dispColor] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = &(srcTrack->dispColorLocal);
 				dispColItem->isGlobal = false;
@@ -784,14 +784,14 @@ struct GroupDisplay : EditableDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (srcGroup->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numThemes) {	
+			if (srcGroup->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcGroup->vuColorThemeLocal);
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
 			
-			if (srcGroup->gInfo->colorAndCloak.cc4[dispColor] >= 7) {
+			if (srcGroup->gInfo->colorAndCloak.cc4[dispColor] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = &(srcGroup->dispColorLocal);
 				dispColItem->isGlobal = false;
@@ -874,14 +874,14 @@ struct AuxDisplay : EditableDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
-			if (colorAndCloak->cc4[vuColorGlobal] >= numThemes) {	
+			if (colorAndCloak->cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = srcVuColor;
 				vuColItem->isGlobal = false;
 				menu->addChild(vuColItem);
 			}
 			
-			if (colorAndCloak->cc4[dispColor] >= 7) {
+			if (colorAndCloak->cc4[dispColor] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = srcDispColor;
 				dispColItem->isGlobal = false;
