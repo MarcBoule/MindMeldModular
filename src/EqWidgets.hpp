@@ -201,6 +201,7 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 	std::shared_ptr<Font> font;
 	NVGcolor colorOff;
 	NVGcolor colorOn;
+	int oldSetting = -1;
 	
 	
 	SpectrumSettingsButtons() {
@@ -242,21 +243,32 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 	
 	void onButton(const event::Button& e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			int newSetting = -1;
 			float leftX = textWidths[0];
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
-				*settingSrc = SPEC_NONE;
+				newSetting = SPEC_NONE;
 			}
 			leftX += textWidths[1];
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
-				*settingSrc = SPEC_PRE;
+				newSetting = SPEC_PRE;
 			}
 			leftX += textWidths[2];
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[3]) {
-				*settingSrc = SPEC_POST;
+				newSetting = SPEC_POST;
 			}
 			leftX += textWidths[3];
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[4]) {
-				*settingSrc = SPEC_FREEZE;
+				newSetting = SPEC_FREEZE;
+			}
+			if (newSetting != -1) {		
+				if (newSetting == *settingSrc) {
+					*settingSrc = oldSetting;
+					oldSetting = newSetting;
+				}
+				else {
+					oldSetting = *settingSrc;
+					*settingSrc = newSetting;
+				}
 			}
 		}
 		OpaqueWidget::onButton(e);
@@ -317,14 +329,17 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 	
 	void onButton(const event::Button& e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			float leftX = textWidths[0];
-			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
-				*settingSrc = 0;
+			if (e.pos.x > textWidths[0]) {
+				*settingSrc ^= 0x1;
 			}
-			leftX += textWidths[1];
-			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
-				*settingSrc = 1;
-			}
+			// float leftX = textWidths[0];
+			// if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
+				// *settingSrc = 0;
+			// }
+			// leftX += textWidths[1];
+			// if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
+				// *settingSrc = 1;
+			// }
 		}
 		OpaqueWidget::onButton(e);
 	}
