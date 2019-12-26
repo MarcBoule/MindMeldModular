@@ -173,13 +173,13 @@ struct BandLabelQ : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
-			if (! ( (band == 0 && !trackEqsSrc[trk].getLowPeak()) || (band == 3 && !trackEqsSrc[trk].getHighPeak())) ) {
+			// if (! ( (band == 0 && !trackEqsSrc[trk].getLowPeak()) || (band == 3 && !trackEqsSrc[trk].getHighPeak())) ) {
 				float q = trackEqsSrc[trk].getQ(band);
 				text = string::f("%.2f", math::normalizeZero(q));
-			}
-			else {
-				text = "---";
-			}
+			// }
+			// else {
+				// text = "---";
+			// }
 		}
 	}
 };
@@ -206,7 +206,7 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 	SpectrumSettingsButtons() {
 		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2] + textWidths[3] + textWidths[4], 5.0f));
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
-		colorOff = SCHEME_LIGHT_GRAY;
+		colorOff = SCHEME_GRAY;
 		colorOn = SCHEME_YELLOW;
 	}
 	
@@ -222,7 +222,10 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 			
 			float posx = 0.0f;
 			for (int l = 0; l < 5; l++) {
-				if (settingSrc != NULL && (*settingSrc == l - 1)) {
+				if (l == 0) {
+					nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+				}
+				else if (settingSrc != NULL && (*settingSrc == l - 1)) {
 					nvgFillColor(args.vg, colorOn);
 				}
 				else {
@@ -278,7 +281,7 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 	ShowBandCurvesButtons() {
 		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2], 5.0f));
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
-		colorOff = SCHEME_LIGHT_GRAY;
+		colorOff = SCHEME_GRAY;
 		colorOn = SCHEME_YELLOW;
 	}
 	
@@ -294,7 +297,10 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 			
 			float posx = 0.0f;
 			for (int l = 0; l < 3; l++) {
-				if (settingSrc != NULL && (*settingSrc == l - 1)) {
+				if (l == 0) {
+					nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+				}
+				else if (settingSrc != NULL && (*settingSrc == l - 1)) {
 					nvgFillColor(args.vg, colorOn);
 				}
 				else {
@@ -375,13 +381,13 @@ struct BigNumbers : TransparentWidget {
 				}
 				else if (srcId >= Q_PARAMS && srcId < Q_PARAMS + 4) {
 					int band = srcId - Q_PARAMS;
-					if (! ( (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || (band == 3 && !trackEqsSrc[currTrk].getHighPeak())) ) {
+					// if (! ( (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || (band == 3 && !trackEqsSrc[currTrk].getHighPeak())) ) {
 						float q = trackEqsSrc[currTrk].getQ(band);
 						text = string::f("%.2f", math::normalizeZero(q));
-					}
-					else {
-						text = "---";
-					}
+					// }
+					// else {
+						// text = "---";
+					// }
 				}
 
 			
@@ -742,7 +748,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			nvgStrokeColor(args.vg, SCHEME_LIGHT_GRAY);
 		}
 		else {
-			nvgStrokeColor(args.vg, nvgRGB(130, 130, 130));
+			nvgStrokeColor(args.vg, SCHEME_GRAY);
 		}
 		nvgStrokeWidth(args.vg, 1.25f);	
 		nvgBeginPath(args.vg);
@@ -958,13 +964,13 @@ struct EqGainKnob : BandKnob {
 
 template<int BAND>// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
 struct EqQKnob : BandKnob {
-	int oldVisible = -1;
+	// int oldVisible = -1;
 	
 	EqQKnob() {
 		loadGraphics(BAND);
-		if (BAND == 0 || BAND == 3) {
-			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/blank-knob.svg")));
-		}
+		// if (BAND == 0 || BAND == 3) {
+			// addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/blank-knob.svg")));
+		// }
 	}
 	
 	void onChange(const event::Change& e) override {
@@ -975,32 +981,32 @@ struct EqQKnob : BandKnob {
 		}
 	}
 	
-	void onDragMove(const event::DragMove& e) override {
-		int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-		if (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) return;			
-		if (band == 3 && !trackEqsSrc[currTrk].getHighPeak()) return;			
-		BandKnob::onDragMove(e);
-	}
+	// void onDragMove(const event::DragMove& e) override {
+		// int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+		// if (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) return;			
+		// if (band == 3 && !trackEqsSrc[currTrk].getHighPeak()) return;			
+		// BandKnob::onDragMove(e);
+	// }
 	
-	void step() override {
-		BandKnob::step();
-		if (trackEqsSrc != NULL) {
-			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			int newVisible = (!((band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || 
-								(band == 3 && !trackEqsSrc[currTrk].getHighPeak()))) ? 1 : 0;	
-			if (oldVisible != newVisible) {
-				if (newVisible == 1) {
-					setSvg(framesAll[0]);
-				}
-				else {
-					setSvg(framesAll[1]);	
-				}
-				fb->dirty = true;	
-				oldVisible = newVisible;
-			}
+	// void step() override {
+		// BandKnob::step();
+		// if (trackEqsSrc != NULL) {
+			// int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			// int newVisible = (!((band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || 
+								// (band == 3 && !trackEqsSrc[currTrk].getHighPeak()))) ? 1 : 0;	
+			// if (oldVisible != newVisible) {
+				// if (newVisible == 1) {
+					// setSvg(framesAll[0]);
+				// }
+				// else {
+					// setSvg(framesAll[1]);	
+				// }
+				// fb->dirty = true;	
+				// oldVisible = newVisible;
+			// }
 						
-		}
-	}
+		// }
+	// }
 };
 
 

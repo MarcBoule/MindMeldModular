@@ -39,13 +39,13 @@ static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
 static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
 static const float DEFAULT_gain = 0.0f;// dB
-static const float DEFAULT_q = 3.0f;
+static const float DEFAULT_q[4] = {M_SQRT1_2, 3.0f, 3.0f, M_SQRT1_2};
 static const bool DEFAULT_lowPeak = false;
 static const bool DEFAULT_highPeak = false;
 static const float DEFAULT_trackGain = 0.0f;// dB
 
 static const int FFT_N = 2048;// must be a multiple of 32 (if adjust this, should adjust left side spectrum cheating when drawing which was setup with 2048)
-
+static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);
 
 union PackedBytes4 {
 	int32_t cc1;
@@ -85,7 +85,7 @@ class TrackEq {
 			setBandActive(i, DEFAULT_bandActive);
 			setFreq(i, DEFAULT_freq[i]);
 			setGain(i, DEFAULT_gain);
-			setQ(i, DEFAULT_q);
+			setQ(i, DEFAULT_q[i]);
 		}
 		setLowPeak(DEFAULT_lowPeak);
 		setHighPeak(DEFAULT_highPeak);
@@ -178,7 +178,7 @@ class TrackEq {
 			if (bandActive[b] != DEFAULT_bandActive) return true;
 			if (freq[b] != DEFAULT_freq[b]) return true;
 			if (gain[b] != DEFAULT_gain) return true;
-			if (q[b] != DEFAULT_q) return true;
+			if (q[b] != DEFAULT_q[b]) return true;
 		}
 		if (lowPeak != DEFAULT_lowPeak) return true;
 		if (highPeak != DEFAULT_highPeak) return true;

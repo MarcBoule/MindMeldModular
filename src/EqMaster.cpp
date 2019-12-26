@@ -88,7 +88,7 @@ struct EqMaster : Module {
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive, bandNames[i] + " active");
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
-			configParam(Q_PARAMS + i, 0.3f, 20.0f, DEFAULT_q, bandNames[i] + " Q");
+			configParam(Q_PARAMS + i, 0.3f, 20.0f, DEFAULT_q[i], bandNames[i] + " Q");
 		}
 		configParam(LOW_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "LF peak/shelf");
 		configParam(HIGH_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "HF peak/shelf");
