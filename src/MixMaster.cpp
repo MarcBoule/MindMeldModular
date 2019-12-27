@@ -106,20 +106,38 @@ struct MixMaster : Module {
 		
 		
 	void sendToMessageBus() { 
-		// TODO: redo with tmpDispCols which is setup for expanders
-		// int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
-		// int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
-		// vuColors[0] = gInfo.colorAndCloak.cc4[vuColorGlobal];
-		// dispColors[0] = gInfo.colorAndCloak.cc4[dispColor];
-		// if (vuColors[0] >= numVuThemes) {
-			
-		// }
+		int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+		int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+		vuColors[0] = gInfo.colorAndCloak.cc4[vuColorGlobal];
+		dispColors[0] = gInfo.colorAndCloak.cc4[dispColor];
+		if (vuColors[0] >= numVuThemes) {
+			for (int t = 0; t < N_TRK; t++) {
+				vuColors[1 + t] = tracks[t].vuColorThemeLocal;
+			}
+			for (int g = 0; g < N_GRP; g++) {
+				vuColors[1 + 16 + g] = groups[g].vuColorThemeLocal;
+			}
+			for (int a = 0; a < 4; a++) {
+				vuColors[1 + 16 + 4 + a] = 0;
+			}
+		}
+		if (dispColors[0] >= numDispThemes) {
+			for (int t = 0; t < N_TRK; t++) {
+				dispColors[1 + t] = tracks[t].dispColorLocal;
+			}
+			for (int g = 0; g < N_GRP; g++) {
+				dispColors[1 + 16 + g] = groups[g].dispColorLocal;
+			}
+			for (int a = 0; a < 4; a++) {
+				dispColors[1 + 16 + 4 + a] = 0;
+			}
+		}
 		
 		if (N_TRK < 16) {
-			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels);
+			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels, vuColors, dispColors);
 		}
 		else {
-			mixerMessageBus.send(id + 1, master.masterLabel, trackLabels, auxLabels);
+			mixerMessageBus.send(id + 1, master.masterLabel, trackLabels, auxLabels, vuColors, dispColors);
 		}
 	}
 	

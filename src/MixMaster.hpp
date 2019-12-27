@@ -559,7 +559,6 @@ struct MixerMaster {
 	// 
 	// solution:
 	// a=2 and b=0 and c=(1/6) and d=(-1/108)
-	
 	float clipPoly(float inX) {
 		return 2.0f + inX * inX * (1.0f/6.0f - inX * (1.0f/108.0f));
 	}

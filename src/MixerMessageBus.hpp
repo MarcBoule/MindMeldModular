@@ -27,8 +27,8 @@ struct MessageBase {
 struct MixerMessage : MessageBase {
 	bool isJr;
 	char trkGrpAuxLabels[(16 + 4 + 4) * 4];
-	// int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
-	// int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+	int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+	int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 };
 
 
@@ -37,15 +37,23 @@ struct MixerMessageBus {
 	std::unordered_map<int, MixerMessage> memberData;// first value is a "Module::id + 1" (so that 0 = deregistered, instead of -1)
 
 
-	void send(int id, char* masterLabel, char* trackLabels, char* auxLabels) {
+	void send(int id, char* masterLabel, char* trackLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
 		memberData[id].isJr = false;
 		memcpy(memberData[id].trkGrpAuxLabels, trackLabels, (16 + 4) * 4);// grabs groups also since contiguous
 		memcpy(&memberData[id].trkGrpAuxLabels[(16 + 4) * 4], auxLabels, 4 * 4);
+		memberData[id].vuColors[0] = _vuColors[0];
+		if (_vuColors[0] >= 5) {
+			memcpy(&memberData[id].vuColors[1], &_vuColors[1], 16 + 4 + 4);
+		}
+		memberData[id].dispColors[0] = _dispColors[0];
+		if (_dispColors[0] >= 7) {
+			memcpy(&memberData[id].dispColors[1], &_dispColors[1], 16 + 4 + 4);
+		}
 	}
-	void sendJr(int id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels) {// does not write to tracks 9-16 and groups 3-4 when jr.
+	void sendJr(int id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {// does not write to tracks 9-16 and groups 3-4 when jr.
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
@@ -53,6 +61,18 @@ struct MixerMessageBus {
 		memcpy(memberData[id].trkGrpAuxLabels, trackLabels, 8 * 4);
 		memcpy(&memberData[id].trkGrpAuxLabels[16 * 4], groupLabels, 2 * 4);
 		memcpy(&memberData[id].trkGrpAuxLabels[(16 + 4) * 4], auxLabels, 4 * 4);
+		memberData[id].vuColors[0] = _vuColors[0];
+		if (_vuColors[0] >= 5) {
+			memcpy(&memberData[id].vuColors[1], &_vuColors[1], 8);
+			memcpy(&memberData[id].vuColors[1 + 16], &_vuColors[1 + 16], 2);
+			memcpy(&memberData[id].vuColors[1 + 16 + 4], &_vuColors[1 + 16 + 4], 4);
+		}
+		memberData[id].dispColors[0] = _dispColors[0];
+		if (_dispColors[0] >= 7) {
+			memcpy(&memberData[id].dispColors[1], &_dispColors[1], 8);
+			memcpy(&memberData[id].dispColors[1 + 16], &_dispColors[1 + 16], 2);
+			memcpy(&memberData[id].dispColors[1 + 16 + 4], &_dispColors[1 + 16 + 4], 4);
+		}
 	}
 
 
