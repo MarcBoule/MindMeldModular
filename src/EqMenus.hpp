@@ -11,10 +11,67 @@
 
 
 #include "EqMasterCommon.hpp"
+#include "VuMeters.hpp"
 
 
 // Module's context menu
 // --------------------
+
+struct VuColorItem : MenuItem {
+	int8_t *srcColors;
+
+	struct VuColorSubItem : MenuItem {
+		int8_t *srcColors;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			for (int t = 0; t < 24; t++) {
+				srcColors[t] = setVal;
+			}
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		for (int i = 0; i < numVuThemes; i++) {
+			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColors == i));
+			vuColItem->srcColors = srcColors;
+			vuColItem->setVal = i;
+			menu->addChild(vuColItem);
+		}
+
+		return menu;
+	}
+};
+
+
+struct DispColorEqItem : MenuItem {
+	int8_t *srcColors;
+
+	struct DispColorSubItem : MenuItem {
+		int8_t *srcColors;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			for (int t = 0; t < 24; t++) {
+				srcColors[t] = setVal;
+			}
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		for (int i = 0; i < numDispThemes; i++) {		
+			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColors == i));
+			dispColItem->srcColors = srcColors;
+			dispColItem->setVal = i;
+			menu->addChild(dispColItem);
+		}
+		
+		return menu;
+	}
+};
+
 
 struct FetchLabelsItem : MenuItem {
 	int *mappedIdSrc;

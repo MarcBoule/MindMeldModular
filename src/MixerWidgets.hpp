@@ -11,7 +11,6 @@
 
 
 #include "MixerMenus.hpp"
-#include "VuMeters.hpp"
 
 
 // Fade pointer

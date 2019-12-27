@@ -9,10 +9,66 @@
 #define MMM_MIXERMENUS_HPP
 
 #include "MixerCommon.hpp"
+#include "VuMeters.hpp"
 
 
 // Module's context menu
 // --------------------
+
+
+struct VuColorItem : MenuItem {
+	int8_t *srcColor;
+	bool isGlobal = false;// true when this is in the context menu of module, false when it is in a track/group/master context menu
+
+	struct VuColorSubItem : MenuItem {
+		int8_t *srcColor;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			*srcColor = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		for (int i = 0; i < (numVuThemes + (isGlobal ? 1 : 0)); i++) {
+			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColor == i));
+			vuColItem->srcColor = srcColor;
+			vuColItem->setVal = i;
+			menu->addChild(vuColItem);
+		}
+
+		return menu;
+	}
+};
+
+
+struct DispColorItem : MenuItem {
+	int8_t *srcColor;
+	bool isGlobal = false;// true when this is in the context menu of module, false when it is in a track/group/master context menu
+
+	struct DispColorSubItem : MenuItem {
+		int8_t *srcColor;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			*srcColor = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		for (int i = 0; i < (numDispThemes + (isGlobal ? 1 : 0)); i++) {		
+			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColor == i));
+			dispColItem->srcColor = srcColor;
+			dispColItem->setVal = i;
+			menu->addChild(dispColItem);
+		}
+		
+		return menu;
+	}
+};
+
 
 struct PanLawMonoItem : MenuItem {
 	int *panLawMonoSrc;

@@ -48,25 +48,7 @@ static const NVGcolor DISP_COLORS[numDispThemes] = {
 	nvgRGB(102, 183, 245),// blue
 	nvgRGB(177, 107, 235)// purple
 };
-
-// Menu for constants
-
-struct DispColorItem : MenuItem {
-	int8_t *srcColor;
-	bool isGlobal = false;// true when this is in the context menu of module, false when it is in a track/group/master context menu
-
-	struct DispColorSubItem : MenuItem {
-		int8_t *srcColor;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			*srcColor = setVal;
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-
-		std::string dispColorNames[8] = {
+static const std::string dispColorNames[numDispThemes + 1] = {
 			"Yellow (default)",
 			"Light-grey",
 			"Green",
@@ -76,18 +58,6 @@ struct DispColorItem : MenuItem {
 			"Purple",
 			"Set per track"
 		};
-		
-		for (int i = 0; i < (isGlobal ? 8 : 7); i++) {		
-			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColor == i));
-			dispColItem->srcColor = srcColor;
-			dispColItem->setVal = i;
-			menu->addChild(dispColItem);
-		}
-		
-		return menu;
-	}
-};
-
 
 
 // General objects

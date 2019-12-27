@@ -10,7 +10,6 @@
 #define MMM_EQWIDGETS_HPP
 
 #include "EqMenus.hpp"
-#include "VuMeters.hpp"
 #include "dsp/fft.hpp"
 #include <condition_variable>
 #include <thread>
@@ -20,8 +19,7 @@
 // --------------------
 
 struct TrackLabel : LedDisplayChoice {
-	int8_t* colorGlobalSrc = NULL;
-	int8_t* colorLocalSrc;
+	int8_t* trackLabelColorsSrc = NULL;
 	char* trackLabelsSrc;
 	Param* trackParamSrc;
 	TrackEq *trackEqsSrc;
@@ -33,9 +31,9 @@ struct TrackLabel : LedDisplayChoice {
 	};
 	
 	void draw(const DrawArgs &args) override {
-		if (colorGlobalSrc) {
-			int colorIndex = *colorGlobalSrc < numDispThemes ? *colorGlobalSrc : *colorLocalSrc;
-			color = DISP_COLORS[colorIndex];
+		if (trackLabelColorsSrc) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
 		}	
 		LedDisplayChoice::draw(args);
 	}
@@ -51,11 +49,13 @@ struct TrackLabel : LedDisplayChoice {
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
-
+			
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			
 			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track settings to:", RIGHT_ARROW);
 			copyItem->trackLabelsSrc = trackLabelsSrc;
 			copyItem->trackEqsSrc = trackEqsSrc;
-			copyItem->trackNumSrc = (int)(trackParamSrc->getValue() + 0.5f);
+			copyItem->trackNumSrc = currTrk;
 			menu->addChild(copyItem);
 
 
@@ -64,7 +64,6 @@ struct TrackLabel : LedDisplayChoice {
 			menu->addChild(trkSelLabel);
 			
 			for (int trk = 0; trk < 24; trk++) {
-				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 				bool onSource = (trk == currTrk);
 				TrackSelectItem *tsItem = createMenuItem<TrackSelectItem>(std::string(&(trackLabelsSrc[trk * 4]), 4), CHECKMARK(onSource));
 				tsItem->trackParamSrc = trackParamSrc;
@@ -85,8 +84,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 	// This struct is adapted from Rack's LedDisplayChoice in app/LedDisplay.{c,h}pp
 
 	// user must set up
-	int8_t* colorGlobalSrc = NULL;
-	int8_t* colorLocalSrc;
+	int8_t* trackLabelColorsSrc = NULL;
 	char* trackLabelsSrc;
 	Param* trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
@@ -112,9 +110,9 @@ struct BandLabelBase : widget::OpaqueWidget {
 	void draw(const DrawArgs &args) override {
 		prepareText();
 		
-		if (colorGlobalSrc) {
-			int colorIndex = *colorGlobalSrc < numDispThemes ? *colorGlobalSrc : *colorLocalSrc;
-			color = DISP_COLORS[colorIndex];
+		if (trackLabelColorsSrc) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
 		}	
 
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));

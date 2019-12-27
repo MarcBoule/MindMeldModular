@@ -38,7 +38,8 @@ struct EqMaster : Module {
 	// Need to save, with reset
 	int mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
-	PackedBytes4 colorThemes;// cc4[0] is display labels, cc4[1] is VUs
+	int8_t trackLabelColors[24];
+	int8_t trackVuColors[24];
 	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze)
 	TrackEq trackEqs[24];
 	
@@ -49,6 +50,7 @@ struct EqMaster : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;
+	PackedBytes4 colorThemes;// cc4[0] is display labels (no longer used), cc4[1] is VUs
 	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
 	float* fftIn;
 	float* fftOut;
@@ -59,7 +61,7 @@ struct EqMaster : Module {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
 	}
 
-	void initTrackLabels() {
+	void initTrackLabelsAndColors() {
 		for (int trk = 0; trk < 16; trk++) {
 			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
 		}
@@ -68,6 +70,10 @@ struct EqMaster : Module {
 		}
 		for (int trk = 20; trk < 24; trk++) {
 			snprintf(&trackLabels[trk << 2], 5, "AUX%1i", trk - 20 + 1);
+		}
+		for (int trk = 0; trk < 24; trk++) {
+			trackLabelColors[trk] = 0;
+			trackVuColors[trk] = 0;
 		}
 	}
 	
@@ -97,6 +103,7 @@ struct EqMaster : Module {
 		onReset();
 		
 		panelTheme = 0;
+		colorThemes.cc1 = 0;
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
 		fftIn = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
@@ -112,11 +119,10 @@ struct EqMaster : Module {
   
 	void onReset() override {
 		mappedId = 0;
-		initTrackLabels();
+		initTrackLabelsAndColors();
 		for (int t = 0; t < 24; t++) {
 			trackEqs[t].init(APP->engine->getSampleRate());
 		}
-		colorThemes.cc1 = 0;
 		miscSettings.cc4[0] = 0x1;
 		miscSettings.cc4[1] = SPEC_POST;
 		resetNonJson();
@@ -144,8 +150,19 @@ struct EqMaster : Module {
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 		
-		// colorThemes
-		json_object_set_new(rootJ, "colorThemes", json_integer(colorThemes.cc1));
+		// trackLabelColors
+		json_t *trackLabelColorsJ = json_array();
+		for (int t = 0; t < 24; t++) {
+			json_array_insert_new(trackLabelColorsJ, t, json_integer(trackLabelColors[t]));
+		}
+		json_object_set_new(rootJ, "trackLabelColors", trackLabelColorsJ);		
+				
+		// trackVuColors
+		json_t *trackVuColorsJ = json_array();
+		for (int t = 0; t < 24; t++) {
+			json_array_insert_new(trackVuColorsJ, t, json_integer(trackVuColors[t]));
+		}
+		json_object_set_new(rootJ, "trackVuColors", trackVuColorsJ);		
 				
 		// miscSettings
 		json_object_set_new(rootJ, "miscSettings", json_integer(miscSettings.cc1));
@@ -239,10 +256,25 @@ struct EqMaster : Module {
 		if (textJ)
 			snprintf(trackLabels, 24 * 4 + 1, "%s", json_string_value(textJ));
 
-		// colorThemes
-		json_t *colorThemesJ = json_object_get(rootJ, "colorThemes");
-		if (colorThemesJ)
-			colorThemes.cc1 = json_integer_value(colorThemesJ);
+		// trackLabelColors
+		json_t *trackLabelColorsJ = json_object_get(rootJ, "trackLabelColors");
+		if (trackLabelColorsJ) {
+			for (int t = 0; t < 24; t++) {
+				json_t *trackLabelColorsArrayJ = json_array_get(trackLabelColorsJ, t);
+				if (trackLabelColorsArrayJ)
+					trackLabelColors[t] = json_integer_value(trackLabelColorsArrayJ);
+			}
+		}
+
+		// trackVuColors
+		json_t *trackVuColorsJ = json_object_get(rootJ, "trackVuColors");
+		if (trackVuColorsJ) {
+			for (int t = 0; t < 24; t++) {
+				json_t *trackVuColorsArrayJ = json_array_get(trackVuColorsJ, t);
+				if (trackVuColorsArrayJ)
+					trackVuColors[t] = json_integer_value(trackVuColorsArrayJ);
+			}
+		}
 
 		// miscSettings
 		json_t *miscSettingsJ = json_object_get(rootJ, "miscSettings");
@@ -455,13 +487,15 @@ struct EqMasterWidget : ModuleWidget {
 		fetchItem->mappedIdSrc = &(module->mappedId);
 		menu->addChild(fetchItem);
 		
-		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-		dispColItem->srcColor = &(module->colorThemes.cc4[0]);
-		menu->addChild(dispColItem);
-		
-		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
-		vuColItem->srcColor = &(module->colorThemes.cc4[1]);
-		menu->addChild(vuColItem);
+		if (module->mappedId == 0) {
+			DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
+			dispColItem->srcColors = module->trackLabelColors;
+			menu->addChild(dispColItem);
+			
+			VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
+			vuColItem->srcColors = module->trackVuColors;
+			menu->addChild(vuColItem);
+		}
 		
 		// ShowBandCurvesEQItem *bandEqItem = createMenuItem<ShowBandCurvesEQItem>("Show band curves", CHECKMARK(module->miscSettings.cc4[0]));
 		// bandEqItem->miscSettingsSrc = &(module->miscSettings);
@@ -483,8 +517,7 @@ struct EqMasterWidget : ModuleWidget {
 		// Track label
 		addChild(trackLabel = createWidgetCentered<TrackLabel>(mm2px(Vec(leftX, 11.5f))));
 		if (module) {
-			trackLabel->colorGlobalSrc = &(module->colorThemes.cc4[0]);
-			trackLabel->colorLocalSrc = &(module->colorThemeLocal);
+			trackLabel->trackLabelColorsSrc = module->trackLabelColors;
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[TRACK_PARAM]);
 			trackLabel->trackEqsSrc = module->trackEqs;
@@ -621,8 +654,7 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		if (module) {
 			for (int i = 0; i < 12; i++) {
-				bandLabels[i]->colorGlobalSrc = &(module->colorThemes.cc4[0]);
-				bandLabels[i]->colorLocalSrc = &(module->colorThemeLocal);
+				bandLabels[i]->trackLabelColorsSrc = module->trackLabelColors;
 				bandLabels[i]->trackLabelsSrc = module->trackLabels;
 				bandLabels[i]->trackParamSrc = &(module->params[TRACK_PARAM]);
 				bandLabels[i]->trackEqsSrc = module->trackEqs;
@@ -668,7 +700,7 @@ struct EqMasterWidget : ModuleWidget {
 
 				if (module->mappedId == 0) {
 					if (oldMappedId != 0) {
-						module->initTrackLabels();
+						module->initTrackLabelsAndColors();
 					}
 				}
 				else {
@@ -677,18 +709,72 @@ struct EqMasterWidget : ModuleWidget {
 					mixerMessageBus.receive(&message);
 					if (message.id == 0) {// if deregistered
 						// do nothing! since it may be possible that the eq is loaded and step executes before the mixer modules are finished loading
-						// module->initTrackLabels();
+						// module->initTrackLabelsAndColors();
 						// module->mappedId = 0;
 					}
 					else {
 						if (message.isJr) {
-							module->initTrackLabels();// need this since message.trkGrpAuxLabels is not completely filled
+							module->initTrackLabelsAndColors();// need this since message.trkGrpAuxLabels is not completely filled
+							// Track labels
 							memcpy(module->trackLabels, message.trkGrpAuxLabels, 8 * 4);
 							memcpy(&(module->trackLabels[16 * 4]), &(message.trkGrpAuxLabels[16 * 4]), 2 * 4);
 							memcpy(&(module->trackLabels[(16 + 4) * 4]), &(message.trkGrpAuxLabels[(16 + 4) * 4]), 4 * 4);
+							// VU colors
+							if (message.vuColors[0] >= numVuThemes) {// per track
+								memcpy(module->trackVuColors, &message.vuColors[1], 8);
+								memcpy(&module->trackVuColors[16], &message.vuColors[1 + 16], 2);
+								memcpy(&module->trackVuColors[16 + 4], &message.vuColors[1 + 16 + 4], 4);
+							}
+							else {
+								for (int t = 0; t < 8; t++) {
+									module->trackVuColors[t] = message.vuColors[0];
+								}
+								for (int t = 0; t < 2; t++) {
+									module->trackVuColors[t + 16] = message.vuColors[0];
+								}
+								for (int t = 0; t < 4; t++) {
+									module->trackVuColors[t + 16 + 4] = message.vuColors[0];
+								}
+							}
+							// display colors
+							if (message.dispColors[0] >= numDispThemes) {// per track
+								memcpy(module->trackLabelColors, &message.dispColors[1], 8);
+								memcpy(&module->trackLabelColors[16], &message.dispColors[1 + 16], 2);
+								memcpy(&module->trackLabelColors[16 + 4], &message.dispColors[1 + 16 + 4], 4);
+							}
+							else {
+								for (int t = 0; t < 8; t++) {
+									module->trackLabelColors[t] = message.dispColors[0];
+								}
+								for (int t = 0; t < 2; t++) {
+									module->trackLabelColors[t + 16] = message.dispColors[0];
+								}
+								for (int t = 0; t < 4; t++) {
+									module->trackLabelColors[t + 16 + 4] = message.dispColors[0];
+								}
+							}
 						}
 						else {
+							// Track labels
 							memcpy(module->trackLabels, message.trkGrpAuxLabels, 24 * 4);
+							// VU colors
+							if (message.vuColors[0] >= numVuThemes) {// per track
+								memcpy(module->trackVuColors, &message.vuColors[1], 24);
+							}
+							else {
+								for (int t = 0; t < 24; t++) {
+									module->trackVuColors[t] = message.vuColors[0];
+								}
+							}
+							// display colors
+							if (message.dispColors[0] >= numDispThemes) {// per track
+								memcpy(module->trackLabelColors, &message.dispColors[1], 24);
+							}
+							else {
+								for (int t = 0; t < 24; t++) {
+									module->trackLabelColors[t] = message.dispColors[0];
+								}
+							}
 						}
 					}
 				}
