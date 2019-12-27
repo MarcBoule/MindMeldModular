@@ -431,7 +431,7 @@ struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
 
 
 
-// Editable track and group displays base struct
+// Editable track, group and aux displays base struct
 // --------------------
 
 struct EditableDisplayBase : LedDisplayTextField {

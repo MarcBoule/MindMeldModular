@@ -128,6 +128,9 @@ struct VuMeterBase : OpaqueWidget {
 	void prepareYellowAndRedThresholds(float yellowMinDb, float redMinDb);
 	
 	void processPeakHold();
+	virtual void setColor() {// used by all MixMaster and AuxSpander VUs, EQ will override for its own color index mechanism
+		colorTheme = (*colorThemeGlobal >= numVuThemes) ? *colorThemeLocal : *colorThemeGlobal;
+	}
 	void draw(const DrawArgs &args) override;
 	
 	// used for RMS or PEAK
@@ -204,7 +207,19 @@ struct VuMeterMaster : VuMeterBase {
 struct VuMeterAux : VuMeterTrack {//
 	VuMeterAux() {
 		barY = mm2px(30.0);
-		box.size = Vec(barX * 2 + gapX, barY);
+		box.size = Vec(barX * 2 + gapX, barY); 
+	}
+};
+
+struct VuMeterEq : VuMeterTrack {
+	int8_t* trackVuColorsSrc = NULL;
+	Param* trackParamSrc;
+
+	void setColor() override {
+		if (trackVuColorsSrc) {
+			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			colorTheme = trackVuColorsSrc[currTrk];
+		}	
 	}
 };
 

@@ -17,7 +17,7 @@
 // Module's context menu
 // --------------------
 
-struct VuColorItem : MenuItem {
+struct VuColorEqItem : MenuItem {
 	int8_t *srcColors;
 
 	struct VuColorSubItem : MenuItem {

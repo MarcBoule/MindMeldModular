@@ -102,6 +102,8 @@ struct MixMaster : Module {
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
 	alignas(4) char auxLabels[4 * 4 + 1];
+	PackedBytes4 auxVuColors;
+	PackedBytes4 auxDispColors;
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
 		
 		
@@ -118,7 +120,7 @@ struct MixMaster : Module {
 				vuColors[1 + 16 + g] = groups[g].vuColorThemeLocal;
 			}
 			for (int a = 0; a < 4; a++) {
-				vuColors[1 + 16 + 4 + a] = 0;
+				vuColors[1 + 16 + 4 + a] = auxVuColors.cc4[a];
 			}
 		}
 		if (dispColors[0] >= numDispThemes) {
@@ -129,7 +131,7 @@ struct MixMaster : Module {
 				dispColors[1 + 16 + g] = groups[g].dispColorLocal;
 			}
 			for (int a = 0; a < 4; a++) {
-				dispColors[1 + 16 + 4 + a] = 0;
+				dispColors[1 + 16 + 4 + a] = auxDispColors.cc4[a];
 			}
 		}
 		
@@ -197,6 +199,8 @@ struct MixMaster : Module {
 		directOutsModeLocalAux.cc1 = 0;
 		stereoPanModeLocalAux.cc1 = 0;
 		snprintf(auxLabels, 16 + 1, "AUXAAUXBAUXCAUXD");
+		auxVuColors.cc1 = 0;
+		auxDispColors.cc1 = 0;
 
 		gInfo.construct(&params[0], values20);
 		for (int i = 0; i < N_TRK; i++) {
@@ -365,6 +369,9 @@ struct MixMaster : Module {
 				memcpy(&stereoPanModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_STEREO_PANS], 4);
 				// Aux labels
 				memcpy(&auxLabels, &messagesFromExpander[Intf::AFM_AUX_NAMES], 4 * 4);
+				// Colors
+				memcpy(&auxVuColors, &messagesFromExpander[Intf::AFM_AUX_VUCOL], 4);
+				memcpy(&auxDispColors, &messagesFromExpander[Intf::AFM_AUX_DISPCOL], 4);
 			}
 		}
 		else {

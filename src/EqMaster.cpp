@@ -30,7 +30,6 @@ struct EqMaster : Module {
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
-	int8_t colorThemeLocal = 0;// not used in EQ, but using VU code of MixMaster so need this even though it will never be read
 
 	// Need to save, no reset
 	int panelTheme;
@@ -50,7 +49,6 @@ struct EqMaster : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;
-	PackedBytes4 colorThemes;// cc4[0] is display labels (no longer used), cc4[1] is VUs
 	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
 	float* fftIn;
 	float* fftOut;
@@ -103,7 +101,6 @@ struct EqMaster : Module {
 		onReset();
 		
 		panelTheme = 0;
-		colorThemes.cc1 = 0;
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
 		fftIn = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
@@ -492,7 +489,7 @@ struct EqMasterWidget : ModuleWidget {
 			dispColItem->srcColors = module->trackLabelColors;
 			menu->addChild(dispColItem);
 			
-			VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
+			VuColorEqItem *vuColItem = createMenuItem<VuColorEqItem>("VU colour", RIGHT_ARROW);
 			vuColItem->srcColors = module->trackVuColors;
 			menu->addChild(vuColItem);
 		}
@@ -668,10 +665,10 @@ struct EqMasterWidget : ModuleWidget {
 		static const float rightX = 133.95f;
 		// VU meter
 		if (module) {
-			VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(rightX, 37.5f)));
+			VuMeterEq *newVU = createWidgetCentered<VuMeterEq>(mm2px(Vec(rightX, 37.5f)));
 			newVU->srcLevels = &(module->trackVu);
-			newVU->colorThemeGlobal = &(module->colorThemes.cc4[1]);
-			newVU->colorThemeLocal = &(module->colorThemeLocal);
+			newVU->trackVuColorsSrc = module->trackVuColors;
+			newVU->trackParamSrc = &(module->params[TRACK_PARAM]);
 			addChild(newVU);
 		}
 		// Gain knob

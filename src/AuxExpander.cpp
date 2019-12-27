@@ -66,10 +66,10 @@ struct AuxExpander : Module {
 	
 	// Need to save, with reset
 	alignas(4) char auxLabels[4 * 4 + 1];// 4 chars per label, 4 aux labels, null terminate the end the whole array only
-	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice), no need to send back to main panel
+	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice)
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
-	int8_t dispColorAuxLocal[4];
+	PackedBytes4 dispColorAuxLocal;
 	AuxspanderAux aux[4];
 	float panCvLevels[4];// 0 to 1.0f
 	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
@@ -214,7 +214,7 @@ struct AuxExpander : Module {
 			vuColorThemeLocal.cc4[i] = 0;
 			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
 			panLawStereoLocal.cc4[i] = 1;
-			dispColorAuxLocal[i] = 0;	
+			dispColorAuxLocal.cc4[i] = 0;	
 			aux[i].onReset();
 			panCvLevels[i] = 1.0f;
 			auxFadeRatesAndProfiles[i] = 0.0f;
@@ -266,7 +266,7 @@ struct AuxExpander : Module {
 		// dispColorAuxLocal
 		json_t *dispColorAuxLocalJ = json_array();
 		for (int c = 0; c < 4; c++)
-			json_array_insert_new(dispColorAuxLocalJ, c, json_integer(dispColorAuxLocal[c]));
+			json_array_insert_new(dispColorAuxLocalJ, c, json_integer(dispColorAuxLocal.cc4[c]));// keep as array for legacy
 		json_object_set_new(rootJ, "dispColorAuxLocal", dispColorAuxLocalJ);
 
 		// auxLabels
@@ -321,7 +321,7 @@ struct AuxExpander : Module {
 			{
 				json_t *dispColorAuxLocalArrayJ = json_array_get(dispColorAuxLocalJ, c);
 				if (dispColorAuxLocalArrayJ)
-					dispColorAuxLocal[c] = json_integer_value(dispColorAuxLocalArrayJ);
+					dispColorAuxLocal.cc4[c] = json_integer_value(dispColorAuxLocalArrayJ);// kept as array for legacy
 			}
 		}
 		
@@ -570,6 +570,9 @@ struct AuxExpander : Module {
 				memcpy(&messagesToMother[Intf::MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
 				// Aux labels
 				memcpy(&messagesToMother[Intf::AFM_AUX_NAMES], &auxLabels, 4 * 4);
+				// Aux colors
+				memcpy(&messagesToMother[Intf::AFM_AUX_VUCOL], &vuColorThemeLocal.cc1, 4);
+				memcpy(&messagesToMother[Intf::AFM_AUX_DISPCOL], &dispColorAuxLocal.cc1, 4);
 			}
 			
 			// aux return pan
@@ -774,10 +777,10 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
-				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
+				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcAux = &(module->aux[i]);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
-				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal[i]);
+				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
@@ -805,7 +808,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				panKnobAux->colorAndCloakPtr = &(module->colorAndCloak);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
-				panKnobAux->dispColorLocal = &(module->dispColorAuxLocal[i]);
+				panKnobAux->dispColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 			}
 			
 			// Return faders
@@ -824,7 +827,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newFP->colorAndCloak = &(module->colorAndCloak);
 				newFP->srcFadeGain = &(module->auxRetFadeGains[i]);
 				newFP->srcFadeRate = &(module->auxFadeRatesAndProfiles[i]);
-				newFP->dispColorLocalPtr = &(module->dispColorAuxLocal[i]);
+				newFP->dispColorLocalPtr = &(module->dispColorAuxLocal.cc4[i]);
 				addChild(newFP);				
 			}				
 			
@@ -857,7 +860,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i, 123.1)), module, TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->colorAndCloak);
-				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
+				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 				groupSelectDisplay->numGroups = N_GRP;
 			}
 		}
@@ -1087,10 +1090,10 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			if (module) {
 				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
-				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal[i]);
+				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcAux = &(module->aux[i]);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
-				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal[i]);
+				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
@@ -1118,7 +1121,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			if (module) {
 				panKnobAux->colorAndCloakPtr = &(module->colorAndCloak);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
-				panKnobAux->dispColorLocal = &(module->dispColorAuxLocal[i]);
+				panKnobAux->dispColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 			}
 			
 			// Return faders
@@ -1137,7 +1140,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newFP->colorAndCloak = &(module->colorAndCloak);
 				newFP->srcFadeGain = &(module->auxRetFadeGains[i]);
 				newFP->srcFadeRate = &(module->auxFadeRatesAndProfiles[i]);
-				newFP->dispColorLocalPtr = &(module->dispColorAuxLocal[i]);
+				newFP->dispColorLocalPtr = &(module->dispColorAuxLocal.cc4[i]);
 				addChild(newFP);				
 			}				
 			
@@ -1170,7 +1173,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(6.35 + 12.7 * i, 123.1)), module, TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i));
 			if (module) {
 				groupSelectDisplay->srcColor = &(module->colorAndCloak);
-				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal[i]);
+				groupSelectDisplay->srcColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 				groupSelectDisplay->numGroups = N_GRP;
 			}
 		}
