@@ -821,7 +821,6 @@ template <typename TAuxspanderAux>
 struct AuxDisplay : EditableDisplayBase {
 	TAuxspanderAux *srcAux = NULL;
 	int8_t* srcVuColor = NULL;
-	int8_t* srcDispColor = NULL;
 	int8_t* srcDirectOutsModeLocal = NULL;
 	int8_t* srcPanLawStereoLocal = NULL;
 	int8_t* srcDirectOutsModeGlobal = NULL;
@@ -882,7 +881,7 @@ struct AuxDisplay : EditableDisplayBase {
 			
 			if (colorAndCloak->cc4[dispColor] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-				dispColItem->srcColor = srcDispColor;
+				dispColItem->srcColor = dispColorLocal;
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
 			}

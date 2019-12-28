@@ -604,10 +604,10 @@ struct EqMasterWidget : ModuleWidget {
 		
 		// band enable buttons
 		BandSwitch* bandSwitches[4];	
-		addParam(bandSwitches[0] = createParamCentered<BandActiveSwitch<0>>(mm2px(Vec(ctrlX + ctrlDX * 0 + 1.5f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 0));
-		addParam(bandSwitches[1] = createParamCentered<BandActiveSwitch<1>>(mm2px(Vec(ctrlX + ctrlDX * 1 + 1.5f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 1));
-		addParam(bandSwitches[2] = createParamCentered<BandActiveSwitch<2>>(mm2px(Vec(ctrlX + ctrlDX * 2 + 1.5f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 2));
-		addParam(bandSwitches[3] = createParamCentered<BandActiveSwitch<3>>(mm2px(Vec(ctrlX + ctrlDX * 3 + 1.5f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 3));
+		addParam(bandSwitches[0] = createParamCentered<BandActiveSwitch<0>>(mm2px(Vec(ctrlX + ctrlDX * 0 + 3.4f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 0));
+		addParam(bandSwitches[1] = createParamCentered<BandActiveSwitch<1>>(mm2px(Vec(ctrlX + ctrlDX * 1 + 2.4f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 1));
+		addParam(bandSwitches[2] = createParamCentered<BandActiveSwitch<2>>(mm2px(Vec(ctrlX + ctrlDX * 2 + 2.2f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 2));
+		addParam(bandSwitches[3] = createParamCentered<BandActiveSwitch<3>>(mm2px(Vec(ctrlX + ctrlDX * 3 + 3.1f, 81.55f)), module, FREQ_ACTIVE_PARAMS + 3));
 		if (module) {
 			for (int b = 0; b < 4; b++) {
 				bandSwitches[b]->trackParamSrc = &(module->params[TRACK_PARAM]);

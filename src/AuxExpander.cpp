@@ -780,7 +780,6 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcAux = &(module->aux[i]);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
-				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
@@ -1093,7 +1092,6 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				auxDisplays[i]->dispColorLocal = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcAux = &(module->aux[i]);
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
-				auxDisplays[i]->srcDispColor = &(module->dispColorAuxLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);

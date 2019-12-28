@@ -1048,20 +1048,20 @@ struct BandSwitch : app::SvgSwitch {
 
 	void loadGraphics(int band) {
 		if (band == 0) {
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band1-off.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band1-on.svg")));
 		}
 		else if (band == 1) {
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band2-off.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band2-on.svg")));
 		}
 		else if (band == 2) {
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band3-off.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band3-on.svg")));
 		}
 		else {
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_0.svg")));
-			addFrame(APP->window->loadSvg(asset::system("res/ComponentLibrary/TL1105_1.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band4-off.svg")));
+			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band4-on.svg")));
 		}
 	}
 };
