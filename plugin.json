@@ -61,6 +61,13 @@
 			"description": "24-track EQ for MixMaster and MixMasterJr",
 			"manualUrl": "",
 			"tags": ["Equalizer"]
+		},
+		{
+			"slug": "EqExpander",
+			"name": "EqSpander",
+			"description": "EQ expander for EqMaster",
+			"manualUrl": "",
+			"tags": ["Equalizer", "Expander"]
 		}
 	]
 }

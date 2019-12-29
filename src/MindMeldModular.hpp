@@ -32,6 +32,7 @@ extern Model *modelAuxExpander;
 extern Model *modelMeld;
 extern Model *modelUnmeld;
 extern Model *modelEqMaster;
+extern Model *modelEqExpander;
 
 
 
@@ -255,5 +256,6 @@ inline PanelBorder* findBorder(Widget* widget) {
 }
 
 
+void printNote(float cvVal, char* text, bool sharp);
 
 #endif

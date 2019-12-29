@@ -367,7 +367,7 @@ struct BigNumbers : TransparentWidget {
 		color = SCHEME_LIGHT_GRAY;
 		textOffset = Vec(box.size.div(2.0f));
 	}
-	
+		
 	void draw(const DrawArgs &args) override {
 		if (trackParamSrc != NULL) {
 			time_t currTime = time(0);
@@ -381,9 +381,14 @@ struct BigNumbers : TransparentWidget {
 						text = string::f("%i Hz", (int)(freq + 0.5f));
 					}
 					else {
-						freq /= 1000.0f;
-						text = string::f("%.2f kHz", freq);
+						text = string::f("%.2f kHz", freq / 1000.0f);
 					}
+					// char noteBuf[6];
+					// float cvVal = std::log2(freq / dsp::FREQ_C4);
+					// printNote(cvVal, noteBuf, true);
+					// text.append(" (");
+					// text.append(noteBuf);
+					// text.append(")");
 				}				
 				else if (srcId >= GAIN_PARAMS && srcId < GAIN_PARAMS + 4) {
 					float gain = trackEqsSrc[currTrk].getGain(srcId - GAIN_PARAMS);
