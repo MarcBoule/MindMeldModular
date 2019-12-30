@@ -11,6 +11,7 @@
 
 #include "EqMenus.hpp"
 #include "dsp/fft.hpp"
+// #include "dsp/OnePole.hpp"
 #include <condition_variable>
 #include <thread>
 
@@ -476,6 +477,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	int currTrk;// use only in scope of it being set in draw()
 	float drawBuf[FFT_N];// store magnitude only in first half, freq in second half
 	int drawBufSize = FFT_N / 2;// only pessimistic value, will be overwriten to compacted size
+	simd::float_4 cursorDbs;
 	
 	// threading
 	std::mutex m;
@@ -565,6 +567,14 @@ struct EqCurveAndGrid : TransparentWidget {
 			vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
 			vecp.store(&fftOut[x << 2]);					
 		}
+		
+		// filter spectrum
+		// OnePoleFilter filt;
+		// filt.reset();
+		// filt.setCutoff(0.2f);
+		// for (int i = 0; i < compactedSize; i++) {
+			// fftOut[i] = filt.processLP(fftOut[i]);
+		// }
 	}	
 
 	
@@ -739,8 +749,9 @@ struct EqCurveAndGrid : TransparentWidget {
 		simd::float_4 logFreqCursors;
 		for (int b = 0; b < 4; b++) {
 			logFreqCursors[b] = trackEqsSrc[currTrk].getFreq(b);// not log yet, will do that after loop
-			float normalizedFreq = std::min(0.5f, trackEqsSrc[currTrk].getFreq(b) / sampleRate);	
-			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, trackEqsSrc[currTrk].getGain(b) / 20.0f) : 1.0f;
+			float normalizedFreq = std::min(0.5f, trackEqsSrc[currTrk].getFreq(b) / sampleRate);
+			cursorDbs[b] = clamp(trackEqsSrc[currTrk].getGain(b) + trackEqsSrc[currTrk].gainCv[b] * 4.0f, -20.0f, 20.0f);
+			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, cursorDbs[b] / 20.0f) : 1.0f;
 			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq, linearGain, trackEqsSrc[currTrk].getQ(b));
 		}
 		logFreqCursors = sortFloat4(simd::log10(logFreqCursors));
@@ -769,7 +780,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		if (miscSettingsSrc->cc4[0] != 0) {
 			for (int b = 0; b < 4; b++) {
 				if (trackEqsSrc[currTrk].getBandActive(b)) {
-					drawEqCurveBandFill(b, args, bandColors[b], trackEqsSrc[currTrk].getGain(b));
+					drawEqCurveBandFill(b, args, bandColors[b]);
 				}
 			}
 		}
@@ -804,7 +815,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		nvgStroke(args.vg);
 	}
-	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col, float cursorDb) {
+	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col) {
 		NVGcolor fillColCursor = col;
 		NVGcolor fillCol0 = col;
 		fillColCursor.a = 0.5f;
@@ -822,12 +833,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgClosePath(args.vg);
 		
 		NVGpaint grad;
-		if (cursorDb > 0.0f) {
-			float topGrad = (box.size.y / 2.0f * (1.0f - cursorDb / 20.0f));
+		if (cursorDbs[band] > 0.0f) {
+			float topGrad = (box.size.y / 2.0f * (1.0f - cursorDbs[band] / 20.0f));
 			grad = nvgLinearGradient(args.vg, 0.0f, topGrad, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
 		}
 		else {
-			float botGrad = (box.size.y / 2.0f * (1.0f - cursorDb / 20.0f));
+			float botGrad = (box.size.y / 2.0f * (1.0f - cursorDbs[band] / 20.0f));
 			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, botGrad, fillCol0, fillColCursor);
 		}
 		nvgFillPaint(args.vg, grad);

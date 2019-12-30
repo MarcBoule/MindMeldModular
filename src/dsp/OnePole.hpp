@@ -12,7 +12,7 @@ struct OnePoleFilter {
 		lowout = 0.0f;
 	}
 	
-	void setCutoff(float Fc) {
+	void setCutoff(float Fc) {// normalized freq
 		b1 = std::exp(-2.0f * M_PI * Fc);
 	}
     float processLP(float in) {

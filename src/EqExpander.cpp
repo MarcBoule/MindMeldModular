@@ -16,8 +16,8 @@ struct EqExpander : Module {
 	};	
 	
 	enum InputIds {
-		ENUMS(ACTIVE_CV_INPUTS, 2),
 		ENUMS(TRACK_CV_INPUTS, 24),
+		ENUMS(ACTIVE_CV_INPUTS, 2),
 		NUM_INPUTS
 	};
 	
@@ -80,6 +80,14 @@ struct EqExpander : Module {
 			
 			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
 			
+			// track band values
+			int index6 = refreshCounter24 % 6;
+			messagesToMother[Intf::MFE_TRACK_CVS_INDEX6] = (float)index6;
+			for (int i = 0; i < 4; i++) {
+				memcpy(&messagesToMother[Intf::MFE_TRACK_CVS + 16 * i], inputs[TRACK_CV_INPUTS + (index6 << 2) + i].getVoltages(), 16 * 4);
+			}
+			
+			// track enables
 			messagesToMother[Intf::MFE_TRACK_ENABLE] = refreshCounter24 < 16 ? 
 				inputs[ACTIVE_CV_INPUTS + 0].getVoltage(refreshCounter24) :
 				inputs[ACTIVE_CV_INPUTS + 1].getVoltage(refreshCounter24 - 16);

@@ -15,6 +15,8 @@
 
 struct ExpansionInterface {
 	enum MotherFromExpIds { // for messages from expander to mother
+		ENUMS(MFE_TRACK_CVS, 16 * 4), // room for 4 poly cables
+		MFE_TRACK_CVS_INDEX6,
 		MFE_TRACK_ENABLE, // one of the 24 enable cvs
 		MFE_TRACK_ENABLE_INDEX,// 
 		MFE_NUM_VALUES
@@ -79,6 +81,9 @@ class TrackEq {
 	QuattroBiQuad eqs;
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;// in dB
 	dsp::SlewLimiter trackGainSlewer;// in dB
+	public:
+	simd::float_4 gainCv;
+	
 	
 	public:
 	
@@ -105,6 +110,7 @@ class TrackEq {
 		gainSlewers.reset();
 		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
 		trackGainSlewer.reset();
+		gainCv = simd::float_4::zero();
 		pushAllParametersToEqs();
 	}
 
@@ -119,13 +125,17 @@ class TrackEq {
 	QuattroBiQuad::Type getBandType(int b) {return bandTypes[b];}
 	float getSampleRate() {return sampleRate;}
 	
-	void setTrackActive(bool _trackActive) {
+	void setTrackActive(bool _trackActive, bool pushToEq = false) {
 		trackActive = _trackActive;
-		pushAllParametersToEqs();
+		if (pushToEq) {// by default gains are not pushed, since they are done in process() because of gainSlewers
+			pushAllParametersToEqs();
+		}
 	}
-	void setBandActive(int b, float _bandActive) {
+	void setBandActive(int b, float _bandActive, bool pushToEq = false) {
 		bandActive[b] = _bandActive;
-		pushBandParametersToEqs(b);
+		if (pushToEq) {// by default gains are not pushed, since they are done in process() because of gainSlewers
+			pushBandParametersToEqs(b);
+		}
 	}
 	void setFreq(int b, float _freq) {
 		freq[b] = _freq;
@@ -153,6 +163,9 @@ class TrackEq {
 	}
 	void setTrackGain(float _trackGain) {
 		trackGain = _trackGain;
+	}
+	void setGainCv(int b, float _gainCv) {
+		gainCv[b] = _gainCv;
 	}
 	
 	void copyFrom(TrackEq* srcTrack) {
@@ -196,7 +209,7 @@ class TrackEq {
 		
 		simd::float_4 newGain;// in dB
 		if (trackActive && globalEnable) {
-			newGain = bandActive * gain;
+			newGain = bandActive * simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);
 		}		
 		else {
 			newGain = 0.0f;

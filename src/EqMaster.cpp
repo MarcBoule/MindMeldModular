@@ -60,6 +60,8 @@ struct EqMaster : Module {
 	bool spectrumActive;// only for when input is unconnected
 	bool globalEnable;
 	TriggerRiseFall trackEnableCvTriggers[24];
+	TriggerRiseFall trackBandCvTriggers[24][4];
+	bool eqExpanderPresent = false;
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -129,9 +131,9 @@ struct EqMaster : Module {
 		for (int t = 0; t < 24; t++) {
 			trackEqs[t].init(APP->engine->getSampleRate());
 		}
-		miscSettings.cc4[0] = 0x1;
+		miscSettings.cc4[0] = 0x1;// show band curves by default
 		miscSettings.cc4[1] = SPEC_POST;
-		miscSettings.cc4[2] = 1; // momentary by default
+		miscSettings.cc4[2] = 0x1; // momentary by default
 		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
@@ -306,7 +308,7 @@ struct EqMaster : Module {
 			for (int t = 0; t < 24; t++) {
 				json_t *activeArrayJ = json_array_get(activeJ, t);
 				if (activeArrayJ)
-					trackEqs[t].setTrackActive(json_is_true(activeArrayJ));
+					trackEqs[t].setTrackActive(json_is_true(activeArrayJ), true);
 			}
 		}
 
@@ -317,7 +319,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *bandActiveArrayJ = json_array_get(bandActiveJ, (t << 2) | f);
 					if (bandActiveArrayJ)
-						trackEqs[t].setBandActive(f, json_number_value(bandActiveArrayJ));
+						trackEqs[t].setBandActive(f, json_number_value(bandActiveArrayJ), true);
 				}
 			}
 		}
@@ -341,7 +343,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *gainArrayJ = json_array_get(gainJ, (t << 2) | f);
 					if (gainArrayJ)
-						trackEqs[t].setGain(f, json_number_value(gainArrayJ));
+						trackEqs[t].setGain(f, json_number_value(gainArrayJ), true);
 				}
 			}
 		}
@@ -404,7 +406,7 @@ struct EqMaster : Module {
 	void process(const ProcessArgs &args) override {
 		int selectedTrack = getSelectedTrack();
 		
-		bool eqExpanderPresent = (rightExpander.module && rightExpander.module->model == modelEqExpander);
+		eqExpanderPresent = (rightExpander.module && rightExpander.module->model == modelEqExpander);
 		
 		
 		//********** Inputs **********
@@ -413,31 +415,16 @@ struct EqMaster : Module {
 		if (eqExpanderPresent) {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
+			// track band values
+			int index6 = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_CVS_INDEX6]), 0, 5);
+			for (int i = 0; i < 4; i++) {
+				int bandTrkIndex = (index6 << 2) + i;
+				processTrackBandCvs(bandTrkIndex, selectedTrack, &messagesFromExpander[Intf::MFE_TRACK_CVS + 16 * i]);
+			}
+ 
 			// track enables, each track refreshed at fs / 24
 			int enableTrkIndex = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_ENABLE_INDEX]), 0, 23);
-			int state = trackEnableCvTriggers[enableTrkIndex].process(messagesFromExpander[Intf::MFE_TRACK_ENABLE]);
-			if (state != 0) {
-				if (miscSettings.cc4[2] == 1) {// if momentaryCvButtons
-					if (state == 1) {// if rising edge
-						// toggle
-						bool newState = !trackEqs[enableTrkIndex].getTrackActive();
-						trackEqs[enableTrkIndex].setTrackActive(newState);
-						if (enableTrkIndex == selectedTrack) {
-							params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
-						}
-					}
-				}
-				else {
-					// gate level
-					bool newState = messagesFromExpander[Intf::MFE_TRACK_ENABLE] > 0.5f;
-					trackEqs[enableTrkIndex].setTrackActive(newState);
-					if (enableTrkIndex == selectedTrack) {
-						params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
-					}
-				}
-			}
-			
-			
+			processTrackEnableCvs(enableTrkIndex, selectedTrack, messagesFromExpander[Intf::MFE_TRACK_ENABLE]);
 		}
 		
 		if (refresh.processInputs()) {
@@ -502,6 +489,73 @@ struct EqMaster : Module {
 		}
 
 	}// process()
+	
+	
+	void processTrackBandCvs(int bandTrkIndex, int selectedTrack, float *cvs) {
+		// cvs[0]: LF active
+		// cvs[1]: LF freq
+		// cvs[2]: LF gain
+		// cvs[3]: LF Q
+		// cvs[4]: LMF active
+		// cvs[5]: LMF freq
+		// ...
+		// cvs[12]: HF active
+		// cvs[13]: HF freq
+		// cvs[14]: HF gain
+		// cvs[15]: HF Q
+
+		for (int b = 0; b < 4; b++) {// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
+			// band active
+			int state = trackBandCvTriggers[bandTrkIndex][b].process(cvs[(b << 2) + 0]);
+			if (state != 0) {
+				if (miscSettings.cc4[2] == 1) {// if momentaryCvButtons
+					if (state == 1) {// if rising edge
+						// toggle
+						bool newState = !trackEqs[bandTrkIndex].getBandActive(b);
+						trackEqs[bandTrkIndex].setBandActive(b, newState);
+						if (bandTrkIndex == selectedTrack) {
+							params[FREQ_ACTIVE_PARAMS + b].setValue(newState ? 1.0f : 0.0f);
+						}
+					}
+				}
+				else {
+					// gate level
+					bool newState = cvs[(b << 2) + 0] > 0.5f;
+					trackEqs[bandTrkIndex].setBandActive(b, newState);
+					if (bandTrkIndex == selectedTrack) {
+						params[FREQ_ACTIVE_PARAMS + b].setValue(newState ? 1.0f : 0.0f);
+					}
+				}
+			}	
+
+			// gain
+			trackEqs[bandTrkIndex].setGainCv(b, cvs[(b << 2) + 2]);
+		}
+	}
+	
+	void processTrackEnableCvs(int enableTrkIndex, int selectedTrack, float enableValue) {
+		int state = trackEnableCvTriggers[enableTrkIndex].process(enableValue);
+		if (state != 0) {
+			if (miscSettings.cc4[2] == 1) {// if momentaryCvButtons
+				if (state == 1) {// if rising edge
+					// toggle
+					bool newState = !trackEqs[enableTrkIndex].getTrackActive();
+					trackEqs[enableTrkIndex].setTrackActive(newState);
+					if (enableTrkIndex == selectedTrack) {
+						params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+					}
+				}
+			}
+			else {
+				// gate level
+				bool newState = enableValue > 0.5f;
+				trackEqs[enableTrkIndex].setTrackActive(newState);
+				if (enableTrkIndex == selectedTrack) {
+					params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+				}
+			}
+		}
+	}
 };
 
 
@@ -520,13 +574,6 @@ struct EqMasterWidget : ModuleWidget {
 	// Module's context menu
 	// --------------------
 
-	// struct ShowBandCurvesEQItem : MenuItem {
-		// PackedBytes4 *miscSettingsSrc;
-		// void onAction(const event::Action &e) override {
-			// miscSettingsSrc->cc4[0] ^= 0x1;
-		// }
-	// };
-
 	void appendContextMenu(Menu *menu) override {		
 		EqMaster* module = (EqMaster*)(this->module);
 		assert(module);
@@ -537,9 +584,11 @@ struct EqMasterWidget : ModuleWidget {
 		fetchItem->mappedIdSrc = &(module->mappedId);
 		menu->addChild(fetchItem);
 
-		MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Track and band active CVs", RIGHT_ARROW);
-		momentItem->momentaryCvButtonsSrc = &(module->miscSettings.cc4[2]);
-		menu->addChild(momentItem);
+		if (module->eqExpanderPresent) {
+			MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Track/band active CVs", RIGHT_ARROW);
+			momentItem->momentaryCvButtonsSrc = &(module->miscSettings.cc4[2]);
+			menu->addChild(momentItem);
+		}
 
 		if (module->mappedId == 0) {
 			DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
@@ -550,11 +599,6 @@ struct EqMasterWidget : ModuleWidget {
 			vuColItem->srcColors = module->trackVuColors;
 			menu->addChild(vuColItem);
 		}
-		
-		// ShowBandCurvesEQItem *bandEqItem = createMenuItem<ShowBandCurvesEQItem>("Show band curves", CHECKMARK(module->miscSettings.cc4[0]));
-		// bandEqItem->miscSettingsSrc = &(module->miscSettings);
-		// menu->addChild(bandEqItem);
-		
 	}
 	
 	
