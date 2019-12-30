@@ -13,6 +13,13 @@
 #include "dsp/QuattroBiQuad.hpp"
 
 
+struct ExpansionInterface {
+	enum MotherFromExpIds { // for messages from expander to mother
+		MFE_TRACK_ENABLE, // one of the 24 enable cvs
+		MFE_TRACK_ENABLE_INDEX,// 
+		MFE_NUM_VALUES
+	};	
+};
 
 enum EqParamIds {
 	TRACK_PARAM,

@@ -66,7 +66,7 @@ struct MixMaster : Module {
 	
 	
 	// Expander
-	float rightMessages[2][Intf::MFA_NUM_VALUES] = {};// messages from aux-expander (first index is page), see enum called MotherFromAuxIds in Mixer.hpp
+	float rightMessages[2][Intf::MFA_NUM_VALUES] = {};// messages from aux-expander, see enum in MixerCommon.hpp
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)

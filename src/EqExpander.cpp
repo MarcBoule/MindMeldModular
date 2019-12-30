@@ -29,10 +29,12 @@ struct EqExpander : Module {
 		NUM_LIGHTS
 	};
 	
+	typedef ExpansionInterface Intf;
+	
 	
 	int panelTheme = 0;
-		
-		
+	int refreshCounter24;
+	
 	EqExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
@@ -44,6 +46,7 @@ struct EqExpander : Module {
 		resetNonJson();
 	}
 	void resetNonJson() {
+		refreshCounter24 = 0;
 	}
 
 
@@ -69,7 +72,27 @@ struct EqExpander : Module {
 	
 
 	void process(const ProcessArgs &args) override {
-
+		bool motherPresent = (leftExpander.module && leftExpander.module->model == modelEqMaster);
+		
+		if (motherPresent) {
+			// To Mother
+			// ***********
+			
+			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
+			
+			messagesToMother[Intf::MFE_TRACK_ENABLE] = refreshCounter24 < 16 ? 
+				inputs[ACTIVE_CV_INPUTS + 0].getVoltage(refreshCounter24) :
+				inputs[ACTIVE_CV_INPUTS + 1].getVoltage(refreshCounter24 - 16);
+			messagesToMother[Intf::MFE_TRACK_ENABLE_INDEX] = (float)refreshCounter24;
+			
+			refreshCounter24++;
+			if (refreshCounter24 >= 24) {
+				refreshCounter24 = 0;
+			}
+			
+			leftExpander.module->rightExpander.messageFlipRequested = true;
+			
+		}
 
 	}// process()
 };

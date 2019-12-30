@@ -26,7 +26,11 @@ struct EqMaster : Module {
 	enum LightIds {
 		NUM_LIGHTS
 	};
+
+	typedef ExpansionInterface Intf;
 	
+	// Expander
+	float rightMessages[2][Intf::MFE_NUM_VALUES] = {};// messages from eq-expander, see enum in EqCommon.hpp
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
@@ -40,7 +44,7 @@ struct EqMaster : Module {
 	int8_t trackLabelColors[24];
 	int8_t trackVuColors[24];
 	TrackEq trackEqs[24];
-	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze)
+	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection))
 	PackedBytes4 showFreqAsNotes;
 	
 	// No need to save, with reset
@@ -55,6 +59,7 @@ struct EqMaster : Module {
 	float* fftOut;
 	bool spectrumActive;// only for when input is unconnected
 	bool globalEnable;
+	TriggerRiseFall trackEnableCvTriggers[24];
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -80,6 +85,9 @@ struct EqMaster : Module {
 	EqMaster() {
 		config(NUM_EQ_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
+		rightExpander.producerMessage = rightMessages[0];
+		rightExpander.consumerMessage = rightMessages[1];
+
 		// Track knob
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
 		
@@ -123,6 +131,7 @@ struct EqMaster : Module {
 		}
 		miscSettings.cc4[0] = 0x1;
 		miscSettings.cc4[1] = SPEC_POST;
+		miscSettings.cc4[2] = 1; // momentary by default
 		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
@@ -395,7 +404,41 @@ struct EqMaster : Module {
 	void process(const ProcessArgs &args) override {
 		int selectedTrack = getSelectedTrack();
 		
+		bool eqExpanderPresent = (rightExpander.module && rightExpander.module->model == modelEqExpander);
+		
+		
 		//********** Inputs **********
+		
+		// From Eq-Expander
+		if (eqExpanderPresent) {
+			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
+			
+			// track enables, each track refreshed at fs / 24
+			int enableTrkIndex = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_ENABLE_INDEX]), 0, 23);
+			int state = trackEnableCvTriggers[enableTrkIndex].process(messagesFromExpander[Intf::MFE_TRACK_ENABLE]);
+			if (state != 0) {
+				if (miscSettings.cc4[2] == 1) {// if momentaryCvButtons
+					if (state == 1) {// if rising edge
+						// toggle
+						bool newState = !trackEqs[enableTrkIndex].getTrackActive();
+						trackEqs[enableTrkIndex].setTrackActive(newState);
+						if (enableTrkIndex == selectedTrack) {
+							params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+						}
+					}
+				}
+				else {
+					// gate level
+					bool newState = messagesFromExpander[Intf::MFE_TRACK_ENABLE] > 0.5f;
+					trackEqs[enableTrkIndex].setTrackActive(newState);
+					if (enableTrkIndex == selectedTrack) {
+						params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+					}
+				}
+			}
+			
+			
+		}
 		
 		if (refresh.processInputs()) {
 			outputs[SIG_OUTPUTS + 0].setChannels(numChannels16);
@@ -493,7 +536,11 @@ struct EqMasterWidget : ModuleWidget {
 		FetchLabelsItem *fetchItem = createMenuItem<FetchLabelsItem>("Fetch track labels from Mixer", RIGHT_ARROW);
 		fetchItem->mappedIdSrc = &(module->mappedId);
 		menu->addChild(fetchItem);
-		
+
+		MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Track and band active CVs", RIGHT_ARROW);
+		momentItem->momentaryCvButtonsSrc = &(module->miscSettings.cc4[2]);
+		menu->addChild(momentItem);
+
 		if (module->mappedId == 0) {
 			DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
 			dispColItem->srcColors = module->trackLabelColors;

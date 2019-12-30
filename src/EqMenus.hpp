@@ -29,6 +29,33 @@ struct ShowNotesItem : MenuItem {
 // Module's context menu
 // --------------------
 
+
+struct MomentaryCvItem : MenuItem {
+	int8_t *momentaryCvButtonsSrc;
+
+	struct MomentaryCvSubItem : MenuItem {
+		int8_t *momentaryCvButtonsSrc;
+		void onAction(const event::Action &e) override {
+			*momentaryCvButtonsSrc ^= 0x1;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		MomentaryCvSubItem *mo1Item = createMenuItem<MomentaryCvSubItem>("Trigger toggle", CHECKMARK(*momentaryCvButtonsSrc == 1));
+		mo1Item->momentaryCvButtonsSrc = momentaryCvButtonsSrc;
+		menu->addChild(mo1Item);
+
+		MomentaryCvSubItem *mo0Item = createMenuItem<MomentaryCvSubItem>("Gate high/low", CHECKMARK(*momentaryCvButtonsSrc == 0));
+		mo0Item->momentaryCvButtonsSrc = momentaryCvButtonsSrc;
+		menu->addChild(mo0Item);
+
+		return menu;
+	}
+};
+
+
 struct VuColorEqItem : MenuItem {
 	int8_t *srcColors;
 
