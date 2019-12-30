@@ -39,8 +39,9 @@ struct EqMaster : Module {
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
 	int8_t trackLabelColors[24];
 	int8_t trackVuColors[24];
-	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze)
 	TrackEq trackEqs[24];
+	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze)
+	PackedBytes4 showFreqAsNotes;
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -122,6 +123,7 @@ struct EqMaster : Module {
 		}
 		miscSettings.cc4[0] = 0x1;
 		miscSettings.cc4[1] = SPEC_POST;
+		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -163,6 +165,9 @@ struct EqMaster : Module {
 				
 		// miscSettings
 		json_object_set_new(rootJ, "miscSettings", json_integer(miscSettings.cc1));
+				
+		// showFreqAsNotes
+		json_object_set_new(rootJ, "showFreqAsNotes", json_integer(showFreqAsNotes.cc1));
 				
 		// trackEqs
 		// -------------
@@ -277,6 +282,11 @@ struct EqMaster : Module {
 		json_t *miscSettingsJ = json_object_get(rootJ, "miscSettings");
 		if (miscSettingsJ)
 			miscSettings.cc1 = json_integer_value(miscSettingsJ);
+
+		// showFreqAsNotes
+		json_t *showFreqAsNotesJ = json_object_get(rootJ, "showFreqAsNotes");
+		if (showFreqAsNotesJ)
+			showFreqAsNotes.cc1 = json_integer_value(showFreqAsNotesJ);
 
 		// trackEqs
 		// -------------
@@ -656,6 +666,9 @@ struct EqMasterWidget : ModuleWidget {
 				bandLabels[i]->trackParamSrc = &(module->params[TRACK_PARAM]);
 				bandLabels[i]->trackEqsSrc = module->trackEqs;
 				bandLabels[i]->band = (i % 4);
+			}
+			for (int i = 0; i < 4; i++) {
+				bandLabels[i]->showFreqAsNotesSrc = &(module->showFreqAsNotes.cc4[i]);
 			}
 		}
 		

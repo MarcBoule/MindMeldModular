@@ -89,6 +89,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 	Param* trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	int band;
+	int8_t *showFreqAsNotesSrc;// used by freq labels only (derived class)
 	
 	// local
 	std::string text;
@@ -143,13 +144,40 @@ struct BandLabelFreq : BandLabelBase {
 		if (trackParamSrc) {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
 			float freq = trackEqsSrc[trk].getFreq(band);
-			if (freq < 10000.0f) {
-				text = string::f("%i", (int)(freq + 0.5f));
+			if (*showFreqAsNotesSrc == 0) {			
+				if (freq < 10000.0f) {
+					text = string::f("%i", (int)(freq + 0.5f));
+				}
+				else {
+					freq /= 1000.0f;
+					text = string::f("%.2fk", freq);
+				}
 			}
 			else {
-				freq /= 1000.0f;
-				text = string::f("%.2fk", freq);
+				char noteBuf[6];
+				float cvVal = std::log2(freq / dsp::FREQ_C4);
+				printNote(cvVal, noteBuf, true);
+				text = noteBuf;
 			}
+		}
+	}
+	
+	
+	
+	void onButton(const event::Button& e) override {
+		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+			ui::Menu *menu = createMenu();
+
+			ShowNotesItem *showNotesItem = createMenuItem<ShowNotesItem>("Show freq as note", CHECKMARK(*showFreqAsNotesSrc != 0));
+			showNotesItem->showFreqAsNotesSrc = showFreqAsNotesSrc;
+			menu->addChild(showNotesItem);
+
+			event::Action eAction;
+			onAction(eAction);
+			e.consume(this);
+		}	
+		else {
+			BandLabelBase::onButton(e);
 		}
 	}
 };
@@ -383,12 +411,6 @@ struct BigNumbers : TransparentWidget {
 					else {
 						text = string::f("%.2f kHz", freq / 1000.0f);
 					}
-					// char noteBuf[6];
-					// float cvVal = std::log2(freq / dsp::FREQ_C4);
-					// printNote(cvVal, noteBuf, true);
-					// text.append(" (");
-					// text.append(noteBuf);
-					// text.append(")");
 				}				
 				else if (srcId >= GAIN_PARAMS && srcId < GAIN_PARAMS + 4) {
 					float gain = trackEqsSrc[currTrk].getGain(srcId - GAIN_PARAMS);

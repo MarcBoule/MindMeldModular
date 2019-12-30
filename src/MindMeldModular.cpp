@@ -35,6 +35,7 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 6 
 	static const char noteLettersSharp[12] = {'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'};
 	static const char noteLettersFlat [12] = {'C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'};
 	static const char isBlackKey      [12] = { 0,   1,   0,   1,   0,   0,   1,   0,   1,   0,   1,   0 };
+	static const float offByTolerance = 0.15f;
 	
 	float offsetScaled = (cvVal + 20.0f) * 12.0f;// +20.0f is to properly handle negative note voltages
 	int offsetScaledRounded = ((int)( offsetScaled + 0.5f ));
@@ -55,10 +56,10 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 6 
 	
 	//
 	float offBy = offsetScaled - (float)offsetScaledRounded; 
-	if (offBy < -0.25f) {
+	if (offBy < -offByTolerance) {
 		strcat(text, "-");
 	}
-	else if (offBy > 0.25f) {
+	else if (offBy > offByTolerance) {
 		strcat(text, "+");
 	}
 }

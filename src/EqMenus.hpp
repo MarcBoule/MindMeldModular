@@ -14,6 +14,18 @@
 #include "VuMeters.hpp"
 
 
+// Freq display labels right-click menu
+// --------------------
+
+// show notes
+struct ShowNotesItem : MenuItem {
+	int8_t *showFreqAsNotesSrc;
+	void onAction(const event::Action &e) override {
+		*showFreqAsNotesSrc ^= 0x1;
+	}
+};
+		
+
 // Module's context menu
 // --------------------
 
