@@ -227,6 +227,7 @@ class TrackEq {
 				
 		eqs.process(out, in); 
 		
+		// track gain
 		if (trackGain != trackGainSlewer.out) {
 			trackGainSlewer.process(sampleTime, trackGain);
 		}

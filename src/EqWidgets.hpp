@@ -743,7 +743,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	// eq curves
 	void calcCurveData() {
-		// contract: populate stepLogFreqs[] and stepDbs[]
+		// contract: populate stepLogFreqs[], stepDbs[] and cursorDbs[]
 		
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
 		simd::float_4 logFreqCursors;
