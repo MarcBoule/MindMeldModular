@@ -308,7 +308,7 @@ struct EqMaster : Module {
 			for (int t = 0; t < 24; t++) {
 				json_t *activeArrayJ = json_array_get(activeJ, t);
 				if (activeArrayJ)
-					trackEqs[t].setTrackActive(json_is_true(activeArrayJ), true);
+					trackEqs[t].setTrackActive(json_is_true(activeArrayJ));
 			}
 		}
 
@@ -319,7 +319,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *bandActiveArrayJ = json_array_get(bandActiveJ, (t << 2) | f);
 					if (bandActiveArrayJ)
-						trackEqs[t].setBandActive(f, json_number_value(bandActiveArrayJ), true);
+						trackEqs[t].setBandActive(f, json_number_value(bandActiveArrayJ));
 				}
 			}
 		}
@@ -343,7 +343,7 @@ struct EqMaster : Module {
 				for (int f = 0; f < 4; f++) {
 					json_t *gainArrayJ = json_array_get(gainJ, (t << 2) | f);
 					if (gainArrayJ)
-						trackEqs[t].setGain(f, json_number_value(gainArrayJ), true);
+						trackEqs[t].setGain(f, json_number_value(gainArrayJ));
 				}
 			}
 		}

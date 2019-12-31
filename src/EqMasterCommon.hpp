@@ -66,26 +66,41 @@ class TrackEq {
 	float sampleRate;
 	float sampleTime;
 	
+	// automatically managed internally by member functions
+	int dirty;// 4 bits, one for each band (automatically managed by member methods, no need to handle in init() and copyFrom())
+	QuattroBiQuad::Type bandTypes[4]; // only [0] and [3] are dependants, [1] and [2] are set to their permanent values in init()
+	
 	// need saving
 	bool trackActive;
 	simd::float_4 bandActive;// 0.0f or 1.0f values: frequency band's eq is active, one for LF, LMF, HMF, HF
 	simd::float_4 freq;// in Hz to match params
 	simd::float_4 gain;// in dB to match params, is converted to linear before pushing params to eqs
-	float q[4];
+	simd::float_4 q;
 	bool lowPeak;// LF is peak when true (false is lowshelf)
 	bool highPeak;// HF is peak when true (false is highshelf)
-	float trackGain;// in dB to match params, is converted to linear before applying to post
+	float trackGain;// in dB to match params, is converted to linear before applying to post; dirty does not apply to this
+
+	// don't need saving
+	public:
+	simd::float_4 freqCv;// adding-type cvs
+	simd::float_4 gainCv;// adding-type cvs
+	simd::float_4 qCv;// adding-type cvs
+	private:
 
 	// dependants
-	QuattroBiQuad::Type bandTypes[4]; 
 	QuattroBiQuad eqs;
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;// in dB
 	dsp::SlewLimiter trackGainSlewer;// in dB
-	public:
-	simd::float_4 gainCv;
 	
 	
 	public:
+	
+	TrackEq() {
+		bandTypes[1] = QuattroBiQuad::PEAK;
+		bandTypes[2] = QuattroBiQuad::PEAK;
+		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb), simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
+		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
+	}
 	
 	void init(float _sampleRate) {
 		sampleRate = _sampleRate;
@@ -101,17 +116,17 @@ class TrackEq {
 		}
 		setLowPeak(DEFAULT_lowPeak);
 		setHighPeak(DEFAULT_highPeak);
-		trackGain = DEFAULT_trackGain;
+		setTrackGain(DEFAULT_trackGain);
+		
+		// don't need saving
+		freqCv = simd::float_4::zero();
+		gainCv = simd::float_4::zero();
+		qCv = simd::float_4::zero();
 		
 		// dependants
-		initBandTypes();
 		eqs.reset();
-		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb), simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
 		gainSlewers.reset();
-		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
 		trackGainSlewer.reset();
-		gainCv = simd::float_4::zero();
-		pushAllParametersToEqs();
 	}
 
 	bool getTrackActive() {return trackActive;}
@@ -125,47 +140,59 @@ class TrackEq {
 	QuattroBiQuad::Type getBandType(int b) {return bandTypes[b];}
 	float getSampleRate() {return sampleRate;}
 	
-	void setTrackActive(bool _trackActive, bool pushToEq = false) {
-		trackActive = _trackActive;
-		if (pushToEq) {// by default gains are not pushed, since they are done in process() because of gainSlewers
-			pushAllParametersToEqs();
+	void setTrackActive(bool _trackActive) {
+		if (trackActive != _trackActive) {
+			trackActive = _trackActive;
+			dirty = 0xF;
 		}
 	}
-	void setBandActive(int b, float _bandActive, bool pushToEq = false) {
-		bandActive[b] = _bandActive;
-		if (pushToEq) {// by default gains are not pushed, since they are done in process() because of gainSlewers
-			pushBandParametersToEqs(b);
+	void setBandActive(int b, float _bandActive) {
+		if (bandActive[b] != _bandActive) {
+			bandActive[b] = _bandActive;
+			dirty |= (1 << b);
 		}
 	}
 	void setFreq(int b, float _freq) {
-		freq[b] = _freq;
-		pushBandParametersToEqs(b);
+		if (freq[b] != _freq) {
+			freq[b] = _freq;
+			dirty |= (1 << b);
+		}
 	}
-	void setGain(int b, float _gain, bool pushToEq = false) {
-		gain[b] = _gain;
-		if (pushToEq) {// by default gains are not pushed, since they are done in process() because of gainSlewers
-			pushBandParametersToEqs(b);
+	void setGain(int b, float _gain) {
+		if (gain[b] != _gain) {
+			gain[b] = _gain;
+			dirty |= (1 << b);
 		}
 	}
 	void setQ(int b, float _q) {
-		q[b] = _q;
-		pushBandParametersToEqs(b);
+		if (q[b] != _q) {
+			q[b] = _q;
+			dirty |= (1 << b);
+		}
 	}
 	void setLowPeak(bool _lowPeak) {
-		lowPeak = _lowPeak;
-		setBand0Type();
-		pushBandParametersToEqs(0);
+		if (lowPeak != _lowPeak) {
+			lowPeak = _lowPeak;
+			bandTypes[0] = lowPeak ? QuattroBiQuad::PEAK : QuattroBiQuad::LOWSHELF;
+			dirty |= (1 << 0);
+		}
 	}
 	void setHighPeak(bool _highPeak) {
-		highPeak = _highPeak;
-		setBand3Type();
-		pushBandParametersToEqs(3);
+		if (highPeak != _highPeak) {
+			highPeak = _highPeak;
+			bandTypes[3] = highPeak ? QuattroBiQuad::PEAK : QuattroBiQuad::HIGHSHELF;
+			dirty |= (1 << 3);
+		}
 	}
 	void setTrackGain(float _trackGain) {
 		trackGain = _trackGain;
+		// dirty does not apply to track gain
 	}
 	void setGainCv(int b, float _gainCv) {
-		gainCv[b] = _gainCv;
+		if (gainCv[b] != _gainCv) {
+			gainCv[b] = _gainCv;
+			dirty |= (1 << b);
+		}
 	}
 	
 	void copyFrom(TrackEq* srcTrack) {
@@ -179,19 +206,14 @@ class TrackEq {
 		}
 		setLowPeak(srcTrack->lowPeak);
 		setHighPeak(srcTrack->highPeak);
-		trackGain = srcTrack->trackGain;
-		
-		// dependants
-		initBandTypes();
-		//eqs.reset();
-		pushAllParametersToEqs();		
+		setTrackGain(srcTrack->getTrackGain());
 	}
 	
 	
 	void updateSampleRate(float _sampleRate) {
 		sampleRate = _sampleRate;
 		sampleTime = 1.0f / sampleRate;
-		pushAllParametersToEqs();
+		dirty = 0xF;
 	}		
 	bool isNonDefaultState() {
 		for (int b = 0; b < 4; b++) {
@@ -207,6 +229,7 @@ class TrackEq {
 	}
 	void process(float* out, float* in, bool globalEnable) {
 		
+		// gain slewers with gain cvs
 		simd::float_4 newGain;// in dB
 		if (trackActive && globalEnable) {
 			newGain = bandActive * simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);
@@ -214,53 +237,34 @@ class TrackEq {
 		else {
 			newGain = 0.0f;
 		}
-		if (movemask(newGain == gainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+		int gainSlewersComparisonMask = movemask(newGain == gainSlewers.out);
+		if (gainSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainSlewers.process(sampleTime, newGain);
-			
+			dirty |= ~gainSlewersComparisonMask;
+		}
+		
+		// update eq parameters according to dirty flags
+		if (dirty != 0) {
 			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
 			simd::float_4 normalizedFreq = simd::fmin(0.5f, freq / sampleRate);
-			eqs.setParameters(0, bandTypes[0], normalizedFreq[0], linearGain[0], q[0]);
-			eqs.setParameters(1, bandTypes[1], normalizedFreq[1], linearGain[1], q[1]);
-			eqs.setParameters(2, bandTypes[2], normalizedFreq[2], linearGain[2], q[2]);
-			eqs.setParameters(3, bandTypes[3], normalizedFreq[3], linearGain[3], q[3]);
+			for (int b = 0; b < 4; b++) {
+				if ((dirty & (1 << b)) != 0) {
+					eqs.setParameters(b, bandTypes[b], normalizedFreq[b], linearGain[b], q[b]);
+				}
+			}
 		}
+		dirty = 0x0;		
 				
-		eqs.process(out, in); 
+		// perform equalization		
+		eqs.process(out, in);
 		
-		// track gain
+		// apply track gain (with slewer)
 		if (trackGain != trackGainSlewer.out) {
 			trackGainSlewer.process(sampleTime, trackGain);
 		}
 		float linearTrackGain = std::pow(10.0f, trackGainSlewer.out / 20.0f);
 		out[0] *= linearTrackGain;
 		out[1] *= linearTrackGain;
-	}
-	
-	
-	private: 
-	
-	void initBandTypes() {// make sure params are pushed afterwards (this method does not do it)
-		setBand0Type();
-		bandTypes[1] = QuattroBiQuad::PEAK;
-		bandTypes[2] = QuattroBiQuad::PEAK;
-		setBand3Type();
-	}
-	void setBand0Type() {// make sure params are pushed afterwards (this method does not do it)
-		bandTypes[0] = lowPeak ? QuattroBiQuad::PEAK : QuattroBiQuad::LOWSHELF;
-	}
-	void setBand3Type() {// make sure params are pushed afterwards (this method does not do it)
-		bandTypes[3] = highPeak ? QuattroBiQuad::PEAK : QuattroBiQuad::HIGHSHELF;
-	}
-
-	void pushAllParametersToEqs() {
-		for (int b = 0; b < 4; b++) {	
-			pushBandParametersToEqs(b);
-		}
-	}
-	void pushBandParametersToEqs(int b) {
-		float linearGain = (trackActive && (bandActive[b] > 0.5f)) ? std::pow(10.0f, gainSlewers.out[b] / 20.0f) : 1.0f;
-		float normalizedFreq = std::min(0.5f, freq[b] / sampleRate);
-		eqs.setParameters(b, bandTypes[b], normalizedFreq, linearGain, q[b]);
 	}
 };
 
