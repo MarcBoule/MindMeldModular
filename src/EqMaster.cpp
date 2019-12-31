@@ -569,6 +569,9 @@ struct EqMasterWidget : ModuleWidget {
 	TrackLabel* trackLabel;
 	int lastMovedKnobId = -1;
 	time_t lastMovedKnobTime = 0;
+	int8_t cloakedMode = 0;
+	int8_t detailsShow = 0x7;
+
 	
 
 	// Module's context menu
@@ -740,6 +743,8 @@ struct EqMasterWidget : ModuleWidget {
 				bandKnobs[c]->trackEqsSrc = module->trackEqs;
 				bandKnobs[c]->lastMovedKnobIdSrc = & lastMovedKnobId;
 				bandKnobs[c]->lastMovedKnobTimeSrc = &lastMovedKnobTime;
+				bandKnobs[c]->cloakedModeSrc = &cloakedMode;
+				bandKnobs[c]->detailsShowSrc = &detailsShow;
 			}
 		}
 		

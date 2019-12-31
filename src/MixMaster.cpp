@@ -111,7 +111,7 @@ struct MixMaster : Module {
 		int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 		int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 		vuColors[0] = gInfo.colorAndCloak.cc4[vuColorGlobal];
-		dispColors[0] = gInfo.colorAndCloak.cc4[dispColor];
+		dispColors[0] = gInfo.colorAndCloak.cc4[dispColorGlobal];
 		if (vuColors[0] >= numVuThemes) {
 			for (int t = 0; t < N_TRK; t++) {
 				vuColors[1 + t] = tracks[t].vuColorThemeLocal;
@@ -530,7 +530,7 @@ struct MixMaster : Module {
 				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
 				// Display colors (when per track)
 				PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
-				if (gInfo.colorAndCloak.cc4[dispColor] < numDispThemes) {
+				if (gInfo.colorAndCloak.cc4[dispColorGlobal] < numDispThemes) {
 					for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 						tmpDispCols[i].cc1 = 0;
 					}
@@ -942,9 +942,11 @@ struct MixMasterWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobTrack;
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobTrack->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
+				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
 				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
-				panKnobTrack->dispColorLocal = &(module->tracks[i].dispColorLocal);
+				panKnobTrack->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobTrack->dispColorLocalSrc = &(module->tracks[i].dispColorLocal);
 			}
 			
 			// Faders
@@ -1044,9 +1046,11 @@ struct MixMasterWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobGroup;
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobGroup->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
+				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
 				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
-				panKnobGroup->dispColorLocal = &(module->groups[i].dispColorLocal);
+				panKnobGroup->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobGroup->dispColorLocalSrc = &(module->groups[i].dispColorLocal);
 			}
 			
 			// Faders
@@ -1223,9 +1227,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobTrack;
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobTrack->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
+				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
 				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
-				panKnobTrack->dispColorLocal = &(module->tracks[i].dispColorLocal);
+				panKnobTrack->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobTrack->dispColorLocalSrc = &(module->tracks[i].dispColorLocal);
 			}
 			
 			// Faders
@@ -1320,9 +1326,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			DynSmallKnobGreyWithArc *panKnobGroup;
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
-				panKnobGroup->colorAndCloakPtr = &(module->gInfo.colorAndCloak);
+				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
 				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
-				panKnobGroup->dispColorLocal = &(module->groups[i].dispColorLocal);
+				panKnobGroup->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobGroup->dispColorLocalSrc = &(module->groups[i].dispColorLocal);
 			}
 			
 			// Faders

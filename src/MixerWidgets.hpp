@@ -51,7 +51,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 			nvgLineTo(args.vg, box.size.x, vertPos);
 			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
 			nvgClosePath(args.vg);
-			int colorIndex = (colorAndCloak->cc4[dispColor] < 7) ? colorAndCloak->cc4[dispColor] : (*dispColorLocalPtr);
+			int colorIndex = (colorAndCloak->cc4[dispColorGlobal] < 7) ? colorAndCloak->cc4[dispColorGlobal] : (*dispColorLocalPtr);
 			nvgFillColor(args.vg, DISP_COLORS[colorIndex]);
 			nvgFill(args.vg);
 			nvgStrokeColor(args.vg, SCHEME_BLACK);
@@ -176,7 +176,7 @@ struct GroupSelectDisplay : ParamWidget {
 		ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
 		ldc.text[1] = 0;
 		if (srcColor) {
-			int colorIndex = srcColor->cc4[dispColor] < 7 ? srcColor->cc4[dispColor] : *srcColorLocal;
+			int colorIndex = srcColor->cc4[dispColorGlobal] < 7 ? srcColor->cc4[dispColorGlobal] : *srcColorLocal;
 			if (colorIndex != oldDispColor) {
 				ldc.color = DISP_COLORS[colorIndex];
 				oldDispColor = colorIndex;
@@ -317,78 +317,26 @@ struct DynMuteFadeButton : DynamicSVGSwitchDual {
 // --------------------
 
 
-struct DynKnobWithArc : DynKnob {
-	NVGcolor arcColor;
-	NVGcolor arcColorDarker;
-	static constexpr float arcThickness = 1.6f;
-	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
-	float* paramWithCV = NULL;
-	PackedBytes4* colorAndCloakPtr = NULL;
-	
-	DynKnobWithArc() {
-	}
-	
-	void calcArcColorDarker(float scalingFactor) {
-		arcColorDarker = arcColor;
-		arcColorDarker.r *= scalingFactor;
-		arcColorDarker.g *= scalingFactor;
-		arcColorDarker.b *= scalingFactor;
-	}
-	
-	void drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color) {
-		int dir = a1 > a0 ? NVG_CW : NVG_CCW;
-		Vec cVec = box.size.div(2.0f);
-		float r = box.size.x / 2.0f + 2.25f;// arc radius
-		nvgBeginPath(args.vg);
-		nvgLineCap(args.vg, NVG_ROUND);
-		nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
-		nvgStrokeWidth(args.vg, arcThickness);
-		nvgStrokeColor(args.vg, *color);
-		nvgStroke(args.vg);		
-	}
-	
-	void draw(const DrawArgs &args) override {
-		DynamicSVGKnob::draw(args);
-		if (paramQuantity) {
-			float normalizedParam = paramQuantity->getScaledValue();
-			float aParam = -10000.0f;
-			float aBase = TOP_ANGLE;
-			if (paramQuantity->getDefaultValue() == 0.0f) {
-				aBase += minAngle;
-			}
-			// param
-			if (normalizedParam != 0.5f && (colorAndCloakPtr->cc4[detailsShow] & ~colorAndCloakPtr->cc4[cloakedMode] & 0x3) == 0x3) {
-				aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
-				drawArc(args, aBase, aParam, &arcColorDarker);
-			}
-			// cv
-			if (paramWithCV && *paramWithCV != -1.0f && (colorAndCloakPtr->cc4[detailsShow] & ~colorAndCloakPtr->cc4[cloakedMode] & 0x3) != 0) {
-				if (aParam == -10000.0f) {
-					aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
-				}
-				float aCv = TOP_ANGLE + math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
-				drawArc(args, aParam, aCv, &arcColor);
-			}
-		}
-	}
-};
-
-
 struct DynSmallKnobGreyWithArc : DynKnobWithArc {
+	// internal
 	int oldDispColor = -1;
-	int8_t* dispColorLocal;
+	
+	// user must setup
+	int8_t *dispColorGlobalSrc = NULL;
+	int8_t *dispColorLocalSrc;
+	
 	
 	DynSmallKnobGreyWithArc() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+		topCentered = true;
 	}
 	
 	void draw(const DrawArgs &args) override {
-		if (colorAndCloakPtr) {
-			int colorIndex = colorAndCloakPtr->cc4[dispColor] < 7 ? colorAndCloakPtr->cc4[dispColor] : *dispColorLocal;
+		if (dispColorGlobalSrc) {
+			int colorIndex = *dispColorGlobalSrc < 7 ? *dispColorGlobalSrc : *dispColorLocalSrc;
 			if (colorIndex != oldDispColor) {
 				arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
-				arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 				oldDispColor = colorIndex;
 			}
 		}
@@ -396,38 +344,57 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	}
 };
 
-struct DynSmallKnobAuxAWithArc : DynKnobWithArc {
-	DynSmallKnobAuxAWithArc() {
+struct DynSmallKnobRedWithArc : DynKnobWithArc {
+	DynSmallKnobRedWithArc() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(219, 65, 85);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
-struct DynSmallKnobAuxBWithArc : DynKnobWithArc {
-	DynSmallKnobAuxBWithArc() {
+struct DynSmallKnobRedWithArcTopCentered : DynSmallKnobRedWithArc {
+	DynSmallKnobRedWithArcTopCentered() {
+		topCentered = true;
+	}
+};	
+
+struct DynSmallKnobOrangeWithArc : DynKnobWithArc {
+	DynSmallKnobOrangeWithArc() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(255, 127, 42);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
-struct DynSmallKnobAuxCWithArc : DynKnobWithArc {
-	DynSmallKnobAuxCWithArc() {
+struct DynSmallKnobOrangeWithArcTopCentered : DynSmallKnobOrangeWithArc {
+	DynSmallKnobOrangeWithArcTopCentered() {
+		topCentered = true;
+	}
+};	
+
+struct DynSmallKnobBlueWithArc : DynKnobWithArc {
+	DynSmallKnobBlueWithArc() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(113, 160, 255);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
-struct DynSmallKnobAuxDWithArc : DynKnobWithArc {
-	DynSmallKnobAuxDWithArc() {
+struct DynSmallKnobBlueWithArcTopCentered : DynSmallKnobBlueWithArc {
+	DynSmallKnobBlueWithArcTopCentered() {
+		topCentered = true;
+	}
+};	
+
+struct DynSmallKnobPurpleWithArc : DynKnobWithArc {
+	DynSmallKnobPurpleWithArc() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 		arcColor = nvgRGB(163, 93, 209);
-		arcColorDarker = nvgRGB(greyArc, greyArc, greyArc);
 	}
 };
+struct DynSmallKnobPurpleWithArcTopCentered : DynSmallKnobPurpleWithArc {
+	DynSmallKnobPurpleWithArcTopCentered() {
+		topCentered = true;
+	}
+};	
 
 
 
@@ -451,7 +418,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 	// don't want background so implement adapted version here
 	void draw(const DrawArgs &args) override {
 		if (colorAndCloak) {
-			int colorIndex = colorAndCloak->cc4[dispColor] < 7 ? colorAndCloak->cc4[dispColor] : *dispColorLocal;
+			int colorIndex = colorAndCloak->cc4[dispColorGlobal] < 7 ? colorAndCloak->cc4[dispColorGlobal] : *dispColorLocal;
 			color = DISP_COLORS[colorIndex];
 		}
 		if (cursor > numChars) {
@@ -577,7 +544,7 @@ struct MasterDisplay : EditableDisplayBase {
 				menu->addChild(vuColItem);
 			}
 			
-			if (colorAndCloak->cc4[dispColor] >= numDispThemes) {
+			if (colorAndCloak->cc4[dispColorGlobal] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = dispColorLocal;
 				dispColItem->isGlobal = false;
@@ -683,7 +650,7 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(vuColItem);
 			}
 
-			if (srcTrack->gInfo->colorAndCloak.cc4[dispColor] >= numDispThemes) {
+			if (srcTrack->gInfo->colorAndCloak.cc4[dispColorGlobal] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = &(srcTrack->dispColorLocal);
 				dispColItem->isGlobal = false;
@@ -790,7 +757,7 @@ struct GroupDisplay : EditableDisplayBase {
 				menu->addChild(vuColItem);
 			}
 			
-			if (srcGroup->gInfo->colorAndCloak.cc4[dispColor] >= numDispThemes) {
+			if (srcGroup->gInfo->colorAndCloak.cc4[dispColorGlobal] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = &(srcGroup->dispColorLocal);
 				dispColItem->isGlobal = false;
@@ -879,7 +846,7 @@ struct AuxDisplay : EditableDisplayBase {
 				menu->addChild(vuColItem);
 			}
 			
-			if (colorAndCloak->cc4[dispColor] >= numDispThemes) {
+			if (colorAndCloak->cc4[dispColorGlobal] >= numDispThemes) {
 				DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 				dispColItem->srcColor = dispColorLocal;
 				dispColItem->isGlobal = false;

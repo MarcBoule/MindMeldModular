@@ -180,7 +180,7 @@ struct GlobalInfo {
 		chainMode = 1;// post should be default
 		colorAndCloak.cc4[cloakedMode] = 0;
 		colorAndCloak.cc4[vuColorGlobal] = 0;
-		colorAndCloak.cc4[dispColor] = 0;
+		colorAndCloak.cc4[dispColorGlobal] = 0;
 		colorAndCloak.cc4[detailsShow] = 0x7;
 		symmetricalFade = false;
 		fadeCvOutsWithVolCv = false;

@@ -91,7 +91,6 @@ static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator
 static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
 
 static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
-static const int greyArc = 120;
 
 
 // Base struct

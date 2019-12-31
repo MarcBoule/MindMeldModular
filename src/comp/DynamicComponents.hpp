@@ -271,6 +271,59 @@ struct DynSnapKnob : DynKnob {
 		snap = true;
 	}
 };
+struct DynKnobWithArc : DynKnob {
+	// internal
+	NVGcolor arcColorDarker = nvgRGB(120, 120, 120);// grey
+	static constexpr float arcThickness = 1.6f;
+	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
+
+	// derived class must setup
+	NVGcolor arcColor;
+	bool topCentered = false;
+
+	// user must setup
+	float* paramWithCV = NULL;
+	int8_t *detailsShowSrc;
+	int8_t *cloakedModeSrc;
+
+	
+	void drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color) {
+		int dir = a1 > a0 ? NVG_CW : NVG_CCW;
+		Vec cVec = box.size.div(2.0f);
+		float r = (box.size.x * 1.2033f) / 2.0f;// arc radius
+		nvgBeginPath(args.vg);
+		nvgLineCap(args.vg, NVG_ROUND);
+		nvgArc(args.vg, cVec.x, cVec.y, r, a0, a1, dir);
+		nvgStrokeWidth(args.vg, arcThickness);
+		nvgStrokeColor(args.vg, *color);
+		nvgStroke(args.vg);		
+	}
+	
+	void draw(const DrawArgs &args) override {
+		DynamicSVGKnob::draw(args);
+		if (paramQuantity) {
+			float normalizedParam = paramQuantity->getScaledValue();
+			float aParam = -10000.0f;
+			float aBase = TOP_ANGLE;
+			if (!topCentered) {
+				aBase += minAngle;
+			}
+			// param
+			if ((!topCentered || normalizedParam != 0.5f) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) == 0x3) {
+				aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
+				drawArc(args, aBase, aParam, &arcColorDarker);
+			}
+			// cv
+			if (paramWithCV && *paramWithCV != -1.0f && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) != 0) {
+				if (aParam == -10000.0f) {
+					aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
+				}
+				float aCv = TOP_ANGLE + math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
+				drawArc(args, aParam, aCv, &arcColor);
+			}
+		}
+	}
+};
 
 
 struct DynSmallFader : DynamicSVGSlider {

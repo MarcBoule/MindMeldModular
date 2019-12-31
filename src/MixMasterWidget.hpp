@@ -98,7 +98,7 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(settingsVLabel);
 	
 	DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-	dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColor]);
+	dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
 	dispColItem->isGlobal = true;
 	menu->addChild(dispColItem);
 	
