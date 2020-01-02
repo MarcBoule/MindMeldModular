@@ -954,7 +954,6 @@ struct MixMasterWidget : ModuleWidget {
 			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
-				newFader->faderParams = &module->params[TMixMaster::TRACK_FADER_PARAMS];
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
@@ -1058,7 +1057,6 @@ struct MixMasterWidget : ModuleWidget {
 			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
-				newFader->faderParams = &(module->params[TMixMaster::TRACK_FADER_PARAMS]);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
@@ -1239,7 +1237,6 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
-				newFader->faderParams = &module->params[TMixMaster::TRACK_FADER_PARAMS];
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
@@ -1338,7 +1335,6 @@ struct MixMasterJrWidget : ModuleWidget {
 			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
-				newFader->faderParams = &(module->params[TMixMaster::TRACK_FADER_PARAMS]);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));

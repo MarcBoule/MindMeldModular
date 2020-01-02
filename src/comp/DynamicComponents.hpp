@@ -314,7 +314,7 @@ struct DynKnobWithArc : DynKnob {
 				drawArc(args, aBase, aParam, &arcColorDarker);
 			}
 			// cv
-			if (paramWithCV && *paramWithCV != -1.0f && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) != 0) {
+			if (paramWithCV && *paramWithCV != -100.0f && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) != 0) {
 				if (aParam == -10000.0f) {
 					aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
 				}

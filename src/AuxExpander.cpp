@@ -227,19 +227,19 @@ struct AuxExpander : Module {
 		refreshCounter20 = 0;
 		for (int i = 0; i < 4; i++) {
 			vu[i].reset();
-			paramRetFaderWithCv[i] = -1.0f;
-			globalSendsWithCV[i] = -1.0f;
-			globalRetPansWithCV[i] = -1.0f;
+			paramRetFaderWithCv[i] = -100.0f;
+			globalSendsWithCV[i] = -100.0f;
+			globalRetPansWithCV[i] = -100.0f;
 			aux[i].resetNonJson();
 		}
 		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			sendMuteSlewers[i].reset();
 		}
 		for (int i = 0; i < N_TRK * 4; i++) {
-			indivTrackSendWithCv[i] = -1.0f;
+			indivTrackSendWithCv[i] = -100.0f;
 		}
 		for (int i = 0; i < N_GRP * 4; i++) {
-			indivGroupSendWithCv[i] = -1.0f;
+			indivGroupSendWithCv[i] = -100.0f;
 		}
 	}
 
@@ -443,7 +443,7 @@ struct AuxExpander : Module {
 					globalSendsWithCV = globalSends;
 				}
 				else {
-					globalSendsWithCV = simd::float_4(-1.0f);
+					globalSendsWithCV = simd::float_4(-100.0f);
 				}
 				globalSends = simd::pow<simd::float_4>(globalSends, GlobalConst::globalAuxSendScalingExponent);
 			
@@ -482,7 +482,7 @@ struct AuxExpander : Module {
 							indivTrackSendWithCv[(trk << 2) + auxi] = val;
 						}
 						else {
-							indivTrackSendWithCv[(trk << 2) + auxi] = -1.0f;
+							indivTrackSendWithCv[(trk << 2) + auxi] = -100.0f;
 						}
 						trackSendVcaGains[trk][auxi] = val;
 					}
@@ -509,7 +509,7 @@ struct AuxExpander : Module {
 								indivGroupSendWithCv[(grp << 2) + auxi] = val;
 							}
 							else {
-								indivGroupSendWithCv[(grp << 2) + auxi] = -1.0f;							
+								indivGroupSendWithCv[(grp << 2) + auxi] = -100.0f;							
 							}
 							groupSendVcaGains[grp][auxi] = val;
 						}
@@ -585,7 +585,7 @@ struct AuxExpander : Module {
 					globalRetPansWithCV[i] = val;
 				}
 				else {
-					globalRetPansWithCV[i] = -1.0f;
+					globalRetPansWithCV[i] = -100.0f;
 				}
 				messagesToMother[Intf::MFA_AUX_RET_PAN + i] = val;
 			}
@@ -601,7 +601,7 @@ struct AuxExpander : Module {
 					paramRetFaderWithCv[i] = val;
 				}
 				else {
-					paramRetFaderWithCv[i] = -1.0f;// do not show cv pointer
+					paramRetFaderWithCv[i] = -100.0f;// do not show cv pointer
 				}
 				// scaling done in mother
 				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = val;

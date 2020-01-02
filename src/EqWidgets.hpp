@@ -747,10 +747,10 @@ struct EqCurveAndGrid : TransparentWidget {
 		
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
 		simd::float_4 logFreqCursors;
+		cursorDbs = trackEqsSrc[currTrk].getGainWithCv();
 		for (int b = 0; b < 4; b++) {
 			logFreqCursors[b] = trackEqsSrc[currTrk].getFreq(b);// not log yet, will do that after loop
 			float normalizedFreq = std::min(0.5f, trackEqsSrc[currTrk].getFreq(b) / sampleRate);
-			cursorDbs[b] = clamp(trackEqsSrc[currTrk].getGain(b) + trackEqsSrc[currTrk].gainCv[b] * 4.0f, -20.0f, 20.0f);
 			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, cursorDbs[b] / 20.0f) : 1.0f;
 			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq, linearGain, trackEqsSrc[currTrk].getQ(b));
 		}

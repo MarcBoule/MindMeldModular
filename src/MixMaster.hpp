@@ -436,9 +436,9 @@ struct MixerMaster {
 
 
 	void resetNonJson() {
-		chainGainsAndMute = simd::float_4::zero();
+		chainGainsAndMute = 0.0f;
 		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
+		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		chainGainAndMuteSlewers.reset();
 		setupDcBlocker();
@@ -447,7 +447,7 @@ struct MixerMaster {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		fadeGainScaled = fadeGain;
-		paramWithCV = -1.0f;
+		paramWithCV = -100.0f;
 		dimGainIntegerDB = calcDimGainIntegerDB(dimGain);
 		target = -1.0f;
 	}
@@ -620,7 +620,7 @@ struct MixerMaster {
 				paramWithCV = fader;
 			}
 			else {
-				paramWithCV = -1.0f;
+				paramWithCV = -100.0f;
 			}
 
 			// scaling
@@ -785,9 +785,9 @@ struct MixerGroup {
 
 
 	void resetNonJson() {
-		panMatrix = simd::float_4::zero();
+		panMatrix = 0.0f;
 		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
+		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 		oldPan = -10.0f;
@@ -797,8 +797,8 @@ struct MixerGroup {
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
-		paramWithCV = -1.0f;
-		panWithCV = -1.0f;
+		paramWithCV = -100.0f;
+		panWithCV = -100.0f;
 		target = -1.0f;
 	}
 
@@ -935,7 +935,7 @@ struct MixerGroup {
 				paramWithCV = fader;
 			}
 			else {
-				paramWithCV = -1.0f;
+				paramWithCV = -100.0f;
 			}
 
 			// calc ** pan, panWithCV **
@@ -946,12 +946,12 @@ struct MixerGroup {
 				panWithCV = pan;
 			}
 			else {
-				panWithCV = -1.0f;
+				panWithCV = -100.0f;
 			}
 
 			// calc ** panMatrix **
 			if (pan != oldPan) {
-				panMatrix = simd::float_4::zero();// L, R, RinL, LinR (used for fader-pan block)
+				panMatrix = 0.0f;// L, R, RinL, LinR (used for fader-pan block)
 				if (pan == 0.5f) {
 					panMatrix[1] = 1.0f;
 					panMatrix[0] = 1.0f;
@@ -1165,9 +1165,9 @@ struct MixerTrack {
 	void resetNonJson() {
 		stereo = false;
 		inGain = 0.0f;
-		panMatrix = simd::float_4::zero();
+		panMatrix = 0.0f;
 		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
+		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		inGainSlewer.reset();
 		muteSoloGainSlewer.reset();
@@ -1184,8 +1184,8 @@ struct MixerTrack {
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		fadeGainScaledWithSolo = fadeGainScaled;
-		paramWithCV = -1.0f;
-		panWithCV = -1.0f;
+		paramWithCV = -100.0f;
+		panWithCV = -100.0f;
 		volCv = 1.0f;
 		target = -1.0f;
 		soloGain = 1.0f;
@@ -1470,7 +1470,7 @@ struct MixerTrack {
 			}
 			else {
 				volCv = 1.0f;
-				paramWithCV = -1.0f;
+				paramWithCV = -100.0f;
 			}
 
 			// calc ** pan, panWithCV **
@@ -1481,7 +1481,7 @@ struct MixerTrack {
 				panWithCV = pan;
 			}
 			else {
-				panWithCV = -1.0f;
+				panWithCV = -100.0f;
 			}
 		}
 
@@ -1577,7 +1577,7 @@ struct MixerTrack {
 		if (eco) {
 			// calc ** panMatrix **
 			if (pan != oldPan) {
-				panMatrix = simd::float_4::zero();// L, R, RinL, LinR (used for fader-pan block)
+				panMatrix = 0.0f;// L, R, RinL, LinR (used for fader-pan block)
 				if (pan == 0.5f) {
 					if (!stereo) panMatrix[3] = 1.0f;
 					else panMatrix[1] = 1.0f;
@@ -1776,9 +1776,9 @@ struct MixerAux {
 
 
 	void resetNonJson() {
-		panMatrix = simd::float_4::zero();
+		panMatrix = 0.0f;
 		faderGain = 0.0f;
-		gainMatrix = simd::float_4::zero();
+		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 		oldPan = -10.0f;
@@ -1864,7 +1864,7 @@ struct MixerAux {
 			// calc ** panMatrix **
 			float pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
 			if (pan != oldPan) {
-				panMatrix = simd::float_4::zero();// L, R, RinL, LinR (used for fader-pan block)
+				panMatrix = 0.0f;// L, R, RinL, LinR (used for fader-pan block)
 				if (pan == 0.5f) {
 					panMatrix[1] = 1.0f;
 					panMatrix[0] = 1.0f;

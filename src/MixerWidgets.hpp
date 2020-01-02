@@ -43,7 +43,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 	void draw(const DrawArgs &args) override {
 	static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
 		// cv pointer (draw only when cv has en effect)
-		if (srcParamWithCV != NULL && *srcParamWithCV != -1.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
+		if (srcParamWithCV != NULL && *srcParamWithCV != -100.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
 			float cvPosNormalized = *srcParamWithCV / maxTFader;
 			float vertPos = box.size.y - box.size.y * cvPosNormalized;// in px
 			nvgBeginPath(args.vg);
@@ -61,7 +61,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
 		if (srcFadeGain != NULL && *srcFadeRate >= GlobalConst::minFadeRate && *srcFadeGain < 1.0f  && colorAndCloak->cc4[cloakedMode] == 0) {
 			float fadePosNormalized;
-			if (srcParamWithCV == NULL || *srcParamWithCV == -1.0f) {
+			if (srcParamWithCV == NULL || *srcParamWithCV == -100.0f) {
 				fadePosNormalized = srcParam->getValue();
 			}
 			else {
@@ -970,9 +970,7 @@ struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
 
 struct DynSmallFaderWithLink : DynSmallFader {
 	unsigned long* linkBitMaskSrc;
-	Param *faderParams = NULL;
 	int baseFaderParamId;
-	float lastValue = -1.0f;
 	
 	void onButton(const event::Button &e) override {
 		int faderIndex = paramQuantity->paramId - baseFaderParamId;
