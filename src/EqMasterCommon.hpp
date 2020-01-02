@@ -96,8 +96,10 @@ class TrackEq {
 	public:
 	
 	TrackEq() {
+		lowPeak = !DEFAULT_lowPeak;// to force bandTypes[0] to be set when first init() will call setLowPeak()
 		bandTypes[1] = QuattroBiQuad::PEAK;
 		bandTypes[2] = QuattroBiQuad::PEAK;
+		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first init() will call setLowPeak()
 		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb), simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
 		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
 	}
