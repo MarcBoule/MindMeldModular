@@ -16,6 +16,7 @@
 struct ExpansionInterface {
 	enum MotherFromExpIds { // for messages from expander to mother
 		ENUMS(MFE_TRACK_CVS, 16 * 4), // room for 4 poly cables
+		MFE_TRACK_CVS_CONNECTED,// only 4 lsbits used, so float number is from 0 to 15 and can be easily cast to uint32_t in eqmaster
 		MFE_TRACK_CVS_INDEX6,
 		MFE_TRACK_ENABLE, // one of the 24 enable cvs
 		MFE_TRACK_ENABLE_INDEX,// 
@@ -47,6 +48,8 @@ enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
 static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
 static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
+static constexpr float MIN_freq[4] = {20.0f, 60.0f, 500.0f, 1000.0f};// Hz
+static constexpr float MAX_freq[4] = {500.0f, 2000.0f, 5000.0f, 20000.0f};// Hz
 static const float DEFAULT_gain = 0.0f;// dB
 static const float DEFAULT_q[4] = {1.0f, 3.0f, 3.0f, 1.0f};
 static const bool DEFAULT_lowPeak = false;
@@ -63,8 +66,10 @@ union PackedBytes4 {
 
 class TrackEq {
 	static constexpr float antipopSlewDb = 200.0f;// calibrated to properly slew a dB float in the range -20.0f to 20.0f for antipop
+	int trackNum;
 	float sampleRate;
 	float sampleTime;
+	uint32_t *cvConnected;
 	
 	// automatically managed internally by member functions
 	int dirty;// 4 bits, one for each band (automatically managed by member methods, no need to handle in init() and copyFrom())
@@ -81,11 +86,9 @@ class TrackEq {
 	float trackGain;// in dB to match params, is converted to linear before applying to post; dirty does not apply to this
 
 	// don't need saving
-	public:
 	simd::float_4 freqCv;// adding-type cvs
 	simd::float_4 gainCv;// adding-type cvs
 	simd::float_4 qCv;// adding-type cvs
-	private:
 
 	// dependants
 	QuattroBiQuad eqs;
@@ -104,9 +107,11 @@ class TrackEq {
 		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
 	}
 	
-	void init(float _sampleRate) {
+	void init(int _trackNum, float _sampleRate, uint32_t *_cvConnected) {
+		trackNum = _trackNum;
 		sampleRate = _sampleRate;
 		sampleTime = 1.0f / sampleRate;
+		cvConnected = _cvConnected;
 		
 		// need saving
 		setTrackActive(DEFAULT_trackActive);
@@ -134,10 +139,26 @@ class TrackEq {
 	bool getTrackActive() {return trackActive;}
 	float getBandActive(int b) {return bandActive[b];}
 	float getFreq(int b) {return freq[b];}
-	simd::float_4 getFreqVec() {return freq;}
+	simd::float_4 getFreqWithCvVec() {
+		if ((*cvConnected & (1 << trackNum)) == 0) {
+			return freq;
+		}
+		return freq;//simd::clamp(freq + freqCv * 0.1f * (MAX_freq - MIN_freq), MIN_freq, MAX_freq);
+	}
 	float getGain(int b) {return gain[b];}
-	simd::float_4 getGainWithCvVec() {return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);}
+	simd::float_4 getGainWithCvVec() {
+		if ((*cvConnected & (1 << trackNum)) == 0) {
+			return gain;
+		}
+		return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);
+	}
 	float getQ(int b) {return q[b];}
+	simd::float_4 getQWithCvVec() {
+		if ((*cvConnected & (1 << trackNum)) == 0) {
+			return q;
+		}
+		return simd::clamp(q + qCv * 0.1f * (20.0f - 0.3f), 0.3f, 20.0f);
+	}
 	float getLowPeak() {return lowPeak;}
 	float getHighPeak() {return highPeak;}
 	float getTrackGain() {return trackGain;}
@@ -192,9 +213,21 @@ class TrackEq {
 		trackGain = _trackGain;
 		// dirty does not apply to track gain
 	}
+	void setFreqCv(int b, float _freqCv) {
+		if (freqCv[b] != _freqCv) {
+			freqCv[b] = _freqCv;
+			dirty |= (1 << b);
+		}
+	}
 	void setGainCv(int b, float _gainCv) {
 		if (gainCv[b] != _gainCv) {
 			gainCv[b] = _gainCv;
+			dirty |= (1 << b);
+		}
+	}
+	void setQCv(int b, float _qCv) {
+		if (qCv[b] != _qCv) {
+			qCv[b] = _qCv;
 			dirty |= (1 << b);
 		}
 	}
@@ -249,11 +282,12 @@ class TrackEq {
 		
 		// update eq parameters according to dirty flags
 		if (dirty != 0) {
+			simd::float_4 normalizedFreq = simd::fmin(0.5f, getFreqWithCvVec() / sampleRate);
 			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
-			simd::float_4 normalizedFreq = simd::fmin(0.5f, freq / sampleRate);
+			simd::float_4 qWithCv = getQWithCvVec();
 			for (int b = 0; b < 4; b++) {
 				if ((dirty & (1 << b)) != 0) {
-					eqs.setParameters(b, bandTypes[b], normalizedFreq[b], linearGain[b], q[b]);
+					eqs.setParameters(b, bandTypes[b], normalizedFreq[b], linearGain[b], qWithCv[b]);
 				}
 			}
 		}

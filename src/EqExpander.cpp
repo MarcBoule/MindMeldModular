@@ -83,9 +83,14 @@ struct EqExpander : Module {
 			// track band values
 			int index6 = refreshCounter24 % 6;
 			messagesToMother[Intf::MFE_TRACK_CVS_INDEX6] = (float)index6;
+			int cvConnectedSubset = 0;
 			for (int i = 0; i < 4; i++) {
-				memcpy(&messagesToMother[Intf::MFE_TRACK_CVS + 16 * i], inputs[TRACK_CV_INPUTS + (index6 << 2) + i].getVoltages(), 16 * 4);
+				if (inputs[TRACK_CV_INPUTS + (index6 << 2) + i].isConnected()) {
+					cvConnectedSubset |= (1 << i);
+					memcpy(&messagesToMother[Intf::MFE_TRACK_CVS + 16 * i], inputs[TRACK_CV_INPUTS + (index6 << 2) + i].getVoltages(), 16 * 4);
+				}
 			}
+			messagesToMother[Intf::MFE_TRACK_CVS_CONNECTED] = (float)cvConnectedSubset;
 			
 			// track enables
 			messagesToMother[Intf::MFE_TRACK_ENABLE] = refreshCounter24 < 16 ? 

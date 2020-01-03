@@ -51,6 +51,7 @@ struct EqMaster : Module {
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	VuMeterAllDual trackVu;
 	int fftWriteHead;
+	uint32_t cvConnected;
 
 	// No need to save, no reset
 	RefreshCounter refresh;
@@ -96,10 +97,10 @@ struct EqMaster : Module {
 		// Track settings
 		configParam(TRACK_ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_trackActive ? 1.0f : 0.0f, "Track EQ active");
 		configParam(TRACK_GAIN_PARAM, -20.0f, 20.0f, DEFAULT_gain, "Track gain", " dB");
-		configParam(FREQ_PARAMS + 0, 20.0f, 500.0f, DEFAULT_freq[0], "LF freq", " Hz");
-		configParam(FREQ_PARAMS + 1, 60.0f, 2000.0f, DEFAULT_freq[1], "LMF freq", " Hz");
-		configParam(FREQ_PARAMS + 2, 500.0f, 5000.0f, DEFAULT_freq[2], "HMF freq", " Hz");
-		configParam(FREQ_PARAMS + 3, 1000.0f, 20000.0f, DEFAULT_freq[3], "HF freq", " Hz");
+		configParam(FREQ_PARAMS + 0, MIN_freq[0], MAX_freq[0], DEFAULT_freq[0], "LF freq", " Hz");
+		configParam(FREQ_PARAMS + 1, MIN_freq[1], MAX_freq[1], DEFAULT_freq[1], "LMF freq", " Hz");
+		configParam(FREQ_PARAMS + 2, MIN_freq[2], MAX_freq[2], DEFAULT_freq[2], "HMF freq", " Hz");
+		configParam(FREQ_PARAMS + 3, MIN_freq[3], MAX_freq[3], DEFAULT_freq[3], "HF freq", " Hz");
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive, bandNames[i] + " active");
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
@@ -129,7 +130,7 @@ struct EqMaster : Module {
 		mappedId = 0;
 		initTrackLabelsAndColors();
 		for (int t = 0; t < 24; t++) {
-			trackEqs[t].init(APP->engine->getSampleRate());
+			trackEqs[t].init(t, APP->engine->getSampleRate(), &cvConnected);
 		}
 		miscSettings.cc4[0] = 0x1;// show band curves by default
 		miscSettings.cc4[1] = SPEC_POST;
@@ -141,6 +142,7 @@ struct EqMaster : Module {
 		updateTrackLabelRequest = 1;
 		trackVu.reset();
 		fftWriteHead = 0;
+		cvConnected = 0;
 	}
 
 
@@ -417,14 +419,22 @@ struct EqMaster : Module {
 			
 			// track band values
 			int index6 = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_CVS_INDEX6]), 0, 5);
+			int cvConnectedSubset = (int)(messagesFromExpander[Intf::MFE_TRACK_CVS_CONNECTED]);
 			for (int i = 0; i < 4; i++) {
-				int bandTrkIndex = (index6 << 2) + i;
-				processTrackBandCvs(bandTrkIndex, selectedTrack, &messagesFromExpander[Intf::MFE_TRACK_CVS + 16 * i]);
+				if ((cvConnectedSubset & (1 << i)) != 0) {
+					int bandTrkIndex = (index6 << 2) + i;
+					processTrackBandCvs(bandTrkIndex, selectedTrack, &messagesFromExpander[Intf::MFE_TRACK_CVS + 16 * i]);
+				}
 			}
+			cvConnected &= ~(0xF << (index6 << 2));// clear all connected bits for current subset
+			cvConnected |= (cvConnectedSubset << (index6 << 2));// set relevant connected bits for current subset
  
 			// track enables, each track refreshed at fs / 24
 			int enableTrkIndex = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_ENABLE_INDEX]), 0, 23);
 			processTrackEnableCvs(enableTrkIndex, selectedTrack, messagesFromExpander[Intf::MFE_TRACK_ENABLE]);
+		}
+		else {
+			cvConnected = 0x000000;
 		}
 		
 		if (refresh.processInputs()) {
@@ -528,8 +538,12 @@ struct EqMaster : Module {
 				}
 			}	
 
+			// freq
+			trackEqs[bandTrkIndex].setFreqCv(b, cvs[(b << 2) + 1]);
 			// gain
 			trackEqs[bandTrkIndex].setGainCv(b, cvs[(b << 2) + 2]);
+			// q
+			trackEqs[bandTrkIndex].setQCv(b, cvs[(b << 2) + 3]);
 		}
 	}
 	
@@ -571,6 +585,7 @@ struct EqMasterWidget : ModuleWidget {
 	time_t lastMovedKnobTime = 0;
 	int8_t cloakedMode = 0;
 	int8_t detailsShow = 0x7;
+	simd::float_4 bandParamsWithCvs[3] = {};// [0] = freq, [1] = gain, [2] = q
 
 	
 
@@ -671,6 +686,7 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->fftOut = module->fftOut;
 			eqCurveAndGrid->spectrumActiveSrc = &(module->spectrumActive);
 			eqCurveAndGrid->globalEnableSrc = &(module->globalEnable);
+			eqCurveAndGrid->bandParamsWithCvs = bandParamsWithCvs;
 		}
 		
 		// Screen - Big Numbers
@@ -739,12 +755,13 @@ struct EqMasterWidget : ModuleWidget {
 		//
 		if (module) {
 			for (int c = 0; c < 12; c++) {
+				bandKnobs[c]->paramWithCV = &(bandParamsWithCvs[c >> 2][c & 0x3]);
+				bandKnobs[c]->cloakedModeSrc = &cloakedMode;
+				bandKnobs[c]->detailsShowSrc = &detailsShow;
 				bandKnobs[c]->trackParamSrc = &(module->params[TRACK_PARAM]);
 				bandKnobs[c]->trackEqsSrc = module->trackEqs;
 				bandKnobs[c]->lastMovedKnobIdSrc = & lastMovedKnobId;
 				bandKnobs[c]->lastMovedKnobTimeSrc = &lastMovedKnobTime;
-				bandKnobs[c]->cloakedModeSrc = &cloakedMode;
-				bandKnobs[c]->detailsShowSrc = &detailsShow;
 			}
 		}
 		

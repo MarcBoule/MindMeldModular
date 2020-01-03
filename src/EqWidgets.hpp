@@ -467,6 +467,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	float *fftOut;
 	bool *spectrumActiveSrc;
 	bool *globalEnableSrc;
+	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
 	
 	// internal
 	float minLogFreq;
@@ -477,7 +478,6 @@ struct EqCurveAndGrid : TransparentWidget {
 	int currTrk;// use only in scope of it being set in draw()
 	float drawBuf[FFT_N];// store magnitude only in first half, freq in second half
 	int drawBufSize = FFT_N / 2;// only pessimistic value, will be overwriten to compacted size
-	simd::float_4 cursorDbs;
 	
 	// threading
 	std::mutex m;
@@ -596,7 +596,7 @@ struct EqCurveAndGrid : TransparentWidget {
 
 			drawGridtext(args);
 			
-			// EQ curves
+			// EQ curves and bandParamsWithCvs
 			calcCurveData();
 			drawAllEqCurves(args);
 			
@@ -743,16 +743,18 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	// eq curves
 	void calcCurveData() {
-		// contract: populate stepLogFreqs[], stepDbs[] and cursorDbs[]
+		// contract: populate stepLogFreqs[], stepDbs[] and bandParamsWithCvs[]
+		
+		bandParamsWithCvs[0] = trackEqsSrc[currTrk].getFreqWithCvVec();
+		bandParamsWithCvs[1] = trackEqsSrc[currTrk].getGainWithCvVec();
+		bandParamsWithCvs[2] = trackEqsSrc[currTrk].getQWithCvVec();
 		
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
-		simd::float_4 freq = trackEqsSrc[currTrk].getFreqVec();
-		simd::float_4 logFreqCursors = sortFloat4(simd::log10(freq));
-		freq = simd::fmin(0.5f, freq / sampleRate);// normalized from here on
-		cursorDbs = trackEqsSrc[currTrk].getGainWithCvVec();
+		simd::float_4 logFreqCursors = sortFloat4(simd::log10(bandParamsWithCvs[0]));
+		simd::float_4 normalizedFreq = simd::fmin(0.5f, bandParamsWithCvs[0] / sampleRate);
 		for (int b = 0; b < 4; b++) {
-			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, cursorDbs[b] / 20.0f) : 1.0f;
-			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), freq[b], linearGain, trackEqsSrc[currTrk].getQ(b));
+			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, bandParamsWithCvs[1][b] / 20.0f) : 1.0f;
+			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq[b], linearGain, bandParamsWithCvs[2][b]);
 		}
 		
 		// fill freq response curve data
@@ -832,12 +834,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgClosePath(args.vg);
 		
 		NVGpaint grad;
-		if (cursorDbs[band] > 0.0f) {
-			float topGrad = (box.size.y / 2.0f * (1.0f - cursorDbs[band] / 20.0f));
+		if (bandParamsWithCvs[1][band] > 0.0f) {
+			float topGrad = (box.size.y / 2.0f * (1.0f - bandParamsWithCvs[1][band] / 20.0f));
 			grad = nvgLinearGradient(args.vg, 0.0f, topGrad, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
 		}
 		else {
-			float botGrad = (box.size.y / 2.0f * (1.0f - cursorDbs[band] / 20.0f));
+			float botGrad = (box.size.y / 2.0f * (1.0f - bandParamsWithCvs[1][band] / 20.0f));
 			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, botGrad, fillCol0, fillColCursor);
 		}
 		nvgFillPaint(args.vg, grad);
@@ -957,11 +959,15 @@ struct TrackGainKnob : DynKnob {
 };
 
 struct BandKnob : DynKnobWithArc {
+	// user must setup 
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc = NULL;
 	int* lastMovedKnobIdSrc;
 	time_t* lastMovedKnobTimeSrc;
+	
+	// auto setup 
 	int band;
+	
 	
 	void loadGraphics(int _band) {
 		band = _band;
@@ -1025,7 +1031,6 @@ struct EqGainKnob : BandKnob {
 
 template<int BAND>// 0 = LF, 1 = LMF, 2 = HMF, 3 = HF
 struct EqQKnob : BandKnob {
-	
 	EqQKnob() {
 		loadGraphics(BAND);
 	}
