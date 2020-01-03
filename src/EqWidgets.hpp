@@ -563,7 +563,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		compactedSize = i;
 		
-		// calculate log of magnitude (do this after decay, which is done elsewhere)
+		// calculate log of magnitude (commented so we can do this after decay, which is done elsewhere)
 		// for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
 			// simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
 			// vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
@@ -703,7 +703,7 @@ struct EqCurveAndGrid : TransparentWidget {
 					drawBufLin[i] = fftOut[i];
 				}
 				else {
-					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * .5f;
+					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * .3f;
 				}
 				// drawBuf[i] = std::fmax(20.0f * std::log10(drawBufLin[i]), -1.0f);
 			}

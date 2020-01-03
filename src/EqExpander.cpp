@@ -34,6 +34,9 @@ struct EqExpander : Module {
 	
 	int panelTheme = 0;
 	int refreshCounter24;
+	bool motherPresentLeft = false;
+	bool motherPresentRight = false;
+	
 	
 	EqExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -72,8 +75,8 @@ struct EqExpander : Module {
 	
 
 	void process(const ProcessArgs &args) override {
-		bool motherPresentLeft = (leftExpander.module && leftExpander.module->model == modelEqMaster);
-		bool motherPresentRight = (rightExpander.module && rightExpander.module->model == modelEqMaster);
+		motherPresentLeft = (leftExpander.module && leftExpander.module->model == modelEqMaster);
+		motherPresentRight = (rightExpander.module && rightExpander.module->model == modelEqMaster);
 		
 		if (motherPresentLeft || motherPresentRight) {
 			// To Mother
@@ -123,6 +126,9 @@ struct EqExpander : Module {
 
 
 struct EqExpanderWidget : ModuleWidget {
+	bool oldMotherPresentLeft = false;
+	bool oldMotherPresentRight = false;
+	PanelBorder* panelBorder;
 
 	
 	EqExpanderWidget(EqExpander *module) {
@@ -130,6 +136,7 @@ struct EqExpanderWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EqSpander.svg")));
+		panelBorder = findBorder(panel);
 		
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(12.87f, 17.75f)), true, module, EqExpander::ACTIVE_CV_INPUTS + 0, module ? &module->panelTheme : NULL));		
 		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(22.69f, 17.75f)), true, module, EqExpander::ACTIVE_CV_INPUTS + 1, module ? &module->panelTheme : NULL));		
@@ -147,6 +154,41 @@ struct EqExpanderWidget : ModuleWidget {
 			addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, topY + y * delY)), true, module, EqExpander::TRACK_CV_INPUTS + y + 16, module ? &module->panelTheme : NULL));		
 		}
 	}
+
+
+	void step() override {
+		if (module) {
+			EqExpander* module = (EqExpander*)this->module;
+			// Borders			
+			if ( module->motherPresentLeft != oldMotherPresentLeft ) {
+				oldMotherPresentLeft = module->motherPresentLeft;
+				if (oldMotherPresentLeft) {
+					panelBorder->box.pos.x = -3;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x;
+				}
+				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			}
+			if ( module->motherPresentRight != oldMotherPresentRight ) {
+				oldMotherPresentRight = module->motherPresentRight;
+				if (oldMotherPresentRight) {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x;
+				}
+				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			}
+
+		}
+		ModuleWidget::step();
+	}
+
 };
 
 

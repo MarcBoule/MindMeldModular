@@ -227,6 +227,6 @@ void step() override {
 		}
 	}			
 	
-	Widget::step();
+	ModuleWidget::step();
 }// void step()
 
