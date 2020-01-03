@@ -72,13 +72,16 @@ struct EqExpander : Module {
 	
 
 	void process(const ProcessArgs &args) override {
-		bool motherPresent = (leftExpander.module && leftExpander.module->model == modelEqMaster);
+		bool motherPresentLeft = (leftExpander.module && leftExpander.module->model == modelEqMaster);
+		bool motherPresentRight = (rightExpander.module && rightExpander.module->model == modelEqMaster);
 		
-		if (motherPresent) {
+		if (motherPresentLeft || motherPresentRight) {
 			// To Mother
 			// ***********
 			
-			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
+			float *messagesToMother =  motherPresentLeft ? 
+										(float*)leftExpander.module->rightExpander.producerMessage :
+										(float*)rightExpander.module->leftExpander.producerMessage;
 			
 			// track band values
 			int index6 = refreshCounter24 % 6;
@@ -103,7 +106,12 @@ struct EqExpander : Module {
 				refreshCounter24 = 0;
 			}
 			
-			leftExpander.module->rightExpander.messageFlipRequested = true;
+			if (motherPresentLeft) {
+				leftExpander.module->rightExpander.messageFlipRequested = true;
+			}
+			else {
+				rightExpander.module->leftExpander.messageFlipRequested = true;
+			}
 			
 		}
 

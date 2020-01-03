@@ -476,7 +476,8 @@ struct EqCurveAndGrid : TransparentWidget {
 	std::shared_ptr<Font> font;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
-	float drawBuf[FFT_N];// store magnitude only in first half, freq in second half
+	float drawBuf[FFT_N];// store log magnitude only in first half, log freq in second half
+	float drawBufLin[FFT_N / 2];// store magnitude only in first half
 	int drawBufSize = FFT_N / 2;// only pessimistic value, will be overwriten to compacted size
 	
 	// threading
@@ -497,6 +498,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		for (int i = 0; i < FFT_N / 2; i++) {
 			drawBuf[i] = -1.0f;
+			drawBufLin[i] = 0.0f;
 		}
 	}
 	
@@ -533,7 +535,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	
 	void postProcessFFT() {
-		// calculate log of magnitude and store in 1st half of array
+		// calculate magnitude and store in 1st half of array
 		for (int x = 0; x < FFT_N ; x += 2) {	
 			fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
 		}
@@ -561,12 +563,12 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		compactedSize = i;
 		
-		// calculate log of magnitude
-		for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
-			simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
-			vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
-			vecp.store(&fftOut[x << 2]);					
-		}
+		// calculate log of magnitude (do this after decay, which is done elsewhere)
+		// for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
+			// simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
+			// vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+			// vecp.store(&fftOut[x << 2]);					
+		// }
 		
 		// filter spectrum
 		// OnePoleFilter filt;
@@ -695,11 +697,25 @@ struct EqCurveAndGrid : TransparentWidget {
 			}
 		}
 		if (workerStatus == WAITING_DONE) {
-			// memcpy(drawBuf, fftOut, compactedSize * 4);// log magnitude, compacted bins
+			// get magnitude
 			for (int i = 0; i < compactedSize; i++) {
-				drawBuf[i] = (0.33f * drawBuf[i] + 0.67f * fftOut[i]);
+				if (fftOut[i] > drawBufLin[i]) {
+					drawBufLin[i] = fftOut[i];
+				}
+				else {
+					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * .5f;
+				}
+				// drawBuf[i] = std::fmax(20.0f * std::log10(drawBufLin[i]), -1.0f);
 			}
+			// log scale the magnitude 
+			for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
+				simd::float_4 vecp = simd::float_4::load(&drawBufLin[x << 2]);
+				vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+				vecp.store(&drawBuf[x << 2]);					
+			}
+			// get frequency
 			memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
+			
 			drawBufSize = compactedSize;
 			std::unique_lock<std::mutex> lk(m);
 			workerStatus = WAITING;

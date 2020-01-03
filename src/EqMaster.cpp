@@ -30,7 +30,7 @@ struct EqMaster : Module {
 	typedef ExpansionInterface Intf;
 	
 	// Expander
-	float rightMessages[2][Intf::MFE_NUM_VALUES] = {};// messages from eq-expander, see enum in EqCommon.hpp
+	float expMessages[2][Intf::MFE_NUM_VALUES] = {};// messages from eq-expander, see enum in EqCommon.hpp
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
@@ -62,7 +62,8 @@ struct EqMaster : Module {
 	bool globalEnable;
 	TriggerRiseFall trackEnableCvTriggers[24];
 	TriggerRiseFall trackBandCvTriggers[24][4];
-	bool eqExpanderPresent = false;
+	bool eqExpanderPresentLeft = false;
+	bool eqExpanderPresentRight = false;
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -88,8 +89,10 @@ struct EqMaster : Module {
 	EqMaster() {
 		config(NUM_EQ_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
-		rightExpander.producerMessage = rightMessages[0];
-		rightExpander.consumerMessage = rightMessages[1];
+		rightExpander.producerMessage = expMessages[0];
+		rightExpander.consumerMessage = expMessages[1];
+		leftExpander.producerMessage = expMessages[0];
+		leftExpander.consumerMessage = expMessages[1];
 
 		// Track knob
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
@@ -408,14 +411,17 @@ struct EqMaster : Module {
 	void process(const ProcessArgs &args) override {
 		int selectedTrack = getSelectedTrack();
 		
-		eqExpanderPresent = (rightExpander.module && rightExpander.module->model == modelEqExpander);
+		eqExpanderPresentRight = (rightExpander.module && rightExpander.module->model == modelEqExpander);
+		eqExpanderPresentLeft = (leftExpander.module && leftExpander.module->model == modelEqExpander);
 		
 		
 		//********** Inputs **********
 		
 		// From Eq-Expander
-		if (eqExpanderPresent) {
-			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
+		if (eqExpanderPresentRight || eqExpanderPresentLeft) {
+			float *messagesFromExpander = eqExpanderPresentRight ? // use only when expander present
+											(float*)rightExpander.consumerMessage :
+											(float*)leftExpander.consumerMessage;
 			
 			// track band values
 			int index6 = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_CVS_INDEX6]), 0, 5);
@@ -602,7 +608,7 @@ struct EqMasterWidget : ModuleWidget {
 		fetchItem->mappedIdSrc = &(module->mappedId);
 		menu->addChild(fetchItem);
 
-		if (module->eqExpanderPresent) {
+		if (module->eqExpanderPresentLeft || module->eqExpanderPresentRight) {
 			MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Track/band active CVs", RIGHT_ARROW);
 			momentItem->momentaryCvButtonsSrc = &(module->miscSettings.cc4[2]);
 			menu->addChild(momentItem);
