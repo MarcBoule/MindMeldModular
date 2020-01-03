@@ -309,7 +309,7 @@ struct DynKnobWithArc : DynKnob {
 			}
 			// param
 			float param = paramQuantity->getValue();
-			if ((param != paramQuantity->getDefaultValue()) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) == 0x3) {
+			if (((!topCentered) || (param != paramQuantity->getDefaultValue())) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) == 0x3) {
 				aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 				drawArc(args, aBase, aParam, &arcColorDarker);
 			}

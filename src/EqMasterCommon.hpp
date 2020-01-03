@@ -48,8 +48,8 @@ enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
 static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
 static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
-static constexpr float MIN_freq[4] = {20.0f, 60.0f, 500.0f, 1000.0f};// Hz
-static constexpr float MAX_freq[4] = {500.0f, 2000.0f, 5000.0f, 20000.0f};// Hz
+static const simd::float_4 MIN_freq(20.0f, 60.0f, 500.0f, 1000.0f);// Hz
+static const simd::float_4 MAX_freq(500.0f, 2000.0f, 5000.0f, 20000.0f);// Hz
 static const float DEFAULT_gain = 0.0f;// dB
 static const float DEFAULT_q[4] = {1.0f, 3.0f, 3.0f, 1.0f};
 static const bool DEFAULT_lowPeak = false;
@@ -143,7 +143,7 @@ class TrackEq {
 		if ((*cvConnected & (1 << trackNum)) == 0) {
 			return freq;
 		}
-		return freq;//simd::clamp(freq + freqCv * 0.1f * (MAX_freq - MIN_freq), MIN_freq, MAX_freq);
+		return simd::clamp(freq + freqCv * 0.1f * (MAX_freq - MIN_freq), MIN_freq, MAX_freq);
 	}
 	float getGain(int b) {return gain[b];}
 	simd::float_4 getGainWithCvVec() {
