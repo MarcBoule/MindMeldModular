@@ -732,7 +732,7 @@ struct MixerGroup {
 	float fadeGainX;
 	float fadeGainScaled;
 	float paramWithCV;
-	float panWithCV;
+	float pan;
 	float target = -1.0f;
 	
 	// no need to save, no reset
@@ -798,7 +798,7 @@ struct MixerGroup {
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		paramWithCV = -100.0f;
-		panWithCV = -100.0f;
+		pan = 0.5f;
 		target = -1.0f;
 	}
 
@@ -938,15 +938,11 @@ struct MixerGroup {
 				paramWithCV = -100.0f;
 			}
 
-			// calc ** pan, panWithCV **
-			float pan = paPan->getValue();
+			// calc ** pan **
+			pan = paPan->getValue();
 			if (inPan->isConnected()) {
 				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
-				panWithCV = pan;
-			}
-			else {
-				panWithCV = -100.0f;
 			}
 
 			// calc ** panMatrix **
@@ -1086,7 +1082,7 @@ struct MixerTrack {
 	float fadeGainScaled;
 	float fadeGainScaledWithSolo;
 	float paramWithCV;
-	float panWithCV;
+	float pan;// this is set only in process() when eco, and also used only (elsewhere) in process() when eco
 	float volCv;
 	float target;
 	float soloGain;
@@ -1110,7 +1106,6 @@ struct MixerTrack {
 	float *insertOuts;// [0][1]: insert outs for this track
 	bool oldInUse = true;
 	float fader = 0.0f;// this is set only in process() when eco, and also used only when eco in another section of this method
-	float pan = 0.5f;// this is set only in process() when eco, and also used only when eco in another section of this method
 
 
 	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
@@ -1185,7 +1180,7 @@ struct MixerTrack {
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		fadeGainScaledWithSolo = fadeGainScaled;
 		paramWithCV = -100.0f;
-		panWithCV = -100.0f;
+		pan = 0.5f;
 		volCv = 1.0f;
 		target = -1.0f;
 		soloGain = 1.0f;
@@ -1473,15 +1468,11 @@ struct MixerTrack {
 				paramWithCV = -100.0f;
 			}
 
-			// calc ** pan, panWithCV **
+			// calc ** pan **
 			pan = paPan->getValue();
 			if (inPan->isConnected()) {
 				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
-				panWithCV = pan;
-			}
-			else {
-				panWithCV = -100.0f;
 			}
 		}
 

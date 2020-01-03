@@ -944,7 +944,7 @@ struct MixMasterWidget : ModuleWidget {
 			if (module) {
 				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
-				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
+				panKnobTrack->paramWithCV = &(module->tracks[i].pan);
 				panKnobTrack->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
 				panKnobTrack->dispColorLocalSrc = &(module->tracks[i].dispColorLocal);
 			}
@@ -1047,7 +1047,7 @@ struct MixMasterWidget : ModuleWidget {
 			if (module) {
 				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
-				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
+				panKnobGroup->paramWithCV = &(module->groups[i].pan);
 				panKnobGroup->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
 				panKnobGroup->dispColorLocalSrc = &(module->groups[i].dispColorLocal);
 			}
@@ -1227,7 +1227,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			if (module) {
 				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
-				panKnobTrack->paramWithCV = &(module->tracks[i].panWithCV);
+				panKnobTrack->paramWithCV = &(module->tracks[i].pan);
 				panKnobTrack->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
 				panKnobTrack->dispColorLocalSrc = &(module->tracks[i].dispColorLocal);
 			}
@@ -1325,7 +1325,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			if (module) {
 				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
-				panKnobGroup->paramWithCV = &(module->groups[i].panWithCV);
+				panKnobGroup->paramWithCV = &(module->groups[i].pan);
 				panKnobGroup->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
 				panKnobGroup->dispColorLocalSrc = &(module->groups[i].dispColorLocal);
 			}

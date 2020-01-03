@@ -302,21 +302,21 @@ struct DynKnobWithArc : DynKnob {
 	void draw(const DrawArgs &args) override {
 		DynamicSVGKnob::draw(args);
 		if (paramQuantity) {
-			float normalizedParam = paramQuantity->getScaledValue();
 			float aParam = -10000.0f;
 			float aBase = TOP_ANGLE;
 			if (!topCentered) {
 				aBase += minAngle;
 			}
 			// param
-			if ((!topCentered || normalizedParam != 0.5f) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) == 0x3) {
-				aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
+			float param = paramQuantity->getValue();
+			if ((param != paramQuantity->getDefaultValue()) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) == 0x3) {
+				aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 				drawArc(args, aBase, aParam, &arcColorDarker);
 			}
 			// cv
-			if (paramWithCV && *paramWithCV != -100.0f && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) != 0) {
+			if (paramWithCV && (*paramWithCV != param) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) != 0) {
 				if (aParam == -10000.0f) {
-					aParam = TOP_ANGLE + math::rescale(normalizedParam, 0.f, 1.f, minAngle, maxAngle);
+					aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 				}
 				float aCv = TOP_ANGLE + math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 				drawArc(args, aParam, aCv, &arcColor);

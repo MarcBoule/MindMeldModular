@@ -228,18 +228,18 @@ struct AuxExpander : Module {
 		for (int i = 0; i < 4; i++) {
 			vu[i].reset();
 			paramRetFaderWithCv[i] = -100.0f;
-			globalSendsWithCV[i] = -100.0f;
-			globalRetPansWithCV[i] = -100.0f;
+			globalSendsWithCV[i] = 1.0f;
+			globalRetPansWithCV[i] = 0.5f;
 			aux[i].resetNonJson();
 		}
 		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			sendMuteSlewers[i].reset();
 		}
 		for (int i = 0; i < N_TRK * 4; i++) {
-			indivTrackSendWithCv[i] = -100.0f;
+			indivTrackSendWithCv[i] = 0.0f;
 		}
 		for (int i = 0; i < N_GRP * 4; i++) {
-			indivGroupSendWithCv[i] = -100.0f;
+			indivGroupSendWithCv[i] = 0.0f;
 		}
 	}
 
@@ -440,11 +440,8 @@ struct AuxExpander : Module {
 					// lines above replace commented line below since templating AuxExpander broke it for some strange reason
 					// globalSends += (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0)) * 0.1f * maxAGGlobSendFader;
 					globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
-					globalSendsWithCV = globalSends;
 				}
-				else {
-					globalSendsWithCV = simd::float_4(-100.0f);
-				}
+				globalSendsWithCV = globalSends;
 				globalSends = simd::pow<simd::float_4>(globalSends, GlobalConst::globalAuxSendScalingExponent);
 			
 				//   Indiv mute sends (20 or 10 instances)				
@@ -479,11 +476,8 @@ struct AuxExpander : Module {
 								val += inputs[inputNum].getVoltage(trk + (((auxi & 0x1) != 0) ? 8 : 0)) * 0.1f * maxAGIndivSendFader;
 							}
 							val = clamp(val, 0.0f, maxAGIndivSendFader);
-							indivTrackSendWithCv[(trk << 2) + auxi] = val;
 						}
-						else {
-							indivTrackSendWithCv[(trk << 2) + auxi] = -100.0f;
-						}
+						indivTrackSendWithCv[(trk << 2) + auxi] = val;
 						trackSendVcaGains[trk][auxi] = val;
 					}
 					trackSendVcaGains[trk] = simd::pow<simd::float_4>(trackSendVcaGains[trk], GlobalConst::individualAuxSendScalingExponent);
@@ -506,11 +500,8 @@ struct AuxExpander : Module {
 								int cvIndex = ((auxi << (N_GRP / 2)) + grp);// not the same order for the CVs
 								val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
 								val = clamp(val, 0.0f, maxAGIndivSendFader);
-								indivGroupSendWithCv[(grp << 2) + auxi] = val;
 							}
-							else {
-								indivGroupSendWithCv[(grp << 2) + auxi] = -100.0f;							
-							}
+							indivGroupSendWithCv[(grp << 2) + auxi] = val;
 							groupSendVcaGains[grp][auxi] = val;
 						}
 						else {
@@ -582,11 +573,8 @@ struct AuxExpander : Module {
 				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
 					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f * panCvLevels[i];// Pan CV is a -5V to +5V input
 					val = clamp(val, 0.0f, 1.0f);
-					globalRetPansWithCV[i] = val;
 				}
-				else {
-					globalRetPansWithCV[i] = -100.0f;
-				}
+				globalRetPansWithCV[i] = val;
 				messagesToMother[Intf::MFA_AUX_RET_PAN + i] = val;
 			}
 			
