@@ -134,8 +134,9 @@ class TrackEq {
 	bool getTrackActive() {return trackActive;}
 	float getBandActive(int b) {return bandActive[b];}
 	float getFreq(int b) {return freq[b];}
+	simd::float_4 getFreqVec() {return freq;}
 	float getGain(int b) {return gain[b];}
-	simd::float_4 getGainWithCv() {return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);}
+	simd::float_4 getGainWithCvVec() {return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);}
 	float getQ(int b) {return q[b];}
 	float getLowPeak() {return lowPeak;}
 	float getHighPeak() {return highPeak;}
@@ -235,7 +236,7 @@ class TrackEq {
 		// gain slewers with gain cvs
 		simd::float_4 newGain;// in dB
 		if (trackActive && globalEnable) {
-			newGain = bandActive * getGainWithCv();
+			newGain = bandActive * getGainWithCvVec();
 		}		
 		else {
 			newGain = 0.0f;

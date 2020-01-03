@@ -746,19 +746,18 @@ struct EqCurveAndGrid : TransparentWidget {
 		// contract: populate stepLogFreqs[], stepDbs[] and cursorDbs[]
 		
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
-		simd::float_4 logFreqCursors;
-		cursorDbs = trackEqsSrc[currTrk].getGainWithCv();
+		simd::float_4 freq = trackEqsSrc[currTrk].getFreqVec();
+		simd::float_4 logFreqCursors = sortFloat4(simd::log10(freq));
+		freq = simd::fmin(0.5f, freq / sampleRate);// normalized from here on
+		cursorDbs = trackEqsSrc[currTrk].getGainWithCvVec();
 		for (int b = 0; b < 4; b++) {
-			logFreqCursors[b] = trackEqsSrc[currTrk].getFreq(b);// not log yet, will do that after loop
-			float normalizedFreq = std::min(0.5f, trackEqsSrc[currTrk].getFreq(b) / sampleRate);
 			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, cursorDbs[b] / 20.0f) : 1.0f;
-			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq, linearGain, trackEqsSrc[currTrk].getQ(b));
+			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), freq[b], linearGain, trackEqsSrc[currTrk].getQ(b));
 		}
-		logFreqCursors = sortFloat4(simd::log10(logFreqCursors));
 		
 		// fill freq response curve data
 		float delLogX = (maxLogFreq - minLogFreq) / ((float)numDrawSteps);
-		int c = 0;// index into logFreqCursors
+		int c = 0;// index into logFreqCursors (which are sorted)
 		for (int x = 0, i = 0; x <= numDrawSteps; x++, i++) {
 			float logFreqX = minLogFreq + delLogX * (float)x;
 			if ( (c < 4) && (logFreqCursors[c] < logFreqX) ) {
