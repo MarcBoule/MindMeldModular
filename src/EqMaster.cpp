@@ -945,7 +945,7 @@ struct EqMasterWidget : ModuleWidget {
 				}
 				else if (module->expPresentLeft) {
 					panelBorder->box.pos.x = -3;
-					panelBorder->box.size.x = box.size.x + 3;
+					panelBorder->box.size.x = box.size.x + 4;
 				}
 				else {
 					panelBorder->box.pos.x = 0;
