@@ -160,21 +160,14 @@ struct EqExpanderWidget : ModuleWidget {
 		if (module) {
 			EqExpander* module = (EqExpander*)this->module;
 			// Borders			
-			if ( module->motherPresentLeft != oldMotherPresentLeft ) {
+			if ( (module->motherPresentLeft != oldMotherPresentLeft) || (module->motherPresentRight != oldMotherPresentRight) ) {
 				oldMotherPresentLeft = module->motherPresentLeft;
-				if (oldMotherPresentLeft) {
+				oldMotherPresentRight = module->motherPresentRight;
+				if (module->motherPresentLeft) {
 					panelBorder->box.pos.x = -3;
 					panelBorder->box.size.x = box.size.x + 3;
 				}
-				else {
-					panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x;
-				}
-				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
-			}
-			if ( module->motherPresentRight != oldMotherPresentRight ) {
-				oldMotherPresentRight = module->motherPresentRight;
-				if (oldMotherPresentRight) {
+				else if (module->motherPresentRight) {
 					panelBorder->box.pos.x = 0;
 					panelBorder->box.size.x = box.size.x + 3;
 				}
@@ -184,7 +177,6 @@ struct EqExpanderWidget : ModuleWidget {
 				}
 				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 			}
-
 		}
 		ModuleWidget::step();
 	}

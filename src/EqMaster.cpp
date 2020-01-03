@@ -62,8 +62,8 @@ struct EqMaster : Module {
 	bool globalEnable;
 	TriggerRiseFall trackEnableCvTriggers[24];
 	TriggerRiseFall trackBandCvTriggers[24][4];
-	bool eqExpanderPresentLeft = false;
-	bool eqExpanderPresentRight = false;
+	bool expPresentLeft = false;
+	bool expPresentRight = false;
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -411,15 +411,15 @@ struct EqMaster : Module {
 	void process(const ProcessArgs &args) override {
 		int selectedTrack = getSelectedTrack();
 		
-		eqExpanderPresentRight = (rightExpander.module && rightExpander.module->model == modelEqExpander);
-		eqExpanderPresentLeft = (leftExpander.module && leftExpander.module->model == modelEqExpander);
+		expPresentRight = (rightExpander.module && rightExpander.module->model == modelEqExpander);
+		expPresentLeft = (leftExpander.module && leftExpander.module->model == modelEqExpander);
 		
 		
 		//********** Inputs **********
 		
 		// From Eq-Expander
-		if (eqExpanderPresentRight || eqExpanderPresentLeft) {
-			float *messagesFromExpander = eqExpanderPresentRight ? // use only when expander present
+		if (expPresentRight || expPresentLeft) {
+			float *messagesFromExpander = expPresentRight ? // use only when expander present
 											(float*)rightExpander.consumerMessage :
 											(float*)leftExpander.consumerMessage;
 			
@@ -592,9 +592,11 @@ struct EqMasterWidget : ModuleWidget {
 	int8_t cloakedMode = 0;
 	int8_t detailsShow = 0x7;
 	simd::float_4 bandParamsWithCvs[3] = {};// [0] = freq, [1] = gain, [2] = q
+	bool oldExpPresentLeft = false;
+	bool oldExpPresentRight = false;
+	PanelBorder* panelBorder;
 
 	
-
 	// Module's context menu
 	// --------------------
 
@@ -608,7 +610,7 @@ struct EqMasterWidget : ModuleWidget {
 		fetchItem->mappedIdSrc = &(module->mappedId);
 		menu->addChild(fetchItem);
 
-		if (module->eqExpanderPresentLeft || module->eqExpanderPresentRight) {
+		if (module->expPresentLeft || module->expPresentRight) {
 			MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Track/band active CVs", RIGHT_ARROW);
 			momentItem->momentaryCvButtonsSrc = &(module->miscSettings.cc4[2]);
 			menu->addChild(momentItem);
@@ -631,6 +633,7 @@ struct EqMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EQmaster.svg")));
+		panelBorder = findBorder(panel);
 		
 		
 		// Left side controls and inputs
@@ -932,6 +935,24 @@ struct EqMasterWidget : ModuleWidget {
 				oldSelectedTrack = trk;
 			}
 			
+			// Borders			
+			if ( (module->expPresentLeft != oldExpPresentLeft) || (module->expPresentRight != oldExpPresentRight) ) {
+				oldExpPresentLeft = module->expPresentLeft;
+				oldExpPresentRight = module->expPresentRight;
+				if (module->expPresentRight) {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else if (module->expPresentLeft) {
+					panelBorder->box.pos.x = -3;
+					panelBorder->box.size.x = box.size.x + 3;
+				}
+				else {
+					panelBorder->box.pos.x = 0;
+					panelBorder->box.size.x = box.size.x;
+				}
+				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			}
 		}
 		Widget::step();
 	}
