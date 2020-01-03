@@ -98,7 +98,7 @@ struct GlobalInfo {
 	// linked faders
 	void processLinked(int trgOrGrpNum, float newFader) {
 		if (newFader != oldFaders[trgOrGrpNum]) {
-			if (linkBitMask != 0l && isLinked(&linkBitMask, trgOrGrpNum) && oldFaders[trgOrGrpNum] != -100.0f) {
+			if (linkBitMask != 0l && isLinked(&linkBitMask, trgOrGrpNum)) {
 				float delta = newFader - oldFaders[trgOrGrpNum];
 				for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 					if (isLinked(&linkBitMask, trkOrGrp) && trkOrGrp != trgOrGrpNum) {
