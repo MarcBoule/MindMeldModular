@@ -596,7 +596,7 @@ struct EqCurveAndGrid : TransparentWidget {
 
 			drawGridtext(args);
 			
-			// EQ curves and bandParamsWithCvs
+			// EQ curves
 			calcCurveData();
 			drawAllEqCurves(args);
 			
@@ -707,13 +707,15 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 	}
 	void drawSpectrum(const DrawArgs &args) {
+		nvgLineCap(args.vg, NVG_ROUND);
+		nvgMiterLimit(args.vg, 1.0f);
 		NVGcolor fillcolTop = SCHEME_LIGHT_GRAY;
 		NVGcolor fillcolBot = SCHEME_LIGHT_GRAY;
 		fillcolTop.a = 0.25f;
 		fillcolBot.a = 0.05f;
 		nvgFillColor(args.vg, fillcolTop);
 		nvgStrokeColor(args.vg, nvgRGB(99, 99, 99));
-		nvgStrokeWidth(args.vg, 1.0f);
+		nvgStrokeWidth(args.vg, 0.5f);//1.0f);
 
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, -1.0f, box.size.y + 3.0f);// + 3.0f for proper enclosed region for fill, -1.0f is a hack to not show the side stroke
@@ -743,12 +745,8 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	// eq curves
 	void calcCurveData() {
-		// contract: populate stepLogFreqs[], stepDbs[] and bandParamsWithCvs[]
-		
-		bandParamsWithCvs[0] = trackEqsSrc[currTrk].getFreqWithCvVec();
-		bandParamsWithCvs[1] = trackEqsSrc[currTrk].getGainWithCvVec();
-		bandParamsWithCvs[2] = trackEqsSrc[currTrk].getQWithCvVec();
-		
+		// contract: populate stepLogFreqs[], stepDbs[]
+			
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
 		simd::float_4 logFreqCursors = sortFloat4(simd::log10(bandParamsWithCvs[0]));
 		simd::float_4 normalizedFreq = simd::fmin(0.5f, bandParamsWithCvs[0] / sampleRate);

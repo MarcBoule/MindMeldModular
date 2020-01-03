@@ -814,7 +814,7 @@ struct EqMasterWidget : ModuleWidget {
 	void step() override {
 		EqMaster* module = (EqMaster*)(this->module);
 		if (module) {
-			int trk = module->getSelectedTrack();
+			int trk = module->getSelectedTrack();			
 			
 			// update labels from message bus at 1Hz
 			time_t currentTime = time(0);
@@ -925,8 +925,21 @@ struct EqMasterWidget : ModuleWidget {
 				module->params[HIGH_PEAK_PARAM].setValue(module->trackEqs[trk].getHighPeak() ? 1.0f : 0.0f);
 				oldSelectedTrack = trk;
 			}
+			
 		}
 		Widget::step();
+	}
+	
+	void draw(const DrawArgs &args) override {
+		if (module) {
+			EqMaster* module = (EqMaster*)(this->module);
+			int trk = module->getSelectedTrack();	
+			// prepare values with cvs for draw methods (knob arcs, eq curve)
+			bandParamsWithCvs[0] = module->trackEqs[trk].getFreqWithCvVec();
+			bandParamsWithCvs[1] = module->trackEqs[trk].getGainWithCvVec();
+			bandParamsWithCvs[2] = module->trackEqs[trk].getQWithCvVec();
+		}
+		ModuleWidget::draw(args);
 	}
 };
 
