@@ -65,7 +65,7 @@
 		{
 			"slug": "EqExpander",
 			"name": "EqSpander",
-			"description": "EQ expander for EqMaster",
+			"description": "CV expander for EqMaster",
 			"manualUrl": "",
 			"tags": ["Equalizer", "Expander"]
 		}

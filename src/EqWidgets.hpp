@@ -703,7 +703,7 @@ struct EqCurveAndGrid : TransparentWidget {
 					drawBufLin[i] = fftOut[i];
 				}
 				else {
-					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * .5f;
+					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * 30.0f / APP->window->getLastFrameRate();// decay
 				}
 				// drawBuf[i] = std::fmax(20.0f * std::log10(drawBufLin[i]), -1.0f);
 			}
