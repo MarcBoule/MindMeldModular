@@ -80,9 +80,13 @@ struct AuxExpander : Module {
 	VuMeterAllDual vu[4];
 	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
 	simd::float_4 globalSendsWithCV;
+	bool globalSendsCvConnected;
 	float indivTrackSendWithCv[N_TRK * 4];
+	bool indivTrackSendCvConnected[4];// one for each aux
 	float indivGroupSendWithCv[N_GRP * 4];
+	bool indivGroupSendCvConnected;
 	float globalRetPansWithCV[4];
+	bool globalRetPansCvConnected;
 	dsp::TSlewLimiter<simd::float_4> sendMuteSlewers[N_TRK / 4 + 1];
 	simd::float_4 trackSendVcaGains[N_TRK];
 	simd::float_4 groupSendVcaGains[N_GRP];
@@ -231,7 +235,11 @@ struct AuxExpander : Module {
 			globalSendsWithCV[i] = 1.0f;
 			globalRetPansWithCV[i] = 0.5f;
 			aux[i].resetNonJson();
+			indivTrackSendCvConnected[i] = false;
 		}
+		globalSendsCvConnected = false;
+		indivGroupSendCvConnected = false;
+		globalRetPansCvConnected = false;
 		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			sendMuteSlewers[i].reset();
 		}
@@ -432,7 +440,8 @@ struct AuxExpander : Module {
 				for (int gi = 0; gi < 4; gi++) {
 					globalSends[gi] = params[GLOBAL_AUXSEND_PARAMS + gi].getValue();
 				}
-				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
+				globalSendsCvConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected();
+				if (globalSendsCvConnected) {
 					// Knob CV (adding, pre-scaling)
 					simd::float_4 cvVoltages(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(0), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(1),
 					inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(2), inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(3));
@@ -467,6 +476,7 @@ struct AuxExpander : Module {
 					// 64 (32) individual track aux send knobs
 						float val = params[TRACK_AUXSEND_PARAMS + (trk << 2) + auxi].getValue();
 						int inputNum = POLY_AUX_AD_CV_INPUTS + (auxi >> (N_GRP == 4 ? 0 : 1));
+						indivTrackSendCvConnected[auxi] = inputs[inputNum].isConnected();
 						if (inputs[inputNum].isConnected()) {
 							// Knob CV (adding, pre-scaling)
 							if (N_GRP == 4) {
@@ -491,17 +501,18 @@ struct AuxExpander : Module {
 			for (int grp = 0; grp < N_GRP; grp++) {
 				// prepare groupSendVcaGains when needed
 				if (ecoMode == 0 || (refreshCounter20 & 0x3) == 2) {// stagger 2
+					indivGroupSendCvConnected = inputs[POLY_GRPS_AD_CV_INPUT].isConnected();
 					for (int auxi = 0; auxi < 4; auxi++) {
+					// 16 (8) individual group aux send knobs
+						float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
+						if (indivGroupSendCvConnected) {
+							// Knob CV (adding, pre-scaling)
+							int cvIndex = ((auxi << (N_GRP / 2)) + grp);// not the same order for the CVs
+							val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
+							val = clamp(val, 0.0f, maxAGIndivSendFader);
+						}
+						indivGroupSendWithCv[(grp << 2) + auxi] = val;
 						if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
-						// 16 (8) individual group aux send knobs
-							float val = params[GROUP_AUXSEND_PARAMS + (grp << 2) + auxi].getValue();
-							if (inputs[POLY_GRPS_AD_CV_INPUT].isConnected()) {
-								// Knob CV (adding, pre-scaling)
-								int cvIndex = ((auxi << (N_GRP / 2)) + grp);// not the same order for the CVs
-								val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
-								val = clamp(val, 0.0f, maxAGIndivSendFader);
-							}
-							indivGroupSendWithCv[(grp << 2) + auxi] = val;
 							groupSendVcaGains[grp][auxi] = val;
 						}
 						else {
@@ -567,10 +578,11 @@ struct AuxExpander : Module {
 			}
 			
 			// aux return pan
+			globalRetPansCvConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected();
 			for (int i = 0; i < 4; i++) {
 				float val = params[GLOBAL_AUXPAN_PARAMS + i].getValue();
 				// cv for pan
-				if (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected()) {
+				if (globalRetPansCvConnected) {
 					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f * panCvLevels[i];// Pan CV is a -5V to +5V input
 					val = clamp(val, 0.0f, 1.0f);
 				}
@@ -796,6 +808,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				panKnobAux->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				panKnobAux->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
+				panKnobAux->paramCvConnected = &(module->globalRetPansCvConnected);
 				panKnobAux->dispColorGlobalSrc = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				panKnobAux->dispColorLocalSrc = &(module->dispColorAuxLocal.cc4[i]);
 			}
@@ -866,6 +879,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		if (module) {
 			for (int k = 0; k < 4; k++) {
 				sendKnobs[k]->paramWithCV = &module->globalSendsWithCV[k];
+				sendKnobs[k]->paramCvConnected = &module->globalSendsCvConnected;
 				sendKnobs[k]->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				sendKnobs[k]->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}
@@ -885,6 +899,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 0];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[0];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -892,6 +907,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 1];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[1];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -899,6 +915,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 2];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[2];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -906,6 +923,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 3];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[3];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -924,6 +942,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 0, module ? &module->panelTheme : NULL));			
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 0];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[0];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -931,6 +950,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 1, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 1];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[1];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -938,6 +958,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 2, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 2];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[2];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -945,6 +966,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 3, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 3];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[3];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -968,6 +990,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 14 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 0));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 0];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -976,6 +999,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 24.85 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 1));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 1];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -984,6 +1008,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 35.7 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 2));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 2];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -992,6 +1017,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 46.55 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 3));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[i * 4 + 3];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1011,6 +1037,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 74.5 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 0));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 0];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1019,6 +1046,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 85.35 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 1));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 1];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1027,6 +1055,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 96.2 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 2));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 2];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1035,6 +1064,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 107.05 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 3));	
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivGroupSendWithCv[(i + 2) * 4 + 3];
+				newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1127,6 +1157,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				panKnobAux->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				panKnobAux->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 				panKnobAux->paramWithCV = &(module->globalRetPansWithCV[i]);
+				panKnobAux->paramCvConnected = &(module->globalRetPansCvConnected);
 				panKnobAux->dispColorGlobalSrc = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				panKnobAux->dispColorLocalSrc = &(module->dispColorAuxLocal.cc4[i]);
 			}
@@ -1197,6 +1228,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		if (module) {
 			for (int k = 0; k < 4; k++) {
 				sendKnobs[k]->paramWithCV = &module->globalSendsWithCV[k];
+				sendKnobs[k]->paramCvConnected = &module->globalSendsCvConnected;
 				sendKnobs[k]->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				sendKnobs[k]->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}
@@ -1216,6 +1248,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 0];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[0];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1223,6 +1256,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 1, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 1];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[1];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1230,6 +1264,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 2, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 2];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[2];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1237,6 +1272,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 3, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 3];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[3];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1256,6 +1292,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 0, module ? &module->panelTheme : NULL));			
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 0];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[0];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1263,6 +1300,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 1, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 1];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[1];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1270,6 +1308,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 2, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 2];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[2];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1277,6 +1316,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			addParam(newArcKnob = createDynamicParamCentered<DynSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 3, module ? &module->panelTheme : NULL));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 3];
+				newArcKnob->paramCvConnected = &module->indivTrackSendCvConnected[3];
 				newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
@@ -1301,6 +1341,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 14 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 0));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[0];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1309,6 +1350,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 24.85 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 1));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[1];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1317,6 +1359,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 35.7 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 2));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[2];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1325,6 +1368,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 46.55 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 3));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[3];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1344,6 +1388,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 74.5 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 4));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[4];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1352,6 +1397,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 85.35 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 5));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[5];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1360,6 +1406,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 96.2 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 6));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[6];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
@@ -1368,6 +1415,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 107.05 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 7));	
 		if (module) {
 			newArcKnob->paramWithCV = &module->indivGroupSendWithCv[7];
+			newArcKnob->paramCvConnected = &module->indivGroupSendCvConnected;
 			newArcKnob->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				

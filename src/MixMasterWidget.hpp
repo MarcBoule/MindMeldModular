@@ -27,7 +27,7 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(new MenuSeparator());
 	
 	MenuLabel *settingsALabel = new MenuLabel();
-	settingsALabel->text = "Settings (audio)";
+	settingsALabel->text = "Audio settings";
 	menu->addChild(settingsALabel);
 	
 	FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
@@ -93,7 +93,7 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(new MenuSeparator());
 	
 	MenuLabel *settingsVLabel = new MenuLabel();
-	settingsVLabel->text = "Settings (visual)";
+	settingsVLabel->text = "Visual settings";
 	menu->addChild(settingsVLabel);
 	
 	DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);

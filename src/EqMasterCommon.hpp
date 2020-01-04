@@ -140,21 +140,21 @@ class TrackEq {
 	float getBandActive(int b) {return bandActive[b];}
 	float getFreq(int b) {return freq[b];}
 	simd::float_4 getFreqWithCvVec() {
-		if ((*cvConnected & (1 << trackNum)) == 0) {
+		if (!getCvConnected()) {
 			return freq;
 		}
 		return simd::clamp(freq + freqCv * 0.1f * (MAX_freq - MIN_freq), MIN_freq, MAX_freq);
 	}
 	float getGain(int b) {return gain[b];}
 	simd::float_4 getGainWithCvVec() {
-		if ((*cvConnected & (1 << trackNum)) == 0) {
+		if (!getCvConnected()) {
 			return gain;
 		}
 		return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);
 	}
 	float getQ(int b) {return q[b];}
 	simd::float_4 getQWithCvVec() {
-		if ((*cvConnected & (1 << trackNum)) == 0) {
+		if (!getCvConnected()) {
 			return q;
 		}
 		return simd::clamp(q + qCv * 0.1f * (20.0f - 0.3f), 0.3f, 20.0f);
@@ -164,6 +164,7 @@ class TrackEq {
 	float getTrackGain() {return trackGain;}
 	QuattroBiQuad::Type getBandType(int b) {return bandTypes[b];}
 	float getSampleRate() {return sampleRate;}
+	bool getCvConnected() {return (*cvConnected & (1 << trackNum)) != 0;}
 	
 	void setTrackActive(bool _trackActive) {
 		if (trackActive != _trackActive) {

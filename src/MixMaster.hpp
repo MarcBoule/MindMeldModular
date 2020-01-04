@@ -733,6 +733,7 @@ struct MixerGroup {
 	float fadeGainScaled;
 	float paramWithCV;
 	float pan;
+	bool panCvConnected;
 	float target = -1.0f;
 	
 	// no need to save, no reset
@@ -799,6 +800,7 @@ struct MixerGroup {
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		paramWithCV = -100.0f;
 		pan = 0.5f;
+		panCvConnected = false;
 		target = -1.0f;
 	}
 
@@ -940,7 +942,8 @@ struct MixerGroup {
 
 			// calc ** pan **
 			pan = paPan->getValue();
-			if (inPan->isConnected()) {
+			panCvConnected = inPan->isConnected();
+			if (panCvConnected) {
 				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
 			}
@@ -1083,6 +1086,7 @@ struct MixerTrack {
 	float fadeGainScaledWithSolo;
 	float paramWithCV;
 	float pan;// this is set only in process() when eco, and also used only (elsewhere) in process() when eco
+	bool panCvConnected;
 	float volCv;
 	float target;
 	float soloGain;
@@ -1181,6 +1185,7 @@ struct MixerTrack {
 		fadeGainScaledWithSolo = fadeGainScaled;
 		paramWithCV = -100.0f;
 		pan = 0.5f;
+		panCvConnected = false;
 		volCv = 1.0f;
 		target = -1.0f;
 		soloGain = 1.0f;
@@ -1470,7 +1475,8 @@ struct MixerTrack {
 
 			// calc ** pan **
 			pan = paPan->getValue();
-			if (inPan->isConnected()) {
+			panCvConnected = inPan->isConnected();
+			if (panCvConnected) {
 				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
 			}

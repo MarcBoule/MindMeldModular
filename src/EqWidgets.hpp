@@ -468,6 +468,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	bool *spectrumActiveSrc;
 	bool *globalEnableSrc;
 	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
+	bool *bandParamsCvConnected;
 	
 	// internal
 	float minLogFreq;
@@ -762,7 +763,13 @@ struct EqCurveAndGrid : TransparentWidget {
 	// eq curves
 	void calcCurveData() {
 		// contract: populate stepLogFreqs[], stepDbs[]
-			
+
+		// prepare values with cvs for draw methods (knob arcs, eq curve)
+		bandParamsWithCvs[0] = trackEqsSrc[currTrk].getFreqWithCvVec();
+		bandParamsWithCvs[1] = trackEqsSrc[currTrk].getGainWithCvVec();
+		bandParamsWithCvs[2] = trackEqsSrc[currTrk].getQWithCvVec();
+		*bandParamsCvConnected = trackEqsSrc[currTrk].getCvConnected();
+
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
 		simd::float_4 logFreqCursors = sortFloat4(simd::log10(bandParamsWithCvs[0]));
 		simd::float_4 normalizedFreq = simd::fmin(0.5f, bandParamsWithCvs[0] / sampleRate);

@@ -592,6 +592,7 @@ struct EqMasterWidget : ModuleWidget {
 	int8_t cloakedMode = 0;
 	int8_t detailsShow = 0x7;
 	simd::float_4 bandParamsWithCvs[3] = {};// [0] = freq, [1] = gain, [2] = q
+	bool bandParamsCvConnected = false;
 	PanelBorder* panelBorder;
 
 	
@@ -694,6 +695,7 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->spectrumActiveSrc = &(module->spectrumActive);
 			eqCurveAndGrid->globalEnableSrc = &(module->globalEnable);
 			eqCurveAndGrid->bandParamsWithCvs = bandParamsWithCvs;
+			eqCurveAndGrid->bandParamsCvConnected = &bandParamsCvConnected;
 		}
 		
 		// Screen - Big Numbers
@@ -763,6 +765,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			for (int c = 0; c < 12; c++) {
 				bandKnobs[c]->paramWithCV = &(bandParamsWithCvs[c >> 2][c & 0x3]);
+				bandKnobs[c]->paramCvConnected = &bandParamsCvConnected;
 				bandKnobs[c]->cloakedModeSrc = &cloakedMode;
 				bandKnobs[c]->detailsShowSrc = &detailsShow;
 				bandKnobs[c]->trackParamSrc = &(module->params[TRACK_PARAM]);
@@ -948,18 +951,6 @@ struct EqMasterWidget : ModuleWidget {
 			}
 		}
 		Widget::step();
-	}
-	
-	void draw(const DrawArgs &args) override {
-		if (module) {
-			EqMaster* module = (EqMaster*)(this->module);
-			int trk = module->getSelectedTrack();	
-			// prepare values with cvs for draw methods (knob arcs, eq curve)
-			bandParamsWithCvs[0] = module->trackEqs[trk].getFreqWithCvVec();
-			bandParamsWithCvs[1] = module->trackEqs[trk].getGainWithCvVec();
-			bandParamsWithCvs[2] = module->trackEqs[trk].getQWithCvVec();
-		}
-		ModuleWidget::draw(args);
 	}
 };
 

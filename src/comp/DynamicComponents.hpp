@@ -282,7 +282,8 @@ struct DynKnobWithArc : DynKnob {
 	bool topCentered = false;
 
 	// user must setup
-	float* paramWithCV = NULL;
+	float *paramWithCV = NULL;
+	bool *paramCvConnected;
 	int8_t *detailsShowSrc;
 	int8_t *cloakedModeSrc;
 
@@ -307,14 +308,15 @@ struct DynKnobWithArc : DynKnob {
 			if (!topCentered) {
 				aBase += minAngle;
 			}
+			int8_t showMask = (*detailsShowSrc & ~*cloakedModeSrc & 0x3); // 0 = off, 0x1 = cv_only, 0x3 = cv+param
 			// param
 			float param = paramQuantity->getValue();
-			if (((!topCentered) || (param != paramQuantity->getDefaultValue())) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) == 0x3) {
+			if (showMask == 0x3) {
 				aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 				drawArc(args, aBase, aParam, &arcColorDarker);
 			}
 			// cv
-			if (paramWithCV && (*paramWithCV != param) && (*detailsShowSrc & ~*cloakedModeSrc & 0x3) != 0) {
+			if (paramWithCV && (*paramCvConnected) && showMask != 0) {
 				if (aParam == -10000.0f) {
 					aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 				}
