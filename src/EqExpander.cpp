@@ -126,8 +126,6 @@ struct EqExpander : Module {
 
 
 struct EqExpanderWidget : ModuleWidget {
-	bool oldMotherPresentLeft = false;
-	bool oldMotherPresentRight = false;
 	PanelBorder* panelBorder;
 
 	
@@ -159,23 +157,26 @@ struct EqExpanderWidget : ModuleWidget {
 	void step() override {
 		if (module) {
 			EqExpander* module = (EqExpander*)this->module;
+	
 			// Borders			
-			if ( (module->motherPresentLeft != oldMotherPresentLeft) || (module->motherPresentRight != oldMotherPresentRight) ) {
-				oldMotherPresentLeft = module->motherPresentLeft;
-				oldMotherPresentRight = module->motherPresentRight;
-				if (module->motherPresentLeft) {
-					panelBorder->box.pos.x = -3;
-					panelBorder->box.size.x = box.size.x + 3;
-				}
-				else if (module->motherPresentRight) {
-					panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x + 4;
-				}
-				else {
-					panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x;
-				}
-				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			int newPos = panelBorder->box.pos.x;
+			int newSize = panelBorder->box.size.x;
+			if (module->motherPresentLeft) {
+				newPos = -3;
+				newSize = box.size.x + 3;
+			}
+			else if (module->motherPresentRight) {
+				newPos = 0;
+				newSize = box.size.x + 6;// should be +3 but already using +6 above, and needs to be different so no zoom bug
+			}
+			else {	
+				newPos = 0;
+				newSize = box.size.x;
+			}
+			if (panelBorder->box.size.x != newSize) {
+				panelBorder->box.pos.x = newPos;
+				panelBorder->box.size.x = newSize;
+				((SvgPanel*)panel)->dirty = true;
 			}
 		}
 		ModuleWidget::step();

@@ -7,7 +7,7 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    height="128.5mm"
    width="142.24001mm"
    sodipodi:docname="EQmaster.svg"
@@ -32,7 +32,7 @@
      inkscape:window-y="-8"
      inkscape:window-x="-8"
      inkscape:cy="280.15976"
-     inkscape:cx="383.26469"
+     inkscape:cx="210.0504"
      inkscape:zoom="1.4"
      units="mm"
      inkscape:document-units="mm"
@@ -103,18 +103,14 @@
   </defs>
   <title
      id="title29">Asset 28</title>
-  <g
-     id="Background"
-     transform="scale(1.3333333,1.3333406)">
-    <rect
-       style="fill:#303030"
-       class="cls-1"
-       width="403.20001"
-       height="364.25"
-       id="rect31"
-       x="0"
-       y="0" />
-  </g>
+  <rect
+     y="0"
+     x="0"
+     id="rect31"
+     height="485.66931"
+     width="537.59998"
+     class="cls-1"
+     style="fill:#353535;stroke-width:1.33333695;fill-opacity:1" />
   <g
      id="branding"
      transform="scale(1.3333333,1.3333406)">

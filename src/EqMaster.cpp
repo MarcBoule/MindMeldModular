@@ -592,8 +592,6 @@ struct EqMasterWidget : ModuleWidget {
 	int8_t cloakedMode = 0;
 	int8_t detailsShow = 0x7;
 	simd::float_4 bandParamsWithCvs[3] = {};// [0] = freq, [1] = gain, [2] = q
-	bool oldExpPresentLeft = false;
-	bool oldExpPresentRight = false;
 	PanelBorder* panelBorder;
 
 	
@@ -935,23 +933,25 @@ struct EqMasterWidget : ModuleWidget {
 				oldSelectedTrack = trk;
 			}
 			
-			// Borders			
-			if ( (module->expPresentLeft != oldExpPresentLeft) || (module->expPresentRight != oldExpPresentRight) ) {
-				oldExpPresentLeft = module->expPresentLeft;
-				oldExpPresentRight = module->expPresentRight;
-				if (module->expPresentRight) {
-					panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x + 3;
-				}
-				else if (module->expPresentLeft) {
-					panelBorder->box.pos.x = -3;
-					panelBorder->box.size.x = box.size.x + 4;
-				}
-				else {
-					panelBorder->box.pos.x = 0;
-					panelBorder->box.size.x = box.size.x;
-				}
-				((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			// Borders	
+			int newPos = panelBorder->box.pos.x;
+			int newSize = panelBorder->box.size.x;
+			if (module->expPresentRight) {
+				newPos = 0;
+				newSize = box.size.x + 6;// should be +3 but already using +6 below, and needs to be different so no zoom bug
+			}
+			else if (module->expPresentLeft) {
+				newPos = -3;
+				newSize = box.size.x + 3;
+			}
+			else {	
+				newPos = 0;
+				newSize = box.size.x;
+			}
+			if (panelBorder->box.size.x != newSize) {
+				panelBorder->box.pos.x = newPos;
+				panelBorder->box.size.x = newSize;
+				((SvgPanel*)panel)->dirty = true;
 			}
 		}
 		Widget::step();
