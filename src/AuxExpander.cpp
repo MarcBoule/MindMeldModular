@@ -449,8 +449,8 @@ struct AuxExpander : Module {
 					// lines above replace commented line below since templating AuxExpander broke it for some strange reason
 					// globalSends += (inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltageSimd<simd::float_4>(0)) * 0.1f * maxAGGlobSendFader;
 					globalSends = clamp(globalSends, 0.0f, maxAGGlobSendFader);
+					globalSendsWithCV = globalSends;// can put here since unused when cv disconnected
 				}
-				globalSendsWithCV = globalSends;
 				globalSends = simd::pow<simd::float_4>(globalSends, GlobalConst::globalAuxSendScalingExponent);
 			
 				//   Indiv mute sends (20 or 10 instances)				
@@ -486,8 +486,8 @@ struct AuxExpander : Module {
 								val += inputs[inputNum].getVoltage(trk + (((auxi & 0x1) != 0) ? 8 : 0)) * 0.1f * maxAGIndivSendFader;
 							}
 							val = clamp(val, 0.0f, maxAGIndivSendFader);
+							indivTrackSendWithCv[(trk << 2) + auxi] = val;// can put here since unused when cv disconnected
 						}
-						indivTrackSendWithCv[(trk << 2) + auxi] = val;
 						trackSendVcaGains[trk][auxi] = val;
 					}
 					trackSendVcaGains[trk] = simd::pow<simd::float_4>(trackSendVcaGains[trk], GlobalConst::individualAuxSendScalingExponent);
@@ -510,8 +510,8 @@ struct AuxExpander : Module {
 							int cvIndex = ((auxi << (N_GRP / 2)) + grp);// not the same order for the CVs
 							val += inputs[POLY_GRPS_AD_CV_INPUT].getVoltage(cvIndex) * 0.1f * maxAGIndivSendFader;
 							val = clamp(val, 0.0f, maxAGIndivSendFader);
+							indivGroupSendWithCv[(grp << 2) + auxi] = val;// can put here since unused when cv disconnected
 						}
-						indivGroupSendWithCv[(grp << 2) + auxi] = val;
 						if ((muteAuxSendWhenReturnGrouped & (1 << ((grp << 2) + auxi))) == 0) {
 							groupSendVcaGains[grp][auxi] = val;
 						}
@@ -585,8 +585,8 @@ struct AuxExpander : Module {
 				if (globalRetPansCvConnected) {
 					val += inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(4 + i) * 0.1f * panCvLevels[i];// Pan CV is a -5V to +5V input
 					val = clamp(val, 0.0f, 1.0f);
+					globalRetPansWithCV[i] = val;// can put here since unused when cv disconnected
 				}
-				globalRetPansWithCV[i] = val;
 				messagesToMother[Intf::MFA_AUX_RET_PAN + i] = val;
 			}
 			
@@ -630,7 +630,8 @@ struct AuxExpander : Module {
 		else {// here mother is present and we are not cloaked
 			if (ecoMode == 0 || (refreshCounter20 & 0x3) == 3) {// stagger 3
 				for (int i = 0; i < 4; i++) { 
-					vu[i].process(args.sampleTime, &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
+					//vu[i].process(args.sampleTime, &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
+					vu[i].process(args.sampleTime * (1 + (ecoMode & 0x3)), &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
 				}
 			}
 		}

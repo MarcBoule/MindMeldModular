@@ -765,10 +765,11 @@ struct EqCurveAndGrid : TransparentWidget {
 		// contract: populate stepLogFreqs[], stepDbs[]
 
 		// prepare values with cvs for draw methods (knob arcs, eq curve)
-		bandParamsWithCvs[0] = trackEqsSrc[currTrk].getFreqWithCvVec();
-		bandParamsWithCvs[1] = trackEqsSrc[currTrk].getGainWithCvVec();
-		bandParamsWithCvs[2] = trackEqsSrc[currTrk].getQWithCvVec();
-		*bandParamsCvConnected = trackEqsSrc[currTrk].getCvConnected();
+		bool _cvConnected = trackEqsSrc[currTrk].getCvConnected();
+		bandParamsWithCvs[0] = trackEqsSrc[currTrk].getFreqWithCvVec(_cvConnected);
+		bandParamsWithCvs[1] = trackEqsSrc[currTrk].getGainWithCvVec(_cvConnected);
+		bandParamsWithCvs[2] = trackEqsSrc[currTrk].getQWithCvVec(_cvConnected);
+		*bandParamsCvConnected = _cvConnected;
 
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
 		simd::float_4 logFreqCursors = sortFloat4(simd::log10(bandParamsWithCvs[0]));

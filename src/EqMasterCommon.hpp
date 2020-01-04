@@ -139,24 +139,18 @@ class TrackEq {
 	bool getTrackActive() {return trackActive;}
 	float getBandActive(int b) {return bandActive[b];}
 	float getFreq(int b) {return freq[b];}
-	simd::float_4 getFreqWithCvVec() {
-		if (!getCvConnected()) {
-			return freq;
-		}
+	simd::float_4 getFreqWithCvVec(bool _cvConnected) {
+		if (!_cvConnected) {return freq;}
 		return simd::clamp(freq + freqCv * 0.1f * (MAX_freq - MIN_freq), MIN_freq, MAX_freq);
 	}
 	float getGain(int b) {return gain[b];}
-	simd::float_4 getGainWithCvVec() {
-		if (!getCvConnected()) {
-			return gain;
-		}
+	simd::float_4 getGainWithCvVec(bool _cvConnected) {
+		if (!_cvConnected) {return gain;}
 		return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);
 	}
 	float getQ(int b) {return q[b];}
-	simd::float_4 getQWithCvVec() {
-		if (!getCvConnected()) {
-			return q;
-		}
+	simd::float_4 getQWithCvVec(bool _cvConnected) {
+		if (!_cvConnected) {return q;}
 		return simd::clamp(q + qCv * 0.1f * (20.0f - 0.3f), 0.3f, 20.0f);
 	}
 	float getLowPeak() {return lowPeak;}
@@ -266,11 +260,12 @@ class TrackEq {
 		return false;
 	}
 	void process(float* out, float* in, bool globalEnable) {
+		bool _cvConnected = getCvConnected();
 		
 		// gain slewers with gain cvs
 		simd::float_4 newGain;// in dB
 		if (trackActive && globalEnable) {
-			newGain = bandActive * getGainWithCvVec();
+			newGain = bandActive * getGainWithCvVec(_cvConnected);
 		}		
 		else {
 			newGain = 0.0f;
@@ -283,9 +278,9 @@ class TrackEq {
 		
 		// update eq parameters according to dirty flags
 		if (dirty != 0) {
-			simd::float_4 normalizedFreq = simd::fmin(0.5f, getFreqWithCvVec() / sampleRate);
+			simd::float_4 normalizedFreq = simd::fmin(0.5f, getFreqWithCvVec(_cvConnected) / sampleRate);
 			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
-			simd::float_4 qWithCv = getQWithCvVec();
+			simd::float_4 qWithCv = getQWithCvVec(_cvConnected);
 			for (int b = 0; b < 4; b++) {
 				if ((dirty & (1 << b)) != 0) {
 					eqs.setParameters(b, bandTypes[b], normalizedFreq[b], linearGain[b], qWithCv[b]);
