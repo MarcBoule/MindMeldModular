@@ -13,7 +13,6 @@ TrackDisplay<TMixMaster::MixerTrack>* trackDisplays[N_TRK];
 GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[N_GRP];
 PortWidget* inputWidgets[N_TRK * 4];// Left, Right, Volume, Pan
 PanelBorder* panelBorder;
-bool oldAuxExpanderPresent = false;
 time_t oldTime = 0;
 
 
@@ -122,8 +121,9 @@ void appendContextMenu(Menu *menu) override {
 
 
 void step() override {
-	TMixMaster* module = (TMixMaster*)(this->module);
 	if (module) {
+		TMixMaster* module = (TMixMaster*)(this->module);
+		
 		// Track labels (pull from module)
 		if (module->updateTrackLabelRequest != 0) {// pull request from module
 			// master display
@@ -140,17 +140,9 @@ void step() override {
 		}
 		
 		// Borders
-		if ( module->auxExpanderPresent != oldAuxExpanderPresent ) {
-			oldAuxExpanderPresent = module->auxExpanderPresent;
-		
-			if (oldAuxExpanderPresent) {
-				//panelBorder->box.pos.x = 0;
-				panelBorder->box.size.x = box.size.x + 3;
-			}
-			else {
-				//panelBorder->box.pos.x = 0;
-				panelBorder->box.size.x = box.size.x;
-			}
+		int newSizeAdd = (module->auxExpanderPresent ? 3 : 0);
+		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
+			panelBorder->box.size.x = (box.size.x + newSizeAdd);
 			((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 		}
 		

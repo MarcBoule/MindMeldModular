@@ -934,23 +934,16 @@ struct EqMasterWidget : ModuleWidget {
 			}
 			
 			// Borders	
-			int newPos = panelBorder->box.pos.x;
-			int newSize = panelBorder->box.size.x;
+			int newSizeAdd = 0;
 			if (module->expPresentRight) {
-				newPos = 0;
-				newSize = box.size.x + 6;// should be +3 but already using +6 below, and needs to be different so no zoom bug
+				newSizeAdd = 6;// should be +3 but already using +6 below, and needs to be different so no zoom bug
 			}
 			else if (module->expPresentLeft) {
-				newPos = -3;
-				newSize = box.size.x + 3;
+				newSizeAdd = 3;
 			}
-			else {	
-				newPos = 0;
-				newSize = box.size.x;
-			}
-			if (panelBorder->box.size.x != newSize) {
-				panelBorder->box.pos.x = newPos;
-				panelBorder->box.size.x = newSize;
+			if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
+				panelBorder->box.pos.x = (newSizeAdd == 3 ? -3 : 0);
+				panelBorder->box.size.x = (box.size.x + newSizeAdd);
 				((SvgPanel*)panel)->dirty = true;
 			}
 		}
