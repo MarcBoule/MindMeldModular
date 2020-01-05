@@ -630,7 +630,6 @@ struct AuxExpander : Module {
 		else {// here mother is present and we are not cloaked
 			if (ecoMode == 0 || (refreshCounter20 & 0x3) == 3) {// stagger 3
 				for (int i = 0; i < 4; i++) { 
-					//vu[i].process(args.sampleTime, &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
 					vu[i].process(args.sampleTime * (1 + (ecoMode & 0x3)), &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
 				}
 			}
