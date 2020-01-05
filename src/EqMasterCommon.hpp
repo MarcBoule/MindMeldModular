@@ -57,6 +57,7 @@ static const bool DEFAULT_highPeak = false;
 static const float DEFAULT_trackGain = 0.0f;// dB
 
 static const int FFT_N = 2048;// must be a multiple of 32 (if adjust this, should adjust left side spectrum cheating when drawing which was setup with 2048)
+static const int FFT_N_2 = FFT_N >> 1;
 static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);
 
 union PackedBytes4 {

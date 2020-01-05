@@ -13,7 +13,6 @@
 #include "dsp/fft.hpp"
 // #include "dsp/OnePole.hpp"
 #include <condition_variable>
-#include <thread>
 
 
 // Labels
@@ -461,10 +460,6 @@ struct EqCurveAndGrid : TransparentWidget {
 	Param *trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	PackedBytes4 *miscSettingsSrc;	
-	int *fftWriteHeadSrc;
-	PFFFT_Setup *ffts;
-	float *fftIn;
-	float *fftOut;
 	bool *spectrumActiveSrc;
 	bool *globalEnableSrc;
 	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
@@ -477,109 +472,17 @@ struct EqCurveAndGrid : TransparentWidget {
 	std::shared_ptr<Font> font;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
-	float drawBuf[FFT_N];// store log magnitude only in first half, log freq in second half
-	float drawBufLin[FFT_N / 2];// store magnitude only in first half
-	int drawBufSize = FFT_N / 2;// only pessimistic value, will be overwriten to compacted size
+	float *drawBuf;// store log magnitude only in first half, log freq in second half
+	int *drawBufSize;
+		
 	
-	// threading
-	std::mutex m;
-	std::condition_variable cv;
-	enum WorkerStatusId {WAITING, PROCESSING, WAITING_DONE};
-	WorkerStatusId workerStatus = WAITING;
-	bool requestWork = false;
-	bool requestStop = false;
-	std::thread worker;
-	int compactedSize;
-	
-	
-	EqCurveAndGrid() : worker(&EqCurveAndGrid::worker_thread, this) {
+	EqCurveAndGrid() {
 		box.size = mm2px(Vec(106.885f +.8f, 59.605f + 1.0f));	
 		minLogFreq = std::log10(minFreq);// 1.3
 		maxLogFreq = std::log10(maxFreq);// 4.3
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
-		for (int i = 0; i < FFT_N / 2; i++) {
-			drawBuf[i] = -1.0f;
-			drawBufLin[i] = 0.0f;
-		}
 	}
 	
-	~EqCurveAndGrid() {
-		std::unique_lock<std::mutex> lk(m);
-		requestStop = true;
-		lk.unlock();
-		cv.notify_one();
-		worker.join();
-	}
-	
-	
-	void worker_thread()
-	{
-		while (true) {
-			std::unique_lock<std::mutex> lk(m);
-			while (!requestWork && !requestStop) {
-				cv.wait(lk);
-			}
-			requestWork = false;
-			workerStatus = PROCESSING;
-			lk.unlock();
-			if (requestStop) break;
-
-			// compute fft
-			pffft_transform_ordered(ffts, fftIn, fftOut, NULL, PFFFT_FORWARD);
-			*fftWriteHeadSrc = 0;// fftIn no longer needed, so start filling again
-			// std::this_thread::sleep_for(std::chrono::seconds(3)); // for testing
-			postProcessFFT();
-			
-			workerStatus = WAITING_DONE;
-		}
-	}	
-	
-	
-	void postProcessFFT() {
-		// calculate magnitude and store in 1st half of array
-		for (int x = 0; x < FFT_N ; x += 2) {	
-			fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
-		}
-		
-		// calculate pixel scaled log of frequency and store in 2nd half of array
-		for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
-			int xt4 = x << 2;
-			simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
-			vecp = (vecp / ((float)(FFT_N - 1))) * sampleRate;// linear freq a this line
-			vecp = simd::round(simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, box.size.x));// pixel scaled log freq at this line
-			vecp.store(&fftOut[xt4 + FFT_N / 2]);
-		}
-		
-		// compact frequency bins
-		int i = 1;// index into compacted bins 
-		for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
-			if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
-				fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
-			}
-			else {
-				fftOut[i] = fftOut[x];
-				fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
-				i++;
-			}
-		}
-		compactedSize = i;
-		
-		// calculate log of magnitude (commented so we can do this after decay, which is done elsewhere)
-		// for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
-			// simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
-			// vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
-			// vecp.store(&fftOut[x << 2]);					
-		// }
-		
-		// filter spectrum
-		// OnePoleFilter filt;
-		// filt.reset();
-		// filt.setCutoff(0.2f);
-		// for (int i = 0; i < compactedSize; i++) {
-			// fftOut[i] = filt.processLP(fftOut[i]);
-		// }
-	}	
-
 	
 	void draw(const DrawArgs &args) override {
 		// grid
@@ -592,8 +495,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 			
 			// spectrum
-			calcSpectrum();
-			if (*spectrumActiveSrc) {
+			if (*drawBufSize > 0) {
 				drawSpectrum(args);
 			}
 
@@ -688,41 +590,6 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	
 	// spectrum
-	void calcSpectrum() {
-		if (*fftWriteHeadSrc >= FFT_N) {// if we have a full sample buffer to process
-			if (workerStatus == WAITING) {
-				std::unique_lock<std::mutex> lk(m);
-				requestWork = true;
-				lk.unlock();
-				cv.notify_one();
-			}
-		}
-		if (workerStatus == WAITING_DONE) {
-			// get magnitude
-			for (int i = 0; i < compactedSize; i++) {
-				if (fftOut[i] > drawBufLin[i]) {
-					drawBufLin[i] = fftOut[i];
-				}
-				else {
-					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * 30.0f / APP->window->getLastFrameRate();// decay
-				}
-				// drawBuf[i] = std::fmax(20.0f * std::log10(drawBufLin[i]), -1.0f);
-			}
-			// log scale the magnitude 
-			for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
-				simd::float_4 vecp = simd::float_4::load(&drawBufLin[x << 2]);
-				vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
-				vecp.store(&drawBuf[x << 2]);					
-			}
-			// get frequency
-			memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
-			
-			drawBufSize = compactedSize;
-			std::unique_lock<std::mutex> lk(m);
-			workerStatus = WAITING;
-			lk.unlock();
-		}
-	}
 	void drawSpectrum(const DrawArgs &args) {
 		nvgLineCap(args.vg, NVG_ROUND);
 		nvgMiterLimit(args.vg, 1.0f);
@@ -738,7 +605,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgMoveTo(args.vg, -1.0f, box.size.y + 3.0f);// + 3.0f for proper enclosed region for fill, -1.0f is a hack to not show the side stroke
 		float specX = 0.0f;
 		float specY = 0.0f;
-		for (int x = 1; x < drawBufSize; x++) {	
+		for (int x = 1; x < *drawBufSize; x++) {	
 			float ampl = drawBuf[x];
 			specX = drawBuf[x + FFT_N / 2];
 			specY = ampl;

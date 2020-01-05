@@ -7,6 +7,7 @@
 
 
 #include "EqWidgets.hpp"
+#include <thread>
 
 
 struct EqMaster : Module {
@@ -51,12 +52,14 @@ struct EqMaster : Module {
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	VuMeterAllDual trackVu;
 	int fftWriteHead;
+	int page;
 	uint32_t cvConnected;
+	int drawBufSize;
 
 	// No need to save, no reset
 	RefreshCounter refresh;
 	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
-	float* fftIn;
+	float* fftIn[3];
 	float* fftOut;
 	bool spectrumActive;// only for when input is unconnected
 	bool globalEnable;
@@ -64,6 +67,8 @@ struct EqMaster : Module {
 	TriggerRiseFall trackBandCvTriggers[24][4];
 	bool expPresentLeft = false;
 	bool expPresentRight = false;
+	float drawBuf[FFT_N];// store log magnitude only in first half, log freq in second half
+	
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -117,7 +122,9 @@ struct EqMaster : Module {
 		
 		panelTheme = 0;
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
-		fftIn = (float*)pffft_aligned_malloc(FFT_N * 4);
+		fftIn[0] = (float*)pffft_aligned_malloc(FFT_N * 4);
+		fftIn[1] = (float*)pffft_aligned_malloc(FFT_N * 4);
+		fftIn[2] = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
 		spectrumActive = false;
 		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
@@ -125,7 +132,9 @@ struct EqMaster : Module {
   
 	~EqMaster() {
 		pffft_destroy_setup(ffts);
-		pffft_aligned_free(fftIn);
+		pffft_aligned_free(fftIn[0]);
+		pffft_aligned_free(fftIn[1]);
+		pffft_aligned_free(fftIn[2]);
 		pffft_aligned_free(fftOut);
 	}
   
@@ -145,7 +154,9 @@ struct EqMaster : Module {
 		updateTrackLabelRequest = 1;
 		trackVu.reset();
 		fftWriteHead = 0;
+		page = 0;
 		cvConnected = 0;
+		drawBufSize = -1;// no data to draw yet
 	}
 
 
@@ -407,6 +418,67 @@ struct EqMaster : Module {
 		}
 	}
 	
+	
+	
+	void worker_thread(int _page)
+	{
+		// compute fft
+		pffft_transform_ordered(ffts, fftIn[_page], fftOut, NULL, PFFFT_FORWARD);
+		postProcessFFT();
+	}	
+	void postProcessFFT() {
+		// calculate magnitude and store in 1st half of array
+		for (int x = 0; x < FFT_N ; x += 2) {	
+			fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
+		}
+		
+		// calculate pixel scaled log of frequency and store in 2nd half of array
+		for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
+			int xt4 = x << 2;
+			simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
+			vecp = (vecp / ((float)(FFT_N - 1))) * sampleRate;// linear freq a this line
+			vecp = simd::round(simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, box.size.x));// pixel scaled log freq at this line
+			vecp.store(&fftOut[xt4 + FFT_N / 2]);
+		}
+		
+		// compact frequency bins
+		int i = 1;// index into compacted bins 
+		for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
+			if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
+				fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
+			}
+			else {
+				fftOut[i] = fftOut[x];
+				fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
+				i++;
+			}
+		}
+		int compactedSize = i;
+		
+		// decay TODO
+		
+		// calculate log of magnitude
+		for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
+			simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
+			vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+			vecp.store(&fftOut[x << 2]);					
+		}
+		
+		// get magnitude
+		memcpy(&drawBuf[FFT_N], &fftOut[FFT_N], compactedSize * 4);// log mag in pixel space, compacted bins
+		// get frequency
+		memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
+
+		drawBufSize = compactedSize;
+		
+		// filter spectrum
+		// OnePoleFilter filt;
+		// filt.reset();
+		// filt.setCutoff(0.2f);
+		// for (int i = 0; i < compactedSize; i++) {
+			// fftOut[i] = filt.processLP(fftOut[i]);
+		// }
+	}	
 
 	void process(const ProcessArgs &args) override {
 		int selectedTrack = getSelectedTrack();
@@ -468,27 +540,42 @@ struct EqMaster : Module {
 						vuProcessed = true;
 						
 						// Spectrum
-						if ( (fftWriteHead < FFT_N) && (miscSettings.cc4[1] == SPEC_PRE || miscSettings.cc4[1] == SPEC_POST) ) {
-							// write pre or post into fft's input buffer
-							if (miscSettings.cc4[1] == SPEC_PRE) {
-								fftIn[fftWriteHead] = (in[0] + in[1]);// no need to div by two, scaling done later
-							}
-							else {// SPEC_POST
-								fftIn[fftWriteHead] = (out[0] + out[1]);// no need to div by two, scaling done later
-							}
-							// apply window
-							if ((fftWriteHead & 0x3) == 0x3) {
-								simd::float_4 p = {(float)(fftWriteHead - 3), (float)(fftWriteHead - 2), (float)(fftWriteHead - 1), (float)(fftWriteHead - 0)};
-								p /= (float)(FFT_N - 1);
-								simd::float_4 windowed = simd::float_4::load(&(fftIn[fftWriteHead & ~0x3]));
-								windowed *= dsp::blackmanHarris<simd::float_4>(p);
-								windowed.store(&(fftIn[fftWriteHead & ~0x3]));
-							}
+						if ( miscSettings.cc4[1] == SPEC_PRE || miscSettings.cc4[1] == SPEC_POST ) {
+							float sample = ((miscSettings.cc4[1] == SPEC_PRE) ? 
+												(in[0] + in[1]) : 
+												(out[0] + out[1]));// no need to div by two, scaling done later
+							
+							// write sample into fft input buffers
+							fftIn[page][fftWriteHead] = sample * dsp::blackmanHarris((float)fftWriteHead / (float)(FFT_N - 1));
+							if (fftWriteHead >= FFT_N_2) {
+								int offsetHead = fftWriteHead - FFT_N_2;
+								fftIn[(page + 1) % 3][offsetHead] = sample * dsp::blackmanHarris((float)offsetHead / (float)(FFT_N - 1));
+							}	
+							
+							// old simd version, needs to be updated with page mechanism
+							// if ((fftWriteHead & 0x3) == 0x3) {
+								// simd::float_4 p = {(float)(fftWriteHead - 3), (float)(fftWriteHead - 2), (float)(fftWriteHead - 1), (float)(fftWriteHead - 0)};
+								// p /= (float)(FFT_N - 1);
+								// simd::float_4 windowed = simd::float_4::load(&(fftIn[fftWriteHead & ~0x3]));
+								// windowed *= dsp::blackmanHarris<simd::float_4>(p);
+								// windowed.store(&(fftIn[fftWriteHead & ~0x3]));
+							// }
+							
+							// increment write head and possibly page
 							fftWriteHead++;
+							if (fftWriteHead >= FFT_N) {
+								fftWriteHead = FFT_N_2;
+								page++;
+								if (page >= 3) {
+									page = 0;
+								}
+								//thread 
+							}
 						}
 						else if (miscSettings.cc4[1] == SPEC_NONE || miscSettings.cc4[1] == SPEC_FREEZE) {
 							fftWriteHead = 0;
-						}
+							page = 0;
+						}// Spectrum
 					}
 				}
 			}
@@ -688,10 +775,8 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
 			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
-			eqCurveAndGrid->fftWriteHeadSrc = &(module->fftWriteHead);
-			eqCurveAndGrid->ffts = module->ffts;
-			eqCurveAndGrid->fftIn = module->fftIn;
-			eqCurveAndGrid->fftOut = module->fftOut;
+			eqCurveAndGrid->drawBuf = module->drawBuf;
+			eqCurveAndGrid->drawBufSize = &(module->drawBufSize);
 			eqCurveAndGrid->spectrumActiveSrc = &(module->spectrumActive);
 			eqCurveAndGrid->globalEnableSrc = &(module->globalEnable);
 			eqCurveAndGrid->bandParamsWithCvs = bandParamsWithCvs;
