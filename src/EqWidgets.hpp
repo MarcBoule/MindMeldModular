@@ -453,18 +453,17 @@ struct EqCurveAndGrid : TransparentWidget {
 	Param *trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	PackedBytes4 *miscSettingsSrc;	
-	bool *spectrumActiveSrc;
 	bool *globalEnableSrc;
 	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
 	bool *bandParamsCvConnected;
+	float *drawBuf;// store log magnitude only in first half, log freq in second half
+	int *drawBufSize;
 	
 	// internal
 	QuattroBiQuadCoeff drawEq;
 	std::shared_ptr<Font> font;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
-	float *drawBuf;// store log magnitude only in first half, log freq in second half
-	int *drawBufSize;
 		
 	
 	EqCurveAndGrid() {
@@ -596,7 +595,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		float specY = 0.0f;
 		for (int x = 1; x < *drawBufSize; x++) {	
 			float ampl = drawBuf[x];
-			specX = drawBuf[x + FFT_N / 2];
+			specX = drawBuf[x + FFT_N_2];
 			specY = ampl;
 			if (x == 1) {
 				nvgLineTo(args.vg, -1.0f, box.size.y - specY );// cheat with a specX of 0 since the first freq is just above 20Hz when FFT_N = 2048, bring to -1.0f though as a hack to not show the side stroke

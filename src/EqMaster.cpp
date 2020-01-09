@@ -61,14 +61,15 @@ struct EqMaster : Module {
 	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
 	float* fftIn[3];
 	float* fftOut;
-	bool spectrumActive;// only for when input is unconnected
 	bool globalEnable;
 	TriggerRiseFall trackEnableCvTriggers[24];
 	TriggerRiseFall trackBandCvTriggers[24][4];
 	bool expPresentLeft = false;
 	bool expPresentRight = false;
 	std::mutex m;
-	float drawBuf[FFT_N];// store log magnitude only in first half, log freq in second half
+	float *drawBuf;//[FFT_N] store log magnitude only in first half, log freq in second half (normally this is compacted freq bins, so not all array used)
+	float *drawBufLin;//[FFT_N_2] store lin magnitude, used for calculating decay (normally this is compacted freq bins, so not all array used)
+	float *windowFunc;//[FFT_N_2] precomputed window function for FFT; function is symetrical, so only first half of window is actually stored here
 	bool requestStop = false;
 	bool requestWork = false;
 	int requestPage = 0;
@@ -93,6 +94,17 @@ struct EqMaster : Module {
 			trackLabelColors[trk] = 0;
 			trackVuColors[trk] = 0;
 		}
+	}
+	
+	float *allocateAndCalcWindowFunc() {
+		float *buf = (float*)pffft_aligned_malloc(FFT_N_2 * 4);
+		for (unsigned int i = 0; i < (FFT_N_2 / 4); i++) {
+			simd::float_4 p = {(float)(i * 4 + 0), (float)(i * 4 + 1), (float)(i * 4 + 2), (float)(i * 4 + 3)};
+			p /= (float)(FFT_N - 1);
+			p = dsp::blackmanHarris<simd::float_4>(p);
+			p.store(&(buf[i * 4]));		
+		}	
+		return buf;
 	}
 	
 		
@@ -131,8 +143,14 @@ struct EqMaster : Module {
 		fftIn[1] = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftIn[2] = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
-		spectrumActive = false;
 		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
+		drawBuf = (float*)pffft_aligned_malloc(FFT_N * 4);
+		drawBufLin = (float*)pffft_aligned_malloc(FFT_N_2 * 4);
+		for (int i = 0; i < FFT_N_2; i++) {
+			drawBuf[i] = -1.0f;
+			drawBufLin[i] = 0.0f;
+		}
+		windowFunc = allocateAndCalcWindowFunc();
 		
 		worker = std::thread(worker_thread, this);
 	}
@@ -149,6 +167,9 @@ struct EqMaster : Module {
 		pffft_aligned_free(fftIn[1]);
 		pffft_aligned_free(fftIn[2]);
 		pffft_aligned_free(fftOut);
+		pffft_aligned_free(drawBuf);
+		pffft_aligned_free(drawBufLin);
+		pffft_aligned_free(windowFunc);
 	}
   
 	void onReset() override {
@@ -451,41 +472,47 @@ struct EqMaster : Module {
 			}
 			
 			// calculate pixel scaled log of frequency and store in 2nd half of array
-			for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
+			for (int x = 0; x < (FFT_N_2) / 4 ; x++) {
 				int xt4 = x << 2;
 				simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
 				vecp = (vecp / ((float)(FFT_N - 1))) * trackEqs[0].getSampleRate();// linear freq a this line
 				vecp = simd::round(simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, eqCurveWidth));// pixel scaled log freq at this line
-				vecp.store(&fftOut[xt4 + FFT_N / 2]);
+				vecp.store(&fftOut[xt4 + FFT_N_2]);
 			}
 			
 			// compact frequency bins
 			int i = 1;// index into compacted bins 
-			for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
-				if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
+			for (int x = 1; x < FFT_N_2 ; x++) {// index into non-compacted bins
+				if (fftOut[i - 1 + FFT_N_2] == fftOut[x + FFT_N_2]) {
 					fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
 				}
 				else {
 					fftOut[i] = fftOut[x];
-					fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
+					fftOut[i + FFT_N_2] = fftOut[x + FFT_N_2];
 					i++;
 				}
 			}
 			int compactedSize = i;
 			
-			// decay TODO
+			// decay
+			for (int i = 0; i < compactedSize; i++) {
+				if (fftOut[i] > drawBufLin[i]) {
+					drawBufLin[i] = fftOut[i];
+				}
+				else {
+					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * 30.0f * FFT_N_2 / trackEqs[0].getSampleRate();// decay
+				}
+			}
 			
 			// calculate log of magnitude
 			for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
-				simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
+				simd::float_4 vecp = simd::float_4::load(&drawBufLin[x << 2]);
 				vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
-				vecp.store(&fftOut[x << 2]);					
+				vecp.store(&drawBuf[x << 2]);					
 			}
 		
-			// get magnitude
-			memcpy(drawBuf, fftOut, compactedSize * 4);// log mag in pixel space, compacted bins
 			// get frequency
-			memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
+			memcpy(&drawBuf[FFT_N_2], &fftOut[FFT_N_2], compactedSize * 4);// log freq in pixel space, compacted bins
 
 			drawBufSize = compactedSize;
 
@@ -559,22 +586,11 @@ struct EqMaster : Module {
 												(out[0] + out[1]));// no need to div by two, scaling done later
 							
 							// write sample into fft input buffers and apply windowing
-							fftIn[page][fftWriteHead] = sample * dsp::blackmanHarris((float)fftWriteHead / (float)(FFT_N - 1));
+							fftIn[page][fftWriteHead] = sample * windowFunc[fftWriteHead >= FFT_N_2 ? ((FFT_N - 1) - fftWriteHead) : fftWriteHead];// * dsp::blackmanHarris((float)fftWriteHead / (float)(FFT_N - 1));
 							if (fftWriteHead >= FFT_N_2) {
 								int offsetHead = fftWriteHead - FFT_N_2;
-								fftIn[(page + 1) % 3][offsetHead] = sample * dsp::blackmanHarris((float)offsetHead / (float)(FFT_N - 1));
+								fftIn[(page + 1) % 3][offsetHead] = sample * windowFunc[offsetHead];// * dsp::blackmanHarris((float)offsetHead / (float)(FFT_N - 1));
 							}	
-							
-							// TODO (this is important to optimize since Spectrum uses a lot of CPU in current version, and
-							//      when commenting out the cv.notify_one(), same CPU happens, which is 2.5% vs 1.0% when spec off
-							// old simd version, needs to be updated with page mechanism
-							// if ((fftWriteHead & 0x3) == 0x3) {
-								// simd::float_4 p = {(float)(fftWriteHead - 3), (float)(fftWriteHead - 2), (float)(fftWriteHead - 1), (float)(fftWriteHead - 0)};
-								// p /= (float)(FFT_N - 1);
-								// simd::float_4 windowed = simd::float_4::load(&(fftIn[fftWriteHead & ~0x3]));
-								// windowed *= dsp::blackmanHarris<simd::float_4>(p);
-								// windowed.store(&(fftIn[fftWriteHead & ~0x3]));
-							// }
 							
 							// increment write head and possibly page
 							fftWriteHead++;
@@ -597,9 +613,6 @@ struct EqMaster : Module {
 						}
 						else if (miscSettings.cc4[1] == SPEC_NONE || miscSettings.cc4[1] == SPEC_FREEZE) {
 							fftWriteHead = 0;
-							if (miscSettings.cc4[1] == SPEC_NONE) {
-								drawBufSize = -1;
-							}
 							page = 0;
 						}// Spectrum
 					}
@@ -609,7 +622,9 @@ struct EqMaster : Module {
 		if (!vuProcessed) {
 			trackVu.reset();
 		}
-		spectrumActive = vuProcessed && miscSettings.cc4[1] != SPEC_NONE;
+		if (!vuProcessed || miscSettings.cc4[1] == SPEC_NONE) {
+			drawBufSize = -1;
+		}
 		
 		
 		//********** Lights **********
@@ -801,12 +816,11 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
 			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
-			eqCurveAndGrid->drawBuf = module->drawBuf;
-			eqCurveAndGrid->drawBufSize = &(module->drawBufSize);
-			eqCurveAndGrid->spectrumActiveSrc = &(module->spectrumActive);
 			eqCurveAndGrid->globalEnableSrc = &(module->globalEnable);
 			eqCurveAndGrid->bandParamsWithCvs = bandParamsWithCvs;
 			eqCurveAndGrid->bandParamsCvConnected = &bandParamsCvConnected;
+			eqCurveAndGrid->drawBuf = module->drawBuf;
+			eqCurveAndGrid->drawBufSize = &(module->drawBufSize);
 		}
 		
 		// Screen - Big Numbers
@@ -815,7 +829,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			bigNumbers->trackParamSrc = &(module->params[TRACK_PARAM]);
 			bigNumbers->trackEqsSrc = module->trackEqs;
-			bigNumbers->lastMovedKnobIdSrc = & lastMovedKnobId;
+			bigNumbers->lastMovedKnobIdSrc = &lastMovedKnobId;
 			bigNumbers->lastMovedKnobTimeSrc = &lastMovedKnobTime;
 		}
 		
