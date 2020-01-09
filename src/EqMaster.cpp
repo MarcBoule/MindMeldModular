@@ -598,7 +598,7 @@ struct EqMaster : Module {
 								fftWriteHead = FFT_N_2;
 								//thread 
 								if (requestWork) {
-									// INFO("FFT too slow, page skipped");
+									INFO("FFT too slow, page skipped");
 								}
 								else {
 									requestPage = page;
