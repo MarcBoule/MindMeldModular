@@ -62,7 +62,7 @@ static constexpr float minFreq = 20.0f;
 static constexpr float maxFreq = 22000.0f;
 static constexpr float minLogFreq = std::log10(minFreq);// 1.3
 static constexpr float maxLogFreq = std::log10(maxFreq);// 4.3
-static constexpr float eqCurveWidth = 107.685f;
+static const float eqCurveWidth = mm2px(107.685f);
 
 
 static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);

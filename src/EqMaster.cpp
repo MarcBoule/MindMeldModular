@@ -138,17 +138,17 @@ struct EqMaster : Module {
 	}
   
 	~EqMaster() {
-		pffft_destroy_setup(ffts);
-		pffft_aligned_free(fftIn[0]);
-		pffft_aligned_free(fftIn[1]);
-		pffft_aligned_free(fftIn[2]);
-		pffft_aligned_free(fftOut);
-
 		std::unique_lock<std::mutex> lk(m);
 		requestStop = true;
 		lk.unlock();
 		cv.notify_one();
 		worker.join();
+		
+		pffft_destroy_setup(ffts);
+		pffft_aligned_free(fftIn[0]);
+		pffft_aligned_free(fftIn[1]);
+		pffft_aligned_free(fftIn[2]);
+		pffft_aligned_free(fftOut);
 	}
   
 	void onReset() override {
@@ -441,7 +441,7 @@ struct EqMaster : Module {
 			}
 			lk.unlock();
 			if (requestStop) break;
-
+			
 			// compute fft
 			pffft_transform_ordered(ffts, fftIn[requestPage], fftOut, NULL, PFFFT_FORWARD);
 
@@ -481,15 +481,14 @@ struct EqMaster : Module {
 				vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
 				vecp.store(&fftOut[x << 2]);					
 			}
-			
+		
 			// get magnitude
-			memcpy(&drawBuf[FFT_N], &fftOut[FFT_N], compactedSize * 4);// log mag in pixel space, compacted bins
+			memcpy(drawBuf, fftOut, compactedSize * 4);// log mag in pixel space, compacted bins
 			// get frequency
 			memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
 
 			drawBufSize = compactedSize;
 
-			INFO("*** Finished work");
 			requestWork = false;
 		}
 	}	
@@ -566,6 +565,8 @@ struct EqMaster : Module {
 								fftIn[(page + 1) % 3][offsetHead] = sample * dsp::blackmanHarris((float)offsetHead / (float)(FFT_N - 1));
 							}	
 							
+							// TODO (this is important to optimize since Spectrum uses a lot of CPU in current version, and
+							//      when commenting out the cv.notify_one(), same CPU happens, which is 2.5% vs 1.0% when spec off
 							// old simd version, needs to be updated with page mechanism
 							// if ((fftWriteHead & 0x3) == 0x3) {
 								// simd::float_4 p = {(float)(fftWriteHead - 3), (float)(fftWriteHead - 2), (float)(fftWriteHead - 1), (float)(fftWriteHead - 0)};
@@ -581,15 +582,12 @@ struct EqMaster : Module {
 								fftWriteHead = FFT_N_2;
 								//thread 
 								if (requestWork) {
-									//INFO("FFT too slow");
+									// INFO("FFT too slow, page skipped");
 								}
 								else {
-									std::unique_lock<std::mutex> lk(m);
 									requestPage = page;
 									requestWork = true;
-									lk.unlock();
 									cv.notify_one();
-									INFO("Request work");
 								}
 								page++;
 								if (page >= 3) {
@@ -599,6 +597,9 @@ struct EqMaster : Module {
 						}
 						else if (miscSettings.cc4[1] == SPEC_NONE || miscSettings.cc4[1] == SPEC_FREEZE) {
 							fftWriteHead = 0;
+							if (miscSettings.cc4[1] == SPEC_NONE) {
+								drawBufSize = -1;
+							}
 							page = 0;
 						}// Spectrum
 					}

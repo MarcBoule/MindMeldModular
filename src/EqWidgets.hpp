@@ -423,13 +423,8 @@ struct BigNumbers : TransparentWidget {
 				}
 				else if (srcId >= Q_PARAMS && srcId < Q_PARAMS + 4) {
 					int band = srcId - Q_PARAMS;
-					// if (! ( (band == 0 && !trackEqsSrc[currTrk].getLowPeak()) || (band == 3 && !trackEqsSrc[currTrk].getHighPeak())) ) {
-						float q = trackEqsSrc[currTrk].getQ(band);
-						text = string::f("%.2f", math::normalizeZero(q));
-					// }
-					// else {
-						// text = "---";
-					// }
+					float q = trackEqsSrc[currTrk].getQ(band);
+					text = string::f("%.2f", math::normalizeZero(q));
 				}
 
 			
@@ -473,7 +468,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		
 	
 	EqCurveAndGrid() {
-		box.size = mm2px(Vec(eqCurveWidth, 60.605f));	
+		box.size = Vec(eqCurveWidth, mm2px(60.605f));	
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
