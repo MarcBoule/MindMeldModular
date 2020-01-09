@@ -67,8 +67,13 @@ struct EqMaster : Module {
 	TriggerRiseFall trackBandCvTriggers[24][4];
 	bool expPresentLeft = false;
 	bool expPresentRight = false;
+	std::mutex m;
 	float drawBuf[FFT_N];// store log magnitude only in first half, log freq in second half
-	
+	bool requestStop = false;
+	bool requestWork = false;
+	int requestPage = 0;
+	std::condition_variable cv;// https://thispointer.com//c11-multithreading-part-7-condition-variables-explained/
+	std::thread worker;// http://www.cplusplus.com/reference/thread/thread/thread/
 	
 	int getSelectedTrack() {
 		return (int)(params[TRACK_PARAM].getValue() + 0.5f);
@@ -91,7 +96,7 @@ struct EqMaster : Module {
 	}
 	
 		
-	EqMaster() {
+	EqMaster() {//: worker(&EqMaster::worker_thread, this) {
 		config(NUM_EQ_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
 		rightExpander.producerMessage = expMessages[0];
@@ -128,6 +133,8 @@ struct EqMaster : Module {
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
 		spectrumActive = false;
 		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
+		
+		worker = std::thread(worker_thread, this);
 	}
   
 	~EqMaster() {
@@ -136,6 +143,12 @@ struct EqMaster : Module {
 		pffft_aligned_free(fftIn[1]);
 		pffft_aligned_free(fftIn[2]);
 		pffft_aligned_free(fftOut);
+
+		std::unique_lock<std::mutex> lk(m);
+		requestStop = true;
+		lk.unlock();
+		cv.notify_one();
+		worker.join();
 	}
   
 	void onReset() override {
@@ -420,64 +433,65 @@ struct EqMaster : Module {
 	
 	
 	
-	void worker_thread(int _page)
-	{
-		// compute fft
-		pffft_transform_ordered(ffts, fftIn[_page], fftOut, NULL, PFFFT_FORWARD);
-		postProcessFFT();
-	}	
-	void postProcessFFT() {
-		// calculate magnitude and store in 1st half of array
-		for (int x = 0; x < FFT_N ; x += 2) {	
-			fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
-		}
-		
-		// calculate pixel scaled log of frequency and store in 2nd half of array
-		for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
-			int xt4 = x << 2;
-			simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
-			vecp = (vecp / ((float)(FFT_N - 1))) * sampleRate;// linear freq a this line
-			vecp = simd::round(simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, box.size.x));// pixel scaled log freq at this line
-			vecp.store(&fftOut[xt4 + FFT_N / 2]);
-		}
-		
-		// compact frequency bins
-		int i = 1;// index into compacted bins 
-		for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
-			if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
-				fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
+	void worker_thread() {
+		while (true) {
+			std::unique_lock<std::mutex> lk(m);
+			while (!requestWork && !requestStop) {
+				cv.wait(lk);
 			}
-			else {
-				fftOut[i] = fftOut[x];
-				fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
-				i++;
-			}
-		}
-		int compactedSize = i;
-		
-		// decay TODO
-		
-		// calculate log of magnitude
-		for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
-			simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
-			vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
-			vecp.store(&fftOut[x << 2]);					
-		}
-		
-		// get magnitude
-		memcpy(&drawBuf[FFT_N], &fftOut[FFT_N], compactedSize * 4);// log mag in pixel space, compacted bins
-		// get frequency
-		memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
+			lk.unlock();
+			if (requestStop) break;
 
-		drawBufSize = compactedSize;
-		
-		// filter spectrum
-		// OnePoleFilter filt;
-		// filt.reset();
-		// filt.setCutoff(0.2f);
-		// for (int i = 0; i < compactedSize; i++) {
-			// fftOut[i] = filt.processLP(fftOut[i]);
-		// }
+			// compute fft
+			pffft_transform_ordered(ffts, fftIn[requestPage], fftOut, NULL, PFFFT_FORWARD);
+
+			// calculate magnitude and store in 1st half of array
+			for (int x = 0; x < FFT_N ; x += 2) {	
+				fftOut[x >> 1] = fftOut[x + 0] * fftOut[x + 0] + fftOut[x + 1] * fftOut[x + 1];// sqrt is not needed in magnitude calc since when take log of this, it can be absorbed in scaling multiplier
+			}
+			
+			// calculate pixel scaled log of frequency and store in 2nd half of array
+			for (int x = 0; x < (FFT_N / 2) / 4 ; x++) {
+				int xt4 = x << 2;
+				simd::float_4 vecp(xt4 + 0, xt4 + 1, xt4 + 2, xt4 + 3);
+				vecp = (vecp / ((float)(FFT_N - 1))) * trackEqs[0].getSampleRate();// linear freq a this line
+				vecp = simd::round(simd::rescale(simd::log10(vecp), minLogFreq, maxLogFreq, 0.0f, eqCurveWidth));// pixel scaled log freq at this line
+				vecp.store(&fftOut[xt4 + FFT_N / 2]);
+			}
+			
+			// compact frequency bins
+			int i = 1;// index into compacted bins 
+			for (int x = 1; x < FFT_N / 2 ; x++) {// index into non-compacted bins
+				if (fftOut[i - 1 + FFT_N / 2] == fftOut[x + FFT_N / 2]) {
+					fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
+				}
+				else {
+					fftOut[i] = fftOut[x];
+					fftOut[i + FFT_N / 2] = fftOut[x + FFT_N / 2];
+					i++;
+				}
+			}
+			int compactedSize = i;
+			
+			// decay TODO
+			
+			// calculate log of magnitude
+			for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
+				simd::float_4 vecp = simd::float_4::load(&fftOut[x << 2]);
+				vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+				vecp.store(&fftOut[x << 2]);					
+			}
+			
+			// get magnitude
+			memcpy(&drawBuf[FFT_N], &fftOut[FFT_N], compactedSize * 4);// log mag in pixel space, compacted bins
+			// get frequency
+			memcpy(&drawBuf[FFT_N / 2], &fftOut[FFT_N / 2], compactedSize * 4);// log freq in pixel space, compacted bins
+
+			drawBufSize = compactedSize;
+
+			INFO("*** Finished work");
+			requestWork = false;
+		}
 	}	
 
 	void process(const ProcessArgs &args) override {
@@ -545,7 +559,7 @@ struct EqMaster : Module {
 												(in[0] + in[1]) : 
 												(out[0] + out[1]));// no need to div by two, scaling done later
 							
-							// write sample into fft input buffers
+							// write sample into fft input buffers and apply windowing
 							fftIn[page][fftWriteHead] = sample * dsp::blackmanHarris((float)fftWriteHead / (float)(FFT_N - 1));
 							if (fftWriteHead >= FFT_N_2) {
 								int offsetHead = fftWriteHead - FFT_N_2;
@@ -565,11 +579,22 @@ struct EqMaster : Module {
 							fftWriteHead++;
 							if (fftWriteHead >= FFT_N) {
 								fftWriteHead = FFT_N_2;
+								//thread 
+								if (requestWork) {
+									//INFO("FFT too slow");
+								}
+								else {
+									std::unique_lock<std::mutex> lk(m);
+									requestPage = page;
+									requestWork = true;
+									lk.unlock();
+									cv.notify_one();
+									INFO("Request work");
+								}
 								page++;
 								if (page >= 3) {
 									page = 0;
 								}
-								//thread 
 							}
 						}
 						else if (miscSettings.cc4[1] == SPEC_NONE || miscSettings.cc4[1] == SPEC_FREEZE) {

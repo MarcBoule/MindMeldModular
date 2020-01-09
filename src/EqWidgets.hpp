@@ -448,8 +448,6 @@ struct BigNumbers : TransparentWidget {
 
 
 struct EqCurveAndGrid : TransparentWidget {
-	static constexpr float minFreq = 20.0f;
-	static constexpr float maxFreq = 22000.0f;
 	static constexpr float minDb = -20.0f;
 	static constexpr float maxDb = 20.0f;
 	static const int numDrawSteps = 200;
@@ -466,8 +464,6 @@ struct EqCurveAndGrid : TransparentWidget {
 	bool *bandParamsCvConnected;
 	
 	// internal
-	float minLogFreq;
-	float maxLogFreq;
 	QuattroBiQuadCoeff drawEq;
 	std::shared_ptr<Font> font;
 	float sampleRate;// use only in scope of it being set in draw()
@@ -477,9 +473,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		
 	
 	EqCurveAndGrid() {
-		box.size = mm2px(Vec(106.885f +.8f, 59.605f + 1.0f));	
-		minLogFreq = std::log10(minFreq);// 1.3
-		maxLogFreq = std::log10(maxFreq);// 4.3
+		box.size = mm2px(Vec(eqCurveWidth, 60.605f));	
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
