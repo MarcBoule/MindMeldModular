@@ -108,7 +108,7 @@ struct EqMaster : Module {
 	}
 	
 		
-	EqMaster() {//: worker(&EqMaster::worker_thread, this) {
+	EqMaster() : worker(&EqMaster::worker_thread, this) {
 		config(NUM_EQ_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
 		rightExpander.producerMessage = expMessages[0];
@@ -151,8 +151,6 @@ struct EqMaster : Module {
 			drawBufLin[i] = 0.0f;
 		}
 		windowFunc = allocateAndCalcWindowFunc();
-		
-		worker = std::thread(worker_thread, this);
 	}
   
 	~EqMaster() {
