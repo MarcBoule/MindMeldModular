@@ -58,11 +58,11 @@ static const float DEFAULT_trackGain = 0.0f;// dB
 
 static const int FFT_N = 2048;// must be a multiple of 32 (if adjust this, should adjust left side spectrum cheating when drawing which was setup with 2048)
 static const int FFT_N_2 = FFT_N >> 1;
-static constexpr float minFreq = 20.0f;
-static constexpr float maxFreq = 22000.0f;
-static constexpr float minLogFreq = std::log10(minFreq);// 1.3
-static constexpr float maxLogFreq = std::log10(maxFreq);// 4.3
-static const float eqCurveWidth = mm2px(107.685f);
+static constexpr float minFreq = 20.0f;// update minLogFreq when changing this !
+static constexpr float maxFreq = 22000.0f;// update maxLogFreq when changing this !
+static constexpr float minLogFreq = 1.30103f;// std::log10(minFreq);// commented for old compilers
+static constexpr float maxLogFreq = 4.3424227f;// std::log10(maxFreq);// commented for old compilers
+static const float eqCurveWidth = 107.685f * SVG_DPI / MM_PER_IN;// mm2px()
 
 
 static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);
