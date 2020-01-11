@@ -61,10 +61,12 @@ static const float DEFAULT_trackGain = 0.0f;// dB
 
 static const int FFT_N = 2048;// must be a multiple of 32 (if adjust this, should adjust left side spectrum cheating when drawing which was setup with 2048)
 static const int FFT_N_2 = FFT_N >> 1;
-static constexpr float minFreq = 20.0f;// update minLogFreq when changing this !
-static constexpr float maxFreq = 22000.0f;// update maxLogFreq when changing this !
+
+// static constexpr float minFreq = 20.0f;// update minLogFreq when changing this !
 static constexpr float minLogFreq = 1.30103f;// std::log10(minFreq);// commented for old compilers
+// static constexpr float maxFreq = 22000.0f;// update maxLogFreq when changing this !
 static constexpr float maxLogFreq = 4.3424227f;// std::log10(maxFreq);// commented for old compilers
+
 static const float eqCurveWidth = 107.685f * SVG_DPI / MM_PER_IN;// mm2px()
 
 
@@ -78,6 +80,7 @@ union PackedBytes4 {
 };
 
 class TrackEq {
+	static constexpr float antipopSlewLogHz = 12.0f;// calibrated to properly slew a log(Hz) float in the rough range 1.3f to 4.3f (but less since freq knobs not full spectrum)
 	static constexpr float antipopSlewDb = 200.0f;// calibrated to properly slew a dB float in the range -20.0f to 20.0f for antipop
 	int trackNum;
 	float sampleRate;
@@ -105,6 +108,7 @@ class TrackEq {
 
 	// dependants
 	QuattroBiQuad eqs;
+	dsp::TSlewLimiter<simd::float_4> freqSlewers;// in log(Hz)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;// in dB
 	dsp::SlewLimiter trackGainSlewer;// in dB
 	
@@ -116,6 +120,7 @@ class TrackEq {
 		bandTypes[1] = QuattroBiQuad::PEAK;
 		bandTypes[2] = QuattroBiQuad::PEAK;
 		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first init() will call setLowPeak()
+		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz), simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
 		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb), simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
 		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
 	}
@@ -145,6 +150,7 @@ class TrackEq {
 		
 		// dependants
 		eqs.reset();
+		freqSlewers.reset();
 		gainSlewers.reset();
 		trackGainSlewer.reset();
 	}
@@ -275,6 +281,14 @@ class TrackEq {
 	void process(float* out, float* in, bool globalEnable) {
 		bool _cvConnected = getCvConnected();
 		
+		// freq slewers with freq cvs
+		simd::float_4 newFreq = getFreqWithCvVec(_cvConnected);// in log(Hz)
+		int freqSlewersComparisonMask = movemask(newFreq == freqSlewers.out);
+		if (freqSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
+			freqSlewers.process(sampleTime, newFreq);
+			dirty |= ~freqSlewersComparisonMask;
+		}
+		
 		// gain slewers with gain cvs
 		simd::float_4 newGain;// in dB
 		if (trackActive && globalEnable) {
@@ -291,7 +305,7 @@ class TrackEq {
 		
 		// update eq parameters according to dirty flags
 		if (dirty != 0) {
-			simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, getFreqWithCvVec(_cvConnected)) / sampleRate);
+			simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, freqSlewers.out) / sampleRate);
 			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
 			simd::float_4 qWithCv = getQWithCvVec(_cvConnected);
 			for (int b = 0; b < 4; b++) {
