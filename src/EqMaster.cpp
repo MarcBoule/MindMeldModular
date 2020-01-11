@@ -122,12 +122,9 @@ struct EqMaster : Module {
 		// Track settings
 		configParam(TRACK_ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_trackActive ? 1.0f : 0.0f, "Track EQ active");
 		configParam(TRACK_GAIN_PARAM, -20.0f, 20.0f, DEFAULT_gain, "Track gain", " dB");
-		configParam(FREQ_PARAMS + 0, MIN_freq[0], MAX_freq[0], DEFAULT_freq[0], "LF freq", " Hz");
-		configParam(FREQ_PARAMS + 1, MIN_freq[1], MAX_freq[1], DEFAULT_freq[1], "LMF freq", " Hz");
-		configParam(FREQ_PARAMS + 2, MIN_freq[2], MAX_freq[2], DEFAULT_freq[2], "HMF freq", " Hz");
-		configParam(FREQ_PARAMS + 3, MIN_freq[3], MAX_freq[3], DEFAULT_freq[3], "HF freq", " Hz");
 		for (int i = 0; i < 4; i++) {
 			configParam(FREQ_ACTIVE_PARAMS + i, 0.0f, 1.0f, DEFAULT_bandActive, bandNames[i] + " active");
+			configParam(FREQ_PARAMS + i, MIN_logFreq[i], MAX_logFreq[i], DEFAULT_logFreq[i], bandNames[i] + " freq", " Hz", 10.0f);
 			configParam(GAIN_PARAMS + i, -20.0f, 20.0f, DEFAULT_gain, bandNames[i] + " gain", " dB");
 			configParam(Q_PARAMS + i, 0.3f, 20.0f, DEFAULT_q[i], bandNames[i] + " Q");
 		}

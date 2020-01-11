@@ -143,7 +143,7 @@ struct BandLabelFreq : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
-			float freq = trackEqsSrc[trk].getFreq(band);
+			float freq = std::pow(10, trackEqsSrc[trk].getFreq(band));
 			if (*showFreqAsNotesSrc == 0) {			
 				if (freq < 10000.0f) {
 					text = string::f("%i", (int)(freq + 0.5f));
@@ -199,13 +199,8 @@ struct BandLabelQ : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
-			// if (! ( (band == 0 && !trackEqsSrc[trk].getLowPeak()) || (band == 3 && !trackEqsSrc[trk].getHighPeak())) ) {
-				float q = trackEqsSrc[trk].getQ(band);
-				text = string::f("%.2f", math::normalizeZero(q));
-			// }
-			// else {
-				// text = "---";
-			// }
+			float q = trackEqsSrc[trk].getQ(band);
+			text = string::f("%.2f", math::normalizeZero(q));
 		}
 	}
 };
@@ -360,14 +355,6 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 			if (e.pos.x > textWidths[0]) {
 				*settingSrc ^= 0x1;
 			}
-			// float leftX = textWidths[0];
-			// if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
-				// *settingSrc = 0;
-			// }
-			// leftX += textWidths[1];
-			// if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
-				// *settingSrc = 1;
-			// }
 		}
 		OpaqueWidget::onButton(e);
 	}
@@ -404,7 +391,7 @@ struct BigNumbers : TransparentWidget {
 				int srcId = *lastMovedKnobIdSrc;
 				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 				if (srcId >= FREQ_PARAMS && srcId < FREQ_PARAMS + 4) {
-					float freq = trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS);
+					float freq = std::pow(10, trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS));
 					if (freq < 10000.0f) {
 						text = string::f("%i Hz", (int)(freq + 0.5f));
 					}
@@ -627,8 +614,8 @@ struct EqCurveAndGrid : TransparentWidget {
 		*bandParamsCvConnected = _cvConnected;
 
 		// set eqCoefficients of separate drawEq according to active track and get cursor points of each band		
-		simd::float_4 logFreqCursors = sortFloat4(simd::log10(bandParamsWithCvs[0]));
-		simd::float_4 normalizedFreq = simd::fmin(0.5f, bandParamsWithCvs[0] / sampleRate);
+		simd::float_4 logFreqCursors = sortFloat4(bandParamsWithCvs[0]);
+		simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, bandParamsWithCvs[0]) / sampleRate);
 		for (int b = 0; b < 4; b++) {
 			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, bandParamsWithCvs[1][b] / 20.0f) : 1.0f;
 			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq[b], linearGain, bandParamsWithCvs[2][b]);

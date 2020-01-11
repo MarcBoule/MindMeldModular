@@ -47,9 +47,12 @@ enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
 
 static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
-static constexpr float DEFAULT_freq[4] = {100.0f, 1000.0f, 2000.0f, 10000.0f};// Hz
-static const simd::float_4 MIN_freq(20.0f, 60.0f, 500.0f, 1000.0f);// Hz
-static const simd::float_4 MAX_freq(500.0f, 2000.0f, 5000.0f, 20000.0f);// Hz
+// static constexpr float DEFAULT_freq[4] = {100.0f, 	350.0f, 	1600.0f, 	4500.0f};// Hz
+static constexpr float DEFAULT_logFreq[4] = {2.0f, 		2.544068f, 	3.20412f, 	3.6532125f};// log(Hz)
+// static const simd::float_4 MIN_freq(20.0f, 60.0f, 500.0f, 1000.0f);// Hz
+static const simd::float_4 MIN_logFreq(1.30103f, 1.77815125f, 2.69897f, 3.0f);// log(Hz)
+// static const simd::float_4 MAX_freq(500.0f, 2000.0f, 5000.0f, 20000.0f);// Hz
+static const simd::float_4 MAX_logFreq(2.69897f, 3.30103f, 3.69897f, 4.30103f);// log(Hz)
 static const float DEFAULT_gain = 0.0f;// dB
 static const float DEFAULT_q[4] = {1.0f, 3.0f, 3.0f, 1.0f};
 static const bool DEFAULT_lowPeak = false;
@@ -88,7 +91,7 @@ class TrackEq {
 	// need saving
 	bool trackActive;
 	simd::float_4 bandActive;// 0.0f or 1.0f values: frequency band's eq is active, one for LF, LMF, HMF, HF
-	simd::float_4 freq;// in Hz to match params
+	simd::float_4 freq;// in log(Hz) to match params, converted to scaled linear freq before pushing params to eq
 	simd::float_4 gain;// in dB to match params, is converted to linear before pushing params to eqs
 	simd::float_4 q;
 	bool lowPeak;// LF is peak when true (false is lowshelf)
@@ -127,7 +130,7 @@ class TrackEq {
 		setTrackActive(DEFAULT_trackActive);
 		for (int i = 0; i < 4; i++) {
 			setBandActive(i, DEFAULT_bandActive);
-			setFreq(i, DEFAULT_freq[i]);
+			setFreq(i, DEFAULT_logFreq[i]);
 			setGain(i, DEFAULT_gain);
 			setQ(i, DEFAULT_q[i]);
 		}
@@ -151,7 +154,7 @@ class TrackEq {
 	float getFreq(int b) {return freq[b];}
 	simd::float_4 getFreqWithCvVec(bool _cvConnected) {
 		if (!_cvConnected) {return freq;}
-		return simd::clamp(freq + freqCv * 0.1f * (MAX_freq - MIN_freq), MIN_freq, MAX_freq);
+		return simd::clamp(freq + freqCv * 0.1f * (MAX_logFreq - MIN_logFreq), MIN_logFreq, MAX_logFreq);
 	}
 	float getGain(int b) {return gain[b];}
 	simd::float_4 getGainWithCvVec(bool _cvConnected) {
@@ -260,7 +263,7 @@ class TrackEq {
 	bool isNonDefaultState() {
 		for (int b = 0; b < 4; b++) {
 			if (bandActive[b] != DEFAULT_bandActive) return true;
-			if (freq[b] != DEFAULT_freq[b]) return true;
+			if (freq[b] != DEFAULT_logFreq[b]) return true;
 			if (gain[b] != DEFAULT_gain) return true;
 			if (q[b] != DEFAULT_q[b]) return true;
 		}
@@ -288,7 +291,7 @@ class TrackEq {
 		
 		// update eq parameters according to dirty flags
 		if (dirty != 0) {
-			simd::float_4 normalizedFreq = simd::fmin(0.5f, getFreqWithCvVec(_cvConnected) / sampleRate);
+			simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, getFreqWithCvVec(_cvConnected)) / sampleRate);
 			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
 			simd::float_4 qWithCv = getQWithCvVec(_cvConnected);
 			for (int b = 0; b < 4; b++) {
