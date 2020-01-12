@@ -460,6 +460,8 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	
 	void draw(const DrawArgs &args) override {
+		nvgSave(args.vg);
+		
 		// grid
 		drawGrid(args);
 		
@@ -482,6 +484,8 @@ struct EqCurveAndGrid : TransparentWidget {
 			
 			nvgResetScissor(args.vg);					
 		}
+		
+		nvgRestore(args.vg);
 	}
 	
 	
@@ -574,7 +578,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		fillcolBot.a = 0.05f;
 		nvgFillColor(args.vg, fillcolTop);
 		nvgStrokeColor(args.vg, nvgRGB(99, 99, 99));
-		nvgStrokeWidth(args.vg, 0.5f);//1.0f);
+		nvgStrokeWidth(args.vg, 0.5f);
 
 		nvgBeginPath(args.vg);
 		nvgMoveTo(args.vg, -1.0f, box.size.y + 3.0f);// + 3.0f for proper enclosed region for fill, -1.0f is a hack to not show the side stroke
@@ -928,7 +932,10 @@ struct ActiveSwitch : MmSwitch {
 
 struct BandSwitch : app::SvgSwitch {
 	Param* trackParamSrc;
+	Param* freqActiveParamsSrc;
 	TrackEq* trackEqsSrc;
+	float preSoloStates[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+	int soloedBand = -1;
 
 	void loadGraphics(int band) {
 		if (band == 0) {
@@ -960,6 +967,36 @@ struct BandActiveSwitch : BandSwitch {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setBandActive(BAND, paramQuantity->getValue());
 		}
+	}
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
+			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
+				// solo
+				if ((soloedBand == -1) || (soloedBand != -1 && soloedBand != BAND)) {// entering solo
+					soloedBand = BAND;
+					for (int b = 0; b < 4; b++) {// save all states, turn on selected band and turn off all other bands
+						preSoloStates[b] = freqActiveParamsSrc[b].getValue();
+						freqActiveParamsSrc[b].setValue(0.0f);// turning off current is before click such that click will turn on
+					}
+				}
+				else {
+					if (soloedBand == BAND) {// leaving solo
+						soloedBand = -1;
+						for (int b = 0; b < 4; b++) {
+							if (b == BAND) {
+								freqActiveParamsSrc[b].setValue(1.0f - preSoloStates[b]);
+							}
+							else {
+								freqActiveParamsSrc[b].setValue(preSoloStates[b]);
+							}
+						}
+					}
+				}
+				e.consume(this);
+				return;
+			}
+		}
+		BandSwitch::onButton(e);		
 	}
 };
 

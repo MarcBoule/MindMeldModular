@@ -860,6 +860,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			for (int b = 0; b < 4; b++) {
 				bandSwitches[b]->trackParamSrc = &(module->params[TRACK_PARAM]);
+				bandSwitches[b]->freqActiveParamsSrc = &(module->params[FREQ_ACTIVE_PARAMS]);
 				bandSwitches[b]->trackEqsSrc = module->trackEqs;
 			}
 		}	
