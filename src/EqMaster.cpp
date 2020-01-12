@@ -883,6 +883,8 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->bandParamsCvConnected = &bandParamsCvConnected;
 			eqCurveAndGrid->drawBuf = module->drawBuf;
 			eqCurveAndGrid->drawBufSize = &(module->drawBufSize);
+			eqCurveAndGrid->lastMovedKnobIdSrc = &lastMovedKnobId;
+			eqCurveAndGrid->lastMovedKnobTimeSrc = &lastMovedKnobTime;
 		}
 		
 		// Screen - Big Numbers

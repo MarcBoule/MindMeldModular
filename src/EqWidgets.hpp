@@ -489,6 +489,8 @@ struct EqCurveAndGrid : TransparentWidget {
 	bool *bandParamsCvConnected;
 	float *drawBuf;// store log magnitude only in first half, log freq in second half
 	int *drawBufSize;
+	int* lastMovedKnobIdSrc;
+	time_t* lastMovedKnobTimeSrc;
 	
 	// internal
 	QuattroBiQuadCoeff drawEq;
@@ -693,7 +695,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		if (miscSettingsSrc->cc4[0] != 0) {
 			for (int b = 0; b < 4; b++) {
 				if (trackEqsSrc[currTrk].getBandActive(b)) {
-					drawEqCurveBandFill(b, args, bandColors[b]);
+					drawEqCurveBand(b, args, bandColors[b]);
 				}
 			}
 		}
@@ -728,7 +730,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		}
 		nvgStroke(args.vg);
 	}
-	void drawEqCurveBandFill(int band, const DrawArgs &args, NVGcolor col) {
+	void drawEqCurveBand(int band, const DrawArgs &args, NVGcolor col) {
 		NVGcolor fillColCursor = col;
 		NVGcolor fillCol0 = col;
 		fillColCursor.a = 0.5f;
@@ -746,17 +748,31 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgClosePath(args.vg);
 		
 		NVGpaint grad;
+		float cursorPY = (box.size.y / 2.0f * (1.0f - bandParamsWithCvs[1][band] / 20.0f));
 		if (bandParamsWithCvs[1][band] > 0.0f) {
-			float topGrad = (box.size.y / 2.0f * (1.0f - bandParamsWithCvs[1][band] / 20.0f));
-			grad = nvgLinearGradient(args.vg, 0.0f, topGrad, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
+			grad = nvgLinearGradient(args.vg, 0.0f, cursorPY, 0.0f, box.size.y / 2.0f, fillColCursor, fillCol0);
 		}
 		else {
-			float botGrad = (box.size.y / 2.0f * (1.0f - bandParamsWithCvs[1][band] / 20.0f));
-			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, botGrad, fillCol0, fillColCursor);
+			grad = nvgLinearGradient(args.vg, 0.0f, box.size.y / 2.0f, 0.0f, cursorPY, fillCol0, fillColCursor);
 		}
 		nvgFillPaint(args.vg, grad);
 		nvgFill(args.vg);
 		nvgStroke(args.vg);
+		
+		// cursor circle
+		nvgBeginPath(args.vg);
+		float cursorPX = math::rescale(bandParamsWithCvs[0][band], minLogFreq, maxLogFreq, 0.0f, box.size.x);
+		nvgCircle(args.vg, cursorPX, cursorPY, 3.0f);
+		nvgClosePath(args.vg);
+		
+		nvgFillColor(args.vg, col);
+		nvgFill(args.vg);
+		int knob12i = *lastMovedKnobIdSrc - FREQ_PARAMS;
+		if ( (band == (knob12i & 0x3)) && (knob12i >= 0) && (knob12i < 12) && (time(0) - *lastMovedKnobTimeSrc < 4) ) {
+			nvgStrokeColor(args.vg, SCHEME_LIGHT_GRAY);
+			nvgStrokeWidth(args.vg, 0.75f);
+			nvgStroke(args.vg);
+		}
 	}
 };
 
