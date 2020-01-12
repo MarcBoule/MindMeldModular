@@ -100,6 +100,12 @@ class TrackEq {
 	bool lowPeak;// LF is peak when true (false is lowshelf)
 	bool highPeak;// HF is peak when true (false is highshelf)
 	float trackGain;// in dB to match params, is converted to linear before applying to post; dirty does not apply to this
+	public:
+	simd::float_4 freqCvAtten;
+	simd::float_4 gainCvAtten;
+	simd::float_4 qCvAtten;
+	private:
+	
 
 	// don't need saving
 	simd::float_4 freqCv;// adding-type cvs
@@ -138,6 +144,9 @@ class TrackEq {
 			setFreq(i, DEFAULT_logFreq[i]);
 			setGain(i, DEFAULT_gain);
 			setQ(i, DEFAULT_q[i]);
+			freqCvAtten[i] = 1.0f;
+			gainCvAtten[i] = 1.0f;
+			qCvAtten[i] = 1.0f;
 		}
 		setLowPeak(DEFAULT_lowPeak);
 		setHighPeak(DEFAULT_highPeak);
@@ -160,17 +169,17 @@ class TrackEq {
 	float getFreq(int b) {return freq[b];}
 	simd::float_4 getFreqWithCvVec(bool _cvConnected) {
 		if (!_cvConnected) {return freq;}
-		return simd::clamp(freq + freqCv * 0.1f * (MAX_logFreq - MIN_logFreq), MIN_logFreq, MAX_logFreq);
+		return simd::clamp(freq + freqCv * freqCvAtten * 0.1f * (MAX_logFreq - MIN_logFreq), MIN_logFreq, MAX_logFreq);
 	}
 	float getGain(int b) {return gain[b];}
 	simd::float_4 getGainWithCvVec(bool _cvConnected) {
 		if (!_cvConnected) {return gain;}
-		return simd::clamp(gain + gainCv * 4.0f, -20.0f, 20.0f);
+		return simd::clamp(gain + gainCv * gainCvAtten * 4.0f, -20.0f, 20.0f);
 	}
 	float getQ(int b) {return q[b];}
 	simd::float_4 getQWithCvVec(bool _cvConnected) {
 		if (!_cvConnected) {return q;}
-		return simd::clamp(q + qCv * 0.1f * (20.0f - 0.3f), 0.3f, 20.0f);
+		return simd::clamp(q + qCv * qCvAtten * 0.1f * (20.0f - 0.3f), 0.3f, 20.0f);
 	}
 	float getLowPeak() {return lowPeak;}
 	float getHighPeak() {return highPeak;}
@@ -254,6 +263,9 @@ class TrackEq {
 			setFreq(i, srcTrack->freq[i]);
 			setGain(i, srcTrack->gain[i]);
 			setQ(i, srcTrack->q[i]);
+			freqCvAtten[i] = srcTrack->freqCvAtten[i];
+			gainCvAtten[i] = srcTrack->gainCvAtten[i];
+			qCvAtten[i] = srcTrack->qCvAtten[i];
 		}
 		setLowPeak(srcTrack->lowPeak);
 		setHighPeak(srcTrack->highPeak);
@@ -272,6 +284,7 @@ class TrackEq {
 			if (freq[b] != DEFAULT_logFreq[b]) return true;
 			if (gain[b] != DEFAULT_gain) return true;
 			if (q[b] != DEFAULT_q[b]) return true;
+			// ignore freqCvAtten, gainCvAtten and qCvAtten
 		}
 		if (lowPeak != DEFAULT_lowPeak) return true;
 		if (highPeak != DEFAULT_highPeak) return true;

@@ -215,6 +215,7 @@ struct DynBypassButton : DynamicSVGSwitch {
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;
 	}
+	void randomize() override {}
 };
 
 

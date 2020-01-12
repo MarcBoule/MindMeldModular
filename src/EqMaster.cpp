@@ -271,6 +271,33 @@ struct EqMaster : Module {
 		}
 		json_object_set_new(rootJ, "q", qJ);		
 		
+		// freqCvAtten
+		freqJ = json_array();
+		for (int t = 0; t < 24; t++) {
+			for (int f = 0; f < 4; f++) {
+				json_array_insert_new(freqJ, (t << 2) | f, json_real(trackEqs[t].freqCvAtten[f]));
+			}
+		}
+		json_object_set_new(rootJ, "freqCvAtten", freqJ);		
+		
+		// gainCvAtten
+		gainJ = json_array();
+		for (int t = 0; t < 24; t++) {
+			for (int f = 0; f < 4; f++) {
+				json_array_insert_new(gainJ, (t << 2) | f, json_real(trackEqs[t].gainCvAtten[f]));
+			}
+		}
+		json_object_set_new(rootJ, "gainCvAtten", gainJ);		
+		
+		// qCvAtten
+		qJ = json_array();
+		for (int t = 0; t < 24; t++) {
+			for (int f = 0; f < 4; f++) {
+				json_array_insert_new(qJ, (t << 2) | f, json_real(trackEqs[t].qCvAtten[f]));
+			}
+		}
+		json_object_set_new(rootJ, "qCvAtten", qJ);		
+				
 		// lowPeak
 		json_t *lowPeakJ = json_array();
 		for (int t = 0; t < 24; t++) {
@@ -401,6 +428,42 @@ struct EqMaster : Module {
 					json_t *qArrayJ = json_array_get(qJ, (t << 2) | f);
 					if (qArrayJ)
 						trackEqs[t].setQ(f, json_number_value(qArrayJ));
+				}
+			}
+		}
+
+		// freqCvAtten
+		freqJ = json_object_get(rootJ, "freqCvAtten");
+		if (freqJ) {
+			for (int t = 0; t < 24; t++) {
+				for (int f = 0; f < 4; f++) {
+					json_t *freqArrayJ = json_array_get(freqJ, (t << 2) | f);
+					if (freqArrayJ)
+						trackEqs[t].freqCvAtten[f] = json_number_value(freqArrayJ);
+				}
+			}
+		}
+
+		// gainCvAtten
+		gainJ = json_object_get(rootJ, "gainCvAtten");
+		if (gainJ) {
+			for (int t = 0; t < 24; t++) {
+				for (int f = 0; f < 4; f++) {
+					json_t *gainArrayJ = json_array_get(gainJ, (t << 2) | f);
+					if (gainArrayJ)
+						trackEqs[t].gainCvAtten[f] = json_number_value(gainArrayJ);
+				}
+			}
+		}
+
+		// qCvAtten
+		qJ = json_object_get(rootJ, "qCvAtten");
+		if (qJ) {
+			for (int t = 0; t < 24; t++) {
+				for (int f = 0; f < 4; f++) {
+					json_t *qArrayJ = json_array_get(qJ, (t << 2) | f);
+					if (qArrayJ)
+						trackEqs[t].qCvAtten[f] = json_number_value(qArrayJ);
 				}
 			}
 		}

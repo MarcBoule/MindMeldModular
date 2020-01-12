@@ -14,14 +14,48 @@
 #include "VuMeters.hpp"
 
 
-// Freq display labels right-click menu
+// Freq, gain, q display labels right-click menu
 // --------------------
 
-// show notes
+// show notes (freq displays only)
 struct ShowNotesItem : MenuItem {
 	int8_t *showFreqAsNotesSrc;
 	void onAction(const event::Action &e) override {
 		*showFreqAsNotesSrc ^= 0x1;
+	}
+};
+
+// CV level items (freq, gain, q)
+struct CvLevelQuantity : Quantity {
+	float *srcCvLevel = NULL;
+	  
+	CvLevelQuantity(float *_srcCvLevel) {
+		srcCvLevel = _srcCvLevel;
+	}
+	void setValue(float value) override {
+		*srcCvLevel = math::clamp(value, getMinValue(), getMaxValue());
+	}
+	float getValue() override {
+		return *srcCvLevel;
+	}
+	float getMinValue() override {return 0.0f;}
+	float getMaxValue() override {return 1.0f;}
+	float getDefaultValue() override {return 1.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		return string::f("%i", (int)std::round(getDisplayValue() * 100.0f));
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "CV input level";}
+	std::string getUnit() override {return " %";}
+};
+
+struct CvLevelSlider : ui::Slider {
+	CvLevelSlider(float *_srcCvLevel) {
+		quantity = new CvLevelQuantity(_srcCvLevel);
+	}
+	~CvLevelSlider() {
+		delete quantity;
 	}
 };
 		

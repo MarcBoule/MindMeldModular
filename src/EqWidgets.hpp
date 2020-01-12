@@ -161,13 +161,18 @@ struct BandLabelFreq : BandLabelBase {
 			}
 		}
 	}
-	
-	
-	
+		
 	void onButton(const event::Button& e) override {
 		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
 			ui::Menu *menu = createMenu();
 
+			// cv level slider
+			int trk = (int)(trackParamSrc->getValue() + 0.5f);
+			CvLevelSlider *cvLevSlider = new CvLevelSlider(&(trackEqsSrc[trk].freqCvAtten[band]));
+			cvLevSlider->box.size.x = 200.0f;
+			menu->addChild(cvLevSlider);
+
+			// show notes checkmark
 			ShowNotesItem *showNotesItem = createMenuItem<ShowNotesItem>("Show freq as note", CHECKMARK(*showFreqAsNotesSrc != 0));
 			showNotesItem->showFreqAsNotesSrc = showFreqAsNotesSrc;
 			menu->addChild(showNotesItem);
@@ -181,6 +186,7 @@ struct BandLabelFreq : BandLabelBase {
 		}
 	}
 };
+
 struct BandLabelGain : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
@@ -194,7 +200,27 @@ struct BandLabelGain : BandLabelBase {
 			}
 		}
 	}
+	
+	void onButton(const event::Button& e) override {
+		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+			ui::Menu *menu = createMenu();
+
+			// cv level slider
+			int trk = (int)(trackParamSrc->getValue() + 0.5f);
+			CvLevelSlider *cvLevSlider = new CvLevelSlider(&(trackEqsSrc[trk].gainCvAtten[band]));
+			cvLevSlider->box.size.x = 200.0f;
+			menu->addChild(cvLevSlider);
+
+			event::Action eAction;
+			onAction(eAction);
+			e.consume(this);
+		}	
+		else {
+			BandLabelBase::onButton(e);
+		}
+	}
 };
+
 struct BandLabelQ : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
@@ -203,7 +229,25 @@ struct BandLabelQ : BandLabelBase {
 			text = string::f("%.2f", math::normalizeZero(q));
 		}
 	}
-};
+	
+	void onButton(const event::Button& e) override {
+		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+			ui::Menu *menu = createMenu();
+
+			// cv level slider
+			int trk = (int)(trackParamSrc->getValue() + 0.5f);
+			CvLevelSlider *cvLevSlider = new CvLevelSlider(&(trackEqsSrc[trk].qCvAtten[band]));
+			cvLevSlider->box.size.x = 200.0f;
+			menu->addChild(cvLevSlider);
+
+			event::Action eAction;
+			onAction(eAction);
+			e.consume(this);
+		}	
+		else {
+			BandLabelBase::onButton(e);
+		}
+	}};
 
 
 
@@ -754,6 +798,8 @@ struct TrackKnob : DynSnapKnob {
 		totAng = maxAngle - minAngle;
 	}
 	
+	void randomize() override {}
+	
 	void fillDotPosAndDefState() {
 		// requires numTracks to be up to date
 		float deltAng = totAng / ((float)numTracks - 1.0f);
@@ -928,6 +974,7 @@ struct ActiveSwitch : MmSwitch {
 			trackEqsSrc[currTrk].setTrackActive(paramQuantity->getValue() > 0.5f);
 		}
 	}
+	void randomize() override {}
 };
 
 struct BandSwitch : app::SvgSwitch {
