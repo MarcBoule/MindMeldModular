@@ -45,7 +45,7 @@ struct EqMaster : Module {
 	int8_t trackLabelColors[24];
 	int8_t trackVuColors[24];
 	TrackEq trackEqs[24];
-	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection))
+	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)), cc4[3] is detailsShow
 	PackedBytes4 showFreqAsNotes;
 	
 	// No need to save, with reset
@@ -176,6 +176,7 @@ struct EqMaster : Module {
 		miscSettings.cc4[0] = 0x1;// show band curves by default
 		miscSettings.cc4[1] = SPEC_POST;
 		miscSettings.cc4[2] = 0x1; // momentary by default
+		miscSettings.cc4[3] = 0x7; // detailsShow
 		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
@@ -776,7 +777,6 @@ struct EqMasterWidget : ModuleWidget {
 	int lastMovedKnobId = -1;
 	time_t lastMovedKnobTime = 0;
 	int8_t cloakedMode = 0;
-	int8_t detailsShow = 0x7;
 	simd::float_4 bandParamsWithCvs[3] = {};// [0] = freq, [1] = gain, [2] = q
 	bool bandParamsCvConnected = false;
 	PanelBorder* panelBorder;
@@ -810,6 +810,10 @@ struct EqMasterWidget : ModuleWidget {
 			vuColItem->srcColors = module->trackVuColors;
 			menu->addChild(vuColItem);
 		}
+		
+		KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
+		knobArcShowItem->srcDetailsShow = &(module->miscSettings.cc4[3]);
+		menu->addChild(knobArcShowItem);
 	}
 	
 	
@@ -951,7 +955,7 @@ struct EqMasterWidget : ModuleWidget {
 				bandKnobs[c]->paramWithCV = &(bandParamsWithCvs[c >> 2][c & 0x3]);
 				bandKnobs[c]->paramCvConnected = &bandParamsCvConnected;
 				bandKnobs[c]->cloakedModeSrc = &cloakedMode;
-				bandKnobs[c]->detailsShowSrc = &detailsShow;
+				bandKnobs[c]->detailsShowSrc = &(module->miscSettings.cc4[3]);
 				bandKnobs[c]->trackParamSrc = &(module->params[TRACK_PARAM]);
 				bandKnobs[c]->trackEqsSrc = module->trackEqs;
 				bandKnobs[c]->lastMovedKnobIdSrc = & lastMovedKnobId;
