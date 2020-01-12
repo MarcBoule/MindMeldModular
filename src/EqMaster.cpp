@@ -851,8 +851,8 @@ struct EqMasterWidget : ModuleWidget {
 			activeSwitch->trackParamSrc = &(module->params[TRACK_PARAM]);
 			activeSwitch->trackEqsSrc = module->trackEqs;
 		}
-		// Bypass switch
-		addParam(createDynamicParamCentered<DynBypassButton>(mm2px(Vec(leftX, 68.0f)), module, GLOBAL_BYPASS_PARAM, module ? &module->panelTheme : NULL));
+		// Global bypass switch
+		addParam(createDynamicParamCentered<DynBypassButton>(mm2px(Vec(leftX, 67.7f)), module, GLOBAL_BYPASS_PARAM, module ? &module->panelTheme : NULL));
 		// Signal inputs
 		static const float jackY = 84.35f;
 		static const float jackDY = 12.8f;
