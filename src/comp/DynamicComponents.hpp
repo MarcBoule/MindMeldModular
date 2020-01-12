@@ -209,8 +209,8 @@ struct DynMonoButton : DynamicSVGSwitch {
 struct DynBypassButton : DynamicSVGSwitch {
 	DynBypassButton() {
 		momentary = false;
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/bypass-off.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/bypass-on.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-on.svg")));
 		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
 		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
 		shadow->opacity = 0.0;

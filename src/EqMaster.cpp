@@ -821,7 +821,7 @@ struct EqMasterWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EQmaster.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/eqmaster.svg")));
 		panelBorder = findBorder(panel);
 		
 		
