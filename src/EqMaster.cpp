@@ -1108,6 +1108,9 @@ struct EqMasterWidget : ModuleWidget {
 			if (module->updateTrackLabelRequest != 0) {// pull request from module
 				trackLabel->text = std::string(&(module->trackLabels[trk * 4]), 4);
 				module->updateTrackLabelRequest = 0;// all done pulling
+				module->paramQuantities[TRACK_PARAM]->unit = trackLabel->text;
+				module->paramQuantities[TRACK_PARAM]->unit.append(")");
+				module->paramQuantities[TRACK_PARAM]->unit.insert(0, " (");
 			}
 
 			if (oldSelectedTrack != trk) {// update controls when user selects another track
