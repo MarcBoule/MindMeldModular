@@ -559,7 +559,7 @@ struct EqMaster : Module {
 					drawBufLin[i] = fftOut[i];
 				}
 				else {
-					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * 30.0f * FFT_N_2 / trackEqs[0].getSampleRate();// decay
+					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * 20.0f * FFT_N_2 / trackEqs[0].getSampleRate();// decay
 				}
 			}
 			
