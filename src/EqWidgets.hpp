@@ -19,9 +19,11 @@
 // --------------------
 
 struct TrackLabel : LedDisplayChoice {
-	int8_t* trackLabelColorsSrc = NULL;
-	char* trackLabelsSrc;
-	Param* trackParamSrc;
+	int8_t *trackLabelColorsSrc = NULL;
+	int8_t *bandLabelColorsSrc;
+	int *mappedId;
+	char *trackLabelsSrc;
+	Param *trackParamSrc;
 	TrackEq *trackEqsSrc;
 	
 	TrackLabel() {
@@ -32,8 +34,13 @@ struct TrackLabel : LedDisplayChoice {
 	
 	void draw(const DrawArgs &args) override {
 		if (trackLabelColorsSrc) {
-			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
+			if (*mappedId == 0) {
+				color = DISP_COLORS[*bandLabelColorsSrc];
+			}
+			else {
+				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+				color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
+			}
 		}	
 		LedDisplayChoice::draw(args);
 	}
@@ -84,8 +91,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 	// This struct is adapted from Rack's LedDisplayChoice in app/LedDisplay.{c,h}pp
 
 	// user must set up
-	int8_t* trackLabelColorsSrc = NULL;
-	char* trackLabelsSrc;
+	int8_t* bandLabelColorsSrc = NULL;
 	Param* trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	int band;
@@ -111,9 +117,8 @@ struct BandLabelBase : widget::OpaqueWidget {
 	void draw(const DrawArgs &args) override {
 		prepareText();
 		
-		if (trackLabelColorsSrc) {
-			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
+		if (bandLabelColorsSrc) {
+			color = DISP_COLORS[*bandLabelColorsSrc];
 		}	
 
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));

@@ -46,7 +46,9 @@ struct EqMaster : Module {
 	int8_t trackVuColors[24];
 	TrackEq trackEqs[24];
 	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)), cc4[3] is detailsShow
+	PackedBytes4 miscSettings2;// cc4[0] is band label colours
 	PackedBytes4 showFreqAsNotes;
+	
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -177,6 +179,7 @@ struct EqMaster : Module {
 		miscSettings.cc4[1] = SPEC_POST;
 		miscSettings.cc4[2] = 0x1; // momentary by default
 		miscSettings.cc4[3] = 0x7; // detailsShow
+		miscSettings2.cc4[0] = 0;// band label colours
 		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
@@ -222,6 +225,9 @@ struct EqMaster : Module {
 				
 		// miscSettings
 		json_object_set_new(rootJ, "miscSettings", json_integer(miscSettings.cc1));
+				
+		// miscSettings2
+		json_object_set_new(rootJ, "miscSettings2", json_integer(miscSettings2.cc1));
 				
 		// showFreqAsNotes
 		json_object_set_new(rootJ, "showFreqAsNotes", json_integer(showFreqAsNotes.cc1));
@@ -366,6 +372,11 @@ struct EqMaster : Module {
 		json_t *miscSettingsJ = json_object_get(rootJ, "miscSettings");
 		if (miscSettingsJ)
 			miscSettings.cc1 = json_integer_value(miscSettingsJ);
+
+		// miscSettings2
+		json_t *miscSettings2J = json_object_get(rootJ, "miscSettings2");
+		if (miscSettings2J)
+			miscSettings2.cc1 = json_integer_value(miscSettings2J);
 
 		// showFreqAsNotes
 		json_t *showFreqAsNotesJ = json_object_get(rootJ, "showFreqAsNotes");
@@ -801,11 +812,11 @@ struct EqMasterWidget : ModuleWidget {
 			menu->addChild(momentItem);
 		}
 
+		DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
+		dispColItem->srcColor = &(module->miscSettings2.cc4[0]);
+		menu->addChild(dispColItem);
+		
 		if (module->mappedId == 0) {
-			DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
-			dispColItem->srcColors = module->trackLabelColors;
-			menu->addChild(dispColItem);
-			
 			VuColorEqItem *vuColItem = createMenuItem<VuColorEqItem>("VU colour", RIGHT_ARROW);
 			vuColItem->srcColors = module->trackVuColors;
 			menu->addChild(vuColItem);
@@ -832,6 +843,8 @@ struct EqMasterWidget : ModuleWidget {
 		addChild(trackLabel = createWidgetCentered<TrackLabel>(mm2px(Vec(leftX, 11.5f))));
 		if (module) {
 			trackLabel->trackLabelColorsSrc = module->trackLabelColors;
+			trackLabel->bandLabelColorsSrc = &(module->miscSettings2.cc4[0]);
+			trackLabel->mappedId = &(module->mappedId);
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[TRACK_PARAM]);
 			trackLabel->trackEqsSrc = module->trackEqs;
@@ -974,8 +987,7 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		if (module) {
 			for (int i = 0; i < 12; i++) {
-				bandLabels[i]->trackLabelColorsSrc = module->trackLabelColors;
-				bandLabels[i]->trackLabelsSrc = module->trackLabels;
+				bandLabels[i]->bandLabelColorsSrc = &(module->miscSettings2.cc4[0]);
 				bandLabels[i]->trackParamSrc = &(module->params[TRACK_PARAM]);
 				bandLabels[i]->trackEqsSrc = module->trackEqs;
 				bandLabels[i]->band = (i % 4);
