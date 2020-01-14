@@ -553,49 +553,57 @@ struct EqMaster : Module {
 			
 			// compact frequency bins
 			int i = 1;// index into compacted bins 
+			drawBuf[FFT_N_2] = fftOut[FFT_N_2];
 			for (int x = 1; x < FFT_N_2 ; x++) {// index into non-compacted bins
-				if (fftOut[i - 1 + FFT_N_2] == fftOut[x + FFT_N_2]) {
+				if (drawBuf[i - 1 + FFT_N_2] == fftOut[x + FFT_N_2]) {
 					fftOut[i - 1] = std::fmax(fftOut[i - 1], fftOut[x]);
 				}
 				else {
 					fftOut[i] = fftOut[x];
-					fftOut[i + FFT_N_2] = fftOut[x + FFT_N_2];
+					drawBuf[i + FFT_N_2] = fftOut[x + FFT_N_2];
 					i++;
 				}
 			}
 			int compactedSize = i;
 			
 			// decay
-			float decayFactor = 20.0f;// fast decay
-			if (miscSettings.cc4[1] & SPEC_MASK_FREEZE) {
-				decayFactor = 0.0f;
-			}
-			else {
-				if (miscSettings2.cc4[1] == 0) {// slow
-					decayFactor = 5.0f;// slow decay
-				} else if (miscSettings2.cc4[1] == 1) {// med
-					decayFactor = 12.0f;// med decay
+			static constexpr float noDecay = 1000.0f;
+			float decayFactor = 0.0f;
+			if ((miscSettings.cc4[1] & SPEC_MASK_FREEZE) == 0) {
+				if (miscSettings2.cc4[1] == 0) {// slow decay
+					decayFactor = 5.0f;
+				} 
+				else if (miscSettings2.cc4[1] == 1) {// med decay
+					decayFactor = 12.0f;
 				}
-			}
-			for (int i = 0; i < compactedSize; i++) {
-				if (fftOut[i] > drawBufLin[i]) {
-					drawBufLin[i] = fftOut[i];
+				else if (miscSettings2.cc4[1] == 2) {// fast decay
+					decayFactor = 20.0f;
 				}
 				else {
-					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * decayFactor * FFT_N_2 / trackEqs[0].getSampleRate();// decay
+					decayFactor = noDecay;
 				}
 			}
+			if (decayFactor != noDecay) {
+				for (int i = 0; i < compactedSize; i++) {
+					if (fftOut[i] > drawBufLin[i]) {
+						drawBufLin[i] = fftOut[i];
+					}
+					else {
+						drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * decayFactor * FFT_N_2 / trackEqs[0].getSampleRate();// decay
+					}
+				}
+			}
+			else {
+				memcpy(&drawBufLin[0], &fftOut[0], compactedSize * 4);
+			}
 			
-			// calculate log of magnitude
+			// calculate log of magnitude and transfer to drawBuf
 			for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
 				simd::float_4 vecp = simd::float_4::load(&drawBufLin[x << 2]);
 				vecp = simd::fmax(20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
 				vecp.store(&drawBuf[x << 2]);					
 			}
 		
-			// get frequency
-			memcpy(&drawBuf[FFT_N_2], &fftOut[FFT_N_2], compactedSize * 4);// log freq in pixel space, compacted bins
-
 			drawBufSize = compactedSize;
 
 			requestWork = false;

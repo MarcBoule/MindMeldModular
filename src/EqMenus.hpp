@@ -273,13 +273,14 @@ struct DecayRateItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		std::string decayRateNames[3] = {
+		std::string decayRateNames[4] = {
 			"Slow",
 			"Medium",
-			"Fast (default)"
+			"Fast (default)",
+			"Off"
 		};
 		
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 4; i++) {
 			DecayRateSubItem *drItem = createMenuItem<DecayRateSubItem>(decayRateNames[i], CHECKMARK(*decayRateSrc == i));
 			drItem->decayRateSrc = decayRateSrc;
 			drItem->setVal = i;
