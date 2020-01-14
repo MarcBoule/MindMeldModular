@@ -46,7 +46,7 @@ struct EqMaster : Module {
 	int8_t trackVuColors[24];
 	TrackEq trackEqs[24];
 	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)), cc4[3] is detailsShow
-	PackedBytes4 miscSettings2;// cc4[0] is band label colours
+	PackedBytes4 miscSettings2;// cc4[0] is band label colours, cc4[1] is decay rate (0 = slow, 1 = med, 2 = fast)
 	PackedBytes4 showFreqAsNotes;
 	
 	
@@ -176,10 +176,11 @@ struct EqMaster : Module {
 			trackEqs[t].init(t, APP->engine->getSampleRate(), &cvConnected);
 		}
 		miscSettings.cc4[0] = 0x1;// show band curves by default
-		miscSettings.cc4[1] = SPEC_POST;
+		miscSettings.cc4[1] = SPEC_MASK_ON | SPEC_MASK_POST;
 		miscSettings.cc4[2] = 0x1; // momentary by default
 		miscSettings.cc4[3] = 0x7; // detailsShow
 		miscSettings2.cc4[0] = 0;// band label colours
+		miscSettings2.cc4[1] = 2;// decay rate fast
 		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
@@ -565,12 +566,23 @@ struct EqMaster : Module {
 			int compactedSize = i;
 			
 			// decay
+			float decayFactor = 20.0f;// fast decay
+			if (miscSettings.cc4[1] & SPEC_MASK_FREEZE) {
+				decayFactor = 0.0f;
+			}
+			else {
+				if (miscSettings2.cc4[1] == 0) {// slow
+					decayFactor = 5.0f;// slow decay
+				} else if (miscSettings2.cc4[1] == 1) {// med
+					decayFactor = 12.0f;// med decay
+				}
+			}
 			for (int i = 0; i < compactedSize; i++) {
 				if (fftOut[i] > drawBufLin[i]) {
 					drawBufLin[i] = fftOut[i];
 				}
 				else {
-					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * 20.0f * FFT_N_2 / trackEqs[0].getSampleRate();// decay
+					drawBufLin[i] += (fftOut[i] - drawBufLin[i]) * decayFactor * FFT_N_2 / trackEqs[0].getSampleRate();// decay
 				}
 			}
 			
@@ -650,8 +662,8 @@ struct EqMaster : Module {
 						vuProcessed = true;
 						
 						// Spectrum
-						if ( miscSettings.cc4[1] == SPEC_PRE || miscSettings.cc4[1] == SPEC_POST ) {
-							float sample = ((miscSettings.cc4[1] == SPEC_PRE) ? 
+						if ( (miscSettings.cc4[1] & SPEC_MASK_ON) != 0 ) {
+							float sample = ((miscSettings.cc4[1] & SPEC_MASK_POST) == 0 ? 
 												(in[0] + in[1]) : 
 												(out[0] + out[1]));// no need to div by two, scaling done later
 							
@@ -668,7 +680,7 @@ struct EqMaster : Module {
 								fftWriteHead = FFT_N_2;
 								//thread 
 								if (requestWork) {
-									INFO("FFT too slow, page skipped");
+									// INFO("FFT too slow, page skipped");
 								}
 								else {
 									requestPage = page;
@@ -681,7 +693,7 @@ struct EqMaster : Module {
 								}
 							}
 						}
-						else if (miscSettings.cc4[1] == SPEC_NONE || miscSettings.cc4[1] == SPEC_FREEZE) {
+						else {
 							fftWriteHead = 0;
 							page = 0;
 						}// Spectrum
@@ -692,7 +704,7 @@ struct EqMaster : Module {
 		if (!vuProcessed) {
 			trackVu.reset();
 		}
-		if (!vuProcessed || miscSettings.cc4[1] == SPEC_NONE) {
+		if (!vuProcessed || (miscSettings.cc4[1] & SPEC_MASK_ON) == 0) {
 			drawBufSize = -1;
 		}
 		
@@ -825,6 +837,10 @@ struct EqMasterWidget : ModuleWidget {
 		KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
 		knobArcShowItem->srcDetailsShow = &(module->miscSettings.cc4[3]);
 		menu->addChild(knobArcShowItem);
+		
+		DecayRateItem *decayItem = createMenuItem<DecayRateItem>("Analyser decay", RIGHT_ARROW);
+		decayItem->decayRateSrc = &(module->miscSettings2.cc4[1]);
+		menu->addChild(decayItem);
 	}
 	
 	

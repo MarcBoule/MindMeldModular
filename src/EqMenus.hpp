@@ -259,4 +259,35 @@ struct CopyTrackSettingsItem : MenuItem {
 };
 
 
+struct DecayRateItem : MenuItem {
+	int8_t *decayRateSrc;
+
+	struct DecayRateSubItem : MenuItem {
+		int8_t *decayRateSrc;
+		int8_t setVal;
+		void onAction(const event::Action &e) override {
+			*decayRateSrc = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		std::string decayRateNames[3] = {
+			"Slow",
+			"Medium",
+			"Fast (default)"
+		};
+		
+		for (int i = 0; i < 3; i++) {
+			DecayRateSubItem *drItem = createMenuItem<DecayRateSubItem>(decayRateNames[i], CHECKMARK(*decayRateSrc == i));
+			drItem->decayRateSrc = decayRateSrc;
+			drItem->setVal = i;
+			menu->addChild(drItem);
+		}
+		
+		return menu;
+	}
+};
+
 #endif

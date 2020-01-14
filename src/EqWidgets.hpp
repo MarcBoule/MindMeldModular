@@ -271,7 +271,6 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 	std::shared_ptr<Font> font;
 	NVGcolor colorOff;
 	NVGcolor colorOn;
-	int oldSetting = -1;
 	
 	
 	SpectrumSettingsButtons() {
@@ -291,7 +290,7 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 			nvgFontSize(args.vg, 10.0f);
 			
-			float posx = 0.0f;
+/*			float posx = 0.0f;
 			for (int l = 0; l < 5; l++) {
 				if (l == 0) {
 					nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
@@ -307,40 +306,61 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 				// nvgRect(args.vg, posx, 0.0f, textWidths[l], box.size.y);
 				// nvgStroke(args.vg);	
 				posx += textWidths[l];
-			}
+			}*/
+			
+			bool specOn = (*settingSrc & SPEC_MASK_ON) != 0;
+			bool specPost = (*settingSrc & SPEC_MASK_POST) != 0;
+			bool specFreeze = (*settingSrc & SPEC_MASK_FREEZE) != 0;
+			
+			// ANALYSER
+			float posx = 0.0f;
+			nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
+			posx += textWidths[0];
+			
+			// OFF
+			nvgFillColor(args.vg, (!specOn) ? colorOn : colorOff);
+			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
+			posx += textWidths[1];
+			
+			// PRE
+			nvgFillColor(args.vg, (specOn && !specFreeze && !specPost) ? colorOn : colorOff);
+			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
+			posx += textWidths[2];
+			
+			// POST
+			nvgFillColor(args.vg, (specOn && !specFreeze && specPost) ? colorOn : colorOff);
+			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
+			posx += textWidths[3];
+			
+			// FREEZE
+			nvgFillColor(args.vg, (specOn && specFreeze) ? colorOn : colorOff);
+			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[4].c_str(), NULL);
 		}
 	}
 	
 	void onButton(const event::Button& e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			int newSetting = -1;
 			float leftX = textWidths[0];
+			// click OFF
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
-				newSetting = SPEC_NONE;
+				*settingSrc &= ~(SPEC_MASK_ON | SPEC_MASK_FREEZE);// clear freeze and on/off bits, keep pre/post bit unchanged
 			}
 			leftX += textWidths[1];
+			// click PRE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
-				newSetting = SPEC_PRE;
+				*settingSrc = (SPEC_MASK_ON);// set on/off bit, clear others
 			}
 			leftX += textWidths[2];
+			// click POST
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[3]) {
-				newSetting = SPEC_POST;
+				*settingSrc = (SPEC_MASK_ON | SPEC_MASK_POST);// set on/off and pre/post bits, clear freeze
 			}
 			leftX += textWidths[3];
+			// click FREEZE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[4]) {
-				newSetting = SPEC_FREEZE;
-			}
-			if (newSetting != -1) {		
-				if (newSetting == *settingSrc) {
-					if (oldSetting != -1) {
-						*settingSrc = oldSetting;
-					}
-					oldSetting = newSetting;
-				}
-				else {
-					oldSetting = *settingSrc;
-					*settingSrc = newSetting;
-				}
+				*settingSrc |= SPEC_MASK_ON;// set on/off bit and keep pre/post bit unchanged
+				*settingSrc ^= SPEC_MASK_FREEZE;// toggle freeze bit
 			}
 		}
 		OpaqueWidget::onButton(e);

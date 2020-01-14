@@ -43,7 +43,7 @@ static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with 
 static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
 
 static const std::string bandNames[4] = {"LF", "LMF", "HMF", "HF"};
-enum SpecModes {SPEC_NONE, SPEC_PRE, SPEC_POST, SPEC_FREEZE};
+enum SpecMasks {SPEC_MASK_ON = 0x4, SPEC_MASK_POST = 0x2, SPEC_MASK_FREEZE = 0x1};
 
 static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
