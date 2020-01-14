@@ -48,6 +48,7 @@ struct EqMaster : Module {
 	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)), cc4[3] is detailsShow
 	PackedBytes4 miscSettings2;// cc4[0] is band label colours, cc4[1] is decay rate (0 = slow, 1 = med, 2 = fast)
 	PackedBytes4 showFreqAsNotes;
+	int eco;
 	
 	
 	// No need to save, with reset
@@ -182,6 +183,7 @@ struct EqMaster : Module {
 		miscSettings2.cc4[0] = 0;// band label colours
 		miscSettings2.cc4[1] = 2;// decay rate fast
 		showFreqAsNotes.cc1 = 0;
+		eco = 0;
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -661,7 +663,7 @@ struct EqMaster : Module {
 				for (int t = 0; t < 8; t++) {
 					float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
 					float out[2];
-					trackEqs[(i << 3) + t].process(out, in, globalEnable);
+					trackEqs[(i << 3) + t].process(out, in, globalEnable, eco);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
 					if ( ((i << 3) + t) == selectedTrack ) {
@@ -715,7 +717,8 @@ struct EqMaster : Module {
 		if (!vuProcessed || (miscSettings.cc4[1] & SPEC_MASK_ON) == 0) {
 			drawBufSize = -1;
 		}
-		
+		// eco++; // WHEN MAKING THIS FINAL, DOnt forget to add factor of 4 in sampleTime in freq and gain slewers in MixerCommon -> TrackEq 
+		// if (eco > 3) eco = 0;
 		
 		//********** Lights **********
 		
