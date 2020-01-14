@@ -290,27 +290,10 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 			nvgFontSize(args.vg, 10.0f);
 			
-/*			float posx = 0.0f;
-			for (int l = 0; l < 5; l++) {
-				if (l == 0) {
-					nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
-				}
-				else if (settingSrc != NULL && (*settingSrc == l - 1)) {
-					nvgFillColor(args.vg, colorOn);
-				}
-				else {
-					nvgFillColor(args.vg, colorOff);
-				}
-				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[l].c_str(), NULL);
-				// nvgBeginPath(args.vg);
-				// nvgRect(args.vg, posx, 0.0f, textWidths[l], box.size.y);
-				// nvgStroke(args.vg);	
-				posx += textWidths[l];
-			}*/
-			
-			bool specOn = (*settingSrc & SPEC_MASK_ON) != 0;
-			bool specPost = (*settingSrc & SPEC_MASK_POST) != 0;
-			bool specFreeze = (*settingSrc & SPEC_MASK_FREEZE) != 0;
+
+			bool specOn = (settingSrc && *settingSrc & SPEC_MASK_ON) != 0;
+			bool specPost = (settingSrc && *settingSrc & SPEC_MASK_POST) != 0;
+			bool specFreeze = (settingSrc && *settingSrc & SPEC_MASK_FREEZE) != 0;
 			
 			// ANALYSER
 			float posx = 0.0f;
