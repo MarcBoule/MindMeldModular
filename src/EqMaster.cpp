@@ -834,7 +834,13 @@ struct EqMasterWidget : ModuleWidget {
 			momentItem->momentaryCvButtonsSrc = &(module->miscSettings.cc4[2]);
 			menu->addChild(momentItem);
 		}
+		
+		DecayRateItem *decayItem = createMenuItem<DecayRateItem>("Analyser decay", RIGHT_ARROW);
+		decayItem->decayRateSrc = &(module->miscSettings2.cc4[1]);
+		menu->addChild(decayItem);
 
+		menu->addChild(new MenuSeparator());
+		
 		DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
 		dispColItem->srcColor = &(module->miscSettings2.cc4[0]);
 		menu->addChild(dispColItem);
@@ -848,10 +854,6 @@ struct EqMasterWidget : ModuleWidget {
 		KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
 		knobArcShowItem->srcDetailsShow = &(module->miscSettings.cc4[3]);
 		menu->addChild(knobArcShowItem);
-		
-		DecayRateItem *decayItem = createMenuItem<DecayRateItem>("Analyser decay", RIGHT_ARROW);
-		decayItem->decayRateSrc = &(module->miscSettings2.cc4[1]);
-		menu->addChild(decayItem);
 	}
 	
 	
