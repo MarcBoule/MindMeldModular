@@ -38,6 +38,7 @@ enum EqParamIds {
 	NUM_EQ_PARAMS
 };
 
+static const int ecoSkip = 4;// 4 is eco, 1 is no eco
 
 static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
 static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
@@ -300,7 +301,7 @@ class TrackEq {
 			simd::float_4 newFreq = getFreqWithCvVec(_cvConnected);// in log(Hz)
 			int freqSlewersComparisonMask = movemask(newFreq == freqSlewers.out);
 			if (freqSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
-				freqSlewers.process(sampleTime, newFreq);
+				freqSlewers.process(sampleTime * (float)ecoSkip, newFreq);
 				dirty |= ~freqSlewersComparisonMask;
 			}
 			
@@ -314,7 +315,7 @@ class TrackEq {
 			}
 			int gainSlewersComparisonMask = movemask(newGain == gainSlewers.out);
 			if (gainSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
-				gainSlewers.process(sampleTime, newGain);
+				gainSlewers.process(sampleTime * (float)ecoSkip, newGain);
 				dirty |= ~gainSlewersComparisonMask;
 			}
 			

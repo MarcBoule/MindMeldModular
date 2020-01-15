@@ -663,7 +663,7 @@ struct EqMaster : Module {
 				for (int t = 0; t < 8; t++) {
 					float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
 					float out[2];
-					trackEqs[(i << 3) + t].process(out, in, globalEnable, eco);
+					trackEqs[(i << 3) + t].process(out, in, globalEnable, (eco + i) % ecoSkip);// eco staggered
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
 					if ( ((i << 3) + t) == selectedTrack ) {
@@ -717,8 +717,8 @@ struct EqMaster : Module {
 		if (!vuProcessed || (miscSettings.cc4[1] & SPEC_MASK_ON) == 0) {
 			drawBufSize = -1;
 		}
-		// eco++; // WHEN MAKING THIS FINAL, DOnt forget to add factor of 4 in sampleTime in freq and gain slewers in MixerCommon -> TrackEq 
-		// if (eco > 3) eco = 0;
+		eco++;
+		if (eco >= ecoSkip) eco = 0;
 		
 		//********** Lights **********
 		
