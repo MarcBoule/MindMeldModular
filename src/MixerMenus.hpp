@@ -589,19 +589,22 @@ struct LPFCutoffSlider : ui::Slider {
 };
 
 
+// Stereo width item and
 // Pan CV level item
 
-struct PanCvLevelQuantity : Quantity {
-	float *srcPanCvLevel = NULL;
+struct PercentQuantity : Quantity {
+	float *srcValue = NULL;
+	std::string label;
 	  
-	PanCvLevelQuantity(float *_srcPanCvLevel) {
-		srcPanCvLevel = _srcPanCvLevel;
+	PercentQuantity(float *_srcValue, std::string _label) {
+		srcValue = _srcValue;
+		label = _label;
 	}
 	void setValue(float value) override {
-		*srcPanCvLevel = math::clamp(value, getMinValue(), getMaxValue());
+		*srcValue = math::clamp(value, getMinValue(), getMaxValue());
 	}
 	float getValue() override {
-		return *srcPanCvLevel;
+		return *srcValue;
 	}
 	float getMinValue() override {return 0.0f;}
 	float getMaxValue() override {return 1.0f;}
@@ -611,13 +614,22 @@ struct PanCvLevelQuantity : Quantity {
 		return string::f("%i", (int)std::round(getDisplayValue() * 100.0f));
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
-	std::string getLabel() override {return "Pan CV input level";}
+	std::string getLabel() override {return label;}
 	std::string getUnit() override {return " %";}
+};
+
+struct StereoWidthLevelSlider : ui::Slider {
+	StereoWidthLevelSlider(float *_srcStereoWidth) {
+		quantity = new PercentQuantity(_srcStereoWidth, "Stereo width");
+	}
+	~StereoWidthLevelSlider() {
+		delete quantity;
+	}
 };
 
 struct PanCvLevelSlider : ui::Slider {
 	PanCvLevelSlider(float *_srcPanCvLevel) {
-		quantity = new PanCvLevelQuantity(_srcPanCvLevel);
+		quantity = new PercentQuantity(_srcPanCvLevel, "Pan CV input level");
 	}
 	~PanCvLevelSlider() {
 		delete quantity;

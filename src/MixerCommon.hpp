@@ -131,6 +131,7 @@ struct TrackSettingsCpBuffer {
 	int8_t filterPos;
 	int8_t dispColorLocal;
 	float panCvLevel;
+	float stereoWidth;
 	bool linkedFader;
 
 	// second level of copy paste (for track re-ordering)

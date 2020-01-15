@@ -1061,6 +1061,7 @@ struct MixerTrack {
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
 	float panCvLevel;// 0 to 1.0f
+	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
 
 	// no need to save, with reset
 	private:
@@ -1157,6 +1158,7 @@ struct MixerTrack {
 		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
 		panCvLevel = 1.0f;
+		stereoWidth = 1.0f;
 		resetNonJson();
 	}
 
@@ -1228,6 +1230,9 @@ struct MixerTrack {
 
 		// panCvLevel
 		json_object_set_new(rootJ, (ids + "panCvLevel").c_str(), json_real(panCvLevel));
+
+		// stereoWidth
+		json_object_set_new(rootJ, (ids + "stereoWidth").c_str(), json_real(stereoWidth));
 	}
 
 
@@ -1292,6 +1297,11 @@ struct MixerTrack {
 		if (panCvLevelJ)
 			panCvLevel = json_number_value(panCvLevelJ);
 		
+		// stereoWidth
+		json_t *stereoWidthJ = json_object_get(rootJ, (ids + "stereoWidth").c_str());
+		if (stereoWidthJ)
+			stereoWidth = json_number_value(stereoWidthJ);
+		
 		// extern must call resetNonJson()
 	}
 
@@ -1310,6 +1320,7 @@ struct MixerTrack {
 		dest->filterPos = filterPos;
 		dest->dispColorLocal = dispColorLocal;
 		dest->panCvLevel = panCvLevel;
+		dest->stereoWidth = stereoWidth;
 		dest->linkedFader = isLinked(&(gInfo->linkBitMask), trackNum);
 	}
 	void read(TrackSettingsCpBuffer *src) {
@@ -1325,6 +1336,7 @@ struct MixerTrack {
 		filterPos = src->filterPos;
 		dispColorLocal = src->dispColorLocal;
 		panCvLevel = src->panCvLevel;
+		stereoWidth = src->stereoWidth;
 		gInfo->setLinked(trackNum, src->linkedFader);
 	}
 
@@ -1511,6 +1523,17 @@ struct MixerTrack {
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
 		taps[0] = (clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out));
 		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out)) : taps[0];
+		
+		// Stere width
+		if (stereo && stereoWidth != 1.0f) {
+			float wdiv2 = stereoWidth * 0.5f;
+			float up = 0.5f + wdiv2;
+			float down = 0.5f - wdiv2;
+			float leftSig = taps[0] * up + taps[1] * down;
+			float rightSig = taps[1] * up + taps[0] * down;
+			taps[0] = leftSig;
+			taps[1] = rightSig;
+		}
 		
 		int insertPortIndex = trackNum >> 3;
 		
