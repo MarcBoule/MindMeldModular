@@ -38,8 +38,6 @@ enum EqParamIds {
 	NUM_EQ_PARAMS
 };
 
-static const int ecoSkip = 4;// 4 is eco, 1 is no eco
-
 static const float trackVuMaxLinearGain = 2.0f;// has to be 2.0f if linked with the Track VU scaling used in MixMaster's panel
 static const int trackVuScalingExponent = 3;// has to be 3 if linked with the Track VU scaling used in MixMaster's panel
 
@@ -292,47 +290,43 @@ class TrackEq {
 		if (trackGain != DEFAULT_trackGain) return true;
 		return false;
 	}
-	void process(float* out, float* in, bool globalEnable, int eco) {
-		if (eco == 0) {
+	void process(float* out, float* in, bool globalEnable) {
+		bool _cvConnected = getCvConnected();
 		
-			bool _cvConnected = getCvConnected();
-			
-			// freq slewers with freq cvs
-			simd::float_4 newFreq = getFreqWithCvVec(_cvConnected);// in log(Hz)
-			int freqSlewersComparisonMask = movemask(newFreq == freqSlewers.out);
-			if (freqSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
-				freqSlewers.process(sampleTime * (float)ecoSkip, newFreq);
-				dirty |= ~freqSlewersComparisonMask;
-			}
-			
-			// gain slewers with gain cvs
-			simd::float_4 newGain;// in dB
-			if (trackActive && globalEnable) {
-				newGain = bandActive * getGainWithCvVec(_cvConnected);
-			}		
-			else {
-				newGain = 0.0f;
-			}
-			int gainSlewersComparisonMask = movemask(newGain == gainSlewers.out);
-			if (gainSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
-				gainSlewers.process(sampleTime * (float)ecoSkip, newGain);
-				dirty |= ~gainSlewersComparisonMask;
-			}
-			
-			// update eq parameters according to dirty flags
-			if (dirty != 0) {
-				simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, freqSlewers.out) / sampleRate);
-				simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
-				simd::float_4 qWithCv = getQWithCvVec(_cvConnected);
-				for (int b = 0; b < 4; b++) {
-					if ((dirty & (1 << b)) != 0) {
-						eqs.setParameters(b, bandTypes[b], normalizedFreq[b], linearGain[b], qWithCv[b]);
-					}
+		// freq slewers with freq cvs
+		simd::float_4 newFreq = getFreqWithCvVec(_cvConnected);// in log(Hz)
+		int freqSlewersComparisonMask = movemask(newFreq == freqSlewers.out);
+		if (freqSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
+			freqSlewers.process(sampleTime, newFreq);
+			dirty |= ~freqSlewersComparisonMask;
+		}
+		
+		// gain slewers with gain cvs
+		simd::float_4 newGain;// in dB
+		if (trackActive && globalEnable) {
+			newGain = bandActive * getGainWithCvVec(_cvConnected);
+		}		
+		else {
+			newGain = 0.0f;
+		}
+		int gainSlewersComparisonMask = movemask(newGain == gainSlewers.out);
+		if (gainSlewersComparisonMask != 0xF) {// movemask returns 0xF when 4 floats are equal
+			gainSlewers.process(sampleTime, newGain);
+			dirty |= ~gainSlewersComparisonMask;
+		}
+		
+		// update eq parameters according to dirty flags
+		if (dirty != 0) {
+			simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, freqSlewers.out) / sampleRate);
+			simd::float_4 linearGain = simd::pow(10.0f, gainSlewers.out / 20.0f);
+			simd::float_4 qWithCv = getQWithCvVec(_cvConnected);
+			for (int b = 0; b < 4; b++) {
+				if ((dirty & (1 << b)) != 0) {
+					eqs.setParameters(b, bandTypes[b], normalizedFreq[b], linearGain[b], qWithCv[b]);
 				}
 			}
-			dirty = 0x0;		
-		
 		}
+		dirty = 0x0;		
 				
 		// perform equalization		
 		eqs.process(out, in);
