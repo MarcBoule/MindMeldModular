@@ -1064,8 +1064,8 @@ struct MixerTrack {
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
 
 	// no need to save, with reset
-	private:
 	bool stereo;// pan coefficients use this, so set up first
+	private:
 	float inGain;
 	simd::float_4 panMatrix;
 	float faderGain;
