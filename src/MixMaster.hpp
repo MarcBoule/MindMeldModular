@@ -660,7 +660,7 @@ struct MixerMaster {
 		}
 
 		// Apply gainMatrixSlewed
-		simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);
+		simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);// L, R, RinL, LinR
 		sigs = sigs * gainMatrixSlewers.out * chainGainAndMuteSlewers.out[2];
 		
 		// Set mix
@@ -1519,19 +1519,20 @@ struct MixerTrack {
 		}
 		oldInUse = true;
 			
-		// Calc inGainSlewer and stereoWidthSlewer
+		
+		// Tap[0],[1]: pre-insert (inputs with gain adjust and stereo width)
+		
+		// in Gain
 		if (inGain != inGainSlewer.out) {
 			inGainSlewer.process(gInfo->sampleTime, inGain);
 		}
-		if (stereoWidth != stereoWidthSlewer.out) {
-			stereoWidthSlewer.process(gInfo->sampleTime, stereoWidth);
-		}
-		
-		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
 		taps[0] = (clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out));
 		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out)) : taps[0];
 		
-		// Stere width
+		// Stereo width
+		if (stereoWidth != stereoWidthSlewer.out) {
+			stereoWidthSlewer.process(gInfo->sampleTime, stereoWidth);
+		}
 		if (stereo && stereoWidthSlewer.out != 1.0f) {
 			float wdiv2 = stereoWidthSlewer.out * 0.5f;
 			float up = 0.5f + wdiv2;
@@ -1541,15 +1542,17 @@ struct MixerTrack {
 			taps[0] = leftSig;
 			taps[1] = rightSig;
 		}
+
+
+		// Tap[32],[33]: pre-fader (inserts and filters)
 		
-		int insertPortIndex = trackNum >> 3;
-		
+		int insertPortIndex = trackNum >> 3;		
 		if (gInfo->filterPos == 1 || (gInfo->filterPos == 2 && filterPos == 1)) {// if filters post insert
 			// Insert outputs
 			insertOuts[0] = taps[0];
 			insertOuts[1] = stereo ? taps[1] : 0.0f;// don't send to R of insert outs when mono
 			
-			// Post insert (taps[32..33] are provisional, since not yet filtered)
+			// Insert inputs
 			if (inInsert[insertPortIndex].isConnected()) {
 				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
 				taps[N_TRK * 2 + 1] = stereo ? clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
@@ -1560,7 +1563,6 @@ struct MixerTrack {
 			}
 
 			// Filters
-			// Tap[32],[33]: pre-fader (post insert)
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
 				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].processHP(taps[N_TRK * 2 + 0]));
@@ -1573,33 +1575,33 @@ struct MixerTrack {
 			}
 		}
 		else {// filters before inserts
+			taps[N_TRK * 2 + 0] = taps[0];
+			taps[N_TRK * 2 + 1] = taps[1];
 			// Filters
-			float filtered[2] = {taps[0], taps[1]};
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-				filtered[0] = hpFilter[0].process(hpPreFilter[0].processHP(filtered[0]));
-				filtered[1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(filtered[1])) : filtered[0];
+				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].processHP(taps[N_TRK * 2 + 0]));
+				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
 			}
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
-				filtered[0] = lpFilter[0].process(filtered[0]);
-				filtered[1] = stereo ? lpFilter[1].process(filtered[1]) : filtered[0];
+				taps[N_TRK * 2 + 0] = lpFilter[0].process(taps[N_TRK * 2 + 0]);
+				taps[N_TRK * 2 + 1] = stereo ? lpFilter[1].process(taps[N_TRK * 2 + 1]) : taps[N_TRK * 2 + 0];
 			}
 			
 			// Insert outputs
-			insertOuts[0] = filtered[0];
-			insertOuts[1] = stereo ? filtered[1] : 0.0f;// don't send to R of insert outs when mono!
+			insertOuts[0] = taps[N_TRK * 2 + 0];
+			insertOuts[1] = stereo ? taps[N_TRK * 2 + 1] : 0.0f;// don't send to R of insert outs when mono!
 			
-			// Tap[32],[33]: pre-fader (post insert)
+			// Insert inputs
 			if (inInsert[insertPortIndex].isConnected()) {
 				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
 				taps[N_TRK * 2 + 1] = stereo ? clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
 			}
-			else {
-				taps[N_TRK * 2 + 0] = filtered[0];
-				taps[N_TRK * 2 + 1] = filtered[1];
-			}
 		}// filterPos
+		
+		
+		// Tap[64],[65]: post-fader (pan and fader)
 		
 		if (eco) {
 			// calc ** panMatrix **
@@ -1682,32 +1684,28 @@ struct MixerTrack {
 			}
 		}
 		
-		// Calc gainMatrixSlewed
+		// Apply gainMatrix
 		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
 		}
-		
-		// Tap[64],[65]: post-fader
-
-		// Apply gainMatrixSlewed
-		simd::float_4 sigs(taps[N_TRK * 2 + 0], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 0]);
+		simd::float_4 sigs(taps[N_TRK * 2 + 0], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 0]);// L, R, RinL, LinR
 		sigs *= gainMatrixSlewers.out;
 		
 		taps[N_TRK * 4 + 0] = sigs[0] + sigs[2];
 		taps[N_TRK * 4 + 1] = sigs[1] + sigs[3];
 
 
-		// Tap[96],[97]: post-mute-solo
+		// Tap[96],[97]: post-mute-solo (fade also)
 		
 		// Calc muteSoloGainSlewed
 		if (fadeGainScaledWithSolo != muteSoloGainSlewer.out) {
 			muteSoloGainSlewer.process(gInfo->sampleTime, fadeGainScaledWithSolo);
 		}
-
 		taps[N_TRK * 6 + 0] = taps[N_TRK * 4 + 0] * muteSoloGainSlewer.out;
 		taps[N_TRK * 6 + 1] = taps[N_TRK * 4 + 1] * muteSoloGainSlewer.out;
 			
-		// Add to mix since gainMatrixSlewed can be non zero
+			
+		// Add to final mix or group
 		if (paGroup->getValue() < 0.5f) {
 			mix[0] += taps[N_TRK * 6 + 0];
 			mix[1] += taps[N_TRK * 6 + 1];
