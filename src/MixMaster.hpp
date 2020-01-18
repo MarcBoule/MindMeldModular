@@ -1072,6 +1072,7 @@ struct MixerTrack {
 	simd::float_4 gainMatrix;	
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter inGainSlewer;
+	dsp::SlewLimiter stereoWidthSlewer;
 	dsp::SlewLimiter muteSoloGainSlewer;
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
@@ -1137,6 +1138,7 @@ struct MixerTrack {
 		fadeRate = &(_gInfo->fadeRates[trackNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		inGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
@@ -1171,6 +1173,7 @@ struct MixerTrack {
 		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		inGainSlewer.reset();
+		stereoWidthSlewer.reset();
 		muteSoloGainSlewer.reset();
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].reset();
@@ -1508,6 +1511,7 @@ struct MixerTrack {
 				vu.reset();
 				gainMatrixSlewers.reset();
 				inGainSlewer.reset();
+				stereoWidthSlewer.reset();
 				muteSoloGainSlewer.reset();
 				oldInUse = false;
 			}
@@ -1515,9 +1519,12 @@ struct MixerTrack {
 		}
 		oldInUse = true;
 			
-		// Calc inGainSlewed
+		// Calc inGainSlewer and stereoWidthSlewer
 		if (inGain != inGainSlewer.out) {
 			inGainSlewer.process(gInfo->sampleTime, inGain);
+		}
+		if (stereoWidth != stereoWidthSlewer.out) {
+			stereoWidthSlewer.process(gInfo->sampleTime, stereoWidth);
 		}
 		
 		// Tap[0],[1]: pre-insert (Inputs with gain adjust)
@@ -1525,8 +1532,8 @@ struct MixerTrack {
 		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out)) : taps[0];
 		
 		// Stere width
-		if (stereo && stereoWidth != 1.0f) {
-			float wdiv2 = stereoWidth * 0.5f;
+		if (stereo && stereoWidthSlewer.out != 1.0f) {
+			float wdiv2 = stereoWidthSlewer.out * 0.5f;
 			float up = 0.5f + wdiv2;
 			float down = 0.5f - wdiv2;
 			float leftSig = taps[0] * up + taps[1] * down;
