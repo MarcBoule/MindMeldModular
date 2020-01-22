@@ -675,7 +675,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		simd::float_4 logFreqCursors = sortFloat4(bandParamsWithCvs[0]);
 		simd::float_4 normalizedFreq = simd::fmin(0.5f, simd::pow(10.0f, bandParamsWithCvs[0]) / sampleRate);
 		for (int b = 0; b < 4; b++) {
-			float linearGain = (trackEqsSrc[currTrk].getBandActive(b)) ? std::pow(10.0f, bandParamsWithCvs[1][b] / 20.0f) : 1.0f;
+			float linearGain = (trackEqsSrc[currTrk].getBandActive(b) >= 0.5f) ? std::pow(10.0f, bandParamsWithCvs[1][b] / 20.0f) : 1.0f;
 			drawEq.setParameters(b, trackEqsSrc[currTrk].getBandType(b), normalizedFreq[b], linearGain, bandParamsWithCvs[2][b]);
 		}
 		
@@ -702,7 +702,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		NVGcolor bandColors[4] = {nvgRGB(146, 32, 22), nvgRGB(0, 155, 137), nvgRGB(50, 99, 148),nvgRGB(111, 81, 113)};
 		if (miscSettingsSrc->cc4[0] != 0) {
 			for (int b = 0; b < 4; b++) {
-				if (trackEqsSrc[currTrk].getBandActive(b)) {
+				if (trackEqsSrc[currTrk].getBandActive(b) >= 0.5f) {
 					drawEqCurveBand(b, args, bandColors[b]);
 				}
 			}
@@ -995,7 +995,7 @@ struct ActiveSwitch : MmSwitch {
 		MmSwitch::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setTrackActive(paramQuantity->getValue() > 0.5f);
+			trackEqsSrc[currTrk].setTrackActive(paramQuantity->getValue() >= 0.5f);
 		}
 	}
 	void randomize() override {}
@@ -1085,7 +1085,7 @@ struct PeakSwitch : PeakShelfBase {
 		SvgSwitch::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			bool state = paramQuantity->getValue() > 0.5f;
+			bool state = paramQuantity->getValue() >= 0.5f;
 			if (isLF) {
 				trackEqsSrc[currTrk].setLowPeak(state);
 			}

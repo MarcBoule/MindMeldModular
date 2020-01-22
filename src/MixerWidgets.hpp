@@ -901,7 +901,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 					soloMutexUnclickMemorySize = end;
 					soloMutexUnclickMemory = 0;
 					for (int i = 0; i < end; i++) {
-						if (soloParams[i].getValue() > 0.5f) {
+						if (soloParams[i].getValue() >= 0.5f) {
 							soloMutexUnclickMemory |= (1 << i);
 						}
 					}

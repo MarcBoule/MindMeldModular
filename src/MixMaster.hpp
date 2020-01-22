@@ -66,7 +66,7 @@ struct GlobalInfo {
 	}
 	void updateSoloBit(unsigned long trkOrGrp) {
 		if (trkOrGrp < N_TRK) {
-			if (paSolo[trkOrGrp].getValue() > 0.5f) {
+			if (paSolo[trkOrGrp].getValue() >= 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
 			else {
@@ -74,7 +74,7 @@ struct GlobalInfo {
 			}	
 		}
 		else {// trkOrGrp >= N_TRK
-			if (paSolo[trkOrGrp].getValue() > 0.5f) {
+			if (paSolo[trkOrGrp].getValue() >= 0.5f) {
 				soloBitMask |= (1 << trkOrGrp);
 			}
 			else {
@@ -88,7 +88,7 @@ struct GlobalInfo {
 	void updateReturnSoloBits() {
 		int newReturnSoloBitMask = 0;
 		for (int auxi = 0; auxi < 4; auxi++) {
-			if (values20[4 + auxi] > 0.5f) {
+			if (values20[4 + auxi] >= 0.5f) {
 				newReturnSoloBitMask |= (1 << auxi);
 			}
 		}
@@ -120,7 +120,7 @@ struct GlobalInfo {
 		}
 		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 			if (trkOrGrp != trkOrGrpNum && isLinked(&linkBitMask, trkOrGrp) && fadeRates[trkOrGrp] >= GlobalConst::minFadeRate) {
-				if (newTarget > 0.5f && paMute[trkOrGrp].getValue() > 0.5f) {
+				if (newTarget >= 0.5f && paMute[trkOrGrp].getValue() >= 0.5f) {
 					paMute[trkOrGrp].setValue(0.0f);
 				}
 				if (newTarget < 0.5f && paMute[trkOrGrp].getValue() < 0.5f) {
@@ -408,7 +408,7 @@ struct MixerMaster {
 	Input *inChain;
 	Input *inVol;
 
-	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() > 0.5f ? 0.0f : 1.0f;}
+	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return fadeRate >= GlobalConst::minFadeRate;}
 
 
@@ -609,7 +609,7 @@ struct MixerMaster {
 			}	
 			// dim (this affects fadeGainScaled only, so treated like a partial mute, but no effect on fade pointers or other just effect on sound
 			chainGainsAndMute[2] = fadeGainScaled;
-			if (params[MAIN_DIM_PARAM].getValue() > 0.5f) {
+			if (params[MAIN_DIM_PARAM].getValue() >= 0.5f) {
 				chainGainsAndMute[2] *= dimGainIntegerDB;
 			}
 			
@@ -631,7 +631,7 @@ struct MixerMaster {
 			
 			// calc ** gainMatrix **
 			// mono
-			if (params[MAIN_MONO_PARAM].getValue() > 0.5f) {
+			if (params[MAIN_MONO_PARAM].getValue() >= 0.5f) {
 				gainMatrix = simd::float_4(0.5f * faderGain);
 			}
 			else {
@@ -749,7 +749,7 @@ struct MixerGroup {
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 
-	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	float calcFadeGain() {return paMute->getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
@@ -1114,7 +1114,7 @@ struct MixerTrack {
 	float fader = 0.0f;// this is set only in process() when eco, and also used only when eco in another section of this method
 
 
-	float calcFadeGain() {return paMute->getValue() > 0.5f ? 0.0f : 1.0f;}
+	float calcFadeGain() {return paMute->getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
@@ -1775,7 +1775,7 @@ struct MixerAux {
 	int8_t* panLawStereoLocal;
 
 	int getAuxGroup() {return (int)(*flGroup + 0.5f);}
-	float calcFadeGain() {return *flMute > 0.5f ? 0.0f : 1.0f;}
+	float calcFadeGain() {return *flMute >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 

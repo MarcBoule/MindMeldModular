@@ -458,7 +458,7 @@ struct AuxExpander : Module {
 					muteSends[gi >> 2][gi & 0x3] = params[TRACK_AUXMUTE_PARAMS + gi].getValue();
 				}
 				for (int gi = 0; gi < (N_TRK / 4 + 1); gi++) {
-					muteSends[gi] = simd::ifelse(muteSends[gi] > 0.5f, 0.0f, 1.0f);
+					muteSends[gi] = simd::ifelse(muteSends[gi] >= 0.5f, 0.0f, 1.0f);
 					if (movemask(muteSends[gi] == sendMuteSlewers[gi].out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 						sendMuteSlewers[gi].process(args.sampleTime * (1 + (ecoMode & 0x3)), muteSends[gi]);
 					}

@@ -744,19 +744,19 @@ struct EqMaster : Module {
 				if (miscSettings.cc4[2] == 1) {// if momentaryCvButtons
 					if (state == 1) {// if rising edge
 						// toggle
-						bool newState = !trackEqs[bandTrkIndex].getBandActive(b);
+						float newState = (trackEqs[bandTrkIndex].getBandActive(b) < 0.5f ? 1.0f : 0.0f);// toggle
 						trackEqs[bandTrkIndex].setBandActive(b, newState);
 						if (bandTrkIndex == selectedTrack) {
-							params[FREQ_ACTIVE_PARAMS + b].setValue(newState ? 1.0f : 0.0f);
+							params[FREQ_ACTIVE_PARAMS + b].setValue(newState);
 						}
 					}
 				}
 				else {
 					// gate level
-					bool newState = cvs[(b << 2) + 0] > 0.5f;
+					float newState = cvs[(b << 2) + 0] >= 0.5f ? 1.0f : 0.0f;
 					trackEqs[bandTrkIndex].setBandActive(b, newState);
 					if (bandTrkIndex == selectedTrack) {
-						params[FREQ_ACTIVE_PARAMS + b].setValue(newState ? 1.0f : 0.0f);
+						params[FREQ_ACTIVE_PARAMS + b].setValue(newState);
 					}
 				}
 			}	
@@ -785,7 +785,7 @@ struct EqMaster : Module {
 			}
 			else {
 				// gate level
-				bool newState = enableValue > 0.5f;
+				bool newState = enableValue >= 0.5f;
 				trackEqs[enableTrkIndex].setTrackActive(newState);
 				if (enableTrkIndex == selectedTrack) {
 					params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
@@ -1156,7 +1156,7 @@ struct EqMasterWidget : ModuleWidget {
 				module->params[TRACK_ACTIVE_PARAM].setValue(module->trackEqs[trk].getTrackActive() ? 1.0f : 0.0f);
 				module->params[TRACK_GAIN_PARAM].setValue(module->trackEqs[trk].getTrackGain());
 				for (int c = 0; c < 4; c++) {
-					module->params[FREQ_ACTIVE_PARAMS + c].setValue(module->trackEqs[trk].getBandActive(c) ? 1.0f : 0.0f);
+					module->params[FREQ_ACTIVE_PARAMS + c].setValue(module->trackEqs[trk].getBandActive(c) >= 0.5f ? 1.0f : 0.0f);
 					module->params[FREQ_PARAMS + c].setValue(module->trackEqs[trk].getFreq(c));
 					module->params[GAIN_PARAMS + c].setValue(module->trackEqs[trk].getGain(c));
 					module->params[Q_PARAMS + c].setValue(module->trackEqs[trk].getQ(c));

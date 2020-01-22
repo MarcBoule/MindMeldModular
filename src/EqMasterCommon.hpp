@@ -304,7 +304,8 @@ class TrackEq {
 		// gain slewers with gain cvs
 		simd::float_4 newGain;// in dB
 		if (trackActive && globalEnable) {
-			newGain = bandActive * getGainWithCvVec(_cvConnected);
+			simd::float_4 gainWithCv = getGainWithCvVec(_cvConnected);
+			newGain = simd::ifelse(bandActive >= 0.5f, gainWithCv, 0.0f);
 		}		
 		else {
 			newGain = 0.0f;
