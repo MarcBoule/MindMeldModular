@@ -527,6 +527,7 @@ struct EqMaster : Module {
 	
 	void worker_thread() {
 		static const float vertScaling = 1.1f;
+		static const float vertOffset = 10.0f;
 		while (true) {
 			std::unique_lock<std::mutex> lk(m);
 			while (!requestWork && !requestStop) {
@@ -601,7 +602,7 @@ struct EqMaster : Module {
 			// calculate log of magnitude and transfer to drawBuf
 			for (int x = 0; x < ((compactedSize + 3) >> 2) ; x++) {
 				simd::float_4 vecp = simd::float_4::load(&drawBufLin[x << 2]);
-				vecp = simd::fmax(vertScaling * 20.0f * simd::log10(vecp), -1.0f);// fmax for proper enclosed region for fill
+				vecp = simd::fmax(vertScaling * 20.0f * simd::log10(vecp) + vertOffset, -1.0f);// fmax for proper enclosed region for fill
 				vecp.store(&drawBuf[x << 2]);					
 			}
 		
