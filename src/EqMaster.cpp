@@ -63,8 +63,7 @@ struct EqMaster : Module {
 	PFFFT_Setup* ffts;// https://bitbucket.org/jpommier/pffft/src/default/test_pffft.c
 	float* fftIn[3];
 	float* fftOut;
-	bool globalEnable;
-	TriggerRiseFall trackEnableCvTriggers[24];
+	TriggerRiseFall trackEnableCvTriggers[24+1];
 	TriggerRiseFall trackBandCvTriggers[24][4];
 	bool expPresentLeft = false;
 	bool expPresentRight = false;
@@ -142,7 +141,6 @@ struct EqMaster : Module {
 		fftIn[1] = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftIn[2] = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
-		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 		drawBuf = (float*)pffft_aligned_malloc(FFT_N * 4);
 		drawBufLin = (float*)pffft_aligned_malloc(FFT_N_2 * 4);
 		for (int i = 0; i < FFT_N_2; i++) {
@@ -639,8 +637,8 @@ struct EqMaster : Module {
 			cvConnected &= ~(0xF << (index6 << 2));// clear all connected bits for current subset
 			cvConnected |= (cvConnectedSubset << (index6 << 2));// set relevant connected bits for current subset
  
-			// track enables, each track refreshed at fs / 24
-			int enableTrkIndex = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_ENABLE_INDEX]), 0, 23);
+			// track enables, each track refreshed at fs / 25
+			int enableTrkIndex = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_ENABLE_INDEX]), 0, 24);
 			processTrackEnableCvs(enableTrkIndex, selectedTrack, messagesFromExpander[Intf::MFE_TRACK_ENABLE]);
 		}
 		else {
@@ -657,12 +655,12 @@ struct EqMaster : Module {
 		//********** Outputs **********
 
 		bool vuProcessed = false;
-		globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 		for (int i = 0; i < 3; i++) {
 			if (inputs[SIG_INPUTS + i].isConnected()) {
 				for (int t = 0; t < 8; t++) {
 					float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
 					float out[2];
+					bool globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 					trackEqs[(i << 3) + t].process(out, in, globalEnable);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[0], (t << 1) + 0);
 					outputs[SIG_OUTPUTS + i].setVoltage(out[1], (t << 1) + 1);
@@ -772,25 +770,35 @@ struct EqMaster : Module {
 		}
 	}
 	
-	void processTrackEnableCvs(int enableTrkIndex, int selectedTrack, float enableValue) {
+	void processTrackEnableCvs(int enableTrkIndex, int selectedTrack, float enableValue) {// does global bypass also
 		int state = trackEnableCvTriggers[enableTrkIndex].process(enableValue);
 		if (state != 0) {
 			if (miscSettings.cc4[2] == 1) {// if momentaryCvButtons
 				if (state == 1) {// if rising edge
 					// toggle
-					bool newState = !trackEqs[enableTrkIndex].getTrackActive();
-					trackEqs[enableTrkIndex].setTrackActive(newState);
-					if (enableTrkIndex == selectedTrack) {
-						params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+					if (enableTrkIndex >= 24) {// global bypass
+						params[GLOBAL_BYPASS_PARAM].setValue(params[GLOBAL_BYPASS_PARAM].getValue() >= 0.5f ? 0.0f : 1.0f);
+					}
+					else {				
+						bool newState = !trackEqs[enableTrkIndex].getTrackActive();
+						trackEqs[enableTrkIndex].setTrackActive(newState);
+						if (enableTrkIndex == selectedTrack) {
+							params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+						}
 					}
 				}
 			}
 			else {
 				// gate level
 				bool newState = enableValue >= 0.5f;
-				trackEqs[enableTrkIndex].setTrackActive(newState);
-				if (enableTrkIndex == selectedTrack) {
-					params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+				if (enableTrkIndex >= 24) {// global bypass
+					params[GLOBAL_BYPASS_PARAM].setValue(newState ? 1.0f : 0.0f);
+				}
+				else {
+					trackEqs[enableTrkIndex].setTrackActive(newState);
+					if (enableTrkIndex == selectedTrack) {
+						params[TRACK_ACTIVE_PARAM].setValue(newState ? 1.0f : 0.0f);
+					}
 				}
 			}
 		}
@@ -918,7 +926,7 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
 			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
-			eqCurveAndGrid->globalEnableSrc = &(module->globalEnable);
+			eqCurveAndGrid->globalBypassParamSrc = &(module->params[GLOBAL_BYPASS_PARAM]);
 			eqCurveAndGrid->bandParamsWithCvs = bandParamsWithCvs;
 			eqCurveAndGrid->bandParamsCvConnected = &bandParamsCvConnected;
 			eqCurveAndGrid->drawBuf = module->drawBuf;

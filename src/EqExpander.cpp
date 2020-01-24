@@ -33,7 +33,8 @@ struct EqExpander : Module {
 	
 	
 	int panelTheme = 0;
-	int refreshCounter24;
+	int refreshCounter25;
+	int refreshCounter6;
 	bool motherPresentLeft = false;
 	bool motherPresentRight = false;
 	
@@ -49,7 +50,8 @@ struct EqExpander : Module {
 		resetNonJson();
 	}
 	void resetNonJson() {
-		refreshCounter24 = 0;
+		refreshCounter25 = 0;
+		refreshCounter6 = 0;
 	}
 
 
@@ -87,26 +89,29 @@ struct EqExpander : Module {
 										(float*)rightExpander.module->leftExpander.producerMessage;
 			
 			// track band values
-			int index6 = refreshCounter24 % 6;
-			messagesToMother[Intf::MFE_TRACK_CVS_INDEX6] = (float)index6;
+			messagesToMother[Intf::MFE_TRACK_CVS_INDEX6] = (float)refreshCounter6;
 			int cvConnectedSubset = 0;
 			for (int i = 0; i < 4; i++) {
-				if (inputs[TRACK_CV_INPUTS + (index6 << 2) + i].isConnected()) {
+				if (inputs[TRACK_CV_INPUTS + (refreshCounter6 << 2) + i].isConnected()) {
 					cvConnectedSubset |= (1 << i);
-					memcpy(&messagesToMother[Intf::MFE_TRACK_CVS + 16 * i], inputs[TRACK_CV_INPUTS + (index6 << 2) + i].getVoltages(), 16 * 4);
+					memcpy(&messagesToMother[Intf::MFE_TRACK_CVS + 16 * i], inputs[TRACK_CV_INPUTS + (refreshCounter6 << 2) + i].getVoltages(), 16 * 4);
 				}
 			}
 			messagesToMother[Intf::MFE_TRACK_CVS_CONNECTED] = (float)cvConnectedSubset;
 			
 			// track enables
-			messagesToMother[Intf::MFE_TRACK_ENABLE] = refreshCounter24 < 16 ? 
-				inputs[ACTIVE_CV_INPUTS + 0].getVoltage(refreshCounter24) :
-				inputs[ACTIVE_CV_INPUTS + 1].getVoltage(refreshCounter24 - 16);
-			messagesToMother[Intf::MFE_TRACK_ENABLE_INDEX] = (float)refreshCounter24;
+			messagesToMother[Intf::MFE_TRACK_ENABLE] = refreshCounter25 < 16 ? 
+				inputs[ACTIVE_CV_INPUTS + 0].getVoltage(refreshCounter25) :
+				inputs[ACTIVE_CV_INPUTS + 1].getVoltage(refreshCounter25 - 16);
+			messagesToMother[Intf::MFE_TRACK_ENABLE_INDEX] = (float)refreshCounter25;
 			
-			refreshCounter24++;
-			if (refreshCounter24 >= 24) {
-				refreshCounter24 = 0;
+			refreshCounter25++;
+			if (refreshCounter25 >= 25) {
+				refreshCounter25 = 0;
+			}
+			refreshCounter6++;
+			if (refreshCounter6 >= 6) {
+				refreshCounter6 = 0;
 			}
 			
 			if (motherPresentLeft) {

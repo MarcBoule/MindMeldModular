@@ -18,7 +18,7 @@ struct ExpansionInterface {
 		ENUMS(MFE_TRACK_CVS, 16 * 4), // room for 4 poly cables
 		MFE_TRACK_CVS_CONNECTED,// only 4 lsbits used, so float number is from 0 to 15 and can be easily cast to uint32_t in eqmaster
 		MFE_TRACK_CVS_INDEX6,
-		MFE_TRACK_ENABLE, // one of the 24 enable cvs
+		MFE_TRACK_ENABLE, // one of the 24+1 enable cvs
 		MFE_TRACK_ENABLE_INDEX,// 
 		MFE_NUM_VALUES
 	};	

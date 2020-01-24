@@ -492,7 +492,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	Param *trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	PackedBytes4 *miscSettingsSrc;	
-	bool *globalEnableSrc;
+	Param *globalBypassParamSrc;
 	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
 	bool *bandParamsCvConnected;
 	float *drawBuf;// store log magnitude only in first half, log freq in second half
@@ -720,7 +720,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		nvgMoveTo(args.vg, pX, pY);
 	}
 	void drawEqCurveTotal(const DrawArgs &args) {
-		if (trackEqsSrc[currTrk].getTrackActive() && *globalEnableSrc) {
+		if (trackEqsSrc[currTrk].getTrackActive() && globalBypassParamSrc->getValue() < 0.5f) {
 			nvgStrokeColor(args.vg, SCHEME_LIGHT_GRAY);
 		}
 		else {
