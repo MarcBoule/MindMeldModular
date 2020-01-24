@@ -46,10 +46,10 @@ enum SpecMasks {SPEC_MASK_ON = 0x4, SPEC_MASK_POST = 0x2, SPEC_MASK_FREEZE = 0x1
 
 static const bool DEFAULT_trackActive = true;
 static const bool DEFAULT_bandActive = 1.0f;
-// static constexpr float DEFAULT_freq[4] = {100.0f, 	350.0f, 	1600.0f, 	4500.0f};// Hz
-static constexpr float DEFAULT_logFreq[4] = {2.0f, 		2.544068f, 	3.20412f, 	3.6532125f};// log(Hz)
-// static const simd::float_4 MIN_freq(20.0f, 60.0f, 500.0f, 1000.0f);// Hz
-static const simd::float_4 MIN_logFreq(1.30103f, 1.77815125f, 2.69897f, 3.0f);// log(Hz)
+// static constexpr float DEFAULT_freq[4] = {100.0f, 	350.0f, 	1500.0f, 	5000.0f};// Hz
+static constexpr float DEFAULT_logFreq[4] = {2.0f, 		2.544068f, 	3.176091259f, 	3.69897f};// log(Hz)
+// static const simd::float_4 MIN_freq(20.0f, 30.0f, 500.0f, 1000.0f);// Hz
+static const simd::float_4 MIN_logFreq(1.30103f, 1.477121f, 2.69897f, 3.0f);// log(Hz)
 // static const simd::float_4 MAX_freq(500.0f, 2000.0f, 5000.0f, 20000.0f);// Hz
 static const simd::float_4 MAX_logFreq(2.69897f, 3.30103f, 3.69897f, 4.30103f);// log(Hz)
 static const float DEFAULT_gain = 0.0f;// dB
