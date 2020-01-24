@@ -18,12 +18,16 @@ struct AuxspanderAux {
 	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
 	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
 	public:
+	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
 
 	// no need to save, with reset
+	bool stereo;
 	private:
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
+	float sampleTime;
+	dsp::SlewLimiter stereoWidthSlewer;
 	public:
 
 	// no need to save, no reset
@@ -40,16 +44,22 @@ struct AuxspanderAux {
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
 			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
 		}
+		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
 
 
 	void onReset() {
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
+		stereoWidth = 1.0f;
 		resetNonJson();
 	}
 
-	void resetNonJson() {}
+	void resetNonJson() {
+		stereo = false;
+		sampleTime = APP->engine->getSampleTime();
+		stereoWidthSlewer.reset();
+	}
 	
 	void dataToJson(json_t *rootJ) {
 		// hpfCutoffFreq
@@ -57,6 +67,9 @@ struct AuxspanderAux {
 		
 		// lpfCutoffFreq
 		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
+
+		// stereoWidth
+		json_object_set_new(rootJ, (ids + "stereoWidth").c_str(), json_real(stereoWidth));
 	}
 
 
@@ -70,6 +83,11 @@ struct AuxspanderAux {
 		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
 		if (lpfCutoffFreqJ)
 			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
+
+		// stereoWidth
+		json_t *stereoWidthJ = json_object_get(rootJ, (ids + "stereoWidth").c_str());
+		if (stereoWidthJ)
+			stereoWidth = json_number_value(stereoWidthJ);
 
 		// extern must call resetNonJson()
 	}	
@@ -96,6 +114,7 @@ struct AuxspanderAux {
 	void onSampleRateChange() {
 		setHPFCutoffFreq(hpfCutoffFreq);
 		setLPFCutoffFreq(lpfCutoffFreq);
+		sampleTime = APP->engine->getSampleTime();
 	}
 
 
@@ -103,10 +122,30 @@ struct AuxspanderAux {
 		// optimize unused aux
 		if (!inSig[0].isConnected()) {
 			mix[0] = mix[1] = 0.0f;
+			stereoWidthSlewer.reset();
 			return;
 		}
+		
+		// get inputs
+		stereo = inSig[1].isConnected();
 		mix[0] = clamp20V(inSig[0].getVoltage());
-		mix[1] = inSig[1].isConnected() ? clamp20V(inSig[1].getVoltage()) : mix[0];
+		mix[1] = stereo ? clamp20V(inSig[1].getVoltage()) : mix[0];
+		
+		// Stereo width
+		if (stereoWidth != stereoWidthSlewer.out) {
+			stereoWidthSlewer.process(sampleTime, stereoWidth);
+		}
+		if (stereo && stereoWidthSlewer.out != 1.0f) {
+			float wdiv2 = stereoWidthSlewer.out * 0.5f;
+			float up = 0.5f + wdiv2;
+			float down = 0.5f - wdiv2;
+			float leftSig = mix[0] * up + mix[1] * down;
+			float rightSig = mix[1] * up + mix[0] * down;
+			mix[0] = leftSig;
+			mix[1] = rightSig;
+		}		
+		
+		
 		// Filters
 		// HPF
 		if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {

@@ -819,6 +819,12 @@ struct AuxDisplay : EditableDisplayBase {
 			auxLPFAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(auxLPFAdjustSlider);
 			
+			if (srcAux->stereo) {
+				StereoWidthLevelSlider *widthSlider = new StereoWidthLevelSlider(&(srcAux->stereoWidth));
+				widthSlider->box.size.x = 200.0f;
+				menu->addChild(widthSlider);
+			}
+			
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(srcPanCvLevel);
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);

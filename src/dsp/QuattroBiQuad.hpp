@@ -8,6 +8,9 @@
 
 
 // Code below adapted from Andrew Belt's dsp::TBiquadFilter struct in VCV Rack's source code
+// Modifications (non-exhaustive list):
+//  * implement Q for shelving
+//  * make signal path stereo, but just one set of coefficients
 
 
 class QuattroBiQuadCoeff {
