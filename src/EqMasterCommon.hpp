@@ -115,6 +115,7 @@ class TrackEq {
 	QuattroBiQuad eqs;
 	dsp::TSlewLimiter<simd::float_4> freqSlewers;// in log(Hz)
 	dsp::TSlewLimiter<simd::float_4> gainSlewers;// in dB
+	dsp::SlewLimiter trackGainSlewer;// in dB
 	
 	
 	public:
@@ -126,6 +127,7 @@ class TrackEq {
 		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first init() will call setLowPeak()
 		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz), simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
 		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb), simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
+		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
 	}
 	
 	void init(int _trackNum, float _sampleRate, uint32_t *_cvConnected) {
@@ -158,6 +160,7 @@ class TrackEq {
 		eqs.reset();
 		freqSlewers.reset();
 		gainSlewers.reset();
+		trackGainSlewer.reset();
 	}
 
 	bool getTrackActive() {return trackActive;}
@@ -303,7 +306,6 @@ class TrackEq {
 		if (trackActive && globalEnable) {
 			simd::float_4 gainWithCv = getGainWithCvVec(_cvConnected);
 			newGain = simd::ifelse(bandActive >= 0.5f, gainWithCv, 0.0f);
-			newGain += trackGain;// both in dB so addition
 		}		
 		else {
 			newGain = 0.0f;
@@ -329,6 +331,17 @@ class TrackEq {
 				
 		// perform equalization		
 		eqs.process(out, in);
+		
+		// apply track gain (with slewer)
+		float finalTrackGain = ((trackActive && globalEnable) ? trackGain : 0.0f);
+		if (finalTrackGain != trackGainSlewer.out) {
+			trackGainSlewer.process(sampleTime, finalTrackGain);
+		}
+		if (trackGainSlewer.out != 0.0f) {
+			float linearTrackGain = std::pow(10.0f, trackGainSlewer.out / 20.0f);
+			out[0] *= linearTrackGain;
+			out[1] *= linearTrackGain;
+		}
 	}
 };
 
