@@ -19,6 +19,8 @@ The following modules are part of the MindMeld module pack ([user manual](https:
 
 * [AuxSpanderJr](#auxspanderjr): 4-aux FX bus expander for MixMasterJr.
 
+* [EqMaster](#eqmaster): *To be released soon* 24-track multiband EQ for MixMaster and MixMasterJr (user manual available soon).
+
 * [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
 
 
@@ -71,6 +73,13 @@ A smaller 8-track version of MixMaster, with 2 group busses. Functionality and o
 ![IM](res/img/AuxspanderJr.png)
 
 4-aux FX bus expander for MixMasterJr, must be placed immediately to the right of the MixMasterJr module. Functionality and options are identical to those found in AuxSpander.
+
+
+## EqMaster <a id="eqmaster"></a>
+
+![IM](res/img/EqMaster.png)
+
+**To be released soon in MindMeld 1.1.5:** 24-track multiband EQ for MixMaster and MixMasterJr. Can be placed anywhere in the patch, uses polyphonic cables for connecting to the inserts on the MixMaster mixers. Track names and colors can be linked to any MixMaster in the patch (right-click menu in EqMaster). Allows separate EQ control of each of the 24 stereo tracks. An expander module is also available (called EqSpander) to add CV control over most parameters in the EqMaster.
 
 
 ## Meld / Unmeld <a id="meldunmeld"></a>
