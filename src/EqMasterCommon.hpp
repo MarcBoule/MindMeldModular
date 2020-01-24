@@ -303,9 +303,7 @@ class TrackEq {
 		if (trackActive && globalEnable) {
 			simd::float_4 gainWithCv = getGainWithCvVec(_cvConnected);
 			newGain = simd::ifelse(bandActive >= 0.5f, gainWithCv, 0.0f);
-			if (trackGain != 0.0f) {
-				newGain *= std::pow(10.0f, trackGain / 20.0f);
-			}
+			newGain += trackGain;// both in dB so addition
 		}		
 		else {
 			newGain = 0.0f;
