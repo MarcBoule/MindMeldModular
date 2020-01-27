@@ -88,7 +88,7 @@ A smaller 8-track version of MixMaster, with 2 group busses. Functionality and o
 
 ![IM](res/img/EqSpander.png)
 
-**To be released soon in MindMeld 1.1.5:** Expander module to add CV control over most parameters in the EqMaster. All jacks on the module are polyphonic CVs. The state jacks at the top control the active/bypass status of the 24 tracks, with the global bypass on channel 9 of the G/A jack; the other 24 jacks (one for each track) control the 4 parameters (state, freq, gain, Q) for each of the 4 bands in each track.
+**To be released soon in MindMeld 1.1.5:** Expander module to add CV control over most parameters in the EqMaster. All jacks on the module are polyphonic CVs, and it can be placed on either side of the EqMaster. The state jacks at the top control the active/bypass status of the 24 tracks, with the global bypass on channel 9 of the G/A jack; the other 24 jacks (one for each track) control the 4 parameters (state, freq, gain, Q) for each of the 4 bands in each track.
 
 
 ## Meld / Unmeld <a id="meldunmeld"></a>
@@ -107,6 +107,7 @@ Two utility modules to help manage direct out and insert connections. Three pane
 ### Tutorials
 * Omri Cohem, [MixMaster from MindMeld](https://www.youtube.com/watch?v=YcTPaG6N6nI)
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
+* Artem Leonov, [Mixing mini patches in VCV RACK with new MINDMELD EQMASTER module](https://www.youtube.com/watch?v=wW1UREZQQXU)
 
 ### In the wild
 * Wouter Spekkink, [Street lights](https://www.youtube.com/watch?v=QpDp3RGGcBg)
