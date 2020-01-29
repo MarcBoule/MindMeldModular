@@ -621,6 +621,10 @@ struct TrackDisplay : EditableDisplayBase {
 			linkFadItem->trackOrGroupNum = trackNumSrc;
 			menu->addChild(linkFadItem);
 
+			PolyStereoItem *polySteItem = createMenuItem<PolyStereoItem>("Poly stereo (use L only)", CHECKMARK(srcTrack->polyStereo != 0));
+			polySteItem->polyStereoSrc = &(srcTrack->polyStereo);
+			menu->addChild(polySteItem);
+
 			if (srcTrack->gInfo->directOutsMode >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);

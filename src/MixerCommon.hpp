@@ -130,6 +130,7 @@ struct TrackSettingsCpBuffer {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;
 	int8_t dispColorLocal;
+	int8_t polyStereo;
 	float panCvLevel;
 	float stereoWidth;
 	bool linkedFader;

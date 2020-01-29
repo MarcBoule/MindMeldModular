@@ -1060,6 +1060,7 @@ struct MixerTrack {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
+	int8_t polyStereo;// 0 = off (default), 1 = on
 	float panCvLevel;// 0 to 1.0f
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
 
@@ -1159,6 +1160,7 @@ struct MixerTrack {
 		vuColorThemeLocal = 0;
 		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
+		polyStereo = 1;
 		panCvLevel = 1.0f;
 		stereoWidth = 1.0f;
 		resetNonJson();
@@ -1231,6 +1233,9 @@ struct MixerTrack {
 		// dispColorLocal
 		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
 
+		// polyStereo
+		json_object_set_new(rootJ, (ids + "polyStereo").c_str(), json_integer(polyStereo));
+
 		// panCvLevel
 		json_object_set_new(rootJ, (ids + "panCvLevel").c_str(), json_real(panCvLevel));
 
@@ -1295,6 +1300,11 @@ struct MixerTrack {
 		if (dispColorLocalJ)
 			dispColorLocal = json_integer_value(dispColorLocalJ);
 		
+		// polyStereo
+		json_t *polyStereoJ = json_object_get(rootJ, (ids + "polyStereo").c_str());
+		if (polyStereoJ)
+			polyStereo = json_integer_value(polyStereoJ);
+		
 		// panCvLevel
 		json_t *panCvLevelJ = json_object_get(rootJ, (ids + "panCvLevel").c_str());
 		if (panCvLevelJ)
@@ -1322,6 +1332,7 @@ struct MixerTrack {
 		dest->vuColorThemeLocal = vuColorThemeLocal;
 		dest->filterPos = filterPos;
 		dest->dispColorLocal = dispColorLocal;
+		dest->polyStereo = polyStereo;
 		dest->panCvLevel = panCvLevel;
 		dest->stereoWidth = stereoWidth;
 		dest->linkedFader = isLinked(&(gInfo->linkBitMask), trackNum);
@@ -1338,6 +1349,7 @@ struct MixerTrack {
 		vuColorThemeLocal = src->vuColorThemeLocal;
 		filterPos = src->filterPos;
 		dispColorLocal = src->dispColorLocal;
+		polyStereo = src->polyStereo;
 		panCvLevel = src->panCvLevel;
 		stereoWidth = src->stereoWidth;
 		gInfo->setLinked(trackNum, src->linkedFader);
@@ -1423,7 +1435,7 @@ struct MixerTrack {
 	
 	void updateSlowValues() {
 		// calc ** stereo **
-		bool newStereo = inSig[1].isConnected();
+		bool newStereo = inSig[1].isConnected() || (polyStereo != 0 && inSig[0].isPolyphonic());
 		if (stereo != newStereo) {
 			stereo = newStereo;
 			oldPan = -10.0f;
@@ -1499,8 +1511,7 @@ struct MixerTrack {
 
 
 		// optimize unused track
-		bool inUse = inSig[0].isConnected();
-		if (!inUse) {
+		if (!inSig[0].isConnected()) {
 			if (oldInUse) {
 				taps[0] = 0.0f; taps[1] = 0.0f;
 				taps[N_TRK * 2 + 0] = 0.0f; taps[N_TRK * 2 + 1] = 0.0f;
@@ -1526,8 +1537,20 @@ struct MixerTrack {
 		if (inGain != inGainSlewer.out) {
 			inGainSlewer.process(gInfo->sampleTime, inGain);
 		}
-		taps[0] = (clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out));
-		taps[1] = stereo ? (clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out)) : taps[0];
+		if (stereo) {// either because R is connected, or polyStereo is active and L is a poly cable
+			if (inSig[1].isConnected()) {// if stereo because R connected
+				taps[0] = clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out);
+				taps[1] = clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out);
+			}
+			else {// here were are in polyStero mode
+				taps[0] = clamp20V(inSig[0].getVoltage(0) * inGainSlewer.out);
+				taps[1] = clamp20V(inSig[0].getVoltage(1) * inGainSlewer.out);
+			}
+		}
+		else {
+			taps[0] = clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out);
+			taps[1] = taps[0];
+		}
 		
 		// Stereo width
 		if (stereoWidth != stereoWidthSlewer.out) {

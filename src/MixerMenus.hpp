@@ -750,6 +750,16 @@ struct LinkFaderItem : MenuItem {
 };
 
 
+// poly stereo menu item
+struct PolyStereoItem : MenuItem {
+	int8_t *polyStereoSrc;
+
+	void onAction(const event::Action &e) override {
+		*polyStereoSrc ^= 0x1;
+	}
+};
+
+
 // copy track menu settings to
 template <typename TMixerTrack>
 struct CopyTrackSettingsItem : MenuItem {
