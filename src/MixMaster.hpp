@@ -1160,7 +1160,7 @@ struct MixerTrack {
 		vuColorThemeLocal = 0;
 		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
-		polyStereo = 1;
+		polyStereo = 0;
 		panCvLevel = 1.0f;
 		stereoWidth = 1.0f;
 		resetNonJson();
