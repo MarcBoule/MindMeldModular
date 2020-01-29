@@ -2,7 +2,7 @@ Modules for [VCV Rack](https://vcvrack.com), available in the [plugin library](h
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 1.1.4
+Version 1.1.5
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
@@ -19,9 +19,9 @@ The following modules are part of the MindMeld module pack ([user manual](https:
 
 * [AuxSpanderJr](#auxspanderjr): 4-aux FX bus expander for MixMasterJr.
 
-* [EqMaster](#eqmaster): *To be released soon* 24-track multiband EQ for MixMaster and MixMasterJr (user manual available soon).
+* [EqMaster](#eqmaster): 24-track multiband EQ for MixMaster and MixMasterJr (user manual available soon).
 
-* [EqSpander](#eqspander): *To be released soon* CV expander for EqMaster.
+* [EqSpander](#eqspander): CV expander for EqMaster.
 
 * [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
 
@@ -81,14 +81,14 @@ A smaller 8-track version of MixMaster, with 2 group busses. Functionality and o
 
 ![IM](res/img/EqMaster.png)
 
-**To be released soon in MindMeld 1.1.5:** 24-track multiband EQ for MixMaster and MixMasterJr. Can be placed anywhere in the patch, uses polyphonic cables for connecting to the inserts on the MixMaster mixers. Track names and colors can be linked to any MixMaster in the patch (right-click menu in EqMaster). Allows separate EQ control of each of the 24 stereo tracks. A [CV expander](#eqspander) is also available for added control over the module's parameters.
+24-track multiband EQ for MixMaster and MixMasterJr. Can be placed anywhere in the patch, uses polyphonic cables for connecting to the inserts on the MixMaster mixers. Track names and colors can be linked to any MixMaster in the patch (right-click menu in EqMaster). Allows separate EQ control of each of the 24 stereo tracks. A [CV expander](#eqspander) is also available for added control over the module's parameters.
 
 
 ## EqSpander <a id="eqspander"></a>
 
 ![IM](res/img/EqSpander.png)
 
-**To be released soon in MindMeld 1.1.5:** Expander module to add CV control over most parameters in the EqMaster. All jacks on the module are polyphonic CVs, and it can be placed on either side of the EqMaster. The state jacks at the top control the active/bypass status of the 24 tracks, with the global bypass located in channel 9 of the G/A jack; the other 24 jacks (one for each track) control the 4 parameters (state, freq, gain, Q) for each of the 4 bands in each track.
+Expander module to add CV control over most parameters in the EqMaster. All jacks on the module are polyphonic CVs, and it can be placed on either side of the EqMaster. The state jacks at the top control the active/bypass status of the 24 tracks, with the global bypass located in channel 9 of the G/A jack; the other 24 jacks (one for each track) control the 4 parameters (state, freq, gain, Q) for each of the 4 bands in each track.
 
 
 ## Meld / Unmeld <a id="meldunmeld"></a>

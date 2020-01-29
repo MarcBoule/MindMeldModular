@@ -1,7 +1,8 @@
-### 1.1.5 (in development)
+### 1.1.5 (2020-01-29)
 
-- Added EQ Master, a 24-track stereo multiband EQ for MixMaster
-- Add stereo width slider in track-label menus of MixMaster and in aux-label menus of AuxSpander
+- Added EqMaster/EqSpander, a 24-track stereo multiband EQ with expander, for MixMaster
+- Added stereo width slider in track-label menus of MixMaster and in aux-label menus of AuxSpander (R cable must be connected)
+- Added new poly mixing option in track-label menus of MixMaster (support for track-localized poly stereo)
 - Fixed bug in MixMaster where when using inserts, and aux sends set to pre-fader, for mono tracks it would send only L out of the aux sends (it now sends the mono signal to both L and R aux send outputs)
 - Changed direct outs in MixMaster so that when set to pre-fader or pre-inserts, mono tracks send only a signal in the L output of the direct out poly cable for those given tracks
 
