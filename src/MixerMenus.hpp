@@ -299,11 +299,11 @@ struct PolyStereoItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		PolyStereoSubItem *ps0Item = createMenuItem<PolyStereoSubItem>("Sum to mono", CHECKMARK(*polyStereoSrc == 0));
+		PolyStereoSubItem *ps0Item = createMenuItem<PolyStereoSubItem>("Sum each input (L, R)", CHECKMARK(*polyStereoSrc == 0));
 		ps0Item->polyStereoSrc = polyStereoSrc;
 		menu->addChild(ps0Item);
 
-		PolyStereoSubItem *ps1Item = createMenuItem<PolyStereoSubItem>("Sum to stereo", CHECKMARK(*polyStereoSrc == 1));
+		PolyStereoSubItem *ps1Item = createMenuItem<PolyStereoSubItem>("Sum to stereo (L only)", CHECKMARK(*polyStereoSrc == 1));
 		ps1Item->polyStereoSrc = polyStereoSrc;
 		ps1Item->setVal = 1;
 		menu->addChild(ps1Item);

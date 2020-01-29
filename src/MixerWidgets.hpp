@@ -621,7 +621,7 @@ struct TrackDisplay : EditableDisplayBase {
 			linkFadItem->trackOrGroupNum = trackNumSrc;
 			menu->addChild(linkFadItem);
 
-			PolyStereoItem *polySteItem = createMenuItem<PolyStereoItem>("Poly input L behavior", RIGHT_ARROW);
+			PolyStereoItem *polySteItem = createMenuItem<PolyStereoItem>("Poly input behavior", RIGHT_ARROW);
 			polySteItem->polyStereoSrc = &(srcTrack->polyStereo);
 			menu->addChild(polySteItem);
 
