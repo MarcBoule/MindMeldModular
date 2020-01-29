@@ -283,6 +283,35 @@ struct ChainItem : MenuItem {
 	}
 };
 
+
+// poly stereo menu item
+struct PolyStereoItem : MenuItem {
+	int8_t *polyStereoSrc;
+
+	struct PolyStereoSubItem : MenuItem {
+		int8_t *polyStereoSrc;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			*polyStereoSrc = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		PolyStereoSubItem *ps0Item = createMenuItem<PolyStereoSubItem>("Sum to mono", CHECKMARK(*polyStereoSrc == 0));
+		ps0Item->polyStereoSrc = polyStereoSrc;
+		menu->addChild(ps0Item);
+
+		PolyStereoSubItem *ps1Item = createMenuItem<PolyStereoSubItem>("Sum to stereo", CHECKMARK(*polyStereoSrc == 1));
+		ps1Item->polyStereoSrc = polyStereoSrc;
+		ps1Item->setVal = 1;
+		menu->addChild(ps1Item);
+
+		return menu;
+	}
+};
+
 struct AuxRetFbProtItem : MenuItem {
 	int8_t *groupedAuxReturnFeedbackProtectionSrc;
 
@@ -746,16 +775,6 @@ struct LinkFaderItem : MenuItem {
 	
 	void onAction(const event::Action &e) override {
 		toggleLinked(linkBitMaskSrc, trackOrGroupNum);
-	}
-};
-
-
-// poly stereo menu item
-struct PolyStereoItem : MenuItem {
-	int8_t *polyStereoSrc;
-
-	void onAction(const event::Action &e) override {
-		*polyStereoSrc ^= 0x1;
 	}
 };
 

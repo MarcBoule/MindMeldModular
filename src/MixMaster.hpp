@@ -1539,13 +1539,23 @@ struct MixerTrack {
 		}
 		if (stereo) {// either because R is connected, or polyStereo is active and L is a poly cable
 			if (inSig[1].isConnected()) {// if stereo because R connected
-				taps[0] = clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out);
-				taps[1] = clamp20V(inSig[1].getVoltageSum() * inGainSlewer.out);
+				taps[0] = inSig[0].getVoltageSum();
+				taps[1] = inSig[1].getVoltageSum();
 			}
-			else {// here were are in polyStero mode
-				taps[0] = clamp20V(inSig[0].getVoltage(0) * inGainSlewer.out);
-				taps[1] = clamp20V(inSig[0].getVoltage(1) * inGainSlewer.out);
+			else {// here were are in polyStero mode, so take all odd numbered into L, even numbered into R (1-indexed)
+				taps[0] = 0.0f;
+				taps[1] = 0.0f;
+				for (int c = 0; c < inSig[0].getChannels(); c++) {
+					if ((c & 0x1) == 0) {// if L channels (odd channels when 1-indexed)
+						taps[0] += inSig[0].getVoltage(c);
+					}
+					else {
+						taps[1] += inSig[0].getVoltage(c);
+					}
+				}
 			}
+			taps[0] = clamp20V(taps[0] * inGainSlewer.out);
+			taps[1] = clamp20V(taps[1] * inGainSlewer.out);
 		}
 		else {
 			taps[0] = clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out);
