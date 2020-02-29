@@ -77,10 +77,16 @@ void VuMeterTrack::drawVu(const DrawArgs &args, float vuValue, float posX, int c
 		vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 		vuHeight *= barY;
 
-		NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_THEMES_TOP[colorTheme][colorIndex], VU_THEMES_BOT[colorTheme][colorIndex]);
+		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
+		NVGcolor colTop = ghostMuteOn ? VU_GRAY_TOP[colorIndex] : VU_THEMES_TOP[colorTheme][colorIndex];
+		NVGcolor colBot = ghostMuteOn ? VU_GRAY_BOT[colorIndex] : VU_THEMES_BOT[colorTheme][colorIndex];
+		NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, colTop, colBot);
+		
 		if (vuHeight > redThreshold) {
 			// Yellow-Red gradient
-			NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[colorIndex], VU_YELLOW[colorIndex]);
+			NVGcolor colTopRed = ghostMuteOn ? VU_GRAY_TOP[colorIndex] : VU_RED[colorIndex];
+			NVGcolor colTopYel = ghostMuteOn ? VU_GRAY_TOP[colorIndex] : VU_YELLOW[colorIndex];
+			NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, colTopRed, colTopYel);
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - vuHeight - sepYtrack, barX, vuHeight - redThreshold);
 			nvgFillPaint(args.vg, gradTop);
@@ -88,7 +94,6 @@ void VuMeterTrack::drawVu(const DrawArgs &args, float vuValue, float posX, int c
 			// Green
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - redThreshold, barX, redThreshold);
-			//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 			nvgFillPaint(args.vg, gradGreen);
 			nvgFill(args.vg);			
 		}
@@ -96,7 +101,6 @@ void VuMeterTrack::drawVu(const DrawArgs &args, float vuValue, float posX, int c
 			// Green
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-			//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 			nvgFillPaint(args.vg, gradGreen);
 			nvgFill(args.vg);
 		}
@@ -111,9 +115,12 @@ void VuMeterTrack::drawPeakHold(const DrawArgs &args, float holdValue, float pos
 		vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 		vuHeight *= barY;
 		
+		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
 		if (vuHeight > redThreshold) {
 			// Yellow-Red gradient
-			NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, VU_RED[1], VU_YELLOW[1]);
+			NVGcolor colTopRed = ghostMuteOn ? VU_GRAY_TOP[1] : VU_RED[1];
+			NVGcolor colTopYel = ghostMuteOn ? VU_GRAY_TOP[1] : VU_YELLOW[1];
+			NVGpaint gradTop = nvgLinearGradient(args.vg, 0, 0, 0, barY - redThreshold - sepYtrack, colTopRed, colTopYel);
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - vuHeight - sepYtrack - peakHoldThick, barX, peakHoldThick);
 			nvgFillPaint(args.vg, gradTop);
@@ -121,11 +128,12 @@ void VuMeterTrack::drawPeakHold(const DrawArgs &args, float holdValue, float pos
 		}
 		else {
 			// Green
-			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, VU_THEMES_TOP[colorTheme][1], VU_THEMES_BOT[colorTheme][1]);
+			NVGcolor colTop = ghostMuteOn ? VU_GRAY_TOP[1] : VU_THEMES_TOP[colorTheme][1];
+			NVGcolor colBot = ghostMuteOn ? VU_GRAY_BOT[1] : VU_THEMES_BOT[colorTheme][1];
+			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, colTop, colBot);
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - vuHeight, barX, peakHoldThick);
 			nvgFillPaint(args.vg, gradGreen);
-			//nvgFillColor(args.vg, VU_GREEN[1]);
 			nvgFill(args.vg);
 		}
 	}		
@@ -175,7 +183,6 @@ void VuMeterMaster::drawVu(const DrawArgs &args, float vuValue, float posX, int 
 				// Green
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - yellowThreshold, barX, yellowThreshold);
-				//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 				nvgFillPaint(args.vg, gradGreen);
 				nvgFill(args.vg);			
 			}
@@ -183,7 +190,6 @@ void VuMeterMaster::drawVu(const DrawArgs &args, float vuValue, float posX, int 
 				// Green
 				nvgBeginPath(args.vg);
 				nvgRect(args.vg, posX, barY - vuHeight, barX, vuHeight);
-				//nvgFillColor(args.vg, VU_GREEN[colorIndex]);
 				nvgFillPaint(args.vg, gradGreen);
 				nvgFill(args.vg);
 			}
@@ -205,7 +211,8 @@ void VuMeterMaster::drawPeakHold(const DrawArgs &args, float holdValue, float po
 			nvgRect(args.vg, posX, barY - vuHeight - sepYmaster - peakHoldThick, barX, peakHoldThick);
 			nvgFillColor(args.vg, VU_RED[1]);
 			nvgFill(args.vg);
-		} else if (vuHeight > yellowThreshold) {
+		} 
+		else if (vuHeight > yellowThreshold) {
 			// Yellow-Orange gradient
 			NVGpaint gradTop = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY - yellowThreshold, VU_ORANGE[1], VU_YELLOW[1]);
 			nvgBeginPath(args.vg);
@@ -218,7 +225,6 @@ void VuMeterMaster::drawPeakHold(const DrawArgs &args, float holdValue, float po
 			NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - yellowThreshold, 0, barY, VU_THEMES_TOP[colorTheme][1], VU_THEMES_BOT[colorTheme][1]);
 			nvgBeginPath(args.vg);
 			nvgRect(args.vg, posX, barY - vuHeight, barX, 1.0);
-			//nvgFillColor(args.vg, VU_GREEN[1]);
 			nvgFillPaint(args.vg, gradGreen);
 			nvgFill(args.vg);
 		}

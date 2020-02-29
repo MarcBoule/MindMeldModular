@@ -959,6 +959,7 @@ struct MixMasterWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu);
+				newVU->srcMuteGhost = &(module->tracks[i].fadeGainScaledWithSolo);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
@@ -1063,6 +1064,7 @@ struct MixMasterWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu);
+				newVU->srcMuteGhost = &(module->groups[i].fadeGainScaled);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);
@@ -1244,6 +1246,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->tracks[i].vu);
+				newVU->srcMuteGhost = &(module->tracks[i].fadeGainScaledWithSolo);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
@@ -1343,6 +1346,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = &(module->groups[i].vu);
+				newVU->srcMuteGhost = &(module->groups[i].fadeGainScaled);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);

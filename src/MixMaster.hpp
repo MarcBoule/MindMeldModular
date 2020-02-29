@@ -1029,7 +1029,12 @@ struct MixerGroup {
 			vu.reset();
 		}
 		else if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_GRP * 6 + 0]);
+			if (fadeGainScaled == 0.0f) {
+				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_GRP * 4 + 0]);
+			}
+			else {
+				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_GRP * 6 + 0]);
+			}
 		}
 	}
 };// struct MixerGroup
@@ -1754,7 +1759,12 @@ struct MixerTrack {
 			vu.reset();
 		}
 		else if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_TRK * 6 + 0]);
+			if ( fadeGainScaledWithSolo == 0.0f) {
+				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_TRK * 4 + 0]);
+			}
+			else {
+				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_TRK * 6 + 0]);
+			}
 		}
 	}
 };// struct MixerTrack

@@ -86,6 +86,8 @@ static const std::string vuColorNames[numVuThemes + 1] = {
 static const NVGcolor VU_YELLOW[2] = {nvgRGB(136,136,37), nvgRGB(247, 216, 55)};// peak (darker), rms (lighter)
 static const NVGcolor VU_ORANGE[2] = {nvgRGB(136,89,37), nvgRGB(238, 130, 47)};// peak (darker), rms (lighter)
 static const NVGcolor VU_RED[2] =    {nvgRGB(136, 37, 37), 	nvgRGB(229, 34, 38)};// peak (darker), rms (lighter)
+static const NVGcolor VU_GRAY_TOP[2] =    {nvgRGB(88, 88, 88), 	nvgRGB(130, 130, 130)};// peak (darker), rms (lighter)
+static const NVGcolor VU_GRAY_BOT[2] =    {nvgRGB(60, 60, 60), 	nvgRGB(100, 100, 100)};// peak (darker), rms (lighter)
 
 static const float sepYtrack = 0.3f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
 static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separator at 0dB. See include/app/common.hpp for constants
@@ -102,6 +104,7 @@ struct VuMeterBase : OpaqueWidget {
 	
 	// instantiator must setup:
 	VuMeterAllDual *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	float *srcMuteGhost = NULL;// when this is non-null and 0.0f, we should switch to gray (ghost) color
 	int8_t *colorThemeGlobal;
 	int8_t *colorThemeLocal;
 	
