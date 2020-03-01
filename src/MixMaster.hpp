@@ -674,12 +674,8 @@ struct MixerMaster {
 		
 		// VUs (no cloaked mode for master, always on)
 		if (eco) {
-			if (fadeGainScaled == 0.0f) {
-				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &sigs[0]);// pre mute
-			}
-			else {
-				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), mix);
-			}
+			float sampleTimeEco = gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3));
+			vu.process(sampleTimeEco, fadeGainScaled == 0.0f ? &sigs[0] : mix);
 		}
 				
 		// Chain inputs when post master
@@ -1040,12 +1036,8 @@ struct MixerGroup {
 			vu.reset();
 		}
 		else if (eco) {
-			if (fadeGainScaled == 0.0f) {
-				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_GRP * 4 + 0]);
-			}
-			else {
-				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_GRP * 6 + 0]);
-			}
+			float sampleTimeEco = gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3));
+			vu.process(sampleTimeEco, &taps[N_GRP * (fadeGainScaled == 0.0f ? 4 : 6) + 0]);
 		}
 	}
 };// struct MixerGroup
@@ -1771,12 +1763,8 @@ struct MixerTrack {
 			vu.reset();
 		}
 		else if (eco) {
-			if ( fadeGainScaledWithSolo == 0.0f) {
-				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_TRK * 4 + 0]);
-			}
-			else {
-				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &taps[N_TRK * 6 + 0]);
-			}
+			float sampleTimeEco = gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3));
+			vu.process(sampleTimeEco, &taps[N_TRK * (fadeGainScaledWithSolo == 0.0f ? 4 : 6) + 0]);
 		}
 	}
 };// struct MixerTrack
