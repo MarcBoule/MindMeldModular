@@ -592,10 +592,13 @@ struct MixerMaster {
 			// calc ** fadeGain, fadeGainX, fadeGainScaled **
 			if (isFadeMode()) {
 				float newTarget = calcFadeGain();
-				if (!gInfo->symmetricalFade && newTarget != target) {
-					fadeGainX = 0.0f;
+				if (newTarget != target) {
+					if (!gInfo->symmetricalFade) {
+						fadeGainX = 0.0f;
+					}
+					target = newTarget;
+					vu.reset();
 				}
-				target = newTarget;
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
@@ -661,15 +664,22 @@ struct MixerMaster {
 
 		// Apply gainMatrixSlewed
 		simd::float_4 sigs(mix[0], mix[1], mix[1], mix[0]);// L, R, RinL, LinR
-		sigs = sigs * gainMatrixSlewers.out * chainGainAndMuteSlewers.out[2];
+		sigs = sigs * gainMatrixSlewers.out;
+		sigs[0] += sigs[2];// pre mute, do not change VU needs
+		sigs[1] += sigs[3];// pre mute, do not change VU needs
 		
 		// Set mix
-		mix[0] = sigs[0] + sigs[2];
-		mix[1] = sigs[1] + sigs[3];
+		mix[0] = sigs[0] * chainGainAndMuteSlewers.out[2];
+		mix[1] = sigs[1] * chainGainAndMuteSlewers.out[2];
 		
 		// VUs (no cloaked mode for master, always on)
 		if (eco) {
-			vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), mix);
+			if (fadeGainScaled == 0.0f) {
+				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), &sigs[0]);// pre mute
+			}
+			else {
+				vu.process(gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3)), mix);
+			}
 		}
 				
 		// Chain inputs when post master
@@ -917,6 +927,7 @@ struct MixerGroup {
 					}
 					gInfo->fadeOtherLinkedTracks(groupNum + N_TRK, newTarget);
 					target = newTarget;
+					vu.reset();
 				}
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
@@ -1479,6 +1490,7 @@ struct MixerTrack {
 					}
 					gInfo->fadeOtherLinkedTracks(trackNum, newTarget);
 					target = newTarget;
+					vu.reset();
 				}
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh

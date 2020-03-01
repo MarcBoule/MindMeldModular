@@ -1130,6 +1130,7 @@ struct MixMasterWidget : ModuleWidget {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
 			newVU->srcLevels = &(module->master.vu);
+			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			newVU->clippingPtr = &(module->master.clipping);
@@ -1412,6 +1413,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82 - 12.7 * 10, 70.3)));
 			newVU->srcLevels = &(module->master.vu);
+			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			newVU->clippingPtr = &(module->master.clipping);
