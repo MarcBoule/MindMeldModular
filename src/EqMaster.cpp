@@ -1039,7 +1039,7 @@ struct EqMasterWidget : ModuleWidget {
 		// VU meter
 		if (module) {
 			VuMeterEq *newVU = createWidgetCentered<VuMeterEq>(mm2px(Vec(rightX, 37.5f)));
-			newVU->srcLevels = &(module->trackVu);
+			newVU->srcLevels = module->trackVu.vuValues;
 			newVU->trackVuColorsSrc = module->trackVuColors;
 			newVU->trackParamSrc = &(module->params[TRACK_PARAM]);
 			addChild(newVU);

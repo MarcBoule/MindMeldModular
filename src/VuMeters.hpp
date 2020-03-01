@@ -46,11 +46,18 @@ struct VuMeterAllDual {
 		}
 	}
 	
-	float getPeak(int chan) {// chan0 is L, chan1 is R
-		return vuValues[VU_PEAK_L + chan];
+	// float getPeak(int chan) {// chan0 is L, chan1 is R
+		// return vuValues[VU_PEAK_L + chan];
+	// }
+	// float getRms(int chan) {// chan0 is L, chan1 is R
+		// return std::sqrt(vuValues[VU_RMS_L + chan]);
+	// }
+	
+	static float getPeak(float *srcLevelsPtr, int chan) {
+		return srcLevelsPtr[VU_PEAK_L + chan];
 	}
-	float getRms(int chan) {// chan0 is L, chan1 is R
-		return std::sqrt(vuValues[VU_RMS_L + chan]);
+	static float getRms(float *srcLevelsPtr, int chan) {
+		return std::sqrt(srcLevelsPtr[VU_RMS_L + chan]);
 	}
 };
 
@@ -103,7 +110,7 @@ struct VuMeterBase : OpaqueWidget {
 	static constexpr float faderMaxLinearGain = 2.0f;
 	
 	// instantiator must setup:
-	VuMeterAllDual *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	float *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
 	float *srcMuteGhost = NULL;// when this is non-null and 0.0f, we should switch to gray (ghost) color
 	int8_t *colorThemeGlobal;
 	int8_t *colorThemeLocal;

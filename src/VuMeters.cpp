@@ -38,8 +38,8 @@ void VuMeterBase::processPeakHold() {
 		peakHold[1] = 0.0f;
 	}		
 	for (int i = 0; i < 2; i++) {
-		if (srcLevels->getPeak(i) > peakHold[i]) {
-			peakHold[i] = srcLevels->getPeak(i);
+		if (VuMeterAllDual::getPeak(srcLevels, i) > peakHold[i]) {
+			peakHold[i] = VuMeterAllDual::getPeak(srcLevels, i);
 		}
 	}
 }
@@ -51,12 +51,12 @@ void VuMeterBase::draw(const DrawArgs &args) {
 	setColor();
 	
 	// PEAK
-	drawVu(args, srcLevels->getPeak(0), 0, 0);
-	drawVu(args, srcLevels->getPeak(1), barX + gapX, 0);
+	drawVu(args, VuMeterAllDual::getPeak(srcLevels, 0), 0, 0);
+	drawVu(args, VuMeterAllDual::getPeak(srcLevels, 1), barX + gapX, 0);
 
 	// RMS
-	drawVu(args, srcLevels->getRms(0), 0, 1);
-	drawVu(args, srcLevels->getRms(1), barX + gapX, 1);
+	drawVu(args, VuMeterAllDual::getRms(srcLevels, 0), 0, 1);
+	drawVu(args, VuMeterAllDual::getRms(srcLevels, 1), barX + gapX, 1);
 	
 	// PEAK_HOLD
 	drawPeakHold(args, peakHold[0], 0);

@@ -77,7 +77,8 @@ struct AuxExpander : Module {
 	// No need to save, with reset
 	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int refreshCounter20;
-	VuMeterAllDual vu[4];
+	float srcLevelsVus[4][4];// first index is aux number, 2nd index is a vuValue (organized according to VuMeters::VuIds)
+	float srcMuteGhost[4];// index is aux number
 	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
 	simd::float_4 globalSendsWithCV;
 	bool globalSendsCvConnected;
@@ -230,7 +231,10 @@ struct AuxExpander : Module {
 		updateAuxLabelRequest = 1;
 		refreshCounter20 = 0;
 		for (int i = 0; i < 4; i++) {
-			vu[i].reset();
+			for (int j = 0; j < 4; j++) {
+				srcLevelsVus[i][j] = 0.0f;
+			}
+			srcMuteGhost[i] = 0.0f;
 			paramRetFaderWithCv[i] = -100.0f;
 			globalSendsWithCV[i] = 1.0f;
 			globalRetPansWithCV[i] = 0.5f;
@@ -430,7 +434,14 @@ struct AuxExpander : Module {
 			}
 			
 			// Fast values from mother
-			// Vus handled below outside the block
+			// Vus 
+			int value8i = clamp((int)(messagesFromMother[Intf::AFM_VU_INDEX]), 0, 8);
+			if (value8i < 4) {
+				memcpy(&srcLevelsVus[value8i][0], &messagesFromMother[Intf::AFM_VU_VALUES], 4 * 4);
+			}
+			else {
+				srcMuteGhost[value8i & 0x3] = messagesFromMother[Intf::AFM_VU_VALUES];
+			}
 						
 			// Aux sends
 
@@ -624,14 +635,10 @@ struct AuxExpander : Module {
 		// VUs
 		if (!motherPresent || colorAndCloak.cc4[cloakedMode] != 0) {
 			for (int i = 0; i < 4; i++) {
-				vu[i].reset();
-			}
-		}
-		else {// here mother is present and we are not cloaked
-			if (ecoMode == 0 || (refreshCounter20 & 0x3) == 3) {// stagger 3
-				for (int i = 0; i < 4; i++) { 
-					vu[i].process(args.sampleTime * (1 + (ecoMode & 0x3)), &messagesFromMother[Intf::AFM_AUX_VUS + (i << 1) + 0]);
+				for (int j = 0; j < 4; j++) {
+					srcLevelsVus[i][j] = 0.0f;
 				}
+				srcMuteGhost[i] = 0.0f;
 			}
 		}
 		
@@ -818,7 +825,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			if (module) {
 				// VU meters
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
-				newVU->srcLevels = &(module->vu[i]);
+				newVU->srcLevels = &(module->srcLevelsVus[i][0]);
+				newVU->srcMuteGhost = &(module->srcMuteGhost[i]);
 				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->vuColorThemeLocal.cc4[i]);
 				addChild(newVU);
@@ -1167,7 +1175,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			if (module) {
 				// VU meters
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
-				newVU->srcLevels = &(module->vu[i]);
+				newVU->srcLevels = &(module->srcLevelsVus[i][0]);
+				newVU->srcMuteGhost = &(module->srcMuteGhost[i]);
 				newVU->colorThemeGlobal = &(module->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->vuColorThemeLocal.cc4[i]);
 				addChild(newVU);

@@ -23,7 +23,6 @@ template <int N_TRK, int N_GRP>
 struct ExpansionInterface {
 	enum AuxFromMotherIds { // for expander messages from main to aux panel
 		ENUMS(AFM_AUX_SENDS, (N_TRK + N_GRP) * 2), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
-		ENUMS(AFM_AUX_VUS, 8), // A-L, A-R,  B-L, B-R, etc
 		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP),
 		AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
 		AFM_PANEL_THEME,
@@ -35,6 +34,8 @@ struct ExpansionInterface {
 		AFM_ECO_MODE,
 		ENUMS(AFM_FADE_GAINS, 4),
 		AFM_MOMENTARY_CVBUTTONS,
+		AFM_VU_INDEX,// a return VU related value; index 0-3 : quad vu floats of a given aux, 4-7 : mute ghost of given aux (in AFM_VU_VALUES[0] only)
+		ENUMS(AFM_VU_VALUES, 4),
 		AFM_NUM_VALUES
 	};
 	

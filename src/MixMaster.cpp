@@ -84,6 +84,7 @@ struct MixMaster : Module {
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
+	int refreshCounter8;
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	float values20[20];
 	dsp::SlewLimiter muteTrackWhenSoloAuxRetSlewer;
@@ -249,6 +250,7 @@ struct MixMaster : Module {
 	}
 	void resetNonJson(bool recurseNonJson) {
 		updateTrackLabelRequest = 1;
+		refreshCounter8 = 0;
 		trackMoveInAuxRequest = 0;
 		if (recurseNonJson) {
 			gInfo.resetNonJson();
@@ -563,10 +565,18 @@ struct MixMaster : Module {
 			// 16+4 (8+2) stereo signals to be used to make sends in aux expander
 			writeAuxSends(&messageToExpander[Intf::AFM_AUX_SENDS]);						
 			// Aux VUs
-			for (int i = 0; i < 4; i++) {
-				// send tap 4 of the aux return signal flows
-				messageToExpander[Intf::AFM_AUX_VUS + (i << 1) + 0] = auxTaps[24 + (i << 1) + 0];
-				messageToExpander[Intf::AFM_AUX_VUS + (i << 1) + 1] = auxTaps[24 + (i << 1) + 1];
+			// a return VU related value; index 0-3 : quad vu floats of a given aux, 4-7 : mute ghost of given aux (in [AFM_VU_VALUES + 0] only)
+			messageToExpander[Intf::AFM_VU_INDEX] = (float)refreshCounter8;
+			if (refreshCounter8 < 4) {
+				memcpy(&messageToExpander[Intf::AFM_VU_VALUES], aux[refreshCounter8].vu.vuValues, 4 * 4);
+			}
+			else {
+				messageToExpander[Intf::AFM_VU_VALUES + 0] = aux[refreshCounter8 & 0x3].fadeGainScaledWithSolo;
+			}	
+			
+			refreshCounter8++;
+			if (refreshCounter8 >= 8) {
+				refreshCounter8 = 0;
 			}
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;
@@ -958,7 +968,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
-				newVU->srcLevels = &(module->tracks[i].vu);
+				newVU->srcLevels = module->tracks[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->tracks[i].fadeGainScaledWithSolo);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
@@ -1063,7 +1073,7 @@ struct MixMasterWidget : ModuleWidget {
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
-				newVU->srcLevels = &(module->groups[i].vu);
+				newVU->srcLevels = module->groups[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->groups[i].fadeGainScaled);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
@@ -1129,7 +1139,7 @@ struct MixMasterWidget : ModuleWidget {
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
-			newVU->srcLevels = &(module->master.vu);
+			newVU->srcLevels = module->master.vu.vuValues;
 			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
@@ -1246,7 +1256,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
-				newVU->srcLevels = &(module->tracks[i].vu);
+				newVU->srcLevels = module->tracks[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->tracks[i].fadeGainScaledWithSolo);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
@@ -1346,7 +1356,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
-				newVU->srcLevels = &(module->groups[i].vu);
+				newVU->srcLevels = module->groups[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->groups[i].fadeGainScaled);
 				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
@@ -1412,7 +1422,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82 - 12.7 * 10, 70.3)));
-			newVU->srcLevels = &(module->master.vu);
+			newVU->srcLevels = module->master.vu.vuValues;
 			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
 			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);

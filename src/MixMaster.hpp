@@ -1090,7 +1090,7 @@ struct MixerTrack {
 	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
-	VuMeterAllDual vu;// use post[]
+	VuMeterAllDual vu;
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float fadeGainScaled;
@@ -1796,6 +1796,7 @@ struct MixerAux {
 	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
+	VuMeterAllDual vu;
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
 	float fadeGainX;
 	float fadeGainScaled;
@@ -1852,6 +1853,7 @@ struct MixerAux {
 		oldPan = -10.0f;
 		oldFader = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
+		vu.reset();
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
@@ -1914,6 +1916,7 @@ struct MixerAux {
 						fadeGainX = 0.0f;
 					}
 					target = newTarget;
+					vu.reset();
 				}
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
@@ -2005,6 +2008,16 @@ struct MixerAux {
 			
 		mix[0] += taps[24];
 		mix[1] += taps[25];
+		
+		// VUs
+		if (gInfo->colorAndCloak.cc4[cloakedMode] != 0) {
+			vu.reset();
+		}
+		else if (eco) {
+			float sampleTimeEco = gInfo->sampleTime * (1 + (gInfo->ecoMode & 0x3));
+			vu.process(sampleTimeEco, &taps[(fadeGainScaledWithSolo == 0.0f ? 16 : 24) + 0]);
+		}
+
 	}
 };// struct MixerAux
 
