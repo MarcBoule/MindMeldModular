@@ -1,3 +1,8 @@
+### 1.1.5 (in development)
+
+- Implemented darkened VUs when muted/faded in MixMasters
+
+
 ### 1.1.5 (2020-01-29)
 
 - Added EqMaster/EqSpander, a 24-track stereo multiband EQ with expander, for MixMaster
