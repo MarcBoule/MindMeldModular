@@ -11,7 +11,6 @@
 
 #include "EqMenus.hpp"
 #include "dsp/fft.hpp"
-// #include "dsp/OnePole.hpp"
 #include <condition_variable>
 
 
@@ -25,7 +24,8 @@ struct TrackLabel : LedDisplayChoice {
 	char *trackLabelsSrc;
 	Param *trackParamSrc;
 	TrackEq *trackEqsSrc;
-	
+	int* updateTrackLabelRequestSrc = NULL;
+
 	TrackLabel() {
 		box.size = mm2px(Vec(10.6f, 5.0f));
 		textOffset = Vec(4.2f, 11.3f);
@@ -59,6 +59,11 @@ struct TrackLabel : LedDisplayChoice {
 			
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			
+			InitializeEqTrackItem<TrackEq> *initTrackItem = createMenuItem<InitializeEqTrackItem<TrackEq>>("Initialize track settings", "");
+			initTrackItem->srcTrack = &trackEqsSrc[currTrk];
+			initTrackItem->updateTrackLabelRequestSrc = updateTrackLabelRequestSrc;
+			menu->addChild(initTrackItem);			
+
 			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track settings to:", RIGHT_ARROW);
 			copyItem->trackLabelsSrc = trackLabelsSrc;
 			copyItem->trackEqsSrc = trackEqsSrc;

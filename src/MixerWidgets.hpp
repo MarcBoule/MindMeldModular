@@ -674,6 +674,10 @@ struct TrackDisplay : EditableDisplayBase {
 			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
 			menu->addChild(settingsALabel);
 
+			InitializeTrackItem<TMixerTrack> *initTrackItem = createMenuItem<InitializeTrackItem<TMixerTrack>>("Initialize track settings", "");
+			initTrackItem->srcTrack = srcTrack;
+			menu->addChild(initTrackItem);			
+
 			CopyTrackSettingsItem<TMixerTrack> *copyItem = createMenuItem<CopyTrackSettingsItem<TMixerTrack>>("Copy track menu settings to:", RIGHT_ARROW);
 			copyItem->tracks = tracks;
 			copyItem->trackNumSrc = trackNumSrc;

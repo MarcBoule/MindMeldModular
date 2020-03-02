@@ -225,6 +225,18 @@ struct FetchLabelsItem : MenuItem {
 };
 
 
+// init track settings
+template <typename TEqTrack>
+struct InitializeEqTrackItem : MenuItem {
+	int* updateTrackLabelRequestSrc = NULL;
+	TEqTrack *srcTrack;
+	void onAction(const event::Action &e) override {
+		srcTrack->onReset();
+		*updateTrackLabelRequestSrc = 2;// force param refreshing
+	}
+};
+
+
 struct CopyTrackSettingsItem : MenuItem {
 	char* trackLabelsSrc;
 	TrackEq *trackEqsSrc;

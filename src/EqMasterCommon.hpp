@@ -45,7 +45,7 @@ static const std::string bandNames[4] = {"LF", "LMF", "HMF", "HF"};
 enum SpecMasks {SPEC_MASK_ON = 0x4, SPEC_MASK_POST = 0x2, SPEC_MASK_FREEZE = 0x1};
 
 static const bool DEFAULT_trackActive = true;
-static const bool DEFAULT_bandActive = 1.0f;
+static const float DEFAULT_bandActive = 1.0f;
 // static constexpr float DEFAULT_freq[4] = {100.0f, 	350.0f, 	1500.0f, 	5000.0f};// Hz
 static constexpr float DEFAULT_logFreq[4] = {2.0f, 		2.544068f, 	3.176091259f, 	3.69897f};// log(Hz)
 // static const simd::float_4 MIN_freq(20.0f, 30.0f, 500.0f, 1000.0f);// Hz
@@ -136,6 +136,20 @@ class TrackEq {
 		sampleTime = 1.0f / sampleRate;
 		cvConnected = _cvConnected;
 		
+		onReset();
+		
+		// don't need saving
+		freqCv = 0.0f;
+		gainCv = 0.0f;
+		qCv = 0.0f;
+		
+		// dependants
+		eqs.reset();
+		freqSlewers.reset();
+		gainSlewers.reset();
+		trackGainSlewer.reset();
+	}
+	void onReset() {
 		// need saving
 		setTrackActive(DEFAULT_trackActive);
 		for (int i = 0; i < 4; i++) {
@@ -150,17 +164,6 @@ class TrackEq {
 		setLowPeak(DEFAULT_lowPeak);
 		setHighPeak(DEFAULT_highPeak);
 		setTrackGain(DEFAULT_trackGain);
-		
-		// don't need saving
-		freqCv = 0.0f;
-		gainCv = 0.0f;
-		qCv = 0.0f;
-		
-		// dependants
-		eqs.reset();
-		freqSlewers.reset();
-		gainSlewers.reset();
-		trackGainSlewer.reset();
 	}
 
 	bool getTrackActive() {return trackActive;}

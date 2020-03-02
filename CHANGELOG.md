@@ -1,6 +1,7 @@
 ### 1.1.5 (in development)
 
-- Implemented darkened VUs when muted/faded in MixMasters
+- Implemented darkened VUs when muted/faded in MixMasters and AuxSpanders
+- Added initialization of individual track settings in MixMasters and EqMaster
 
 
 ### 1.1.5 (2020-01-29)

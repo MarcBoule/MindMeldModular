@@ -51,7 +51,7 @@ struct EqMaster : Module {
 	
 	
 	// No need to save, with reset
-	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
+	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget, 2 for same as 1 but force param refreshing
 	VuMeterAllDual trackVu;
 	int fftWriteHead;
 	int page;
@@ -883,6 +883,7 @@ struct EqMasterWidget : ModuleWidget {
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[TRACK_PARAM]);
 			trackLabel->trackEqsSrc = module->trackEqs;
+			trackLabel->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
 		}
 		// Track knob
 		TrackKnob* trackKnob;
@@ -1155,11 +1156,14 @@ struct EqMasterWidget : ModuleWidget {
 
 			// Track label (pull from module or this step method)
 			if (module->updateTrackLabelRequest != 0) {// pull request from module
+				if (module->updateTrackLabelRequest > 1) {
+					oldSelectedTrack = -1;
+				}
 				trackLabel->text = std::string(&(module->trackLabels[trk * 4]), 4);
-				module->updateTrackLabelRequest = 0;// all done pulling
 				module->paramQuantities[TRACK_PARAM]->unit = trackLabel->text;
 				module->paramQuantities[TRACK_PARAM]->unit.append(")");
 				module->paramQuantities[TRACK_PARAM]->unit.insert(0, " (");
+				module->updateTrackLabelRequest = 0;// all done pulling
 			}
 
 			if (oldSelectedTrack != trk) {// update controls when user selects another track

@@ -471,6 +471,7 @@ struct EcoItem : MenuItem {
 };
 
 
+
 // Track context menu
 // --------------------
 
@@ -778,6 +779,20 @@ struct LinkFaderItem : MenuItem {
 	}
 };
 
+// init track settings
+template <typename TMixerTrack>
+struct InitializeTrackItem : MenuItem {
+	TMixerTrack *srcTrack;
+	void onAction(const event::Action &e) override {
+		srcTrack->paGroup->setValue(0.0f);
+		srcTrack->paFade->setValue(1.0f);
+		srcTrack->paMute->setValue(0.0f);
+		srcTrack->paSolo->setValue(0.0f);
+		srcTrack->paPan->setValue(0.5f);
+		srcTrack->gInfo->clearLinked(srcTrack->trackNum);
+		srcTrack->onReset();
+	}
+};
 
 // copy track menu settings to
 template <typename TMixerTrack>
