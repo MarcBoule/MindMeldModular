@@ -783,6 +783,7 @@ struct LinkFaderItem : MenuItem {
 template <typename TMixerTrack>
 struct InitializeTrackItem : MenuItem {
 	TMixerTrack *srcTrack;
+	int *updateTrackLabelRequestPtr;
 	void onAction(const event::Action &e) override {
 		srcTrack->paGroup->setValue(0.0f);
 		srcTrack->paFade->setValue(1.0f);
@@ -791,6 +792,7 @@ struct InitializeTrackItem : MenuItem {
 		srcTrack->paPan->setValue(0.5f);
 		srcTrack->gInfo->clearLinked(srcTrack->trackNum);
 		srcTrack->onReset();
+		*updateTrackLabelRequestPtr = 1;
 	}
 };
 

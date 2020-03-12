@@ -229,9 +229,7 @@ struct MixMaster : Module {
 
 	
 	void onReset() override {
-		for (int trk = 0; trk < N_TRK; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
-		}
+		// track labels initialized in tracks[i].onReset()'s resetNonJson() call
 		for (int grp = 0; grp < N_GRP; grp++) {
 			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
 		}

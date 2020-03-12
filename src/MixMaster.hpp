@@ -1073,6 +1073,7 @@ struct MixerTrack {
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
 
 	// no need to save, with reset
+	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	bool stereo;// pan coefficients use this, so set up first
 	private:
 	float inGain;
@@ -1115,7 +1116,6 @@ struct MixerTrack {
 	Param *paMute;
 	Param *paSolo;
 	Param *paPan;
-	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float* groupTaps;// [0..1] tap 0 of group 1, [1..2] tap 0 of group 2, etc.
 	float *insertOuts;// [0][1]: insert outs for this track
@@ -1176,6 +1176,7 @@ struct MixerTrack {
 
 
 	void resetNonJson() {
+		snprintf(trackName, 4, "-%02i", trackNum + 1); trackName[3] = '-';
 		stereo = false;
 		inGain = 0.0f;
 		panMatrix = 0.0f;

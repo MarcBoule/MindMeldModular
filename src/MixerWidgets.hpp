@@ -676,6 +676,7 @@ struct TrackDisplay : EditableDisplayBase {
 
 			InitializeTrackItem<TMixerTrack> *initTrackItem = createMenuItem<InitializeTrackItem<TMixerTrack>>("Initialize track settings", "");
 			initTrackItem->srcTrack = srcTrack;
+			initTrackItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
 			menu->addChild(initTrackItem);			
 
 			CopyTrackSettingsItem<TMixerTrack> *copyItem = createMenuItem<CopyTrackSettingsItem<TMixerTrack>>("Copy track menu settings to:", RIGHT_ARROW);
