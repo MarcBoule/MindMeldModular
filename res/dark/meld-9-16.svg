@@ -8,7 +8,7 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    height="128.5mm"
    width="30.48mm"
    sodipodi:docname="meld-9-16.svg"
@@ -33,7 +33,7 @@
      inkscape:window-y="-8"
      inkscape:window-x="-8"
      inkscape:cy="205.00582"
-     inkscape:cx="-165.61504"
+     inkscape:cx="-311.85747"
      inkscape:zoom="1.6616245"
      units="mm"
      inkscape:document-units="mm"
@@ -246,16 +246,6 @@
        y1="321.03"
        x1="19.389999"
        id="linear-gradient-21" />
-    <linearGradient
-       y2="306.42999"
-       x2="67.010002"
-       y1="321.03"
-       x1="67.010002"
-       gradientTransform="matrix(1,0,0,-1,0,365.75)"
-       gradientUnits="userSpaceOnUse"
-       id="linearGradient594"
-       xlink:href="#linear-gradient-19"
-       inkscape:collect="always" />
   </defs>
   <title
      id="title47">Asset 7</title>
@@ -621,138 +611,5 @@
        width="22.68"
        height="1"
        id="rect188" />
-  </g>
-  <g
-     id="Poly_Jacks"
-     data-name="Poly Jacks"
-     transform="scale(1.3333333,1.3333406)">
-    <circle
-       class="cls-28"
-       cx="67.010002"
-       cy="52.02"
-       r="11.2"
-       id="circle544"
-       style="fill:url(#linear-gradient-18)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="M 67,41 A 11.06,11.06 0 1 1 56,52 v 0 A 11.06,11.06 0 0 1 67,41 m 0,-0.28 A 11.34,11.34 0 1 0 78.35,52 v 0 A 11.34,11.34 0 0 0 67,40.68 Z"
-       id="path546"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="67.010002"
-       cy="52.02"
-       r="8.3599997"
-       id="circle548" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="M 67,43.8 A 8.22,8.22 0 1 1 58.81,52 v 0 A 8.22,8.22 0 0 1 67,43.8 m 0,-0.29 A 8.51,8.51 0 1 0 75.53,52 v 0 A 8.5,8.5 0 0 0 67,43.51 Z"
-       id="path550"
-       inkscape:connector-curvature="0" />
-    <circle
-       class="cls-29"
-       cx="67.010002"
-       cy="52.02"
-       r="7.3000002"
-       id="circle552"
-       style="fill:url(#linearGradient594)" />
-    <circle
-       cx="67.010002"
-       cy="52.02"
-       r="5.0999999"
-       id="circle554" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="76.860001"
-       y="51.470001"
-       width="0.69999999"
-       height="1.2"
-       id="rect556" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="78.09,53.2 78.09,50.93 76.33,50.93 76.33,53.2 "
-       id="polygon558" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="56.48"
-       y="51.470001"
-       width="0.69999999"
-       height="1.2"
-       id="rect560" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="57.71,53.2 57.71,50.93 55.95,50.93 55.95,53.2 "
-       id="polygon562" />
-    <circle
-       class="cls-30"
-       cx="19.389999"
-       cy="52.02"
-       r="11.2"
-       id="circle564"
-       style="fill:url(#linear-gradient-20)" />
-    <path
-       style="fill:#828282"
-       class="cls-8"
-       d="M 19.39,41 A 11.06,11.06 0 1 1 8.33,52 v 0 A 11.06,11.06 0 0 1 19.39,41 m 0,-0.28 A 11.34,11.34 0 1 0 30.73,52 v 0 A 11.34,11.34 0 0 0 19.39,40.68 Z"
-       id="path566"
-       inkscape:connector-curvature="0" />
-    <circle
-       style="fill:#1e1e1e"
-       class="cls-10"
-       cx="19.389999"
-       cy="52.02"
-       r="8.3599997"
-       id="circle568" />
-    <path
-       style="fill:#878787"
-       class="cls-11"
-       d="m 19.39,43.8 a 8.22,8.22 0 1 1 -8.2,8.2 v 0 a 8.22,8.22 0 0 1 8.22,-8.22 m 0,-0.29 a 8.51,8.51 0 1 0 8.5,8.51 v 0 a 8.5,8.5 0 0 0 -8.49,-8.51 z"
-       id="path570"
-       inkscape:connector-curvature="0" />
-    <circle
-       class="cls-31"
-       cx="19.389999"
-       cy="52.02"
-       r="7.3000002"
-       id="circle572"
-       style="fill:url(#linear-gradient-21)" />
-    <circle
-       cx="19.389999"
-       cy="52.02"
-       r="5.0999999"
-       id="circle574" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="29.24"
-       y="51.470001"
-       width="0.69999999"
-       height="1.2"
-       id="rect576" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="30.47,53.2 30.47,50.93 28.71,50.93 28.71,53.2 "
-       id="polygon578" />
-    <rect
-       style="fill:#828282"
-       class="cls-8"
-       x="8.8599997"
-       y="51.470001"
-       width="0.69999999"
-       height="1.2"
-       id="rect580" />
-    <polygon
-       style="fill:#828282"
-       class="cls-8"
-       points="10.09,53.2 10.09,50.93 8.33,50.93 8.33,53.2 "
-       id="polygon582" />
   </g>
 </svg>
