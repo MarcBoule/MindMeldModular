@@ -42,7 +42,7 @@ struct Test : Module {
 	
 	// No need to save, with reset
 	Bessel3 iir1;
-	Bessel4 iir2;
+	Bessel3 iir2;
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -53,8 +53,8 @@ struct Test : Module {
 
 		// configParam(BYPASS_PARAMS + i, 0.0f, 1.0f, 0.0f, string::f("Bypass %i", i + 1));
 		
-		iir1.init();
-		iir2.init();
+		iir1.init(true);
+		iir2.init(false);
 		
 		onReset();
 		
