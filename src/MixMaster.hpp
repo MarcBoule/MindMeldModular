@@ -1058,9 +1058,6 @@ struct MixerTrack {
 	float gainAdjust;// this is a gain here (not dB)
 	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
-	private:
-	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
-	public:
 	int8_t directOutsMode;// when per track
 	int8_t auxSendsMode;// when per track
 	int8_t panLawStereo;// when per track
@@ -1116,6 +1113,7 @@ struct MixerTrack {
 	Param *paSolo;
 	Param *paPan;
 	Param *paHpfCutoff;
+	Param *paLpfCutoff;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 	float* groupTaps;// [0..1] tap 0 of group 1, [1..2] tap 0 of group 2, etc.
 	float *insertOuts;// [0][1]: insert outs for this track
@@ -1141,6 +1139,7 @@ struct MixerTrack {
 		paSolo = &_params[TRACK_SOLO_PARAMS + trackNum];
 		paPan = &_params[TRACK_PAN_PARAMS + trackNum];
 		paHpfCutoff = &_params[TRACK_HPCUT_PARAMS + trackNum];
+		paLpfCutoff = &_params[TRACK_LPCUT_PARAMS + trackNum];
 		trackName = _trackName;
 		taps = _taps;
 		groupTaps = _groupTaps;
@@ -1219,9 +1218,6 @@ struct MixerTrack {
 		// fadeProfile
 		json_object_set_new(rootJ, (ids + "fadeProfile").c_str(), json_real(fadeProfile));
 		
-		// lpfCutoffFreq
-		json_object_set_new(rootJ, (ids + "lpfCutoffFreq").c_str(), json_real(getLPFCutoffFreq()));
-		
 		// directOutsMode
 		json_object_set_new(rootJ, (ids + "directOutsMode").c_str(), json_integer(directOutsMode));
 		
@@ -1272,7 +1268,7 @@ struct MixerTrack {
 		if (hpfCutoffFreqJ)
 			setHPFCutoffFreq(json_number_value(hpfCutoffFreqJ));
 		
-		// lpfCutoffFreq
+		// lpfCutoffFreq (legacy)
 		json_t *lpfCutoffFreqJ = json_object_get(rootJ, (ids + "lpfCutoffFreq").c_str());
 		if (lpfCutoffFreqJ)
 			setLPFCutoffFreq(json_number_value(lpfCutoffFreqJ));
@@ -1332,7 +1328,7 @@ struct MixerTrack {
 		dest->fadeRate = *fadeRate;
 		dest->fadeProfile = fadeProfile;
 		dest->hpfCutoffFreq = paHpfCutoff->getValue();
-		dest->lpfCutoffFreq = lpfCutoffFreq;	
+		dest->lpfCutoffFreq = paLpfCutoff->getValue();	
 		dest->directOutsMode = directOutsMode;
 		dest->auxSendsMode = auxSendsMode;
 		dest->panLawStereo = panLawStereo;
@@ -1394,7 +1390,7 @@ struct MixerTrack {
 	}
 
 	
-	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
+	void setHPFCutoffFreq(float fc) {
 		paHpfCutoff->setValue(fc);
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		for (int i = 0; i < 2; i++) {
@@ -1404,13 +1400,13 @@ struct MixerTrack {
 	}
 	float getHPFCutoffFreq() {return paHpfCutoff->getValue();}
 	
-	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
-		lpfCutoffFreq = fc;
+	void setLPFCutoffFreq(float fc) {
+		paLpfCutoff->setValue(fc);
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
 		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
 	}
-	float getLPFCutoffFreq() {return lpfCutoffFreq;}
+	float getLPFCutoffFreq() {return paLpfCutoff->getValue();}
 
 	float calcSoloGain() {// returns 1.0f when the check for solo means this track should play, 0.0f otherwise
 		if (gInfo->soloBitMask == 0ul) {// no track nor groups are soloed 
@@ -1436,7 +1432,7 @@ struct MixerTrack {
 
 	void onSampleRateChange() {
 		setHPFCutoffFreq(paHpfCutoff->getValue());
-		setLPFCutoffFreq(lpfCutoffFreq);
+		setLPFCutoffFreq(paLpfCutoff->getValue());
 	}
 
 	

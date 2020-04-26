@@ -28,6 +28,7 @@ struct MixMaster : Module {
 		MAIN_FADER_PARAM,
 		ENUMS(GROUP_SELECT_PARAMS, N_TRK),
 		ENUMS(TRACK_HPCUT_PARAMS, N_TRK),
+		ENUMS(TRACK_LPCUT_PARAMS, N_TRK),
 		NUM_PARAMS
 	}; 
 
@@ -175,7 +176,10 @@ struct MixMaster : Module {
 			
 			// HPF cutoff
 			snprintf(strBuf, 32, "-%02i-: HPF cutoff", i + 1);
-			configParam(TRACK_HPCUT_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);// will get properly set by tracks 
+			configParam<HPFCutoffParamQuantity>(TRACK_HPCUT_PARAMS + i, 13.0f, 1000.0f, 13.0f, strBuf); 
+			// LPF cutoff
+			snprintf(strBuf, 32, "-%02i-: LPF cutoff", i + 1);
+			configParam<LPFCutoffParamQuantity>(TRACK_LPCUT_PARAMS + i, 1000.0f, 21000.0f, 20010.0f, strBuf); 
 		}
 		// Group
 		for (int i = 0; i < N_GRP; i++) {
@@ -907,8 +911,10 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			// HPF lights
 			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPF_LIGHTS + i));	
+			addChild(createParamCentered<FilterCutWidget>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPCUT_PARAMS + i));				
 			// LPF lights
 			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPF_LIGHTS + i));	
+			addChild(createParamCentered<FilterCutWidget>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPCUT_PARAMS + i));	
 			// Left inputs
 			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs
@@ -1194,9 +1200,11 @@ struct MixMasterJrWidget : ModuleWidget {
 				trackDisplays[i]->inputWidgets = inputWidgets;
 			}
 			// HPF lights
-			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPF_LIGHTS + i));	
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPF_LIGHTS + i));
+			addChild(createParamCentered<FilterCutWidget>(mm2px(Vec(xTrck1 - 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_HPCUT_PARAMS + i));	
 			// LPF lights
 			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPF_LIGHTS + i));	
+			addChild(createParamCentered<FilterCutWidget>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPCUT_PARAMS + i));	
 			// Left inputs
 			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
 			// Right inputs

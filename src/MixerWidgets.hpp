@@ -13,6 +13,60 @@
 #include "MixerMenus.hpp"
 
 
+// Filter cutoffs
+
+struct FilterCutWidget : ParamWidget {
+	FilterCutWidget() {
+		box.size = Vec(6.0f, 6.0f);
+	};
+	void reset() override {};
+	void randomize() override {};
+};
+
+struct HPFCutoffParamQuantity : ParamQuantity {
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut >= GlobalConst::minHPFCutoffFreq) {
+			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
+		}
+		else {
+			return "OFF";
+		}
+	}
+	std::string getLabel() override {return "HPF Cutoff";}
+	std::string getUnit() override {
+		if (getDisplayValue() >= GlobalConst::minHPFCutoffFreq) {
+			return " Hz";
+		}
+		else {
+			return "";
+		}
+	}
+};
+struct LPFCutoffParamQuantity : ParamQuantity {
+	std::string getDisplayValueString() override {
+		float valCut = getDisplayValue();
+		if (valCut <= GlobalConst::maxLPFCutoffFreq) {
+			valCut =  std::round(valCut / 100.0f);
+			return string::f("%g", math::normalizeZero(valCut / 10.0f));
+		}
+		else {
+			return "OFF";
+		}
+	}
+	std::string getLabel() override {return "LPF Cutoff";}
+	std::string getUnit() override {
+		if (getDisplayValue() <= GlobalConst::maxLPFCutoffFreq) {
+			return " kHz";
+		}
+		else {
+			return "";
+		}
+	}
+};
+
+
+
 // Fade pointer
 // --------------------
 
