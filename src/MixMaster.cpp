@@ -27,6 +27,7 @@ struct MixMaster : Module {
 		MAIN_MONO_PARAM,// must follow MAIN_DIM_PARAM since code assumes contiguous
 		MAIN_FADER_PARAM,
 		ENUMS(GROUP_SELECT_PARAMS, N_TRK),
+		ENUMS(TRACK_HPCUT_PARAMS, N_TRK),
 		NUM_PARAMS
 	}; 
 
@@ -171,6 +172,10 @@ struct MixMaster : Module {
 			// Group select
 			snprintf(strBuf, 32, "-%02i-: group", i + 1);
 			configParam(GROUP_SELECT_PARAMS + i, 0.0f, (float)N_GRP, 0.0f, strBuf);
+			
+			// HPF cutoff
+			snprintf(strBuf, 32, "-%02i-: HPF cutoff", i + 1);
+			configParam(TRACK_HPCUT_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);// will get properly set by tracks 
 		}
 		// Group
 		for (int i = 0; i < N_GRP; i++) {
