@@ -124,7 +124,7 @@ struct VuMeterBase : OpaqueWidget {
 	
 	// local 
 	float peakHold[2] = {0.0f, 0.0f};
-	long oldTime = -1;
+	float holdTimeRemainBeforeReset = 0.0f;
 	float yellowThreshold;// in px, before vertical inversion
 	float redThreshold;// in px, before vertical inversion
 	int colorTheme;

@@ -30,10 +30,10 @@ void VuMeterBase::prepareYellowAndRedThresholds(float yellowMinDb, float redMinD
 }
 
 
-void VuMeterBase::processPeakHold() {
-	long newTime = time(0);
-	if ( (newTime != oldTime) && ((newTime & 0x1) == 0) ) {
-		oldTime = newTime;
+void VuMeterBase::processPeakHold() {// use APP->window->getLastFrameRate()
+	holdTimeRemainBeforeReset -= 1.0f / APP->window->getLastFrameRate();
+	if ( holdTimeRemainBeforeReset < 0.0f ) {
+		holdTimeRemainBeforeReset = 2.0f;// in seconds
 		peakHold[0] = 0.0f;
 		peakHold[1] = 0.0f;
 	}		
@@ -159,6 +159,7 @@ void VuMeterMaster::drawVu(const DrawArgs &args, float vuValue, float posX, int 
 		
 		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
 		float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
+		if (vuHeight > redThreshold) holdTimeRemainBeforeReset = 2.0f;// in seconds
 		if (!ghostMuteOn && (vuHeight > redThreshold || peakHoldVal > hardRedVoltage)) {
 			// Full red
 			nvgBeginPath(args.vg);
