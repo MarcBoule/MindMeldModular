@@ -19,13 +19,16 @@ struct FilterCutWidget : ParamWidget {
 	FilterCutWidget() {
 		box.size = Vec(6.0f, 6.0f);
 	};
-	void reset() override {};
-	void randomize() override {};
+	void reset() override {
+		if (paramQuantity) {
+			paramQuantity->reset();
+		}
+	}
 };
 
 struct HPFCutoffParamQuantity : ParamQuantity {
 	std::string getDisplayValueString() override {
-		float valCut = getDisplayValue();
+		float valCut = getValue();
 		if (valCut >= GlobalConst::minHPFCutoffFreq) {
 			return string::f("%i", (int)(math::normalizeZero(valCut) + 0.5f));
 		}
@@ -35,7 +38,7 @@ struct HPFCutoffParamQuantity : ParamQuantity {
 	}
 	std::string getLabel() override {return "HPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() >= GlobalConst::minHPFCutoffFreq) {
+		if (getValue() >= GlobalConst::minHPFCutoffFreq) {
 			return " Hz";
 		}
 		else {
@@ -45,7 +48,7 @@ struct HPFCutoffParamQuantity : ParamQuantity {
 };
 struct LPFCutoffParamQuantity : ParamQuantity {
 	std::string getDisplayValueString() override {
-		float valCut = getDisplayValue();
+		float valCut = getValue();
 		if (valCut <= GlobalConst::maxLPFCutoffFreq) {
 			valCut =  std::round(valCut / 100.0f);
 			return string::f("%g", math::normalizeZero(valCut / 10.0f));
@@ -56,7 +59,7 @@ struct LPFCutoffParamQuantity : ParamQuantity {
 	}
 	std::string getLabel() override {return "LPF Cutoff";}
 	std::string getUnit() override {
-		if (getDisplayValue() <= GlobalConst::maxLPFCutoffFreq) {
+		if (getValue() <= GlobalConst::maxLPFCutoffFreq) {
 			return " kHz";
 		}
 		else {
@@ -630,6 +633,8 @@ struct TrackDisplay : EditableDisplayBase {
 	int *updateTrackLabelRequestPtr;
 	int *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
+	ParamQuantity* hpfParamQuantity;
+	ParamQuantity* lpfParamQuantity;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -644,14 +649,22 @@ struct TrackDisplay : EditableDisplayBase {
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			
-			HPFCutoffSlider<TMixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<TMixerTrack>(srcTrack);
-			trackHPFAdjustSlider->box.size.x = 200.0f;
+			// HPFCutoffSlider<TMixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<TMixerTrack>(srcTrack);
+			// trackHPFAdjustSlider->box.size.x = 200.0f;
+			// menu->addChild(trackHPFAdjustSlider);
+			
+			HPFCutoffSlider2 *trackHPFAdjustSlider = new HPFCutoffSlider2(hpfParamQuantity);
+			trackHPFAdjustSlider->box.size.x = 200.0f;  
 			menu->addChild(trackHPFAdjustSlider);
+						
+			// LPFCutoffSlider<TMixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<TMixerTrack>(srcTrack);
+			// trackLPFAdjustSlider->box.size.x = 200.0f;
+			// menu->addChild(trackLPFAdjustSlider);
 			
-			LPFCutoffSlider<TMixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<TMixerTrack>(srcTrack);
-			trackLPFAdjustSlider->box.size.x = 200.0f;
+			LPFCutoffSlider2 *trackLPFAdjustSlider = new LPFCutoffSlider2(lpfParamQuantity);
+			trackLPFAdjustSlider->box.size.x = 200.0f;  
 			menu->addChild(trackLPFAdjustSlider);
-			
+						
 			if (srcTrack->stereo) {
 				StereoWidthLevelSlider *widthSlider = new StereoWidthLevelSlider(&(srcTrack->stereoWidth));
 				widthSlider->box.size.x = 200.0f;

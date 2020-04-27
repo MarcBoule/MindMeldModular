@@ -1083,6 +1083,8 @@ struct MixerTrack {
 	OnePoleFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
+	float lastHpfCutoff;
+	float lastLpfCutoff;
 	float oldPan;
 	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
@@ -1160,8 +1162,6 @@ struct MixerTrack {
 		gainAdjust = 1.0f;
 		*fadeRate = 0.0f;
 		fadeProfile = 0.0f;
-		setHPFCutoffFreq(13.0f);// off
-		setLPFCutoffFreq(20010.0f);// off
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 1;
@@ -1185,7 +1185,11 @@ struct MixerTrack {
 		gainMatrixSlewers.reset();
 		inGainSlewer.reset();
 		stereoWidthSlewer.reset();
-		muteSoloGainSlewer.reset();
+		muteSoloGainSlewer.reset(); 
+		setHPFCutoffFreq(paHpfCutoff->getValue());// off
+		setLPFCutoffFreq(paLpfCutoff->getValue());// off
+		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
+		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].reset();
 			hpFilter[i].reset();
@@ -1392,6 +1396,7 @@ struct MixerTrack {
 	
 	void setHPFCutoffFreq(float fc) {
 		paHpfCutoff->setValue(fc);
+		lastHpfCutoff = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].setCutoff(fc);
@@ -1402,6 +1407,7 @@ struct MixerTrack {
 	
 	void setLPFCutoffFreq(float fc) {
 		paLpfCutoff->setValue(fc);
+		lastLpfCutoff = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
 		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
@@ -1437,6 +1443,14 @@ struct MixerTrack {
 
 	
 	void updateSlowValues() {
+		// filters
+		if (paHpfCutoff->getValue() != lastHpfCutoff) {
+			setHPFCutoffFreq(paHpfCutoff->getValue());
+		}
+		if (paLpfCutoff->getValue() != lastLpfCutoff) {
+			setLPFCutoffFreq(paLpfCutoff->getValue());
+		}
+		
 		// calc ** stereo **
 		bool newStereo = inSig[1].isConnected() || (polyStereo != 0 && inSig[0].isPolyphonic());
 		if (stereo != newStereo) {

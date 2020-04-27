@@ -564,7 +564,12 @@ struct HPFCutoffSlider : ui::Slider {
 		delete quantity;
 	}
 };
-
+struct HPFCutoffSlider2 : ui::Slider {
+	HPFCutoffSlider2(ParamQuantity *srcPQ) {
+		quantity = srcPQ;
+		
+	}
+};
 
 
 // LPF filter cutoff menu item
@@ -617,7 +622,12 @@ struct LPFCutoffSlider : ui::Slider {
 		delete quantity;
 	}
 };
-
+struct LPFCutoffSlider2 : ui::Slider {
+	LPFCutoffSlider2(ParamQuantity *srcPQ) {
+		quantity = srcPQ;
+		
+	}
+};
 
 // Stereo width item and
 // Pan CV level item
