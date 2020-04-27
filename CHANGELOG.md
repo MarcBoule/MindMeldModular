@@ -2,6 +2,7 @@
 
 - Implemented darkened VUs when muted/faded in MixMasters and AuxSpanders
 - Added initialization of individual track settings in MixMasters and EqMaster
+- Made filter mappable (click filter lights when mapping)
 
 
 ### 1.1.5 (2020-01-29)
