@@ -497,6 +497,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	Param *trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
 	PackedBytes4 *miscSettingsSrc;	
+	PackedBytes4 *miscSettings2Src;	
 	Param *globalBypassParamSrc;
 	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
 	bool *bandParamsCvConnected;
@@ -535,11 +536,15 @@ struct EqCurveAndGrid : TransparentWidget {
 				drawSpectrum(args);
 			}
 
-			drawGridtext(args);
+			bool hideEqCurves = miscSettings2Src->cc4[2] != 0 && (!trackEqsSrc[currTrk].getTrackActive() || globalBypassParamSrc->getValue() >= 0.5f);
+
+			drawGridtext(args, hideEqCurves);
 			
 			// EQ curves
-			calcCurveData();
-			drawAllEqCurves(args);
+			if (!hideEqCurves) {
+				calcCurveData();
+				drawAllEqCurves(args);
+			}
 			
 			nvgResetScissor(args.vg);					
 		}
@@ -601,7 +606,7 @@ struct EqCurveAndGrid : TransparentWidget {
 		float textY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
 		nvgText(args.vg, textX, textY - 3.0f, text.c_str(), NULL);
 	}
-	void drawGridtext(const DrawArgs &args) {
+	void drawGridtext(const DrawArgs &args, bool hideDb) {
 		// text labels
 		if (font->handle >= 0) {
 			nvgFillColor(args.vg, nvgRGB(0x97, 0x97, 0x97));
@@ -617,12 +622,14 @@ struct EqCurveAndGrid : TransparentWidget {
 			textAtFreqAndDb(args, 5000.0f, -20.0f, "5k");
 			textAtFreqAndDb(args, 10000.0f, -20.0f, "10k");
 			// dB
-			nvgTextAlign(args.vg, NVG_ALIGN_LEFT);
-			textAtFreqAndDb(args, 22.0f, -12.0f, "-12");
-			textAtFreqAndDb(args, 22.0f, -6.0f, "-6");
-			textAtFreqAndDb(args, 22.0f, 0.0f, "0 dB");
-			textAtFreqAndDb(args, 22.0f, 6.0f, "+6");
-			textAtFreqAndDb(args, 22.0f, 12.0f, "+12");
+			if (!hideDb) {
+				nvgTextAlign(args.vg, NVG_ALIGN_LEFT);
+				textAtFreqAndDb(args, 22.0f, -12.0f, "-12");
+				textAtFreqAndDb(args, 22.0f, -6.0f, "-6");
+				textAtFreqAndDb(args, 22.0f, 0.0f, "0 dB");
+				textAtFreqAndDb(args, 22.0f, 6.0f, "+6");
+				textAtFreqAndDb(args, 22.0f, 12.0f, "+12");
+			}
 		}
 	}
 	

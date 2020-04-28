@@ -46,7 +46,7 @@ struct EqMaster : Module {
 	int8_t trackVuColors[24];
 	TrackEq trackEqs[24];
 	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)), cc4[3] is detailsShow
-	PackedBytes4 miscSettings2;// cc4[0] is band label colours, cc4[1] is decay rate (0 = slow, 1 = med, 2 = fast)
+	PackedBytes4 miscSettings2;// cc4[0] is band label colours, cc4[1] is decay rate (0 = slow, 1 = med, 2 = fast), cc[2] is hide eq curves when bypassed, cc[3] is unused
 	PackedBytes4 showFreqAsNotes;
 	
 	
@@ -179,6 +179,8 @@ struct EqMaster : Module {
 		miscSettings.cc4[3] = 0x7; // detailsShow
 		miscSettings2.cc4[0] = 0;// band label colours
 		miscSettings2.cc4[1] = 2;// decay rate fast
+		miscSettings2.cc4[2] = 0;// hide eq curves when bypassed
+		miscSettings2.cc4[3] = 0;// unused
 		showFreqAsNotes.cc1 = 0;
 		resetNonJson();
 	}
@@ -845,6 +847,10 @@ struct EqMasterWidget : ModuleWidget {
 		decayItem->decayRateSrc = &(module->miscSettings2.cc4[1]);
 		menu->addChild(decayItem);
 
+		HideEqWhenBypassItem *hideeqItem = createMenuItem<HideEqWhenBypassItem>("Hide EQ curves when bypassed", CHECKMARK(module->miscSettings2.cc4[2] != 0));
+		hideeqItem->hideEqWhenBypass = &(module->miscSettings2.cc4[2]);
+		menu->addChild(hideeqItem);
+
 		menu->addChild(new MenuSeparator());
 		
 		DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
@@ -912,13 +918,13 @@ struct EqMasterWidget : ModuleWidget {
 		
 		// Center part
 		// Screen - Spectrum settings buttons
-		SpectrumSettingsButtons *bandsButton;
-		addChild(bandsButton = createWidget<SpectrumSettingsButtons>(mm2px(Vec(18.0f, 9.5f))));
-		ShowBandCurvesButtons *specButtons;
-		addChild(specButtons = createWidget<ShowBandCurvesButtons>(mm2px(Vec(95.0f, 9.5f))));
+		SpectrumSettingsButtons *specButtons;
+		addChild(specButtons = createWidget<SpectrumSettingsButtons>(mm2px(Vec(18.0f, 9.5f))));
+		ShowBandCurvesButtons *bandsButton;
+		addChild(bandsButton = createWidget<ShowBandCurvesButtons>(mm2px(Vec(95.0f, 9.5f))));
 		if (module) {
-			specButtons->settingSrc = &module->miscSettings.cc4[0];
-			bandsButton->settingSrc = &module->miscSettings.cc4[1];
+			bandsButton->settingSrc = &module->miscSettings.cc4[0];
+			specButtons->settingSrc = &module->miscSettings.cc4[1];
 		}
 		// Screen - EQ curve and grid
 		EqCurveAndGrid* eqCurveAndGrid;
@@ -927,6 +933,7 @@ struct EqMasterWidget : ModuleWidget {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
 			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
 			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
+			eqCurveAndGrid->miscSettings2Src = &(module->miscSettings2);
 			eqCurveAndGrid->globalBypassParamSrc = &(module->params[GLOBAL_BYPASS_PARAM]);
 			eqCurveAndGrid->bandParamsWithCvs = bandParamsWithCvs;
 			eqCurveAndGrid->bandParamsCvConnected = &bandParamsCvConnected;

@@ -74,7 +74,7 @@ struct KnobArcShowItem : MenuItem {
 			*srcDetailsShow |= setVal;
 		}
 	};
-
+	
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
@@ -302,5 +302,14 @@ struct DecayRateItem : MenuItem {
 		return menu;
 	}
 };
+
+struct HideEqWhenBypassItem : MenuItem {
+	int8_t *hideEqWhenBypass;
+	void onAction(const event::Action &e) override {
+		*hideEqWhenBypass ^= 0x1;
+	}
+};	
+
+
 
 #endif
