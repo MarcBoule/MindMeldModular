@@ -984,6 +984,16 @@ struct ClippingItem : MenuItem {
 };
 
 
+// masterFaderScalesSends
+struct MasterFaderScalesSendsItem : MenuItem {
+	int8_t *masterFaderScalesSendsSrc;
+	void onAction(const event::Action &e) override {
+		*masterFaderScalesSendsSrc ^= 0x1;
+	}
+};
+
+
+
 // dim gain menu item
 
 struct DimGainQuantity : Quantity {

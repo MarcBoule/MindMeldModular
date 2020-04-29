@@ -557,6 +557,7 @@ struct MasterDisplay : EditableDisplayBase {
 	char* masterLabel;
 	float* dimGainIntegerDB;
 	int* idSrc;
+	int8_t* masterFaderScalesSendsSrc;
 	
 	MasterDisplay() {
 		numChars = 6;
@@ -593,7 +594,11 @@ struct MasterDisplay : EditableDisplayBase {
 			ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
 			clipItem->clippingSrc = clipping;
 			menu->addChild(clipItem);
-				
+
+			MasterFaderScalesSendsItem *mastScaleSendItem = createMenuItem<MasterFaderScalesSendsItem>("Apply master fader to aux sends", CHECKMARK(*masterFaderScalesSendsSrc != 0));
+			mastScaleSendItem->masterFaderScalesSendsSrc = masterFaderScalesSendsSrc;
+			menu->addChild(mastScaleSendItem);
+			
 			if (colorAndCloak->cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = vuColorThemeLocal;

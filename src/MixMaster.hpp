@@ -33,6 +33,7 @@ struct GlobalInfo {
 	uint16_t ecoMode;// all 1's means yes, 0 means no
 	float linkedFaderReloadValues[N_TRK + N_GRP];
 	int8_t momentaryCvButtons;// 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
+	int8_t masterFaderScalesSends;// 1 = yes 
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -192,6 +193,7 @@ struct GlobalInfo {
 			linkedFaderReloadValues[trkOrGrp] = 1.0f;
 		}
 		momentaryCvButtons = 1;// momentary by default
+		masterFaderScalesSends = 0;// false by default
 		resetNonJson();
 	}
 
@@ -261,6 +263,9 @@ struct GlobalInfo {
 
 		// momentaryCvButtons
 		json_object_set_new(rootJ, "momentaryCvButtons", json_integer(momentaryCvButtons));
+
+		// masterFaderScalesSends
+		json_object_set_new(rootJ, "masterFaderScalesSends", json_integer(masterFaderScalesSends));
 	}
 
 
@@ -360,6 +365,11 @@ struct GlobalInfo {
 		if (momentaryCvButtonsJ)
 			momentaryCvButtons = json_integer_value(momentaryCvButtonsJ);
 		
+		// masterFaderScalesSends
+		json_t *masterFaderScalesSendsJ = json_object_get(rootJ, "masterFaderScalesSends");
+		if (masterFaderScalesSendsJ)
+			masterFaderScalesSends = json_integer_value(masterFaderScalesSendsJ);
+		
 		// extern must call resetNonJson()
 	}	
 		
@@ -389,7 +399,9 @@ struct MixerMaster {
 	simd::float_4 chainGainsAndMute;// 0=L, 1=R, 2=mute
 	float faderGain;
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
+	public:
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
+	private:
 	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	float oldFader;
