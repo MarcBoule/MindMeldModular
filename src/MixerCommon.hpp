@@ -73,7 +73,9 @@ struct GlobalConst {
 	static constexpr float antipopSlewSlow = 25.0f;// for pan/fader
 	static constexpr float minFadeRate = 0.1f;
 	static constexpr float minHPFCutoffFreq = 20.0f;
+	static constexpr float defHPFCutoffFreq = 13.0f;
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
+	static constexpr float defLPFCutoffFreq = 20010.0f;
 };
 
 

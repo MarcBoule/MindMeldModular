@@ -176,10 +176,10 @@ struct MixMaster : Module {
 			
 			// HPF cutoff
 			snprintf(strBuf, 32, "-%02i-: HPF cutoff", i + 1);
-			configParam<HPFCutoffParamQuantity>(TRACK_HPCUT_PARAMS + i, 13.0f, 1000.0f, 13.0f, strBuf); 
+			configParam<HPFCutoffParamQuantity>(TRACK_HPCUT_PARAMS + i, 13.0f, 1000.0f, GlobalConst::defHPFCutoffFreq, strBuf); 
 			// LPF cutoff
 			snprintf(strBuf, 32, "-%02i-: LPF cutoff", i + 1);
-			configParam<LPFCutoffParamQuantity>(TRACK_LPCUT_PARAMS + i, 1000.0f, 21000.0f, 20010.0f, strBuf, "", 0.0f, 0.001f);// diplay params are: base, mult, offset 
+			configParam<LPFCutoffParamQuantity>(TRACK_LPCUT_PARAMS + i, 1000.0f, 21000.0f, GlobalConst::defLPFCutoffFreq, strBuf, "", 0.0f, 0.001f);// diplay params are: base, mult, offset 
 		}
 		// Group
 		for (int i = 0; i < N_GRP; i++) {

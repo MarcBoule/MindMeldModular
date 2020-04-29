@@ -801,6 +801,8 @@ struct InitializeTrackItem : MenuItem {
 		srcTrack->paSolo->setValue(0.0f);
 		srcTrack->paPan->setValue(0.5f);
 		srcTrack->gInfo->clearLinked(srcTrack->trackNum);
+		srcTrack->paHpfCutoff->setValue(GlobalConst::defHPFCutoffFreq);
+		srcTrack->paLpfCutoff->setValue(GlobalConst::defLPFCutoffFreq);
 		srcTrack->onReset();
 		*updateTrackLabelRequestPtr = 1;
 	}
