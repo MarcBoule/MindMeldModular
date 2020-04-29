@@ -401,8 +401,8 @@ struct MixerMaster {
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	public:
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
-	private:
 	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
+	private:
 	OnePoleFilter dcBlocker[2];// 6dB/oct
 	float oldFader;
 	public:

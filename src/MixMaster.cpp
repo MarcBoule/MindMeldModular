@@ -611,7 +611,7 @@ struct MixMaster : Module {
 		// auxSends[] has room for 16+4 or 8+2 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 				
-		float masterGain = gInfo.masterFaderScalesSends == 0 ? 1.0f : master.gainMatrixSlewers.out[1] + master.gainMatrixSlewers.out[2];
+		float masterGain = gInfo.masterFaderScalesSends == 0 ? 1.0f : (master.gainMatrixSlewers.out[1] + master.gainMatrixSlewers.out[2]) * master.chainGainAndMuteSlewers.out[2];
 		
 		// tracks
 		if ( gInfo.auxSendsMode < 4 && gInfo.masterFaderScalesSends == 0 && (gInfo.groupsControlTrackSendLevels == 0 || gInfo.groupUsage[N_GRP] == 0) ) {
