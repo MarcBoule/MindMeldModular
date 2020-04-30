@@ -1067,6 +1067,7 @@ struct MixerTrack {
 	// none
 	
 	// need to save, with reset
+	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all	
 	float gainAdjust;// this is a gain here (not dB)
 	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +100, lin when 0, log when -100
@@ -1081,7 +1082,7 @@ struct MixerTrack {
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
 
 	// no need to save, with reset
-	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+
 	bool stereo;// pan coefficients use this, so set up first
 	private:
 	float inGain;
@@ -1171,6 +1172,7 @@ struct MixerTrack {
 
 
 	void onReset() {
+		snprintf(trackName, 4, "-%02i", trackNum + 1); trackName[3] = '-';
 		gainAdjust = 1.0f;
 		*fadeRate = 0.0f;
 		fadeProfile = 0.0f;
@@ -1188,7 +1190,6 @@ struct MixerTrack {
 
 
 	void resetNonJson() {
-		snprintf(trackName, 4, "-%02i", trackNum + 1); trackName[3] = '-';
 		stereo = false;
 		inGain = 0.0f;
 		panMatrix = 0.0f;
@@ -1225,6 +1226,9 @@ struct MixerTrack {
 
 
 	void dataToJson(json_t *rootJ) {
+		// trackName 
+		// saved elsewhere
+		
 		// gainAdjust
 		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
 		
@@ -1264,6 +1268,9 @@ struct MixerTrack {
 
 
 	void dataFromJson(json_t *rootJ) {
+		// trackName 
+		// loaded elsewhere
+		
 		// gainAdjust
 		json_t *gainAdjustJ = json_object_get(rootJ, (ids + "gainAdjust").c_str());
 		if (gainAdjustJ)
