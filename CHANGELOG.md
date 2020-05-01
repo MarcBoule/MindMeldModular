@@ -1,8 +1,8 @@
 ### 1.1.5 (in development)
 
 - Implemented darkened VUs when muted/faded in MixMasters and AuxSpanders
-- Added initialization of individual track settings in MixMasters and EqMaster
-- Made filter mappable (click filter lights when mapping)
+- Added option for initializing individual track settings in MixMasters and EqMaster
+- Made filters mappable (click filter lights when mapping)
 - Added option in EQMaster menu to hide EQ curves when bypassed, for when EQ is to be used as a spectrum analyzer only
 - Added option in MixMaster to make master fader scale aux sends (for chaining mixers with shared aux effects)
 
