@@ -6,6 +6,15 @@
 //***********************************************************************************************
 
 
+/* 		{
+			"slug": "Test",
+			"name": "Test",
+			"description": "Test module",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
+			"tags": ["Utility"]
+		}
+*/
+
 #include "MindMeldModular.hpp"
 #include "dsp/Bessel.hpp"
 
