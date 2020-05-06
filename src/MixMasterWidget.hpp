@@ -173,6 +173,14 @@ void step() override {
 				// Group select
 				snprintf(strBuf, 32, "%s: group", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_SELECT_PARAMS + i]->label = strBuf;
+				
+				// HPF cutoff
+				snprintf(strBuf, 32, "%s: HPF cutoff", trackLabel.c_str());
+				module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i]->label = strBuf;
+				// LPF cutoff
+				snprintf(strBuf, 32, "%s: LPF cutoff", trackLabel.c_str());
+				module->paramQuantities[TMixMaster::TRACK_LPCUT_PARAMS + i]->label = strBuf;
+
 			}
 			// Group
 			for (int i = 0; i < N_GRP; i++) {

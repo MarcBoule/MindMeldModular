@@ -36,7 +36,7 @@ struct HPFCutoffParamQuantity : ParamQuantity {
 			return "OFF";
 		}
 	}
-	std::string getLabel() override {return "HPF Cutoff";}
+	// std::string getLabel() override {return "HPF Cutoff";}
 	std::string getUnit() override {
 		if (getValue() >= GlobalConst::minHPFCutoffFreq) {
 			return " Hz";
@@ -57,7 +57,7 @@ struct LPFCutoffParamQuantity : ParamQuantity {
 			return "OFF";
 		}
 	}
-	std::string getLabel() override {return "LPF Cutoff";}
+	// std::string getLabel() override {return "LPF Cutoff";}
 	std::string getUnit() override {
 		if (getValue() <= GlobalConst::maxLPFCutoffFreq) {
 			return " kHz";

@@ -567,7 +567,6 @@ struct HPFCutoffSlider : ui::Slider {
 struct HPFCutoffSlider2 : ui::Slider {
 	HPFCutoffSlider2(ParamQuantity *srcPQ) {
 		quantity = srcPQ;
-		
 	}
 };
 
@@ -625,7 +624,6 @@ struct LPFCutoffSlider : ui::Slider {
 struct LPFCutoffSlider2 : ui::Slider {
 	LPFCutoffSlider2(ParamQuantity *srcPQ) {
 		quantity = srcPQ;
-		
 	}
 };
 
