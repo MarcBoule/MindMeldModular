@@ -22,8 +22,8 @@
 struct Test : Module {
 	
 	enum ParamIds {
-		SPLIT_PARAM,
-		BASS_WIDTH_PARAM,// 0 to 1.0f; 0 is mono, 1 is stereo
+		CROSSOVER_PARAM,
+		BASS_WIDTH_PARAM,// 0 to 1.0f; 0 is stereo, 1 is mono
 		NUM_PARAMS
 	};
 	
@@ -52,9 +52,9 @@ struct Test : Module {
 	// none
 	
 	// No need to save, with reset
-	float splitPoint;
+	float crossover;
 	dsp::BiquadFilter butter[8];// L low 1, low 2, R low 1, low 2, L high 1, high 2, R high 1, high 2
-	dsp::SlewLimiter bassWidthSlewer;
+	dsp::SlewLimiter bassWetSlewer;
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -72,28 +72,27 @@ struct Test : Module {
 	Test() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
-		configParam(SPLIT_PARAM, 50.0f, 500.0f, 120.0f, "Split point", " Hz");
-		configParam(BASS_WIDTH_PARAM, 0.0f, 1.0f, 0.0f, "Bass width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
+		configParam(CROSSOVER_PARAM, 50.0f, 500.0f, 120.0f, "Crossover", " Hz");
+		configParam(BASS_WIDTH_PARAM, 0.0f, 1.0f, 0.0f, "Dry/Wet", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 					
 					
 		onReset();
 		
 		panelTheme = 0;
-		bassWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
+		bassWetSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
 	}
   
 	void onReset() override {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
-		splitPoint = params[SPLIT_PARAM].getValue();
-		float nfc = splitPoint / APP->engine->getSampleRate();
-		setFilterCutoffs(nfc);
+		crossover = params[CROSSOVER_PARAM].getValue();
+		setFilterCutoffs(crossover / APP->engine->getSampleRate());
 		
 		for (int i = 0; i < 8; i++) { 
 			butter[i].reset();
 		}
-		bassWidthSlewer.reset();
+		bassWetSlewer.reset();
 	}
 
 
@@ -115,14 +114,15 @@ struct Test : Module {
 
 
 	void onSampleRateChange() override {
+		setFilterCutoffs(crossover / APP->engine->getSampleRate());
 	}
 	
 
 	void process(const ProcessArgs &args) override {
-		float newSplitPoint = params[SPLIT_PARAM].getValue();
-		if (splitPoint != newSplitPoint) {
-			splitPoint = newSplitPoint;
-			float nfc = splitPoint / args.sampleRate;
+		float newcrossover = params[CROSSOVER_PARAM].getValue();
+		if (crossover != newcrossover) {
+			crossover = newcrossover;
+			float nfc = crossover / args.sampleRate;
 			setFilterCutoffs(nfc);
 		}
 		
@@ -134,10 +134,10 @@ struct Test : Module {
 		
 		// Bass width (apply to leftLow and rightLow
 		float newBassWidth = params[BASS_WIDTH_PARAM].getValue();
-		if (newBassWidth != bassWidthSlewer.out) {
-			bassWidthSlewer.process(args.sampleTime, newBassWidth);
+		if (newBassWidth != bassWetSlewer.out) {
+			bassWetSlewer.process(args.sampleTime, newBassWidth);
 		}
-		float wdiv2 = bassWidthSlewer.out * 0.5f;
+		float wdiv2 = (1.0f - bassWetSlewer.out) * 0.5f;
 		float up = 0.5f + wdiv2;
 		float down = 0.5f - wdiv2;
 		float leftSig = leftLow * up + rightLow * down;
@@ -163,8 +163,8 @@ struct TestWidget : ModuleWidget {
 		// Main panel from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld-1-8.svg")));
  
-		// splitpoint knob
-		addParam(createParamCentered<Davies1900hLargeWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 2)), module, Test::SPLIT_PARAM));
+		// crossover knob
+		addParam(createParamCentered<Davies1900hLargeWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 2)), module, Test::CROSSOVER_PARAM));
 		addParam(createParamCentered<Davies1900hWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 4)), module, Test::BASS_WIDTH_PARAM));
  
 		// inputs
