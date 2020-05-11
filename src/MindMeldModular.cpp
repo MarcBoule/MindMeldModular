@@ -22,7 +22,7 @@ void init(rack::Plugin *p) {
 	p->addModel(modelUnmeld);
 	p->addModel(modelEqMaster);
 	p->addModel(modelEqExpander);
-	// p->addModel(modelTest);
+	p->addModel(modelTest);
 }
 
 

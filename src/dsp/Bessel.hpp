@@ -4,13 +4,51 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-// Butterworth N=2, fc=1kHz, fs=44.1kHz
-// float b[3] = {0.004604f, 2.0f * 0.004604f, 0.004604f};
-// float a[2] = {-1.7990964095f, +0.8175124034f};
 
-// Bessel N=2, fc=1kHz, fs=44.1kHz, u=2 (1 sample delay, mesured ?)
-// float b[3] = {0.0155982532f, 2.0f * 0.0155982532f, 0.0155982532f};
-// float a[2] = {-1.500428132f, +0.562821145f};
+
+class Bessel2 {
+	static const int N = 2;
+	
+	dsp::IIRFilter<N + 1, N + 1, float> iir;
+	
+	public: 
+	
+	void init(bool isLPF) {
+		static constexpr float wc = 2 * M_PI * 100.0f;
+		static constexpr float t = 1.0f / 44100.0f;
+		if (isLPF) {
+			// MZT.tns p.2, linear phase confirmed, group delay is function of wc, and number of samples delay is thus function of wc and fs
+			// static constexpr float g = 4.85f *1.43f / (98.31f * 98.78f);
+			// float b[N + 1] = {1.0f * g, 0.0f, 0.0f};
+			// float a[N] = {-2.0f * std::exp(-1.5f * wc * t) * std::cos(wc * t * std::sqrt(3.0f) / 2.0f), std::exp(-3.0f * wc * t)};
+			
+			// MZT.tns p3, linear phase confirmed, group delay is function of wc, and number of samples delay is thus function of wc and fs
+			static constexpr float g = 0.1f / 3.0f;
+			float b[N + 1] = {1.0f * g, 0.0f, 0.0f};
+			float a[N] = {-1.7023421214676f, 0.73047970302298f};
+			
+			iir.setCoefficients(b, a);
+		}
+		else {
+			// MZT.tns p.1, NOT linear phase!
+			static constexpr float g = 1.0f;
+			float b[N + 1] = {1.0f * g, -2.0f * g, 1.0f * g};
+			float a[N] = {-2.0f * std::exp(-0.5f * wc * t) * std::cos(wc * t * std::sqrt(3.0f) / 6.0f), std::exp(-1.0f * wc * t)};
+			iir.setCoefficients(b, a);
+			
+			// MZT.tns p.4, NOT linear phase but no need to test since get almost same coeffs as https://www-users.cs.york.ac.uk/~fisher/cgi-bin/mkfscript
+			// and his graphs at bottom show not linear phase
+		}
+	}
+	void reset() {
+		iir.reset();		
+	}
+	float process(float vin) {
+		return iir.process(vin);
+	}
+};
+
+
 
 
 class Bessel3 {
