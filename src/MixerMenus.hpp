@@ -645,7 +645,7 @@ struct PercentQuantity : Quantity {
 		return *srcValue;
 	}
 	float getMinValue() override {return 0.0f;}
-	float getMaxValue() override {return 1.0f;}
+	float getMaxValue() override {return 2.0f;}
 	float getDefaultValue() override {return 1.0f;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {

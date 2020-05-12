@@ -137,9 +137,9 @@ struct Test : Module {
 		if (newBassWidth != bassWetSlewer.out) {
 			bassWetSlewer.process(args.sampleTime, newBassWidth);
 		}
-		float wdiv2 = (1.0f - bassWetSlewer.out) * 0.5f;
-		float up = 0.5f + wdiv2;
-		float down = 0.5f - wdiv2;
+		float wdiv2 = bassWetSlewer.out * 0.5f;
+		float up = 1.0f - wdiv2;
+		float down = wdiv2;
 		float leftSig = leftLow * up + rightLow * down;
 		float rightSig = rightLow * up + leftLow * down;
 		leftLow = leftSig;

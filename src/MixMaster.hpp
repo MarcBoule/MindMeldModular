@@ -1079,7 +1079,7 @@ struct MixerTrack {
 	int8_t dispColorLocal;
 	int8_t polyStereo;// 0 = off (default), 1 = on
 	float panCvLevel;// 0 to 1.0f
-	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
+	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo, 2 is 200% stereo widening
 
 	// no need to save, with reset
 
@@ -1604,7 +1604,7 @@ struct MixerTrack {
 			stereoWidthSlewer.process(gInfo->sampleTime, stereoWidth);
 		}
 		if (stereo && stereoWidthSlewer.out != 1.0f) {
-			float wdiv2 = stereoWidthSlewer.out * 0.5f;
+			float wdiv2 = stereoWidthSlewer.out * 0.5f;// in this algo, width can go to 2.0f to implement 200% stereo widening
 			float up = 0.5f + wdiv2;
 			float down = 0.5f - wdiv2;
 			float leftSig = taps[0] * up + taps[1] * down;
