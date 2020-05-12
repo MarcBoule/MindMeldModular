@@ -62,8 +62,8 @@ struct Test : Module {
 	
 	void setFilterCutoffs(float nfc) {
 		for (int i = 0; i < 4; i++) { 
-			butter[i].setParameters(dsp::BiquadFilter::LOWPASS, nfc, 1.0f / std::sqrt(2.0f), 1.f);
-			butter[i + 4].setParameters(dsp::BiquadFilter::HIGHPASS, nfc, 1.0f / std::sqrt(2.0f), 1.f);
+			butter[i].setParameters(dsp::BiquadFilter::LOWPASS_1POLE, nfc, 1.0f / std::sqrt(2.0f), 1.f);
+			butter[i + 4].setParameters(dsp::BiquadFilter::HIGHPASS_1POLE, nfc, 1.0f / std::sqrt(2.0f), 1.f);
 		}
 	}
 	
@@ -73,7 +73,7 @@ struct Test : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
 		configParam(CROSSOVER_PARAM, 50.0f, 500.0f, 120.0f, "Crossover", " Hz");
-		configParam(BASS_WIDTH_PARAM, 0.0f, 1.0f, 0.0f, "Dry/Wet", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
+		configParam(BASS_WIDTH_PARAM, 0.0f, 1.0f, 1.0f, "Dry/Wet", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 					
 					
 		onReset();
