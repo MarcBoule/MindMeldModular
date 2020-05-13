@@ -153,14 +153,11 @@ struct Test : Module {
 			rightHigh = butter[6].process(butter[7].process(inputs[IN_INPUTS + 1].getVoltage()));
 		}
 		else {
-			leftLow = onepole[0].process(onepole[1].process(inputs[IN_INPUTS + 0].getVoltage()));
+			leftLow = onepole[0].process(onepole[1].process(-inputs[IN_INPUTS + 0].getVoltage()));
 			leftHigh = onepole[4].process(onepole[5].process(inputs[IN_INPUTS + 0].getVoltage()));
-			rightLow = onepole[2].process(onepole[3].process(inputs[IN_INPUTS + 1].getVoltage()));
+			rightLow = onepole[2].process(onepole[3].process(-inputs[IN_INPUTS + 1].getVoltage()));
 			rightHigh = onepole[6].process(onepole[7].process(inputs[IN_INPUTS + 1].getVoltage()));
 		}
-		// outputs[OUT_OUTPUTS + 0].setVoltage(leftLow);
-		// outputs[OUT_OUTPUTS + 1].setVoltage(leftHigh);
-// return;
 
 		// Bass width (apply to leftLow and rightLow
 		float newBassWidth = params[BASS_WIDTH_PARAM].getValue();
