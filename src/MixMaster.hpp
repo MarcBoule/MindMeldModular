@@ -171,7 +171,7 @@ struct GlobalInfo {
 	}	
 	
 	void onReset() {
-		panLawMono = 1;
+		panLawMono = 2;
 		panLawStereo = 1;
 		directOutsMode = 3;// post-solo should be default
 		auxSendsMode = 3;// post-solo should be default
@@ -647,7 +647,14 @@ struct MixerMaster {
 			// calc ** gainMatrix **
 			// mono
 			if (params[MAIN_MONO_PARAM].getValue() >= 0.5f) {
-				gainMatrix = simd::float_4(0.5f * faderGain);
+				float splitGain = 0.707107f;// for 3dB (and 0dB since too extreme) case (mono-ing a single-sided signal results in equal power 
+				if (gInfo->panLawMono == 2) {
+					splitGain = 0.595662f;// for 4.5dB case
+				}
+				else if (gInfo->panLawMono == 3) {
+					splitGain = 0.5f;// for 6dB case (mono-ing a full mono signal makes no change)
+				}
+				gainMatrix = simd::float_4(splitGain * faderGain);
 			}
 			else {
 				gainMatrix = simd::float_4(faderGain, faderGain, 0.0f, 0.0f);
