@@ -26,6 +26,7 @@ struct Test : Module {
 		BASS_WIDTH_PARAM,// 0 to 1.0f; 0 is stereo, 1 is mono
 		TWENTYFOURDB_PARAM,// 24 dB/oct when true, else 12 dB
 		SOLO_PARAM,
+		MONO_GAIN_PARAM,// 0 is -6dB, 1 is -4.5dB, 2 is -3dB
 		NUM_PARAMS
 	};
 	
@@ -90,6 +91,7 @@ struct Test : Module {
 		configParam(BASS_WIDTH_PARAM, 0.0f, 1.0f, 1.0f, "Dry/Wet", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(TWENTYFOURDB_PARAM, 0.0f, 1.0f, 1.0f, "24 dB/oct");
 		configParam(SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Solo");
+		configParam(MONO_GAIN_PARAM, 0.0f, 2.0f, 0.0f, "Mono gain");
 					
 		onReset();
 		
@@ -164,9 +166,17 @@ struct Test : Module {
 		if (newBassWidth != bassWetSlewer.out) {
 			bassWetSlewer.process(args.sampleTime, newBassWidth);
 		}
-		float wdiv2 = bassWetSlewer.out * 0.5f;
-		float up = 1.0f - wdiv2;
-		float down = wdiv2;
+		
+		float splitGain = 0.5f;// for 6dB case (mono-ing a full mono signal makes no change)
+		if (params[MONO_GAIN_PARAM].getValue() >= 0.5f && params[MONO_GAIN_PARAM].getValue() < 1.5f) {
+			splitGain = 0.595662f;// for 4.5dB case
+		}
+		else if (params[MONO_GAIN_PARAM].getValue() >= 1.5f) {
+			splitGain = 0.707107f;// for 3dB (and 0dB since too extreme) case (mono-ing a single-sided signal results in equal power 
+		}
+		// bassWetSlewer is 0 to 1.0f; 0 is stereo, 1 is mono
+		float up = 1.0f - bassWetSlewer.out * (1.0f - splitGain);
+		float down = bassWetSlewer.out * splitGain;
 		float leftSig = leftLow * up + rightLow * down;
 		float rightSig = rightLow * up + leftLow * down;
 		leftLow = leftSig;
@@ -200,7 +210,10 @@ struct TestWidget : ModuleWidget {
 
 		// crossover knob
 		addParam(createParamCentered<Davies1900hLargeWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 2)), module, Test::CROSSOVER_PARAM));
-		addParam(createParamCentered<Davies1900hWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 4)), module, Test::BASS_WIDTH_PARAM));
+		
+		// bass width and mono gain
+		addParam(createParamCentered<Davies1900hWhiteKnob>(mm2px(Vec(10.33, 34.5 + 10.85 * 4)), module, Test::BASS_WIDTH_PARAM));
+		addParam(createParamCentered<CKSSThree>(mm2px(Vec(23.15, 34.5 + 10.85 * 4)), module, Test::MONO_GAIN_PARAM));
  
 		// inputs
 		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * 6)), true, module, Test::IN_INPUTS  + 0, module ? &module->panelTheme : NULL));
