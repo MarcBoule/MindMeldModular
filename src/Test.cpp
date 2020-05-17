@@ -23,10 +23,12 @@ struct Test : Module {
 	
 	enum ParamIds {
 		CROSSOVER_PARAM,
-		BASS_WIDTH_PARAM,// 0 to 1.0f; 0 is stereo, 1 is mono
-		TWENTYFOURDB_PARAM,// 24 dB/oct when true, else 12 dB
-		SOLO_PARAM,
-		MONO_GAIN_PARAM,// 0 is -6dB, 1 is -4.5dB, 2 is -3dB
+		LOW_WIDTH_PARAM,// 0 to 1.0f; 1 = stereo, 0 = mono
+		HIGH_WIDTH_PARAM,// 0 to 2.0f; 1 = stereo, 0 = mono, 2 = 200% wide
+		LOW_SOLO_PARAM,
+		HIGH_SOLO_PARAM,
+		LOW_GAIN_PARAM,// -20 to +20 dB
+		HIGH_GAIN_PARAM,// -20 to +20 dB
 		NUM_PARAMS
 	};
 	
@@ -46,7 +48,7 @@ struct Test : Module {
 	
 
 	// Constants
-	// none
+	bool is24db = false;
 
 	// Need to save, no reset
 	int panelTheme;
@@ -58,24 +60,32 @@ struct Test : Module {
 	float crossover;
 	dsp::BiquadFilter butter[8];// L low 1, low 2, R low 1, low 2, L high 1, high 2, R high 1, high 2
 	dsp::IIRFilter<2 + 1, 2 + 1, float> onepole[8];
-	dsp::SlewLimiter bassWetSlewer;
+	dsp::SlewLimiter lowWidthSlewer;
 	
 	// No need to save, no reset
-	RefreshCounter refresh;	
+	RefreshCounter refresh;
 	
 	
 	void setFilterCutoffs(float nfc) {
-		// butter
+		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
+		// freq pre-warping with inclusion of M_PI factor; 
+		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
+		float nfcw = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
+		
+		// butterworth LPF and HPF filters (for 4th order Linkwitz-Riley crossover)
 		for (int i = 0; i < 4; i++) { 
-			butter[i].setParameters(dsp::BiquadFilter::LOWPASS, nfc, 1.0f / std::sqrt(2.0f), 1.f);
-			butter[i + 4].setParameters(dsp::BiquadFilter::HIGHPASS, nfc, 1.0f / std::sqrt(2.0f), 1.f);
+			butter[i].setParameters(dsp::BiquadFilter::LOWPASS, nfcw, 1.0f / std::sqrt(2.0f), 1.f);
+			butter[i + 4].setParameters(dsp::BiquadFilter::HIGHPASS, nfcw, 1.0f / std::sqrt(2.0f), 1.f);
 		}
-		// one pole
-		float hbcst = 1.0f / (1.0f + M_PI * nfc);
-		float hb[2 + 1] = {hbcst, -hbcst, 0.0f};
-		float acst = (M_PI * nfc - 1.0f) / (M_PI * nfc + 1.0f);
+
+		// first order LPF and HPF filters (for 2nd order Linkwitz-Riley crossover)
+		// denominator coefficients (same for both LPF and HPF)
+		float acst = (nfcw - 1.0f) / (nfcw + 1.0f);
 		float a[2] = {acst, 0.0f};
-		float lbcst = 1.0f - hbcst;
+		// numerator coefficients
+		float hbcst = 1.0f / (1.0f + nfcw);
+		float hb[2 + 1] = {hbcst, -hbcst, 0.0f};
+		float lbcst = 1.0f - hbcst;// equivalent to: hbcst * nfcw;
 		float lb[2 + 1] = {lbcst, lbcst, 0.0f};
 		for (int i = 0; i < 4; i++) { 
 			onepole[i].setCoefficients(lb, a);
@@ -88,15 +98,17 @@ struct Test : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
 		configParam(CROSSOVER_PARAM, 50.0f, 500.0f, 120.0f, "Crossover", " Hz");
-		configParam(BASS_WIDTH_PARAM, 0.0f, 1.0f, 1.0f, "Dry/Wet", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
-		configParam(TWENTYFOURDB_PARAM, 0.0f, 1.0f, 1.0f, "24 dB/oct");
-		configParam(SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Solo");
-		configParam(MONO_GAIN_PARAM, 0.0f, 2.0f, 0.0f, "Mono gain");
+		configParam(LOW_WIDTH_PARAM, 0.0f, 1.0f, 1.0f, "Low width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
+		configParam(HIGH_WIDTH_PARAM, 0.0f, 2.0f, 1.0f, "High width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
+		configParam(LOW_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Low solo");
+		configParam(HIGH_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "High solo");
+		configParam(LOW_GAIN_PARAM, 0.0f, 2.0f, 0.0f, "Low gain");
+		configParam(HIGH_GAIN_PARAM, 0.0f, 2.0f, 0.0f, "High gain");
 					
 		onReset();
 		
 		panelTheme = 0;
-		bassWetSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
+		lowWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
 	}
   
 	void onReset() override {
@@ -110,7 +122,7 @@ struct Test : Module {
 			butter[i].reset();
 			onepole[i].reset();
 		}
-		bassWetSlewer.reset();
+		lowWidthSlewer.reset();
 	}
 
 
@@ -148,7 +160,7 @@ struct Test : Module {
 		float leftHigh;
 		float rightLow;
 		float rightHigh;
-		if (params[TWENTYFOURDB_PARAM].getValue() >= 0.5f) {
+		if (is24db) {
 			leftLow = butter[0].process(butter[1].process(inputs[IN_INPUTS + 0].getVoltage()));
 			leftHigh = butter[4].process(butter[5].process(inputs[IN_INPUTS + 0].getVoltage()));
 			rightLow = butter[2].process(butter[3].process(inputs[IN_INPUTS + 1].getVoltage()));
@@ -162,27 +174,20 @@ struct Test : Module {
 		}
 
 		// Bass width (apply to leftLow and rightLow
-		float newBassWidth = params[BASS_WIDTH_PARAM].getValue();
-		if (newBassWidth != bassWetSlewer.out) {
-			bassWetSlewer.process(args.sampleTime, newBassWidth);
+		float newLowWidth = params[LOW_WIDTH_PARAM].getValue();
+		if (newLowWidth != lowWidthSlewer.out) {
+			lowWidthSlewer.process(args.sampleTime, newLowWidth);
 		}
 		
-		float splitGain = 0.5f;// for 6dB case (mono-ing a full mono signal makes no change)
-		if (params[MONO_GAIN_PARAM].getValue() >= 0.5f && params[MONO_GAIN_PARAM].getValue() < 1.5f) {
-			splitGain = 0.595662f;// for 4.5dB case
-		}
-		else if (params[MONO_GAIN_PARAM].getValue() >= 1.5f) {
-			splitGain = 0.707107f;// for 3dB (and 0dB since too extreme) case (mono-ing a single-sided signal results in equal power 
-		}
-		// bassWetSlewer is 0 to 1.0f; 0 is stereo, 1 is mono
-		float up = 1.0f - bassWetSlewer.out * (1.0f - splitGain);
-		float down = bassWetSlewer.out * splitGain;
+		// lowWidthSlewer is 0 to 1.0f; 1 is stereo, 0 is mono
+		float down = lowWidthSlewer.out * 0.5f;
+		float up = 1.0f - down;
 		float leftSig = leftLow * up + rightLow * down;
 		float rightSig = rightLow * up + leftLow * down;
 		leftLow = leftSig;
 		rightLow = rightSig;
 		
-		bool solo = params[SOLO_PARAM].getValue() >= 0.5f;
+		bool solo = params[LOW_SOLO_PARAM].getValue() >= 0.5f;
 		if (!solo) {
 			leftLow += leftHigh;
 			rightLow += rightHigh;
@@ -204,16 +209,14 @@ struct TestWidget : ModuleWidget {
 		// Main panel from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld-1-8.svg")));
  
-		// 24 db switch and solo button
-		addParam(createParamCentered<CKSS>(mm2px(Vec(10.13, 34.5 + 10.85 * 0 - 6)), module, Test::TWENTYFOURDB_PARAM));
-		addParam(createParamCentered<CKSS>(mm2px(Vec(20.15, 34.5 + 10.85 * 0 - 6)), module, Test::SOLO_PARAM));
+		// solo button
+		addParam(createParamCentered<CKSS>(mm2px(Vec(20.15, 34.5 + 10.85 * 0 - 6)), module, Test::LOW_SOLO_PARAM));
 
 		// crossover knob
 		addParam(createParamCentered<Davies1900hLargeWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 2)), module, Test::CROSSOVER_PARAM));
 		
-		// bass width and mono gain
-		addParam(createParamCentered<Davies1900hWhiteKnob>(mm2px(Vec(10.33, 34.5 + 10.85 * 4)), module, Test::BASS_WIDTH_PARAM));
-		addParam(createParamCentered<CKSSThree>(mm2px(Vec(23.15, 34.5 + 10.85 * 4)), module, Test::MONO_GAIN_PARAM));
+		// low width
+		addParam(createParamCentered<Davies1900hWhiteKnob>(mm2px(Vec(10.33, 34.5 + 10.85 * 4)), module, Test::LOW_WIDTH_PARAM));
  
 		// inputs
 		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * 6)), true, module, Test::IN_INPUTS  + 0, module ? &module->panelTheme : NULL));
