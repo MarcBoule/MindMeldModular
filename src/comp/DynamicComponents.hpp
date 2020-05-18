@@ -328,6 +328,12 @@ struct DynKnobWithArc : DynKnob {
 	}
 };
 
+struct DynSmallKnobGrey : DynKnob {
+	DynSmallKnobGrey() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+};
 
 struct DynSmallFader : DynamicSVGSlider {
 	DynSmallFader() {

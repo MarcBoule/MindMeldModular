@@ -826,7 +826,7 @@ struct TrackKnob : DynSnapKnob {
 	
 	
 	TrackKnob() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/track-knob-pointer.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
 		
 		refresh = 0;
 		numTracks = -1;// force fillDotPosAndDefState() in first pass in draw() where paramQuantity is non null

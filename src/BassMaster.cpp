@@ -1,30 +1,23 @@
 //***********************************************************************************************
-//Test module for VCV Rack by Steve Baker and Marc Boulé 
+//Bass mono module for VCV Rack by Steve Baker and Marc Boulé 
 //
 //Based on code from the Fundamental plugin by Andrew Belt 
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
 
-/* 		{
-			"slug": "Test",
-			"name": "Test",
-			"description": "Test module",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
-			"tags": ["Utility"]
-		}
-*/
+
 
 #include "MindMeldModular.hpp"
-#include "dsp/Bessel.hpp"
+#include "dsp/LinkwitzRileyCrossover.hpp"
 
 
-struct Test : Module {
+struct BassMaster : Module {
 	
 	enum ParamIds {
 		CROSSOVER_PARAM,
-		LOW_WIDTH_PARAM,// 0 to 1.0f; 1 = stereo, 0 = mono
-		HIGH_WIDTH_PARAM,// 0 to 2.0f; 1 = stereo, 0 = mono, 2 = 200% wide
+		LOW_WIDTH_PARAM,// 0 to 1.0f; 0 = mono, 1 = stereo
+		HIGH_WIDTH_PARAM,// 0 to 2.0f; 0 = mono, 1 = stereo, 2 = 200% wide
 		LOW_SOLO_PARAM,
 		HIGH_SOLO_PARAM,
 		LOW_GAIN_PARAM,// -20 to +20 dB
@@ -58,7 +51,7 @@ struct Test : Module {
 	
 	// No need to save, with reset
 	float crossover;
-	dsp::BiquadFilter butter[8];// L low 1, low 2, R low 1, low 2, L high 1, high 2, R high 1, high 2
+	dsp::BiquadFilter butter[8];// Left low 1, low 2, Right low 1, low 2, Left high 1, high 2, Right high 1, high 2
 	dsp::IIRFilter<2 + 1, 2 + 1, float> onepole[8];
 	dsp::SlewLimiter lowWidthSlewer;
 	
@@ -94,7 +87,7 @@ struct Test : Module {
 	}
 	
 	
-	Test() {
+	BassMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
 		configParam(CROSSOVER_PARAM, 50.0f, 500.0f, 120.0f, "Crossover", " Hz");
@@ -102,8 +95,8 @@ struct Test : Module {
 		configParam(HIGH_WIDTH_PARAM, 0.0f, 2.0f, 1.0f, "High width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(LOW_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Low solo");
 		configParam(HIGH_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "High solo");
-		configParam(LOW_GAIN_PARAM, 0.0f, 2.0f, 0.0f, "Low gain");
-		configParam(HIGH_GAIN_PARAM, 0.0f, 2.0f, 0.0f, "High gain");
+		configParam(LOW_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "Low gain", " dB");
+		configParam(HIGH_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "High gain", " dB");
 					
 		onReset();
 		
@@ -133,11 +126,18 @@ struct Test : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 		
+		// panelTheme
+		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
+				
 		return rootJ;
 	}
 
 
 	void dataFromJson(json_t *rootJ) override {
+		// panelTheme
+		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
+		if (panelThemeJ)
+			panelTheme = json_integer_value(panelThemeJ);
 
 		resetNonJson(true);
 	}
@@ -201,34 +201,43 @@ struct Test : Module {
 //-----------------------------------------------------------------------------
 
 
-struct TestWidget : ModuleWidget {
+struct BassMasterWidget : ModuleWidget {
 	
-	TestWidget(Test *module) {
+	struct CrossoverKnob : DynKnob {
+		CrossoverKnob() {
+			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
+		}
+	};	
+	
+	BassMasterWidget(BassMaster *module) {
 		setModule(module);
 
 		// Main panel from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld-1-8.svg")));
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMaster.svg")));
  
-		// solo button
-		addParam(createParamCentered<CKSS>(mm2px(Vec(20.15, 34.5 + 10.85 * 0 - 6)), module, Test::LOW_SOLO_PARAM));
-
 		// crossover knob
-		addParam(createParamCentered<Davies1900hLargeWhiteKnob>(mm2px(Vec(15.22, 34.5 + 10.85 * 2)), module, Test::CROSSOVER_PARAM));
+		addParam(createDynamicParamCentered<CrossoverKnob>(mm2px(Vec(15.24, 22.49)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));
 		
-		// low width
-		addParam(createParamCentered<Davies1900hWhiteKnob>(mm2px(Vec(10.33, 34.5 + 10.85 * 4)), module, Test::LOW_WIDTH_PARAM));
+		// low solo button
+		// addParam(createParamCentered<CKSS>(mm2px(Vec(15.24, 73.71)), module, BassMaster::LOW_SOLO_PARAM));
+
+		// high width and gain
+		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(7.5, 51.68)), module, BassMaster::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(22.9, 51.68)), module, BassMaster::HIGH_GAIN_PARAM, module ? &module->panelTheme : NULL));
+ 
+		// low width and gain
+		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(7.5, 79.46)), module, BassMaster::LOW_WIDTH_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(22.9, 79.46)), module, BassMaster::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
  
 		// inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * 6)), true, module, Test::IN_INPUTS  + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * 6)), true, module, Test::IN_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 102.03)), true, module, BassMaster::IN_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 111.45)), true, module, BassMaster::IN_INPUTS + 1, module ? &module->panelTheme : NULL));
 			
 		// outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * 7)), false, module, Test::OUT_OUTPUTS  + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * 7)), false, module, Test::OUT_OUTPUTS + 1, module ? &module->panelTheme : NULL));
-				
-			
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 102.03)), false, module, BassMaster::OUT_OUTPUTS  + 0, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 111.45)), false, module, BassMaster::OUT_OUTPUTS + 1, module ? &module->panelTheme : NULL));
 	}
 };
 
 
-Model *modelTest = createModel<Test, TestWidget>("Test");
+Model *modelBassMaster = createModel<BassMaster, BassMasterWidget>("BassMaster");

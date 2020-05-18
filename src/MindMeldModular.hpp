@@ -33,7 +33,7 @@ extern Model *modelMeld;
 extern Model *modelUnmeld;
 extern Model *modelEqMaster;
 extern Model *modelEqExpander;
-extern Model *modelTest;
+extern Model *modelBassMaster;
 
 
 
