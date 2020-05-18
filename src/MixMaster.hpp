@@ -1604,13 +1604,7 @@ struct MixerTrack {
 			stereoWidthSlewer.process(gInfo->sampleTime, stereoWidth);
 		}
 		if (stereo && stereoWidthSlewer.out != 1.0f) {
-			float wdiv2 = stereoWidthSlewer.out * 0.5f;// in this algo, width can go to 2.0f to implement 200% stereo widening
-			float up = 0.5f + wdiv2;
-			float down = 0.5f - wdiv2;
-			float leftSig = taps[0] * up + taps[1] * down;
-			float rightSig = taps[1] * up + taps[0] * down;
-			taps[0] = leftSig;
-			taps[1] = rightSig;
+			applyStereoWidth(stereoWidthSlewer.out, &taps[0], &taps[1]);
 		}
 
 

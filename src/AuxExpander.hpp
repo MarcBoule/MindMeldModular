@@ -136,13 +136,7 @@ struct AuxspanderAux {
 			stereoWidthSlewer.process(sampleTime, stereoWidth);
 		}
 		if (stereo && stereoWidthSlewer.out != 1.0f) {
-			float wdiv2 = stereoWidthSlewer.out * 0.5f;
-			float up = 0.5f + wdiv2;
-			float down = 0.5f - wdiv2;
-			float leftSig = mix[0] * up + mix[1] * down;
-			float rightSig = mix[1] * up + mix[0] * down;
-			mix[0] = leftSig;
-			mix[1] = rightSig;
+			applyStereoWidth(stereoWidthSlewer.out, &mix[0], &mix[1]);
 		}		
 		
 		

@@ -16,13 +16,13 @@ struct BassMaster : Module {
 	
 	enum ParamIds {
 		CROSSOVER_PARAM,
+		SLOPE_PARAM,
 		LOW_WIDTH_PARAM,// 0 to 1.0f; 0 = mono, 1 = stereo
 		HIGH_WIDTH_PARAM,// 0 to 2.0f; 0 = mono, 1 = stereo, 2 = 200% wide
 		LOW_SOLO_PARAM,
 		HIGH_SOLO_PARAM,
 		LOW_GAIN_PARAM,// -20 to +20 dB
 		HIGH_GAIN_PARAM,// -20 to +20 dB
-		SLOPE_PARAM,
 		NUM_PARAMS
 	};
 	
@@ -53,51 +53,12 @@ struct BassMaster : Module {
 	// No need to save, with reset
 	float crossover;
 	bool is24db;
-	dsp::IIRFilter<2 + 1, 2 + 1, float> iirs[8];// Left low 1, low 2, Right low 1, low 2, Left high 1, high 2, Right high 1, high 2
+	LinkwitzRileyCrossover xover;
 	dsp::SlewLimiter lowWidthSlewer;
 	dsp::SlewLimiter highWidthSlewer;
 	
 	// No need to save, no reset
 	RefreshCounter refresh;
-	
-	
-	void setFilterCutoffs(float nfc, bool secondOrder) {
-		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
-		// freq pre-warping with inclusion of M_PI factor; 
-		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
-		float nfcw = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
-		
-		if (secondOrder) {
-			// butterworth LPF and HPF filters (for 4th order Linkwitz-Riley crossover)
-			// denominator coefficients (same for both LPF and HPF)
-			float acst = nfcw * nfcw + nfcw * (float)M_SQRT2 + 1.0f;
-			float a[2] = {2.0f * (nfcw * nfcw - 1.0f) / acst, (nfcw * nfcw - nfcw * (float)M_SQRT2 + 1.0f) / acst};
-			// numerator coefficients
-			float hbcst = 1.0f / acst;
-			float hb[2 + 1] = {hbcst, -2.0f * hbcst, hbcst};
-			float lbcst = hbcst * nfcw * nfcw;
-			float lb[2 + 1] = {lbcst, 2.0f * lbcst, lbcst};
-			for (int i = 0; i < 4; i++) { 
-				iirs[i].setCoefficients(lb, a);
-				iirs[i + 4].setCoefficients(hb, a);
-			}
-		}
-		else {
-			// first order LPF and HPF filters (for 2nd order Linkwitz-Riley crossover)
-			// denominator coefficients (same for both LPF and HPF)
-			float acst = (nfcw - 1.0f) / (nfcw + 1.0f);
-			float a[2] = {acst, 0.0f};
-			// numerator coefficients
-			float hbcst = 1.0f / (1.0f + nfcw);
-			float hb[2 + 1] = {hbcst, -hbcst, 0.0f};
-			float lbcst = 1.0f - hbcst;// equivalent to: hbcst * nfcw;
-			float lb[2 + 1] = {lbcst, lbcst, 0.0f};
-			for (int i = 0; i < 4; i++) { 
-				iirs[i].setCoefficients(lb, a);
-				iirs[i + 4].setCoefficients(hb, a);
-			}
-		}
-	}
 	
 	
 	BassMaster() {
@@ -126,11 +87,8 @@ struct BassMaster : Module {
 	void resetNonJson(bool recurseNonJson) {
 		crossover = params[CROSSOVER_PARAM].getValue();
 		is24db = params[SLOPE_PARAM].getValue() >= 0.5f;
-		setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
-		
-		for (int i = 0; i < 8; i++) { 
-			iirs[i].reset();
-		}
+		xover.setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
+		xover.reset();
 		lowWidthSlewer.reset();
 		highWidthSlewer.reset();
 	}
@@ -161,7 +119,7 @@ struct BassMaster : Module {
 
 
 	void onSampleRateChange() override {
-		setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
+		xover.setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
 	}
 	
 
@@ -172,52 +130,30 @@ struct BassMaster : Module {
 			crossover = newcrossover;
 			is24db = newIs24db;
 			float nfc = crossover / args.sampleRate;
-			setFilterCutoffs(nfc, is24db);
+			xover.setFilterCutoffs(nfc, is24db);
 		}
-		
-		float leftLow = inputs[IN_INPUTS + 0].getVoltage();
-		float leftHigh = leftLow;
-		float rightLow = inputs[IN_INPUTS + 1].getVoltage();
-		float rightHigh = rightLow;
-		if (!is24db) {
-			leftLow *= -1.0f;
-			rightLow *= -1.0f;
-		}
-		leftLow = iirs[0].process(iirs[1].process(leftLow));
-		leftHigh = iirs[4].process(iirs[5].process(leftHigh));
-		rightLow = iirs[2].process(iirs[3].process(rightLow));
-		rightHigh = iirs[6].process(iirs[7].process(rightHigh));
+	
+		float outs[4];// [0] = left low, left high, right low, [3] = right high
+		xover.process(inputs[IN_INPUTS + 0].getVoltage(), inputs[IN_INPUTS + 1].getVoltage(), outs);
 
-		// Bass width (apply to leftLow and rightLow)
+		// Bass width (apply to left low and right low)
 		float newLowWidth = params[LOW_WIDTH_PARAM].getValue();
 		if (newLowWidth != lowWidthSlewer.out) {
 			lowWidthSlewer.process(args.sampleTime, newLowWidth);
 		}
 		// lowWidthSlewer is 0 to 1.0f; 0 is mono, 1 is stereo
-		float wdiv2 = lowWidthSlewer.out * 0.5f;// in this algo, width can go to 2.0f to implement 200% stereo widening
-		float up = 0.5f + wdiv2;
-		float down = 0.5f - wdiv2;
-		float leftSig = leftLow * up + rightLow * down;
-		float rightSig = rightLow * up + leftLow * down;
-		leftLow = leftSig;
-		rightLow = rightSig;
+		applyStereoWidth(lowWidthSlewer.out, &outs[0], &outs[2]);
 		
-		// High width (apply to leftHigh and rightHigh)
+		// High width (apply to left high and right high)
 		float newHighWidth = params[HIGH_WIDTH_PARAM].getValue();
 		if (newHighWidth != highWidthSlewer.out) {
 			highWidthSlewer.process(args.sampleTime, newHighWidth);
 		}
 		// highWidthSlewer is 0 to 2.0f; 0 is mono, 1 is stereo, 2 is 200% wide
-		wdiv2 = highWidthSlewer.out * 0.5f;// in this algo, width can go to 2.0f to implement 200% stereo widening
-		up = 0.5f + wdiv2;
-		down = 0.5f - wdiv2;
-		leftSig = leftHigh * up + rightHigh * down;
-		rightSig = rightHigh * up + leftHigh * down;
-		leftHigh = leftSig;
-		rightHigh = rightSig;
+		applyStereoWidth(highWidthSlewer.out, &outs[1], &outs[3]);
 		
-		outputs[OUT_OUTPUTS + 0].setVoltage(leftLow);// + leftHigh);
-		outputs[OUT_OUTPUTS + 1].setVoltage(rightLow);// + rightHigh);
+		outputs[OUT_OUTPUTS + 0].setVoltage(outs[0] + outs[1]);
+		outputs[OUT_OUTPUTS + 1].setVoltage(outs[2] + outs[3]);
 	}// process()
 };
 

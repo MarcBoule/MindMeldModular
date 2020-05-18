@@ -259,4 +259,15 @@ inline PanelBorder* findBorder(Widget* widget) {
 
 void printNote(float cvVal, char* text, bool sharp);
 
+inline void applyStereoWidth(float width, float* left, float* right) {
+	// in this algo, width can go to 2.0f to implement 200% stereo widening (1.0f stereo i.e. no change, 0.0f is mono)
+	float wdiv2 = width * 0.5f;
+	float up = 0.5f + wdiv2;
+	float down = 0.5f - wdiv2;
+	float leftSig = *left * up + *right * down;
+	float rightSig = *right * up + *left * down;
+	*left = leftSig;
+	*right = rightSig;
+}
+
 #endif

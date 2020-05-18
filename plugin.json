@@ -72,7 +72,7 @@
  		{
 			"slug": "BassMaster",
 			"name": "BassMaster",
-			"description": "Bass mono",
+			"description": "Dual band spatialiser for high spread and bass mono",
 			"tags": ["Utility", "Equalizer"]
 		}
 	]
