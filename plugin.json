@@ -73,7 +73,7 @@
 			"slug": "BassMaster",
 			"name": "BassMaster",
 			"description": "Bass mono",
-			"tags": ["Equalizer"]
+			"tags": ["Utility", "Equalizer"]
 		}
 	]
 }

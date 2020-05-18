@@ -22,6 +22,7 @@ struct BassMaster : Module {
 		HIGH_SOLO_PARAM,
 		LOW_GAIN_PARAM,// -20 to +20 dB
 		HIGH_GAIN_PARAM,// -20 to +20 dB
+		SLOPE_PARAM,
 		NUM_PARAMS
 	};
 	
@@ -41,7 +42,7 @@ struct BassMaster : Module {
 	
 
 	// Constants
-	bool is24db = false;
+	static constexpr float DEFAULT_SLOPE = 0.0f;
 
 	// Need to save, no reset
 	int panelTheme;
@@ -51,6 +52,7 @@ struct BassMaster : Module {
 	
 	// No need to save, with reset
 	float crossover;
+	bool is24db;
 	dsp::IIRFilter<2 + 1, 2 + 1, float> iirs[8];// Left low 1, low 2, Right low 1, low 2, Left high 1, high 2, Right high 1, high 2
 	dsp::SlewLimiter lowWidthSlewer;
 	dsp::SlewLimiter highWidthSlewer;
@@ -108,6 +110,7 @@ struct BassMaster : Module {
 		configParam(HIGH_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "High solo");
 		configParam(LOW_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "Low gain", " dB");
 		configParam(HIGH_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "High gain", " dB");
+		configParam(SLOPE_PARAM, 0.0f, 1.0f, DEFAULT_SLOPE, "Slope 24 dB/oct");
 					
 		onReset();
 		
@@ -117,10 +120,12 @@ struct BassMaster : Module {
 	}
   
 	void onReset() override {
+		params[SLOPE_PARAM].setValue(DEFAULT_SLOPE);// need this since no wigdet exists
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
 		crossover = params[CROSSOVER_PARAM].getValue();
+		is24db = params[SLOPE_PARAM].getValue() >= 0.5f;
 		setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
 		
 		for (int i = 0; i < 8; i++) { 
@@ -162,8 +167,10 @@ struct BassMaster : Module {
 
 	void process(const ProcessArgs &args) override {
 		float newcrossover = params[CROSSOVER_PARAM].getValue();
-		if (crossover != newcrossover) {
+		bool newIs24db = params[SLOPE_PARAM].getValue() >= 0.5f;
+		if (crossover != newcrossover || is24db != newIs24db) {
 			crossover = newcrossover;
+			is24db = newIs24db;
 			float nfc = crossover / args.sampleRate;
 			setFilterCutoffs(nfc, is24db);
 		}
@@ -209,8 +216,8 @@ struct BassMaster : Module {
 		leftHigh = leftSig;
 		rightHigh = rightSig;
 		
-		outputs[OUT_OUTPUTS + 0].setVoltage(leftLow + leftHigh);
-		outputs[OUT_OUTPUTS + 1].setVoltage(rightLow + rightHigh);
+		outputs[OUT_OUTPUTS + 0].setVoltage(leftLow);// + leftHigh);
+		outputs[OUT_OUTPUTS + 1].setVoltage(rightLow);// + rightHigh);
 	}// process()
 };
 
@@ -220,12 +227,51 @@ struct BassMaster : Module {
 
 struct BassMasterWidget : ModuleWidget {
 	
+	struct SlopeItem : MenuItem {
+		Param* srcParam;
+
+		struct SlopeSubItem : MenuItem {
+			Param *srcParam;
+			float setVal;
+			void onAction(const event::Action &e) override {
+				srcParam->setValue(setVal);
+			}
+		};
+
+		Menu *createChildMenu() override {
+			Menu *menu = new Menu;
+			
+			SlopeSubItem *slope0Item = createMenuItem<SlopeSubItem>("12 db/oct", CHECKMARK(srcParam->getValue() < 0.5f));
+			slope0Item->srcParam = srcParam;
+			slope0Item->setVal = 0.0f;
+			menu->addChild(slope0Item);
+
+			SlopeSubItem *slope1Item = createMenuItem<SlopeSubItem>("24 db/oct", CHECKMARK(srcParam->getValue() >= 0.5f));
+			slope1Item->srcParam = srcParam;
+			slope1Item->setVal = 1.0f;
+			menu->addChild(slope1Item);
+
+			return menu;
+		}
+	};	
+	
 	struct CrossoverKnob : DynKnob {
 		CrossoverKnob() {
 			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
 		}
 	};	
 	
+	void appendContextMenu(Menu *menu) override {		
+		BassMaster* module = (BassMaster*)(this->module);
+		assert(module);
+
+		menu->addChild(new MenuSeparator());
+		
+		SlopeItem *slopeItem = createMenuItem<SlopeItem>("Crossover slope", RIGHT_ARROW);
+		slopeItem->srcParam = &(module->params[BassMaster::SLOPE_PARAM]);
+		menu->addChild(slopeItem);		
+	}
+
 	BassMasterWidget(BassMaster *module) {
 		setModule(module);
 
