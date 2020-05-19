@@ -5,7 +5,6 @@
 //***********************************************************************************************
 
 
-
 class LinkwitzRileyCrossover {	
 	bool secondOrder;// local memory of what is in iirs		
 	dsp::IIRFilter<2 + 1, 2 + 1, float> iirs[8];// Left low 1, low 2, Right low 1, low 2, Left high 1, high 2, Right high 1, high 2

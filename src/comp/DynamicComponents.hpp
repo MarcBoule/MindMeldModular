@@ -349,9 +349,16 @@ struct DynBigKnobWhite : DynKnob {
 	}
 };	
 
-struct DynSmallKnobGrey : DynKnob {
+struct DynSmallKnobGrey : DynKnob {// 7.5mm
 	DynSmallKnobGrey() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
+		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	}
+};
+
+struct DynSmallKnobGrey8mm : DynKnob {
+	DynSmallKnobGrey8mm() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey8mm.svg")));
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };

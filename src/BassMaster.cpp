@@ -6,8 +6,6 @@
 //***********************************************************************************************
 
 
-
-
 #include "MindMeldModular.hpp"
 #include "dsp/LinkwitzRileyCrossover.hpp"
 
@@ -76,11 +74,12 @@ struct BassMaster : Module {
 		configParam(HIGH_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "High gain", " dB");
 		configParam(SLOPE_PARAM, 0.0f, 1.0f, DEFAULT_SLOPE, "Slope 24 dB/oct");
 					
+		lowWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
+		highWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)		
+
 		onReset();
 		
 		panelTheme = 0;
-		lowWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
-		highWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
 	}
   
 	void onReset() override {
@@ -95,7 +94,7 @@ struct BassMaster : Module {
 		xover.setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
 		xover.reset();
 		lowWidthSlewer.reset();
-		highWidthSlewer.reset();
+		highWidthSlewer.reset();		
 	}
 
 
@@ -130,13 +129,12 @@ struct BassMaster : Module {
 
 	void process(const ProcessArgs &args) override {
 		// crossover knob and 24dB refresh
-		float newcrossover = params[CROSSOVER_PARAM].getValue();
+		float newCrossover = params[CROSSOVER_PARAM].getValue();
 		bool newIs24db = params[SLOPE_PARAM].getValue() >= 0.5f;
-		if (crossover != newcrossover || is24db != newIs24db) {
-			crossover = newcrossover;
+		if (crossover != newCrossover || is24db != newIs24db) {
+			crossover = newCrossover;
 			is24db = newIs24db;
-			float nfc = crossover / args.sampleRate;
-			xover.setFilterCutoffs(nfc, is24db);
+			xover.setFilterCutoffs(crossover / args.sampleRate, is24db);
 		}
 	
 		// solo buttons' refresh
@@ -157,7 +155,6 @@ struct BassMaster : Module {
 			highSolo = newHighSolo;	
 		}
 		
-		
 		float outs[4];// [0] = left low, left high, right low, [3] = right high
 		xover.process(inputs[IN_INPUTS + 0].getVoltage(), inputs[IN_INPUTS + 1].getVoltage(), outs);
 
@@ -176,7 +173,7 @@ struct BassMaster : Module {
 		}
 		// highWidthSlewer is 0 to 2.0f; 0 is mono, 1 is stereo, 2 is 200% wide
 		applyStereoWidth(highWidthSlewer.out, &outs[1], &outs[3]);
-		
+
 		outputs[OUT_OUTPUTS + 0].setVoltage(outs[0] + outs[1]);
 		outputs[OUT_OUTPUTS + 1].setVoltage(outs[2] + outs[3]);
 	}// process()
@@ -247,12 +244,12 @@ struct BassMasterWidget : ModuleWidget {
 		addParam(createDynamicParamCentered<DynBypassRoundButton>(mm2px(Vec(15.24, 95.4)), module, BassMaster::BYPASS_PARAM, module ? &module->panelTheme : NULL));
 
 		// high width and gain
-		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(7.5, 51.68)), module, BassMaster::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(22.9, 51.68)), module, BassMaster::HIGH_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68)), module, BassMaster::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 51.68)), module, BassMaster::HIGH_GAIN_PARAM, module ? &module->panelTheme : NULL));
  
 		// low width and gain
-		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(7.5, 79.46)), module, BassMaster::LOW_WIDTH_PARAM, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(22.9, 79.46)), module, BassMaster::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 79.46)), module, BassMaster::LOW_WIDTH_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46)), module, BassMaster::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
  
 		// inputs
 		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 102.03)), true, module, BassMaster::IN_INPUTS + 0, module ? &module->panelTheme : NULL));

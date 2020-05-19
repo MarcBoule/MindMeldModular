@@ -892,15 +892,12 @@ struct TrackKnob : DynBigKnobWhite {
 	}	
 };
 
-struct TrackGainKnob : DynKnob {
+struct TrackGainKnob : DynSmallKnobGrey8mm {
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc;
 	
-	TrackGainKnob() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/gain-knob.svg")));
-	}
 	void onChange(const event::Change& e) override {
-		DynKnob::onChange(e);
+		DynSmallKnobGrey8mm::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue());
