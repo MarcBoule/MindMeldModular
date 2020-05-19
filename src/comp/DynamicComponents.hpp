@@ -161,8 +161,27 @@ struct DynamicSVGSlider : SvgSlider {
 };
 
 
+struct DynSoloRoundButton : DynamicSVGSwitch {
+	DynSoloRoundButton() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-on.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
+struct DynBypassRoundButton : DynamicSVGSwitch {
+	DynBypassRoundButton() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-off.svg")));
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-on.svg")));
+		//addFrameAlt0(asset::plugin(pluginInstance, "res/dark/comp/TL1105_0.svg"));
+		//addFrameAlt1(asset::plugin(pluginInstance, "res/dark/comp/TL1105_1.svg"));	
+		shadow->opacity = 0.0;
+	}
+};
+
 struct DynMuteButton : DynamicSVGSwitch {
-	
 	DynMuteButton() {
 		momentary = false;
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
@@ -267,11 +286,7 @@ struct DynKnob : DynamicSVGKnob {
 		shadow->opacity = 0.0;
 	}
 };
-struct DynSnapKnob : DynKnob {
-	DynSnapKnob() {
-		snap = true;
-	}
-};
+
 struct DynKnobWithArc : DynKnob {
 	// internal
 	NVGcolor arcColorDarker = nvgRGB(120, 120, 120);// grey
@@ -327,6 +342,12 @@ struct DynKnobWithArc : DynKnob {
 		}
 	}
 };
+
+struct DynBigKnobWhite : DynKnob {
+	DynBigKnobWhite() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
+	}
+};	
 
 struct DynSmallKnobGrey : DynKnob {
 	DynSmallKnobGrey() {

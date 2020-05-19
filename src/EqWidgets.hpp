@@ -806,7 +806,7 @@ static const NVGcolor COL_GREEN = nvgRGB(127, 200, 68);
 static const NVGcolor COL_RED = nvgRGB(247, 23, 41);
 
 
-struct TrackKnob : DynSnapKnob {
+struct TrackKnob : DynBigKnobWhite {
 	static constexpr float radius = 18.0f;
 	static constexpr float dotSize = 1.1f;
 
@@ -826,7 +826,7 @@ struct TrackKnob : DynSnapKnob {
 	
 	
 	TrackKnob() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
+		snap = true;
 		
 		refresh = 0;
 		numTracks = -1;// force fillDotPosAndDefState() in first pass in draw() where paramQuantity is non null
@@ -853,7 +853,7 @@ struct TrackKnob : DynSnapKnob {
 		if (updateTrackLabelRequestSrc) {
 			*updateTrackLabelRequestSrc = 1;
 		}
-		DynSnapKnob::onChange(e);
+		DynBigKnobWhite::onChange(e);
 	}
 	
 	

@@ -23,6 +23,7 @@ struct BassMaster : Module {
 		HIGH_SOLO_PARAM,
 		LOW_GAIN_PARAM,// -20 to +20 dB
 		HIGH_GAIN_PARAM,// -20 to +20 dB
+		BYPASS_PARAM,
 		NUM_PARAMS
 	};
 	
@@ -53,6 +54,8 @@ struct BassMaster : Module {
 	// No need to save, with reset
 	float crossover;
 	bool is24db;
+	bool lowSolo;
+	bool highSolo;
 	LinkwitzRileyCrossover xover;
 	dsp::SlewLimiter lowWidthSlewer;
 	dsp::SlewLimiter highWidthSlewer;
@@ -87,6 +90,8 @@ struct BassMaster : Module {
 	void resetNonJson(bool recurseNonJson) {
 		crossover = params[CROSSOVER_PARAM].getValue();
 		is24db = params[SLOPE_PARAM].getValue() >= 0.5f;
+		lowSolo = params[LOW_SOLO_PARAM].getValue() >= 0.5f;
+		highSolo = params[HIGH_SOLO_PARAM].getValue() >= 0.5f;
 		xover.setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
 		xover.reset();
 		lowWidthSlewer.reset();
@@ -124,6 +129,7 @@ struct BassMaster : Module {
 	
 
 	void process(const ProcessArgs &args) override {
+		// crossover knob and 24dB refresh
 		float newcrossover = params[CROSSOVER_PARAM].getValue();
 		bool newIs24db = params[SLOPE_PARAM].getValue() >= 0.5f;
 		if (crossover != newcrossover || is24db != newIs24db) {
@@ -133,6 +139,25 @@ struct BassMaster : Module {
 			xover.setFilterCutoffs(nfc, is24db);
 		}
 	
+		// solo buttons' refresh
+		bool newLowSolo = params[LOW_SOLO_PARAM].getValue() >= 0.5f;
+		if (lowSolo != newLowSolo) {
+			if (newLowSolo) {
+				params[HIGH_SOLO_PARAM].setValue(0.0f);
+				highSolo = 0.0f;
+			}
+			lowSolo = newLowSolo;
+		}	
+		bool newHighSolo = params[HIGH_SOLO_PARAM].getValue() >= 0.5f;
+		if (highSolo != newHighSolo) {
+			if (newHighSolo) {
+				params[LOW_SOLO_PARAM].setValue(0.0f);
+				lowSolo = 0.0f;
+			}
+			highSolo = newHighSolo;	
+		}
+		
+		
 		float outs[4];// [0] = left low, left high, right low, [3] = right high
 		xover.process(inputs[IN_INPUTS + 0].getVoltage(), inputs[IN_INPUTS + 1].getVoltage(), outs);
 
@@ -163,6 +188,9 @@ struct BassMaster : Module {
 
 struct BassMasterWidget : ModuleWidget {
 	
+	struct PairedSoloButton : DynSoloRoundButton {
+	};
+	
 	struct SlopeItem : MenuItem {
 		Param* srcParam;
 
@@ -191,12 +219,6 @@ struct BassMasterWidget : ModuleWidget {
 		}
 	};	
 	
-	struct CrossoverKnob : DynKnob {
-		CrossoverKnob() {
-			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
-		}
-	};	
-	
 	void appendContextMenu(Menu *menu) override {		
 		BassMaster* module = (BassMaster*)(this->module);
 		assert(module);
@@ -215,10 +237,14 @@ struct BassMasterWidget : ModuleWidget {
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMaster.svg")));
  
 		// crossover knob
-		addParam(createDynamicParamCentered<CrossoverKnob>(mm2px(Vec(15.24, 22.49)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBigKnobWhite>(mm2px(Vec(15.24, 22.49)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));
 		
+		// high solo button
+		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 45.93)), module, BassMaster::HIGH_SOLO_PARAM, module ? &module->panelTheme : NULL));
 		// low solo button
-		// addParam(createParamCentered<CKSS>(mm2px(Vec(15.24, 73.71)), module, BassMaster::LOW_SOLO_PARAM));
+		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 73.71)), module, BassMaster::LOW_SOLO_PARAM, module ? &module->panelTheme : NULL));
+		// bypass button
+		addParam(createDynamicParamCentered<DynBypassRoundButton>(mm2px(Vec(15.24, 95.4)), module, BassMaster::BYPASS_PARAM, module ? &module->panelTheme : NULL));
 
 		// high width and gain
 		addParam(createDynamicParamCentered<DynSmallKnobGrey>(mm2px(Vec(7.5, 51.68)), module, BassMaster::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
