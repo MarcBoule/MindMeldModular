@@ -174,6 +174,14 @@ struct BassMaster : Module {
 		// highWidthSlewer is 0 to 2.0f; 0 is mono, 1 is stereo, 2 is 200% wide
 		applyStereoWidth(highWidthSlewer.out, &outs[1], &outs[3]);
 
+		// dumb solo for now
+		if (highSolo) {
+			outs[0] = outs[2] = 0.0f;// kill low
+		}
+		if (lowSolo) {
+			outs[1] = outs[3] = 0.0f;// kill high
+		}
+
 		outputs[OUT_OUTPUTS + 0].setVoltage(outs[0] + outs[1]);
 		outputs[OUT_OUTPUTS + 1].setVoltage(outs[2] + outs[3]);
 	}// process()
