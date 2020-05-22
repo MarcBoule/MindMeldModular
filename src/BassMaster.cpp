@@ -66,13 +66,14 @@ struct BassMaster : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
 		configParam(CROSSOVER_PARAM, 50.0f, 500.0f, 120.0f, "Crossover", " Hz");
+		configParam(SLOPE_PARAM, 0.0f, 1.0f, DEFAULT_SLOPE, "Slope 24 dB/oct");
 		configParam(LOW_WIDTH_PARAM, 0.0f, 1.0f, 1.0f, "Low width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(HIGH_WIDTH_PARAM, 0.0f, 2.0f, 1.0f, "High width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(LOW_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Low solo");
 		configParam(HIGH_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "High solo");
 		configParam(LOW_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "Low gain", " dB");
 		configParam(HIGH_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "High gain", " dB");
-		configParam(SLOPE_PARAM, 0.0f, 1.0f, DEFAULT_SLOPE, "Slope 24 dB/oct");
+		configParam(BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Bypass");
 					
 		lowWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
 		highWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)		
