@@ -55,8 +55,9 @@ struct BassMaster : Module {
 	bool lowSolo;
 	bool highSolo;
 	LinkwitzRileyCrossover xover;
-	dsp::SlewLimiter lowWidthSlewer;
-	dsp::SlewLimiter highWidthSlewer;
+	dsp::TSlewLimiter<simd::float_4> widthAndGainSlewers;// [0] = low width, high width, low gain, [3] = high gain
+	float linearLowGain;
+	float linearHighGain;
 	
 	// No need to save, no reset
 	RefreshCounter refresh;
@@ -71,12 +72,11 @@ struct BassMaster : Module {
 		configParam(HIGH_WIDTH_PARAM, 0.0f, 2.0f, 1.0f, "High width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(LOW_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Low solo");
 		configParam(HIGH_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "High solo");
-		configParam(LOW_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "Low gain", " dB");
-		configParam(HIGH_GAIN_PARAM, -20.0f, 20.0f, 0.0f, "High gain", " dB");
+		configParam(LOW_GAIN_PARAM, -1.0f, 1.0f, 0.0f, "Low gain", " dB", 0.0f, 20.0f);// diplay params are: base, mult, offset
+		configParam(HIGH_GAIN_PARAM, -1.0f, 1.0f, 0.0f, "High gain", " dB", 0.0f, 20.0f);// diplay params are: base, mult, offset
 		configParam(BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Bypass");
 					
-		lowWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)
-		highWidthSlewer.setRiseFall(125.0f, 125.0f); // slew rate is in input-units per second (ex: V/s)		
+		widthAndGainSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)		
 
 		onReset();
 		
@@ -94,8 +94,9 @@ struct BassMaster : Module {
 		highSolo = params[HIGH_SOLO_PARAM].getValue() >= 0.5f;
 		xover.setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
 		xover.reset();
-		lowWidthSlewer.reset();
-		highWidthSlewer.reset();		
+		widthAndGainSlewers.reset();
+		linearLowGain = 1.0f;
+		linearHighGain = 1.0f;
 	}
 
 
@@ -159,21 +160,26 @@ struct BassMaster : Module {
 		float outs[4];// [0] = left low, left high, right low, [3] = right high
 		xover.process(inputs[IN_INPUTS + 0].getVoltage(), inputs[IN_INPUTS + 1].getVoltage(), outs);
 
-		// Bass width (apply to left low and right low)
-		float newLowWidth = params[LOW_WIDTH_PARAM].getValue();
-		if (newLowWidth != lowWidthSlewer.out) {
-			lowWidthSlewer.process(args.sampleTime, newLowWidth);
+		// Width and gain slewers
+		simd::float_4 widthAndGain = simd::float_4(params[LOW_WIDTH_PARAM].getValue(), params[HIGH_WIDTH_PARAM].getValue(),
+												   params[LOW_GAIN_PARAM].getValue(), params[HIGH_GAIN_PARAM].getValue());
+		if (movemask(widthAndGain == widthAndGainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			widthAndGainSlewers.process(args.sampleTime, widthAndGain);
+			linearLowGain = std::pow(10.0f, widthAndGainSlewers.out[2]);
+			linearHighGain = std::pow(10.0f, widthAndGainSlewers.out[3]);
 		}
-		// lowWidthSlewer is 0 to 1.0f; 0 is mono, 1 is stereo
-		applyStereoWidth(lowWidthSlewer.out, &outs[0], &outs[2]);
 		
+		// Bass widths (apply to left low and right low)
+		applyStereoWidth(widthAndGainSlewers.out[0], &outs[0], &outs[2]);		
 		// High width (apply to left high and right high)
-		float newHighWidth = params[HIGH_WIDTH_PARAM].getValue();
-		if (newHighWidth != highWidthSlewer.out) {
-			highWidthSlewer.process(args.sampleTime, newHighWidth);
-		}
-		// highWidthSlewer is 0 to 2.0f; 0 is mono, 1 is stereo, 2 is 200% wide
-		applyStereoWidth(highWidthSlewer.out, &outs[1], &outs[3]);
+		applyStereoWidth(widthAndGainSlewers.out[1], &outs[1], &outs[3]);
+
+		// Low gain
+		outs[0] *= linearLowGain;
+		outs[2] *= linearLowGain;
+		outs[1] *= linearHighGain;
+		outs[3] *= linearHighGain;
+		
 
 		// dumb solo for now
 		if (highSolo) {
