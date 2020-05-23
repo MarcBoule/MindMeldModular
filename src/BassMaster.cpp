@@ -172,9 +172,9 @@ struct BassMaster : Module {
 			highSolo = newHighSolo;	
 		}
 		
-		float outs[4];// [0] = left low, left high, right low, [3] = right high
-		xover.process(inputs[IN_INPUTS + 0].getVoltageSum(), inputs[IN_INPUTS + 1].getVoltageSum(), outs);
-
+		simd::float_4 outs = xover.process(inputs[IN_INPUTS + 0].getVoltageSum(), inputs[IN_INPUTS + 1].getVoltageSum());
+		// outs: [0] = left low, left high, right low, [3] = right high
+		
 		// Width and gain slewers
 		simd::float_4 widthAndGain = simd::float_4(params[LOW_WIDTH_PARAM].getValue(), params[HIGH_WIDTH_PARAM].getValue(),
 												   params[LOW_GAIN_PARAM].getValue(), params[HIGH_GAIN_PARAM].getValue());
@@ -196,10 +196,9 @@ struct BassMaster : Module {
 		}
 
 		// Gains (low and high)
-		outs[0] *= linearLowGain * solosAndBypassSlewers.out[1];
-		outs[2] *= linearLowGain * solosAndBypassSlewers.out[1];
-		outs[1] *= linearHighGain * solosAndBypassSlewers.out[0];
-		outs[3] *= linearHighGain * solosAndBypassSlewers.out[0];
+		float gLow = linearLowGain * solosAndBypassSlewers.out[1];
+		float gHigh = linearHighGain * solosAndBypassSlewers.out[0];
+		outs *= simd::float_4(gLow, gHigh, gLow, gHigh);
 		
 		// mix high and low
 		float outLeft = outs[0] + outs[1];

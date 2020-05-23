@@ -4,9 +4,14 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
+// Linkwitz-Riley audio crossover, based on Linkwitz-Riley filters
+// https://en.wikipedia.org/wiki/Linkwitz%E2%80%93Riley_filter
+
+// Cascaded 2nd-order butterworth filters are used when offering 4th order Linkwitz-Riley crossover
+// Cascaded 1st-order filters are used when offering 2nd order Linkwitz-Riley crossover
 
 class LinkwitzRileyCrossover {	
-	bool secondOrder = false;// local memory of what is in iirs		
+	bool secondOrderFilters = false;// local memory of what is in iirs		
 	dsp::IIRFilter<2 + 1, 2 + 1, simd::float_4> iirStage1;// [0] = left low, left high, right low, [3] = right high
 	dsp::IIRFilter<2 + 1, 2 + 1, simd::float_4> iirStage2;// idem
 	
@@ -18,7 +23,7 @@ class LinkwitzRileyCrossover {
 	}
 	
 	void setFilterCutoffs(float nfc, bool _secondOrder) {
-		secondOrder = _secondOrder;
+		secondOrderFilters = _secondOrder;
 		
 		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
 		// freq pre-warping with inclusion of M_PI factor; 
@@ -27,8 +32,7 @@ class LinkwitzRileyCrossover {
 		
 		simd::float_4 s_a[2];// coefficients a1 and a2, where each float of float_4 is LeftLow, LeftHigh, RightLow, RightHigh
 		simd::float_4 s_b[2 + 1];// coefficients b0, b1 and b2, where each float of float_4  is LeftLow, LeftHigh, RightLow, RightHigh
-		if (secondOrder) {
-			// butterworth LPF and HPF filters (for 4th order Linkwitz-Riley crossover)
+		if (secondOrderFilters) {	
 			// denominator coefficients (same for both LPF and HPF)
 			float acst = nfcw * nfcw + nfcw * (float)M_SQRT2 + 1.0f;
 			s_a[0] = simd::float_4(2.0f * (nfcw * nfcw - 1.0f) / acst);
@@ -42,7 +46,6 @@ class LinkwitzRileyCrossover {
 			s_b[2] = s_b[0];
 		}
 		else {
-			// first order LPF and HPF filters (for 2nd order Linkwitz-Riley crossover)
 			// denominator coefficients (same for both LPF and HPF)
 			float acst = (nfcw - 1.0f) / (nfcw + 1.0f);
 			s_a[0] = simd::float_4(acst);
@@ -59,14 +62,14 @@ class LinkwitzRileyCrossover {
 		iirStage2.setCoefficients(s_b, s_a);
 	}
 
-	void process(float left, float right, float* dest) {
-		// dest[0] = left low, left high, right low, [3] = right high
+	simd::float_4 process(float left, float right) {
+		// return [0] = left low, left high, right low, [3] = right high
 		simd::float_4 src = simd::float_4(left, left, right, right);
-		if (!secondOrder) {
-			src[0] *= -1.0f;
+		if (!secondOrderFilters) {
+			src[0] *= -1.0f;// phase correction needed for first order filters (used to make 2nd order L-R crossover)
 			src[2] *= -1.0f;
 		}
-		iirStage1.process(iirStage2.process(src)).store(dest);
+		return iirStage1.process(iirStage2.process(src));
 	}
 };
 
