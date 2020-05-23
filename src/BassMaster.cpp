@@ -173,7 +173,7 @@ struct BassMaster : Module {
 		}
 		
 		float outs[4];// [0] = left low, left high, right low, [3] = right high
-		xover.process(inputs[IN_INPUTS + 0].getVoltage(), inputs[IN_INPUTS + 1].getVoltage(), outs);
+		xover.process(inputs[IN_INPUTS + 0].getVoltageSum(), inputs[IN_INPUTS + 1].getVoltageSum(), outs);
 
 		// Width and gain slewers
 		simd::float_4 widthAndGain = simd::float_4(params[LOW_WIDTH_PARAM].getValue(), params[HIGH_WIDTH_PARAM].getValue(),
