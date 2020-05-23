@@ -73,11 +73,6 @@ static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);
 
 
 
-union PackedBytes4 {
-	int32_t cc1;
-	int8_t cc4[4];
-};
-
 class TrackEq {
 	static constexpr float antipopSlewLogHz = 8.0f;// calibrated to properly slew a log(Hz) float in the rough range 1.3f to 4.3f (but less since freq knobs not full spectrum)
 	static constexpr float antipopSlewDb = 200.0f;// calibrated to properly slew a dB float in the range -20.0f to 20.0f for antipop

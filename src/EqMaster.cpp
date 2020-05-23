@@ -853,7 +853,7 @@ struct EqMasterWidget : ModuleWidget {
 
 		menu->addChild(new MenuSeparator());
 		
-		DispColorEqItem *dispColItem = createMenuItem<DispColorEqItem>("Display colour", RIGHT_ARROW);
+		DispTwoColorItem *dispColItem = createMenuItem<DispTwoColorItem>("Display colour", RIGHT_ARROW);
 		dispColItem->srcColor = &(module->miscSettings2.cc4[0]);
 		menu->addChild(dispColItem);
 		

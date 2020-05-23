@@ -151,31 +151,6 @@ struct VuColorEqItem : MenuItem {
 };
 
 
-struct DispColorEqItem : MenuItem {
-	int8_t *srcColor;
-
-	struct DispColorSubItem : MenuItem {
-		int8_t *srcColor;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			*srcColor = setVal;
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-		
-		for (int i = 0; i < 2; i++) {// only yellow and light gray wanted in EqMaster
-			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColor == i));
-			dispColItem->srcColor = srcColor;
-			dispColItem->setVal = i;
-			menu->addChild(dispColItem);
-		}
-		
-		return menu;
-	}
-};
-
 
 struct FetchLabelsItem : MenuItem {
 	int *mappedIdSrc;

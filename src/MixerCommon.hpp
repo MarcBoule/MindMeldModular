@@ -167,10 +167,4 @@ enum ccIds {
 };
 
 
-union PackedBytes4 {
-	int32_t cc1;
-	int8_t cc4[4];
-};
-
-
 #endif

@@ -64,6 +64,11 @@ static const std::string dispColorNames[numDispThemes + 1] = {
 
 // General objects
 
+union PackedBytes4 {
+	int32_t cc1;
+	int8_t cc4[4];
+};
+
 struct RefreshCounter {
 	// Note: because of stagger, and asyncronous dataFromJson, should not assume this processInputs() will return true on first run
 	// of module::process()
@@ -164,6 +169,30 @@ struct HoldDetect {
 	}
 };
 
+struct DispTwoColorItem : MenuItem {
+	int8_t *srcColor;
+
+	struct DispColorSubItem : MenuItem {
+		int8_t *srcColor;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			*srcColor = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		for (int i = 0; i < 2; i++) {// only yellow and light gray wanted in EqMaster
+			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColor == i));
+			dispColItem->srcColor = srcColor;
+			dispColItem->setVal = i;
+			menu->addChild(dispColItem);
+		}
+		
+		return menu;
+	}
+};
 
 
 // General functions

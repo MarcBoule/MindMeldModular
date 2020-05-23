@@ -47,7 +47,7 @@ struct BassMaster : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
-	// none
+	PackedBytes4 miscSettings;// cc4[0] is display label colours, rest is unused
 	
 	// No need to save, with reset
 	float crossover;
@@ -78,7 +78,7 @@ struct BassMaster : Module {
 		configParam(BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Bypass");
 					
 		widthAndGainSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)		
-		solosAndBypassSlewers.setRiseFall(simd::float_4(125.0f), simd::float_4(125.0f)); // slew rate is in input-units per second (ex: V/s)		
+		solosAndBypassSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)		
 
 		onReset();
 		
@@ -87,6 +87,10 @@ struct BassMaster : Module {
   
 	void onReset() override {
 		params[SLOPE_PARAM].setValue(DEFAULT_SLOPE);// need this since no wigdet exists
+		miscSettings.cc4[0] = 0;// display label colours
+		miscSettings.cc4[1] = 2;// unused
+		miscSettings.cc4[2] = 0;// unused
+		miscSettings.cc4[3] = 0;// unused
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -113,6 +117,9 @@ struct BassMaster : Module {
 		// panelTheme
 		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
 				
+		// miscSettings
+		json_object_set_new(rootJ, "miscSettings", json_integer(miscSettings.cc1));
+				
 		return rootJ;
 	}
 
@@ -122,6 +129,11 @@ struct BassMaster : Module {
 		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
 		if (panelThemeJ)
 			panelTheme = json_integer_value(panelThemeJ);
+
+		// miscSettings
+		json_t *miscSettingsJ = json_object_get(rootJ, "miscSettings");
+		if (miscSettingsJ)
+			miscSettings.cc1 = json_integer_value(miscSettingsJ);
 
 		resetNonJson(true);
 	}
@@ -206,11 +218,28 @@ struct BassMaster : Module {
 //-----------------------------------------------------------------------------
 
 
-struct BassMasterWidget : ModuleWidget {
-	
-	struct PairedSoloButton : DynSoloRoundButton {
-	};
-	
+struct BassMasterWidget : ModuleWidget {	
+	struct BassMasterLabel : LedDisplayChoice {
+		int8_t* dispColorPtr = NULL;
+		
+		BassMasterLabel() {
+			box.size = mm2px(Vec(10.6f, 5.0f));
+			font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+			color = DISP_COLORS[0];
+			textOffset = Vec(4.2f, 11.3f);
+			text = "---";
+		};
+		
+		void draw(const DrawArgs &args) override {
+			if (dispColorPtr) {
+				color = DISP_COLORS[*dispColorPtr];
+			}	
+			LedDisplayChoice::draw(args);
+		}
+	};	
+	BassMasterLabel* bassMasterLabels[5];// xover, width high, gain high, width low, gain low
+
+
 	struct SlopeItem : MenuItem {
 		Param* srcParam;
 
@@ -248,6 +277,10 @@ struct BassMasterWidget : ModuleWidget {
 		SlopeItem *slopeItem = createMenuItem<SlopeItem>("Crossover slope", RIGHT_ARROW);
 		slopeItem->srcParam = &(module->params[BassMaster::SLOPE_PARAM]);
 		menu->addChild(slopeItem);		
+
+		DispTwoColorItem *dispColItem = createMenuItem<DispTwoColorItem>("Display colour", RIGHT_ARROW);
+		dispColItem->srcColor = &(module->miscSettings.cc4[0]);
+		menu->addChild(dispColItem);
 	}
 
 	BassMasterWidget(BassMaster *module) {
@@ -258,6 +291,18 @@ struct BassMasterWidget : ModuleWidget {
  
 		// crossover knob
 		addParam(createDynamicParamCentered<DynBigKnobWhite>(mm2px(Vec(15.24, 22.49)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));
+		
+		// all labels (xover, width high, gain high, width low, gain low)
+		addChild(bassMasterLabels[0] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(14.54, 32.3))));
+		addChild(bassMasterLabels[1] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5, 59.71))));
+		addChild(bassMasterLabels[2] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9, 59.71))));
+		addChild(bassMasterLabels[3] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5, 87.42))));
+		addChild(bassMasterLabels[4] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9, 87.42))));
+		if (module) {
+			for (int i = 0; i < 5; i++) {
+				bassMasterLabels[i]->dispColorPtr = &(module->miscSettings.cc4[0]);
+			}
+		}
 		
 		// high solo button
 		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 45.93)), module, BassMaster::HIGH_SOLO_PARAM, module ? &module->panelTheme : NULL));
@@ -281,6 +326,18 @@ struct BassMasterWidget : ModuleWidget {
 		// outputs
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 102.03)), false, module, BassMaster::OUT_OUTPUTS  + 0, module ? &module->panelTheme : NULL));
 		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 111.45)), false, module, BassMaster::OUT_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+	}
+	
+	void step() override {
+		BassMaster* module = (BassMaster*)(this->module);
+		if (module) {
+			bassMasterLabels[0]->text = string::f("%i Hz", (int)(module->crossover + 0.5f));
+			bassMasterLabels[1]->text = string::f("%i %%", (int)(module->params[BassMaster::HIGH_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
+			bassMasterLabels[2]->text = string::f("%i dB", (int)std::round(module->params[BassMaster::HIGH_GAIN_PARAM].getValue() * 20.0f));
+			bassMasterLabels[3]->text = string::f("%i %%", (int)(module->params[BassMaster::LOW_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
+			bassMasterLabels[4]->text = string::f("%i dB", (int)std::round(module->params[BassMaster::LOW_GAIN_PARAM].getValue() * 20.0f));
+		}
+		Widget::step();
 	}
 };
 
