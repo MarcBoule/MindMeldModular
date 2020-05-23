@@ -56,6 +56,7 @@ struct BassMaster : Module {
 	bool highSolo;
 	LinkwitzRileyCrossover xover;
 	dsp::TSlewLimiter<simd::float_4> widthAndGainSlewers;// [0] = low width, high width, low gain, [3] = high gain
+	dsp::TSlewLimiter<simd::float_4> solosAndBypassSlewers;// [0] = low solo, high solo, bypass, [3] = unused
 	float linearLowGain;
 	float linearHighGain;
 	
@@ -77,6 +78,7 @@ struct BassMaster : Module {
 		configParam(BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Bypass");
 					
 		widthAndGainSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)		
+		solosAndBypassSlewers.setRiseFall(simd::float_4(125.0f), simd::float_4(125.0f)); // slew rate is in input-units per second (ex: V/s)		
 
 		onReset();
 		
@@ -95,6 +97,7 @@ struct BassMaster : Module {
 		xover.setFilterCutoffs(crossover / APP->engine->getSampleRate(), is24db);
 		xover.reset();
 		widthAndGainSlewers.reset();
+		solosAndBypassSlewers.reset();
 		linearLowGain = 1.0f;
 		linearHighGain = 1.0f;
 	}
@@ -130,7 +133,7 @@ struct BassMaster : Module {
 	
 
 	void process(const ProcessArgs &args) override {
-		// crossover knob and 24dB refresh
+		// crossover knob and is24dB refreshes
 		float newCrossover = params[CROSSOVER_PARAM].getValue();
 		bool newIs24db = params[SLOPE_PARAM].getValue() >= 0.5f;
 		if (crossover != newCrossover || is24db != newIs24db) {
@@ -139,7 +142,7 @@ struct BassMaster : Module {
 			xover.setFilterCutoffs(crossover / args.sampleRate, is24db);
 		}
 	
-		// solo buttons' refresh
+		// solo mutex mechanism and solo refreshes
 		bool newLowSolo = params[LOW_SOLO_PARAM].getValue() >= 0.5f;
 		if (lowSolo != newLowSolo) {
 			if (newLowSolo) {
@@ -169,28 +172,33 @@ struct BassMaster : Module {
 			linearHighGain = std::pow(10.0f, widthAndGainSlewers.out[3]);
 		}
 		
-		// Bass widths (apply to left low and right low)
-		applyStereoWidth(widthAndGainSlewers.out[0], &outs[0], &outs[2]);		
-		// High width (apply to left high and right high)
-		applyStereoWidth(widthAndGainSlewers.out[1], &outs[1], &outs[3]);
+		// Widths (low and high)
+		applyStereoWidth(widthAndGainSlewers.out[0], &outs[0], &outs[2]);// bass width (apply to left low and right low)	
+		applyStereoWidth(widthAndGainSlewers.out[1], &outs[1], &outs[3]);// high width (apply to left high and right high)
 
-		// Low gain
-		outs[0] *= linearLowGain;
-		outs[2] *= linearLowGain;
-		outs[1] *= linearHighGain;
-		outs[3] *= linearHighGain;
+		// Solos and bypass slewers
+		simd::float_4 solosAndBypass = simd::float_4(lowSolo ? 0.0f : 1.0f, highSolo ? 0.0f : 1.0f, 
+													 params[BYPASS_PARAM].getValue() >= 0.5f ? 0.0f : 1.0f, 0.0f);// last is unused
+		if (movemask(solosAndBypass == solosAndBypassSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
+			solosAndBypassSlewers.process(args.sampleTime, solosAndBypass);
+		}
+
+		// Gains (low and high)
+		outs[0] *= linearLowGain * solosAndBypassSlewers.out[1];
+		outs[2] *= linearLowGain * solosAndBypassSlewers.out[1];
+		outs[1] *= linearHighGain * solosAndBypassSlewers.out[0];
+		outs[3] *= linearHighGain * solosAndBypassSlewers.out[0];
 		
+		// mix high and low
+		float outLeft = outs[0] + outs[1];
+		float outRight = outs[2] + outs[3];
+		
+		// bypass
+		outLeft = crossfade(inputs[IN_INPUTS + 0].getVoltage(), outLeft, solosAndBypassSlewers.out[2]);// 0.0 is first arg, 1.0 is second
+		outRight = crossfade(inputs[IN_INPUTS + 1].getVoltage(), outRight, solosAndBypassSlewers.out[2]);// 0.0 is first arg, 1.0 is second
 
-		// dumb solo for now
-		if (highSolo) {
-			outs[0] = outs[2] = 0.0f;// kill low
-		}
-		if (lowSolo) {
-			outs[1] = outs[3] = 0.0f;// kill high
-		}
-
-		outputs[OUT_OUTPUTS + 0].setVoltage(outs[0] + outs[1]);
-		outputs[OUT_OUTPUTS + 1].setVoltage(outs[2] + outs[3]);
+		outputs[OUT_OUTPUTS + 0].setVoltage(outLeft);
+		outputs[OUT_OUTPUTS + 1].setVoltage(outRight);
 	}// process()
 };
 
