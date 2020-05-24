@@ -25,7 +25,7 @@ class LinkwitzRileyCrossover {
 	public: 
 		
 	void reset() {
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 2; i++) {
 			xS1[i] = 0.0f;
 			yS1[i] = 0.0f;
 			xS2[i] = 0.0f;
@@ -71,20 +71,20 @@ class LinkwitzRileyCrossover {
 
 	simd::float_4 process(float left, float right) {
 		// return [0] = left low, left high, right low, [3] = right high
-		simd::float_4 src = simd::float_4(left, left, right, right);
+		simd::float_4 in = simd::float_4(left, left, right, right);
 		if (!secondOrderFilters) {
-			src[0] *= -1.0f;// phase correction needed for first order filters (used to make 2nd order L-R crossover)
-			src[2] *= -1.0f;
+			in[0] *= -1.0f;// phase correction needed for first order filters (used to make 2nd order L-R crossover)
+			in[2] *= -1.0f;
 		}
 
 		// stage 1
-		simd::float_4 outS1 = b[0] * src + b[1] * xS1[0] + b[2] * xS1[1] - a[0] * yS1[0] - a[1] * yS1[1];
+		simd::float_4 outS1 = b[0] * in + b[1] * xS1[0] + b[2] * xS1[1] - a[0] * yS1[0] - a[1] * yS1[1];
 		xS1[1] = xS1[0];
-		xS1[0] = src;
+		xS1[0] = in;
 		yS1[1] = yS1[0];
 		yS1[0] = outS1;
 
-		// stage 2
+		// stage 2 (outS1 used as in)
 		simd::float_4 outS2 = b[0] * outS1 + b[1] * xS2[0] + b[2] * xS2[1] - a[0] * yS2[0] - a[1] * yS2[1];
 		xS2[1] = xS2[0];
 		xS2[0] = outS1;

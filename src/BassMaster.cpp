@@ -319,11 +319,11 @@ struct BassMasterWidget : ModuleWidget {
 		addParam(createDynamicParamCentered<DynBigKnobWhite>(mm2px(Vec(15.24, 22.49)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));
 		
 		// all labels (xover, width high, gain high, width low, gain low)
-		addChild(bassMasterLabels[0] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(14.54, 32.3))));
-		addChild(bassMasterLabels[1] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5, 59.71))));
-		addChild(bassMasterLabels[2] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9, 59.71))));
-		addChild(bassMasterLabels[3] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5, 87.42))));
-		addChild(bassMasterLabels[4] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9, 87.42))));
+		addChild(bassMasterLabels[0] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(15.24, 32.3))));
+		addChild(bassMasterLabels[1] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5 + 0.5, 59.71))));
+		addChild(bassMasterLabels[2] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9 + 0.5, 59.71))));
+		addChild(bassMasterLabels[3] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5 + 0.5, 87.42))));
+		addChild(bassMasterLabels[4] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9 + 0.5, 87.42))));
 		if (module) {
 			for (int i = 0; i < 5; i++) {
 				bassMasterLabels[i]->dispColorPtr = &(module->miscSettings.cc4[0]);
@@ -357,11 +357,11 @@ struct BassMasterWidget : ModuleWidget {
 	void step() override {
 		BassMaster* module = (BassMaster*)(this->module);
 		if (module) {
-			bassMasterLabels[0]->text = string::f("%i Hz", (int)(module->crossover + 0.5f));
-			bassMasterLabels[1]->text = string::f("%i %%", (int)(module->params[BassMaster::HIGH_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
-			bassMasterLabels[2]->text = string::f("%i dB", (int)std::round(module->params[BassMaster::HIGH_GAIN_PARAM].getValue() * 20.0f));
-			bassMasterLabels[3]->text = string::f("%i %%", (int)(module->params[BassMaster::LOW_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
-			bassMasterLabels[4]->text = string::f("%i dB", (int)std::round(module->params[BassMaster::LOW_GAIN_PARAM].getValue() * 20.0f));
+			bassMasterLabels[0]->text = string::f("%i", (int)(module->crossover + 0.5f));
+			bassMasterLabels[1]->text = string::f("%i", (int)(module->params[BassMaster::HIGH_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
+			bassMasterLabels[2]->text = string::f("%i", (int)std::round(module->params[BassMaster::HIGH_GAIN_PARAM].getValue() * 20.0f));
+			bassMasterLabels[3]->text = string::f("%i", (int)(module->params[BassMaster::LOW_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
+			bassMasterLabels[4]->text = string::f("%i", (int)std::round(module->params[BassMaster::LOW_GAIN_PARAM].getValue() * 20.0f));
 		}
 		Widget::step();
 	}
