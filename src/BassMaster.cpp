@@ -47,7 +47,7 @@ struct BassMaster : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
-	PackedBytes4 miscSettings;// cc4[0] is display label colours, rest is unused
+	PackedBytes4 miscSettings;// cc4[0] is display label colours, cc4[1] is polyStereo, rest is unused
 	
 	// No need to save, with reset
 	float crossover;
@@ -88,7 +88,7 @@ struct BassMaster : Module {
 	void onReset() override {
 		params[SLOPE_PARAM].setValue(DEFAULT_SLOPE);// need this since no wigdet exists
 		miscSettings.cc4[0] = 0;// display label colours
-		miscSettings.cc4[1] = 2;// unused
+		miscSettings.cc4[1] = 0;// polyStereo
 		miscSettings.cc4[2] = 0;// unused
 		miscSettings.cc4[3] = 0;// unused
 		resetNonJson(false);
@@ -172,7 +172,28 @@ struct BassMaster : Module {
 			highSolo = newHighSolo;	
 		}
 		
-		simd::float_4 outs = xover.process(inputs[IN_INPUTS + 0].getVoltageSum(), inputs[IN_INPUTS + 1].getVoltageSum());
+		float inLeft;
+		float inRight;
+		bool polyStereo = miscSettings.cc4[1] != 0 && !inputs[IN_INPUTS + 1].isConnected() && inputs[IN_INPUTS + 0].isPolyphonic();
+		if (polyStereo) {
+			// here were are in polyStero mode, so take all odd numbered into L, even numbered into R (1-indexed)
+			inLeft = 0.0f;
+			inRight = 0.0f;
+			for (int c = 0; c < inputs[IN_INPUTS + 0].getChannels(); c++) {
+				if ((c & 0x1) == 0) {// if L channels (odd channels when 1-indexed)
+					inLeft += inputs[IN_INPUTS + 0].getVoltage(c);
+				}
+				else {
+					inRight += inputs[IN_INPUTS + 0].getVoltage(c);
+				}
+			}
+		}
+		else {
+			inLeft = inputs[IN_INPUTS + 0].getVoltageSum();
+			inRight = inputs[IN_INPUTS + 1].getVoltageSum();
+		}
+		
+		simd::float_4 outs = xover.process(clamp20V(inLeft), clamp20V(inRight));
 		// outs: [0] = left low, left high, right low, [3] = right high
 		
 		// Width and gain slewers
@@ -276,6 +297,12 @@ struct BassMasterWidget : ModuleWidget {
 		SlopeItem *slopeItem = createMenuItem<SlopeItem>("Crossover slope", RIGHT_ARROW);
 		slopeItem->srcParam = &(module->params[BassMaster::SLOPE_PARAM]);
 		menu->addChild(slopeItem);		
+
+		PolyStereoItem *polySteItem = createMenuItem<PolyStereoItem>("Poly input behavior", RIGHT_ARROW);
+		polySteItem->polyStereoSrc = &(module->miscSettings.cc4[1]);
+		menu->addChild(polySteItem);
+
+		menu->addChild(new MenuSeparator());
 
 		DispTwoColorItem *dispColItem = createMenuItem<DispTwoColorItem>("Display colour", RIGHT_ARROW);
 		dispColItem->srcColor = &(module->miscSettings.cc4[0]);

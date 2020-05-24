@@ -195,6 +195,34 @@ struct DispTwoColorItem : MenuItem {
 };
 
 
+// poly stereo menu item
+struct PolyStereoItem : MenuItem {
+	int8_t *polyStereoSrc;
+
+	struct PolyStereoSubItem : MenuItem {
+		int8_t *polyStereoSrc;
+		int setVal = 0;
+		void onAction(const event::Action &e) override {
+			*polyStereoSrc = setVal;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		PolyStereoSubItem *ps0Item = createMenuItem<PolyStereoSubItem>("Sum each input (L, R)", CHECKMARK(*polyStereoSrc == 0));
+		ps0Item->polyStereoSrc = polyStereoSrc;
+		menu->addChild(ps0Item);
+
+		PolyStereoSubItem *ps1Item = createMenuItem<PolyStereoSubItem>("Sum to stereo (L only)", CHECKMARK(*polyStereoSrc == 1));
+		ps1Item->polyStereoSrc = polyStereoSrc;
+		ps1Item->setVal = 1;
+		menu->addChild(ps1Item);
+
+		return menu;
+	}
+};
+
 // General functions
 
 // sort the 4 floats in a float_4 in ascending order starting with index 0
@@ -288,7 +316,7 @@ inline PanelBorder* findBorder(Widget* widget) {
 
 void printNote(float cvVal, char* text, bool sharp);
 
-inline void applyStereoWidth(float width, float* left, float* right) {
+static inline void applyStereoWidth(float width, float* left, float* right) {
 	// in this algo, width can go to 2.0f to implement 200% stereo widening (1.0f stereo i.e. no change, 0.0f is mono)
 	float wdiv2 = width * 0.5f;
 	float up = 0.5f + wdiv2;
@@ -297,6 +325,14 @@ inline void applyStereoWidth(float width, float* left, float* right) {
 	float rightSig = *right * up + *left * down;
 	*left = leftSig;
 	*right = rightSig;
+}
+
+static inline float clamp20V(float in) {// meant to catch invalid values like -inf, +inf, strong overvoltage only.
+	//return in;
+	if (in >= -20.0f && in <= 20.0f) {
+		return in;
+	}
+	return in > 20.0f ? 20.0f : -20.0f;
 }
 
 #endif
