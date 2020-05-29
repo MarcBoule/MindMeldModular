@@ -316,14 +316,14 @@ struct BassMasterWidget : ModuleWidget {
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMaster.svg")));
  
 		// crossover knob
-		addParam(createDynamicParamCentered<DynBigKnobWhite>(mm2px(Vec(15.24, 22.49)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBiggerKnobWhite>(mm2px(Vec(15.24, 22.98)), module, BassMaster::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));// was 22.49
 		
 		// all labels (xover, width high, gain high, width low, gain low)
-		addChild(bassMasterLabels[0] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(15.24, 32.3))));
-		addChild(bassMasterLabels[1] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5 + 0.5, 59.71))));
-		addChild(bassMasterLabels[2] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9 + 0.5, 59.71))));
-		addChild(bassMasterLabels[3] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5 + 0.5, 87.42))));
-		addChild(bassMasterLabels[4] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9 + 0.5, 87.42))));
+		addChild(bassMasterLabels[0] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(15.24, 32.3 + 1))));
+		addChild(bassMasterLabels[1] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5 + 0.5, 59.71 + 1))));
+		addChild(bassMasterLabels[2] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9 + 0.5, 59.71 + 1))));
+		addChild(bassMasterLabels[3] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(7.5 + 0.5, 87.42 + 1))));
+		addChild(bassMasterLabels[4] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(22.9 + 0.5, 87.42 + 1))));
 		if (module) {
 			for (int i = 0; i < 5; i++) {
 				bassMasterLabels[i]->dispColorPtr = &(module->miscSettings.cc4[0]);
@@ -331,27 +331,27 @@ struct BassMasterWidget : ModuleWidget {
 		}
 		
 		// high solo button
-		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 45.93)), module, BassMaster::HIGH_SOLO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 45.93 + 1)), module, BassMaster::HIGH_SOLO_PARAM, module ? &module->panelTheme : NULL));
 		// low solo button
-		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 73.71)), module, BassMaster::LOW_SOLO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 73.71 + 1)), module, BassMaster::LOW_SOLO_PARAM, module ? &module->panelTheme : NULL));
 		// bypass button
-		addParam(createDynamicParamCentered<DynBypassRoundButton>(mm2px(Vec(15.24, 95.4)), module, BassMaster::BYPASS_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster::BYPASS_PARAM, module ? &module->panelTheme : NULL));
 
 		// high width and gain
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68)), module, BassMaster::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 51.68)), module, BassMaster::HIGH_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 51.68 + 1)), module, BassMaster::HIGH_GAIN_PARAM, module ? &module->panelTheme : NULL));
  
 		// low width and gain
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 79.46)), module, BassMaster::LOW_WIDTH_PARAM, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46)), module, BassMaster::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 79.46 + 1)), module, BassMaster::LOW_WIDTH_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
  
 		// inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 102.03)), true, module, BassMaster::IN_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 111.45)), true, module, BassMaster::IN_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 102.03 + 1)), true, module, BassMaster::IN_INPUTS + 0, module ? &module->panelTheme : NULL));
+		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 111.45 + 1)), true, module, BassMaster::IN_INPUTS + 1, module ? &module->panelTheme : NULL));
 			
 		// outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 102.03)), false, module, BassMaster::OUT_OUTPUTS  + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 111.45)), false, module, BassMaster::OUT_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 102.03 + 1)), false, module, BassMaster::OUT_OUTPUTS  + 0, module ? &module->panelTheme : NULL));
+		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(23.52, 111.45 + 1)), false, module, BassMaster::OUT_OUTPUTS + 1, module ? &module->panelTheme : NULL));
 	}
 	
 	void step() override {

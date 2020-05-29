@@ -349,6 +349,12 @@ struct DynBigKnobWhite : DynKnob {
 	}
 };	
 
+struct DynBiggerKnobWhite : DynKnob {
+	DynBiggerKnobWhite() {
+		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bigger-knob-pointer.svg")));
+	}
+};	
+
 struct DynSmallKnobGrey : DynKnob {// 7.5mm
 	DynSmallKnobGrey() {
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));

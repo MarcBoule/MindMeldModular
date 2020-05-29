@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   height="12.5mm"
+   width="12.5mm"
+   sodipodi:docname="bigger-knob-pointer.svg"
+   id="svg22"
+   version="1.1"
+   viewBox="0 0 47.244095 47.244095">
+  <metadata
+     id="metadata26">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Asset 26</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     inkscape:current-layer="svg22"
+     inkscape:window-maximized="0"
+     inkscape:window-y="26"
+     inkscape:window-x="26"
+     inkscape:cy="22.858605"
+     inkscape:cx="24.166648"
+     inkscape:zoom="11.2"
+     inkscape:document-units="mm"
+     units="mm"
+     showgrid="false"
+     id="namedview24"
+     inkscape:window-height="835"
+     inkscape:window-width="1026"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     inkscape:document-rotation="0"
+     bordercolor="#666666"
+     pagecolor="#ffffff" />
+  <defs
+     id="defs12">
+    <style
+       id="style10">.cls-1{fill:none;}.cls-2{fill:#303030;}</style>
+  </defs>
+  <title
+     id="title14">Asset 26</title>
+  <g
+     id="Track_Knob_copy"
+     data-name="Track Knob copy"
+     transform="matrix(1.3330284,0,0,1.3330284,0,8.692914)">
+    <circle
+       style="fill:none"
+       id="path5084"
+       class="cls-1"
+       cx="14.46"
+       cy="14.46"
+       r="14.46" />
+  </g>
+  <g
+     id="Track_knob_triangle"
+     data-name="Track knob triangle"
+     transform="matrix(1.3330284,0,0,1.3330284,4.3459548,0.00120754)">
+    <polygon
+       style="fill:#303030"
+       class="cls-2"
+       points="16.44,6.37 12.47,6.37 14.46,3.19 "
+       id="polygon18" />
+  </g>
+</svg>
