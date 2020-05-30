@@ -34,6 +34,7 @@ extern Model *modelUnmeld;
 extern Model *modelEqMaster;
 extern Model *modelEqExpander;
 extern Model *modelBassMaster;
+extern Model *modelBassMasterJr;
 
 
 

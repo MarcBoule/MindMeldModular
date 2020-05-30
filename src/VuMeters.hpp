@@ -232,4 +232,14 @@ struct VuMeterEq : VuMeterTrack {
 	}
 };
 
+struct VuMeterBassMono : VuMeterTrack {
+	int8_t* bassVuColorsSrc = NULL;
+
+	void setColor() override {
+		if (bassVuColorsSrc) {
+			colorTheme = *bassVuColorsSrc;
+		}	
+	}
+};
+
 #endif

@@ -70,9 +70,15 @@
 			"tags": ["Polyphonic", "Utility"]
 		},
  		{
+			"slug": "BassMasterJr",
+			"name": "BassMasterJr",
+			"description": "Dual band spatialiser for high spread and bass mono",
+			"tags": ["Utility", "Equalizer"]
+		},
+		{
 			"slug": "BassMaster",
 			"name": "BassMaster",
-			"description": "Dual band spatialiser for high spread and bass mono",
+			"description": "Dual band spatialiser for high spread and bass mono with VU meter",
 			"tags": ["Utility", "Equalizer"]
 		}
 	]
