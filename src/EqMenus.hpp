@@ -123,34 +123,6 @@ struct MomentaryCvItem : MenuItem {
 };
 
 
-struct VuColorEqItem : MenuItem {
-	int8_t *srcColors;
-
-	struct VuColorSubItem : MenuItem {
-		int8_t *srcColors;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			for (int t = 0; t < 24; t++) {
-				srcColors[t] = setVal;
-			}
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-		
-		for (int i = 0; i < numVuThemes; i++) {
-			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColors == i));
-			vuColItem->srcColors = srcColors;
-			vuColItem->setVal = i;
-			menu->addChild(vuColItem);
-		}
-
-		return menu;
-	}
-};
-
-
 
 struct FetchLabelsItem : MenuItem {
 	int *mappedIdSrc;

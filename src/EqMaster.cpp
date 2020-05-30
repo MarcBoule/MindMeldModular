@@ -858,8 +858,9 @@ struct EqMasterWidget : ModuleWidget {
 		menu->addChild(dispColItem);
 		
 		if (module->mappedId == 0) {
-			VuColorEqItem *vuColItem = createMenuItem<VuColorEqItem>("VU colour", RIGHT_ARROW);
+			VuFiveColorItem *vuColItem = createMenuItem<VuFiveColorItem>("VU colour", RIGHT_ARROW);
 			vuColItem->srcColors = module->trackVuColors;
+			vuColItem->vectorSize = 24;
 			menu->addChild(vuColItem);
 		}
 		

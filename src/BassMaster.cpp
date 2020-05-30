@@ -344,6 +344,12 @@ struct BassMasterWidget : ModuleWidget {
 		DispTwoColorItem *dispColItem = createMenuItem<DispTwoColorItem>("Display colour", RIGHT_ARROW);
 		dispColItem->srcColor = &(module->miscSettings.cc4[0]);
 		menu->addChild(dispColItem);
+		
+		if (!IS_JR) {
+			VuFiveColorItem *vuColItem = createMenuItem<VuFiveColorItem>("VU colour", RIGHT_ARROW);
+			vuColItem->srcColors = &(module->miscSettings.cc4[2]);
+			menu->addChild(vuColItem);
+		}
 	}
 
 	BassMasterWidget(BassMaster<IS_JR> *module) {
