@@ -821,7 +821,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 			
 			// Return faders
-			addParam(createDynamicParamCentered<DynSmallerFader>(mm2px(Vec(6.35 + 3.67 + 12.7 * i, 87.2)), module, TAuxExpander::GLOBAL_AUXRETURN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmSmallerFader>(mm2px(Vec(6.35 + 3.67 + 12.7 * i, 87.2)), module, TAuxExpander::GLOBAL_AUXRETURN_PARAMS + i));
 			if (module) {
 				// VU meters
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));
@@ -1171,7 +1171,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			}
 			
 			// Return faders
-			addParam(createDynamicParamCentered<DynSmallerFader>(mm2px(Vec(6.35 + 3.67 + 12.7 * i, 87.2)), module, TAuxExpander::GLOBAL_AUXRETURN_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmSmallerFader>(mm2px(Vec(6.35 + 3.67 + 12.7 * i, 87.2)), module, TAuxExpander::GLOBAL_AUXRETURN_PARAMS + i));
 			if (module) {
 				// VU meters
 				VuMeterAux *newVU = createWidgetCentered<VuMeterAux>(mm2px(Vec(6.35 + 12.7 * i, 87.2)));

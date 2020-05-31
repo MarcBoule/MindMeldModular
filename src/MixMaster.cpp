@@ -944,8 +944,8 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			
 			// Faders
-			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSmallFaderWithLink *newFader;
+			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i));
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
@@ -1049,8 +1049,8 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			
 			// Faders
-			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			MmSmallFaderWithLink *newFader;
+			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i));		
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
@@ -1119,7 +1119,7 @@ struct MixMasterWidget : ModuleWidget {
 		}
 		
 		// Master fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(300.17, 70.3)), module, TMixMaster::MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmBigFader>(mm2px(Vec(300.17, 70.3)), module, TMixMaster::MAIN_FADER_PARAM));
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
@@ -1237,8 +1237,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			}
 			
 			// Faders
-			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSmallFaderWithLink *newFader;
+			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i));
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
@@ -1337,8 +1337,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			}
 			
 			// Faders
-			DynSmallFaderWithLink *newFader;
-			addParam(newFader = createDynamicParamCentered<DynSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i, module ? &module->panelTheme : NULL));		
+			MmSmallFaderWithLink *newFader;
+			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i));		
 			if (module) {
 				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
@@ -1407,7 +1407,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		}
 		
 		// Master fader
-		addParam(createDynamicParamCentered<DynBigFader>(mm2px(Vec(300.17 - 12.7 * 10, 70.3)), module, TMixMaster::MAIN_FADER_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmBigFader>(mm2px(Vec(300.17 - 12.7 * 10, 70.3)), module, TMixMaster::MAIN_FADER_PARAM));
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82 - 12.7 * 10, 70.3)));

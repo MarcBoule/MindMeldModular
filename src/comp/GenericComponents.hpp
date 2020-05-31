@@ -154,10 +154,48 @@ struct MomentarySvgSwitchNoParam : OpaqueWidget {
 };
 
 
-// Knobs
+// Knobs and sliders
 
-// none
 
+struct MmSlider : SvgSlider {
+	void setupSlider() {
+		maxHandlePos = Vec(0, 0);
+		minHandlePos = Vec(0, background->box.size.y - 0.01f);// 0.01f is epsilon so handle doesn't disappear at bottom
+		float offsetY = handle->box.size.y / 2.0f;
+		background->box.pos.y = offsetY;
+		box.size.y = background->box.size.y + offsetY * 2.0f;
+		background->visible = false;
+	}
+};
+
+
+
+struct MmSmallFader : MmSlider {
+	MmSmallFader() {
+		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel-bg.svg")));
+		setHandleSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel.svg")));
+		setupSlider();
+	}
+};
+
+struct MmSmallerFader : MmSlider {
+	MmSmallerFader() {
+		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-aux-bg.svg")));
+		setHandleSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel.svg")));
+		setupSlider();
+	}
+};
+
+struct MmBigFader : MmSlider {
+	MmBigFader() {
+		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
+		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-master-bg.svg")));
+		setHandleSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-master.svg")));
+		setupSlider();
+	}
+};
 
 
 // Lights

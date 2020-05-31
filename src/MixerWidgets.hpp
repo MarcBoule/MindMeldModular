@@ -1061,7 +1061,7 @@ struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
 // linked faders
 // --------------------
 
-struct DynSmallFaderWithLink : DynSmallFader {
+struct MmSmallFaderWithLink : MmSmallFader {
 	unsigned long* linkBitMaskSrc;
 	int baseFaderParamId;
 	
@@ -1079,11 +1079,11 @@ struct DynSmallFaderWithLink : DynSmallFader {
 				return;
 			}
 		}
-		DynSmallFader::onButton(e);		
+		MmSmallFader::onButton(e);		
 	}
 
 	void draw(const DrawArgs &args) override {
-		DynSmallFader::draw(args);
+		MmSmallFader::draw(args);
 		if (paramQuantity) {
 			int faderIndex = paramQuantity->paramId - baseFaderParamId;
 			if (isLinked(linkBitMaskSrc, faderIndex)) {

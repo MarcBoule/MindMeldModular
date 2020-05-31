@@ -95,18 +95,6 @@ struct DynamicSVGKnob : SvgKnob {
 	//void draw(const DrawArgs &args) override;
 };
 
-struct DynamicSVGSlider : SvgSlider {
-    int* mode = NULL;
-    int oldMode = -1;
-	std::vector<std::shared_ptr<Svg>> framesAll;
-	std::string frameAltName;
-
-	void addFrameAll(std::shared_ptr<Svg> svg);
-    void addFrameAlt(std::string filename) {frameAltName = filename;}	
-    void step() override;
-	void setupSlider();
-};
-
 
 struct DynSoloRoundButton : DynamicSVGSwitch {
 	DynSoloRoundButton() {
@@ -315,35 +303,5 @@ struct DynSmallKnobGrey8mm : DynKnob {
 		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
 	}
 };
-
-struct DynSmallFader : DynamicSVGSlider {
-	DynSmallFader() {
-		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
-		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel-bg.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel.svg")));
-		setupSlider();
-	}
-};
-
-struct DynSmallerFader : DynamicSVGSlider {
-	DynSmallerFader() {
-		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
-		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-aux-bg.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-channel.svg")));
-		setupSlider();
-	}
-};
-
-struct DynBigFader : DynamicSVGSlider {
-	DynBigFader() {
-		// no adjustment needed in this code, simply adjust the background svg's width to match the width of the handle by temporarily making it visible in the code below, and tweaking the svg's width as needed (when scaling not 100% between inkscape and Rack)
-		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-master-bg.svg")));
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/fader-master.svg")));
-		setupSlider();
-	}
-};
-
-
-
 
 #endif

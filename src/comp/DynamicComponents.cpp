@@ -122,35 +122,3 @@ void DynamicSVGKnob::step() {
 	SvgKnob::step();
 }
 
-
-
-// Dynamic SVGSlider
-
-void DynamicSVGSlider::addFrameAll(std::shared_ptr<Svg> svg) {
-    framesAll.push_back(svg);
-	if (framesAll.size() == 1) {
-		setHandleSvg(svg);
-	}
-}
-
-void DynamicSVGSlider::step() {
-    if(mode != NULL && *mode != oldMode) {
-        if (*mode > 0 && !frameAltName.empty()) {// JIT loading of alternate skin
-			framesAll.push_back(APP->window->loadSvg(frameAltName));
-			frameAltName.clear();// don't reload!
-		}
-		setHandleSvg(framesAll[*mode]);
-        oldMode = *mode;
-		fb->dirty = true;
-    }
-	SvgSlider::step();
-}
-
-void DynamicSVGSlider::setupSlider() {
-	maxHandlePos = Vec(0, 0);
-	minHandlePos = Vec(0, background->box.size.y - 0.01f);// 0.01f is epsilon so handle doesn't disappear at bottom
-	float offsetY = handle->box.size.y / 2.0f;
-	background->box.pos.y = offsetY;
-	box.size.y = background->box.size.y + offsetY * 2.0f;
-	background->visible = false;
-}
