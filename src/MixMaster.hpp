@@ -403,7 +403,7 @@ struct MixerMaster {
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	private:
-	FirstOrderFilter dcBlocker[2];// 6dB/oct
+	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
 	float oldFader;
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
@@ -431,9 +431,7 @@ struct MixerMaster {
 		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
-		for (int i = 0; i < 2; i++) {
-			dcBlocker[i].setParameters(true, 0.1f);
-		}
+		dcBlockerStereo.setParameters(true, 0.1f);
 	}
 
 
@@ -542,8 +540,7 @@ struct MixerMaster {
 	void setupDcBlocker() {
 		float fc = 10.0f;// Hz
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		dcBlocker[0].setParameters(true, fc);
-		dcBlocker[1].setParameters(true, fc);
+		dcBlockerStereo.setParameters(true, fc);
 	}
 	
 	
@@ -705,8 +702,7 @@ struct MixerMaster {
 		
 		// DC blocker (post VU)
 		if (dcBlock) {
-			mix[0] = dcBlocker[0].process(mix[0]);
-			mix[1] = dcBlocker[1].process(mix[1]);
+			dcBlockerStereo.process(mix, mix);
 		}
 		
 		// Clipping (post VU, so that we can see true range)

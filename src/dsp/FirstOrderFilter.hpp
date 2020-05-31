@@ -6,21 +6,14 @@
 //***********************************************************************************************
 
 
-class FirstOrderFilter {
+class FirstOrderCoefficients {
+	protected: 
+
 	float b[2];// coefficients b0, b1
 	float a;// coefficient a1
-	float x;
-	float y;
 	
 	
 	public: 
-		
-		
-	void reset() {
-		x = 0.0f;
-		y = 0.0f;
-	}
-	
 	
 	void setParameters(bool isHighPass, float nfc) {// normalized freq
 		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
@@ -36,12 +29,48 @@ class FirstOrderFilter {
 		float lbcst = 1.0f - hbcst;// equivalent to: hbcst * nfcw;
 		b[0] = isHighPass ? hbcst : lbcst;
 		b[1] = isHighPass ? -hbcst : lbcst;
-	}	
+	}		
+};
+
+
+class FirstOrderFilter : public FirstOrderCoefficients {
+	float x;
+	float y;
 	
-	
+	public: 
+		
+	void reset() {
+		x = 0.0f;
+		y = 0.0f;
+	}
+
 	float process(float in) {
 		y = b[0] * in + b[1] * x - a * y;
 		x = in;
 		return y;
+	}
+};
+
+
+class FirstOrderStereoFilter : public FirstOrderCoefficients {
+	float x[2];
+	float y[2];
+	
+	public: 
+		
+	void reset() {
+		x[0] = 0.0f;
+		x[1] = 0.0f;
+		y[0] = 0.0f;
+		y[1] = 0.0f;
+	}
+	
+	void process(float* out, float* in) {
+		y[0] = b[0] * in[0] + b[1] * x[0] - a * y[0];
+		y[1] = b[0] * in[1] + b[1] * x[1] - a * y[1];
+		x[0] = in[0];
+		x[1] = in[1];
+		out[0] = y[0];
+		out[1] = y[1];
 	}
 };
