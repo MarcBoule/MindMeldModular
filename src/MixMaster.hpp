@@ -1060,7 +1060,7 @@ struct MixerGroup {
 
 struct MixerTrack {
 	// Constants
-	// none
+	static const bool linearVolCvInputs = true;
 	
 	// need to save, no reset
 	// none
@@ -1524,7 +1524,9 @@ struct MixerTrack {
 			fader = paFade->getValue();
 			if (inVol->isConnected()) {
 				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				fader *= volCv;
+				// if (!linearVolCvInputs) {
+					fader *= volCv;
+				// }
 				paramWithCV = fader;
 			}
 			else {
@@ -1734,8 +1736,11 @@ struct MixerTrack {
 			// calc ** faderGain **
 			if (fader != oldFader) {
 				faderGain = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
-			}
+			}			
 			// calc ** gainMatrix **
+			// if (linearVolCvInputs) {
+				// faderGain *= volCv;      TODO or fader ???
+			// }
 			if (fader != oldFader || pan != oldPan) {
 				oldFader = fader;
 				oldPan = pan;	

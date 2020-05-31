@@ -424,8 +424,8 @@ struct BassMasterWidget : ModuleWidget {
 			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM));
 			
 			// width CV inputs
-			addInput(createInputCentered<MmPort>(mm2px(Vec(37.2, 102.03 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_INPUT));
-			addInput(createInputCentered<MmPort>(mm2px(Vec(37.2, 111.45 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_INPUT));
+			addInput(createInputCentered<MmPort>(mm2px(Vec(36.4, 102.03 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_INPUT));
+			addInput(createInputCentered<MmPort>(mm2px(Vec(36.4, 111.45 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_INPUT));
 		}
 	}
 	
