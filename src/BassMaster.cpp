@@ -267,8 +267,8 @@ struct BassMaster : Module {
 		}
 		
 		// bypass
-		outStereo[0] = crossfade(inputs[IN_INPUTS + 0].getVoltage(), outStereo[0], solosAndBypassSlewers.out[2]);// 0.0 is first arg, 1.0 is second
-		outStereo[1] = crossfade(inputs[IN_INPUTS + 1].getVoltage(), outStereo[1], solosAndBypassSlewers.out[2]);// 0.0 is first arg, 1.0 is second
+		outStereo[0] = crossfade(inputs[IN_INPUTS + 0].getVoltage(), outStereo[0], solosAndBypassSlewers.out[2]);
+		outStereo[1] = crossfade(inputs[IN_INPUTS + 1].getVoltage(), outStereo[1], solosAndBypassSlewers.out[2]);
 
 		// VU meter (doesn't apply to Jr)
 		if (!IS_JR) {
@@ -407,7 +407,6 @@ struct BassMasterWidget : ModuleWidget {
 		addInput(createInputCentered<MmPort>(mm2px(Vec(6.81, 111.45 + 1)), module, BassMaster<IS_JR>::IN_INPUTS + 1));
 			
 		// outputs
-		// float outX = IS_JR ? 23.52 : 37.2;
 		addOutput(createOutputCentered<MmPort>(mm2px(Vec(23.52, 102.03 + 1)), module, BassMaster<IS_JR>::OUT_OUTPUTS  + 0));
 		addOutput(createOutputCentered<MmPort>(mm2px(Vec(23.52, 111.45 + 1)), module, BassMaster<IS_JR>::OUT_OUTPUTS + 1));
 		
