@@ -1094,7 +1094,7 @@ struct MixerTrack {
 	dsp::SlewLimiter muteSoloGainSlewer;
 	FirstOrderFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
-	dsp::BiquadFilter lpFilter[2];// 12db/oct
+	ButterworthSecondOrder lpFilter[2];// 12db/oct
 	float lastHpfCutoff;
 	float lastLpfCutoff;
 	float oldPan;
@@ -1166,7 +1166,7 @@ struct MixerTrack {
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].setParameters(true, 0.1f);
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1f, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
-			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4f, 0.707f, 0.0f);
+			lpFilter[i].setParameters(false, 0.4f);
 		}
 	}
 
@@ -1428,8 +1428,8 @@ struct MixerTrack {
 		paLpfCutoff->setValue(fc);
 		lastLpfCutoff = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707f, 0.0f);
-		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707f, 0.0f);
+		lpFilter[0].setParameters(false, fc);
+		lpFilter[1].setParameters(false, fc);
 	}
 	float getLPFCutoffFreq() {return paLpfCutoff->getValue();}
 

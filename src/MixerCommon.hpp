@@ -11,6 +11,7 @@
 
 #include "MindMeldModular.hpp"
 #include "dsp/FirstOrderFilter.hpp"
+#include "dsp/ButterworthFilters.hpp"
 
 
 

@@ -78,7 +78,7 @@ struct BassMaster : Module {
 
 		configParam(CROSSOVER_PARAM, 50.0f, 500.0f, 120.0f, "Crossover", " Hz");
 		configParam(SLOPE_PARAM, 0.0f, 1.0f, DEFAULT_SLOPE, "Slope 24 dB/oct");
-		configParam(LOW_WIDTH_PARAM, 0.0f, 1.0f, 1.0f, "Low width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
+		configParam(LOW_WIDTH_PARAM, 0.0f, 2.0f, 1.0f, "Low width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(HIGH_WIDTH_PARAM, 0.0f, 2.0f, 1.0f, "High width", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 		configParam(LOW_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "Low solo");
 		configParam(HIGH_SOLO_PARAM, 0.0f, 1.0f, 0.0f, "High solo");
@@ -221,7 +221,7 @@ struct BassMaster : Module {
 		float lowWidth = params[LOW_WIDTH_PARAM].getValue();
 		float highWidth = params[HIGH_WIDTH_PARAM].getValue();
 		if (!IS_JR) {
-			lowWidth = clamp(lowWidth + inputs[LOW_WIDTH_INPUT].getVoltage() * 0.1f, 0.0f, 1.0f);
+			lowWidth = clamp(lowWidth + inputs[LOW_WIDTH_INPUT].getVoltage() * 0.2f, 0.0f, 2.0f);
 			highWidth = clamp(highWidth + inputs[HIGH_WIDTH_INPUT].getVoltage() * 0.2f, 0.0f, 2.0f);
 		}
 		

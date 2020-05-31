@@ -25,7 +25,7 @@ struct AuxspanderAux {
 	private:
 	FirstOrderFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
-	dsp::BiquadFilter lpFilter[2];// 12db/oct
+	ButterworthSecondOrder lpFilter[2];// 12db/oct
 	float sampleTime;
 	dsp::SlewLimiter stereoWidthSlewer;
 	public:
@@ -43,7 +43,7 @@ struct AuxspanderAux {
 		for (int i = 0; i < 2; i++) {
 			hpPreFilter[i].setParameters(true, 0.1f);
 			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1f, 1.0f, 0.0f);// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
-			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4f, 0.707f, 0.0f);
+			lpFilter[i].setParameters(false, 0.4f);
 		}
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
@@ -106,8 +106,8 @@ struct AuxspanderAux {
 	void setLPFCutoffFreq(float fc) {// always use this instead of directly accessing lpfCutoffFreq
 		lpfCutoffFreq = fc;
 		fc *= APP->engine->getSampleTime();// fc is in normalized freq for rest of method
-		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707f, 0.0f);
-		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707f, 0.0f);
+		lpFilter[0].setParameters(false, fc);
+		lpFilter[1].setParameters(false, fc);
 	}
 	float getLPFCutoffFreq() {return lpfCutoffFreq;}
 
