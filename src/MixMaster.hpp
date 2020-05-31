@@ -1092,8 +1092,7 @@ struct MixerTrack {
 	dsp::SlewLimiter inGainSlewer;
 	dsp::SlewLimiter stereoWidthSlewer;
 	dsp::SlewLimiter muteSoloGainSlewer;
-	FirstOrderFilter hpPreFilter[2];// 6dB/oct
-	dsp::BiquadFilter hpFilter[2];// 12dB/oct
+	ButterworthThirdOrder hpFilter[2];// 18dB/oct
 	ButterworthSecondOrder lpFilter[2];// 12db/oct
 	float lastHpfCutoff;
 	float lastLpfCutoff;
@@ -1164,8 +1163,7 @@ struct MixerTrack {
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].setParameters(true, 0.1f);
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1f, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
+			hpFilter[i].setParameters(true, 0.1f);
 			lpFilter[i].setParameters(false, 0.4f);
 		}
 	}
@@ -1204,7 +1202,6 @@ struct MixerTrack {
 		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
 		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
 		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].reset();
 			hpFilter[i].reset();
 			lpFilter[i].reset();
 		}
@@ -1417,10 +1414,8 @@ struct MixerTrack {
 		paHpfCutoff->setValue(fc);
 		lastHpfCutoff = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].setParameters(true, fc);
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
-		}
+		hpFilter[0].setParameters(true, fc);
+		hpFilter[1].setParameters(true, fc);
 	}
 	float getHPFCutoffFreq() {return paHpfCutoff->getValue();}
 	
@@ -1629,8 +1624,8 @@ struct MixerTrack {
 			// Filters
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].process(taps[N_TRK * 2 + 0]));
-				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].process(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
+				taps[N_TRK * 2 + 0] = hpFilter[0].process(taps[N_TRK * 2 + 0]);
+				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(taps[N_TRK * 2 + 1]) : taps[N_TRK * 2 + 0];
 			}
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
@@ -1644,8 +1639,8 @@ struct MixerTrack {
 			// Filters
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].process(taps[N_TRK * 2 + 0]));
-				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].process(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
+				taps[N_TRK * 2 + 0] = hpFilter[0].process(taps[N_TRK * 2 + 0]);
+				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(taps[N_TRK * 2 + 1]) : taps[N_TRK * 2 + 0];
 			}
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {

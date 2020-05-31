@@ -13,6 +13,10 @@
 //  * make signal path stereo, but just one set of coefficients
 
 
+#ifndef IM_QUATTROBIQUAD_HPP
+#define IM_QUATTROBIQUAD_HPP
+
+
 class QuattroBiQuadCoeff {
 	protected: 
 	
@@ -251,3 +255,6 @@ class QuattroBiQuad : public QuattroBiQuadCoeff {
 		out[1] = y0R[3];
 	}	
 };
+
+
+#endif

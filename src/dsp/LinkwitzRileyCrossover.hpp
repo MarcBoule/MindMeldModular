@@ -11,6 +11,10 @@
 // Cascaded 1st-order filters are used when offering 2nd order Linkwitz-Riley crossover
 
 
+#ifndef IM_LINKWITZRILEYCROSSOVER_HPP
+#define IM_LINKWITZRILEYCROSSOVER_HPP
+
+
 class LinkwitzRileyCrossover {	
 	bool secondOrderFilters = false;// local memory of what is in iirs		
 	
@@ -95,4 +99,6 @@ class LinkwitzRileyCrossover {
 	}
 };
 
+
+#endif
 

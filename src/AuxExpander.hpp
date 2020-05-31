@@ -23,8 +23,7 @@ struct AuxspanderAux {
 	// no need to save, with reset
 	bool stereo;
 	private:
-	FirstOrderFilter hpPreFilter[2];// 6dB/oct
-	dsp::BiquadFilter hpFilter[2];// 12dB/oct
+	ButterworthThirdOrder hpFilter[2];// 18dB/oct
 	ButterworthSecondOrder lpFilter[2];// 12db/oct
 	float sampleTime;
 	dsp::SlewLimiter stereoWidthSlewer;
@@ -41,8 +40,7 @@ struct AuxspanderAux {
 		ids = "id_x" + std::to_string(auxNum) + "_";
 		inSig = &_inputs[0 + 2 * auxNum + 0];
 		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].setParameters(true, 0.1f);
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1f, 1.0f, 0.0f);// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
+			hpFilter[i].setParameters(true, 0.1f);
 			lpFilter[i].setParameters(false, 0.4f);
 		}
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
@@ -96,10 +94,8 @@ struct AuxspanderAux {
 	void setHPFCutoffFreq(float fc) {// always use this instead of directly accessing hpfCutoffFreq
 		hpfCutoffFreq = fc;
 		fc *= APP->engine->getSampleTime();// fc is in normalized freq for rest of method
-		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].setParameters(true, fc);
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
-		}
+		hpFilter[0].setParameters(true, fc);
+		hpFilter[1].setParameters(true, fc);
 	}
 	float getHPFCutoffFreq() {return hpfCutoffFreq;}
 	
@@ -144,8 +140,8 @@ struct AuxspanderAux {
 		// Filters
 		// HPF
 		if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-			mix[0] = hpFilter[0].process(hpPreFilter[0].process(mix[0]));
-			mix[1] = inSig[1].isConnected() ? hpFilter[1].process(hpPreFilter[1].process(mix[1])) : mix[0];
+			mix[0] = hpFilter[0].process(mix[0]);
+			mix[1] = inSig[1].isConnected() ? hpFilter[1].process(mix[1]) : mix[0];
 		}
 		// LPF
 		if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {

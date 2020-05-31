@@ -6,6 +6,10 @@
 //***********************************************************************************************
 
 
+#ifndef IM_FIRSTORDERFILTER_HPP
+#define IM_FIRSTORDERFILTER_HPP
+
+
 class FirstOrderCoefficients {
 	protected: 
 
@@ -74,3 +78,6 @@ class FirstOrderStereoFilter : public FirstOrderCoefficients {
 		out[1] = y[1];
 	}
 };
+
+
+#endif
