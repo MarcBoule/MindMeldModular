@@ -357,10 +357,10 @@ struct BassMasterWidget : ModuleWidget {
 
 		// Main panel from Inkscape
         if (IS_JR) {
-			setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMasterJr.svg")));
+			setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMaster.svg")));
 		}
 		else {
-			setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMaster.svg")));
+			setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMasterSnr.svg")));
 		}
  
 		// crossover knob
@@ -383,12 +383,12 @@ struct BassMasterWidget : ModuleWidget {
 		// low solo button
 		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 73.71 + 1)), module, BassMaster<IS_JR>::LOW_SOLO_PARAM, module ? &module->panelTheme : NULL));
 		// bypass button
-		if (IS_JR) {
+		// if (IS_JR) {
 			addParam(createDynamicParamCentered<DynBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM, module ? &module->panelTheme : NULL));
-		}
-		else {
-			addParam(createParamCentered<MmSwitchInv>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
-		}
+		// }
+		// else {
+			// addParam(createParamCentered<MmSwitchInv>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
+		// }
 
 		// high width and gain
 		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
@@ -399,26 +399,26 @@ struct BassMasterWidget : ModuleWidget {
 		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
  
 		// inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 102.03 + 1)), true, module, BassMaster<IS_JR>::IN_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.81, 111.45 + 1)), true, module, BassMaster<IS_JR>::IN_INPUTS + 1, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPort>(mm2px(Vec(6.81, 102.03 + 1)), module, BassMaster<IS_JR>::IN_INPUTS + 0));
+		addInput(createInputCentered<MmPort>(mm2px(Vec(6.81, 111.45 + 1)), module, BassMaster<IS_JR>::IN_INPUTS + 1));
 			
 		// outputs
-		float outX = IS_JR ? 23.52 : 37;
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(outX, 102.03 + 1)), false, module, BassMaster<IS_JR>::OUT_OUTPUTS  + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(outX, 111.45 + 1)), false, module, BassMaster<IS_JR>::OUT_OUTPUTS + 1, module ? &module->panelTheme : NULL));
+		// float outX = IS_JR ? 23.52 : 37.2;
+		addOutput(createOutputCentered<MmPort>(mm2px(Vec(23.52, 102.03 + 1)), module, BassMaster<IS_JR>::OUT_OUTPUTS  + 0));
+		addOutput(createOutputCentered<MmPort>(mm2px(Vec(23.52, 111.45 + 1)), module, BassMaster<IS_JR>::OUT_OUTPUTS + 1));
 		
 		if (!IS_JR) {
 			// VU meter
 			if (module) {
-				VuMeterBassMono *newVU = createWidgetCentered<VuMeterBassMono>(mm2px(Vec(outX, 37.5f)));
+				VuMeterBassMono *newVU = createWidgetCentered<VuMeterBassMono>(mm2px(Vec(37.2, 37.5f)));
 				newVU->srcLevels = module->trackVu.vuValues;
 				newVU->bassVuColorsSrc = &(module->miscSettings.cc4[2]);
 				addChild(newVU);
 			}
 						
 			// master gain and mix
-			addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(outX, 68)), module, BassMaster<IS_JR>::GAIN_PARAM, module ? &module->panelTheme : NULL));
-			addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(outX, 85)), module, BassMaster<IS_JR>::MIX_PARAM, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM, module ? &module->panelTheme : NULL));
+			addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM, module ? &module->panelTheme : NULL));
 		}
 	}
 	

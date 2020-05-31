@@ -912,9 +912,9 @@ struct EqMasterWidget : ModuleWidget {
 		// Signal inputs
 		static const float jackY = 84.35f;
 		static const float jackDY = 12.8f;
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, jackY)), true, module, EqMaster::SIG_INPUTS + 0, module ? &module->panelTheme : NULL));		
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, jackY + jackDY)), true, module, EqMaster::SIG_INPUTS + 1, module ? &module->panelTheme : NULL));		
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, jackY + jackDY * 2)), true, module, EqMaster::SIG_INPUTS + 2, module ? &module->panelTheme : NULL));		
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(leftX, jackY)), module, EqMaster::SIG_INPUTS + 0));		
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(leftX, jackY + jackDY)), module, EqMaster::SIG_INPUTS + 1));		
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(leftX, jackY + jackDY * 2)), module, EqMaster::SIG_INPUTS + 2));		
 		
 		
 		// Center part
@@ -1061,10 +1061,9 @@ struct EqMasterWidget : ModuleWidget {
 			trackGainKnob->trackEqsSrc = module->trackEqs;
 		}		
 		// Signal outputs
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, jackY)), false, module, EqMaster::SIG_OUTPUTS + 0, module ? &module->panelTheme : NULL));		
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, jackY + jackDY)), false, module, EqMaster::SIG_OUTPUTS + 1, module ? &module->panelTheme : NULL));		
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, jackY + jackDY * 2)), false, module, EqMaster::SIG_OUTPUTS + 2, module ? &module->panelTheme : NULL));		
-		
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(rightX, jackY)), module, EqMaster::SIG_OUTPUTS + 0));		
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(rightX, jackY + jackDY)), module, EqMaster::SIG_OUTPUTS + 1));		
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(rightX, jackY + jackDY * 2)), module, EqMaster::SIG_OUTPUTS + 2));		
 	}
 	
 	void step() override {

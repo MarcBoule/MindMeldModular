@@ -292,8 +292,8 @@ struct MeldWidget : ModuleWidget {
 		}
 
 		// poly in/thru
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(6.84, 18.35)), true, module, Meld::POLY_INPUT, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(23.64, 18.35)), false, module, Meld::OUT_OUTPUT, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Meld::POLY_INPUT));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(23.64, 18.35)), module, Meld::OUT_OUTPUT));
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
@@ -303,8 +303,8 @@ struct MeldWidget : ModuleWidget {
 				
 		for (int i = 0; i < 8; i++) {
 			// merge signals
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * i)), true, module, Meld::MERGE_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), true, module, Meld::MERGE_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));
+			addInput(createInputCentered<MmPort>(mm2px(Vec(10.33, 34.5 + 10.85 * i)), module, Meld::MERGE_INPUTS + 2 * i + 0));
+			addInput(createInputCentered<MmPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), module, Meld::MERGE_INPUTS + 2 * i + 1));
 			
 			// bypass led-buttons
 			addParam(createParamCentered<LedButton>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_PARAMS + i));

@@ -200,8 +200,8 @@ struct UnmeldWidget : ModuleWidget {
 		}		
 		
 		// poly in/thru
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(6.84, 18.35)), true, module, Unmeld::POLY_INPUT, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(23.64, 18.35)), false, module, Unmeld::THRU_OUTPUT, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Unmeld::POLY_INPUT));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(23.64, 18.35)), module, Unmeld::THRU_OUTPUT));
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
@@ -211,8 +211,8 @@ struct UnmeldWidget : ModuleWidget {
 		
 		// split signals
 		for (int i = 0; i < 8; i++) {
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(10.33, 34.5 + 10.85 * i)), false, module, Unmeld::SPLIT_OUTPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), false, module, Unmeld::SPLIT_OUTPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));
+			addOutput(createOutputCentered<MmPort>(mm2px(Vec(10.33, 34.5 + 10.85 * i)), module, Unmeld::SPLIT_OUTPUTS + 2 * i + 0));
+			addOutput(createOutputCentered<MmPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), module, Unmeld::SPLIT_OUTPUTS + 2 * i + 1));
 		}
 	}
 	

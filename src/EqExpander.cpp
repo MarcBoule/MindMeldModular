@@ -141,8 +141,8 @@ struct EqExpanderWidget : ModuleWidget {
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EqSpander.svg")));
 		panelBorder = findBorder(panel);
 		
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(12.87f, 17.75f)), true, module, EqExpander::ACTIVE_CV_INPUTS + 0, module ? &module->panelTheme : NULL));		
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(22.69f, 17.75f)), true, module, EqExpander::ACTIVE_CV_INPUTS + 1, module ? &module->panelTheme : NULL));		
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(12.87f, 17.75f)), module, EqExpander::ACTIVE_CV_INPUTS + 0));		
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(22.69f, 17.75f)), module, EqExpander::ACTIVE_CV_INPUTS + 1));		
 		
 
 		static const float leftX = 7.96f;
@@ -152,9 +152,9 @@ struct EqExpanderWidget : ModuleWidget {
 		static const float delY = 10.85f;
 		
 		for (int y = 0; y < 8; y++) {
-			addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(leftX, topY + y * delY)), true, module, EqExpander::TRACK_CV_INPUTS + y, module ? &module->panelTheme : NULL));		
-			addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(midX, topY + y * delY)), true, module, EqExpander::TRACK_CV_INPUTS + y + 8, module ? &module->panelTheme : NULL));		
-			addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(rightX, topY + y * delY)), true, module, EqExpander::TRACK_CV_INPUTS + y + 16, module ? &module->panelTheme : NULL));		
+			addInput(createInputCentered<MmPortGold>(mm2px(Vec(leftX, topY + y * delY)), module, EqExpander::TRACK_CV_INPUTS + y));		
+			addInput(createInputCentered<MmPortGold>(mm2px(Vec(midX, topY + y * delY)), module, EqExpander::TRACK_CV_INPUTS + y + 8));		
+			addInput(createInputCentered<MmPortGold>(mm2px(Vec(rightX, topY + y * delY)), module, EqExpander::TRACK_CV_INPUTS + y + 16));		
 		}
 	}
 

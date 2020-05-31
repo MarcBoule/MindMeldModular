@@ -16,9 +16,6 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
-static const float blurRadiusRatio = 0.06f;
-
-
 
 // ******** Dynamic Widgets ********
 
@@ -41,56 +38,6 @@ struct DynamicPanelBorder : widget::TransparentWidget {
     int oldMode = -1;
 	void draw(const DrawArgs& args) override;
     void step() override;
-};
-
-
-
-
-// ******** Dynamic Ports ********
-
-// General Dynamic Port creation
-template <class TDynamicPort>
-TDynamicPort* createDynamicPort(Vec pos, bool isInput, Module *module, int portId, int* mode) {
-	TDynamicPort *dynPort = isInput ? 
-		createInput<TDynamicPort>(pos, module, portId) :
-		createOutput<TDynamicPort>(pos, module, portId);
-	dynPort->mode = mode;
-	return dynPort;
-}
-template <class TDynamicPort>
-TDynamicPort* createDynamicPortCentered(Vec pos, bool isInput, Module *module, int portId, int* mode) {
-	TDynamicPort *dynPort = createDynamicPort<TDynamicPort>(pos, isInput, module, portId, mode);
-	dynPort->box.pos = dynPort->box.pos.minus(dynPort->box.size.div(2));// centering
-	return dynPort;
-}
-
-struct DynamicSVGPort : SvgPort {
-    int* mode = NULL;
-    int oldMode = -2;
-    std::vector<std::shared_ptr<Svg>> frames;
-	std::string frameAltName;
-
-    void addFrame(std::shared_ptr<Svg> svg);
-    void addFrameAlt(std::string filename) {frameAltName = filename;}
-    void step() override;
-};
-
-
-struct DynPort : DynamicSVGPort {
-	DynPort() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/PJ301M.svg"));
-		shadow->blurRadius = 1.0f;
-		shadow->opacity = 0.0f;// Turn off shadows
-	}
-};
-struct DynPortGold : DynamicSVGPort {
-	DynPortGold() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack-poly.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/PJ301M.svg"));
-		shadow->blurRadius = 1.0f;
-		shadow->opacity = 0.0f;// Turn off shadows
-	}
 };
 
 

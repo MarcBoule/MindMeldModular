@@ -30,19 +30,31 @@ struct MmSwitch : app::SvgSwitch {
 	}
 };
 
-struct MmSwitchInv : app::SvgSwitch {
-	MmSwitchInv() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-active.svg")));
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-bypass.svg")));
-	}
-};
+// struct MmSwitchInv : app::SvgSwitch {
+	// MmSwitchInv() {
+		// addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-active.svg")));
+		// addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-bypass.svg")));
+	// }
+// };
 
 
 
 // Ports
 
-// none
-
+struct MmPort : SvgPort {
+	MmPort() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack.svg")));
+		shadow->blurRadius = 1.0f;
+		shadow->opacity = 0.0f;// Turn off shadows
+	}
+};
+struct MmPortGold : SvgPort {
+	MmPortGold() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack-poly.svg")));
+		shadow->blurRadius = 1.0f;
+		shadow->opacity = 0.0f;// Turn off shadows
+	}
+};
 
 
 // Buttons and switches

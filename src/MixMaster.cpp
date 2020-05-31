@@ -885,17 +885,17 @@ struct MixMasterWidget : ModuleWidget {
 		// Inserts and CVs
 		static const float xIns = 13.8;
 		// Insert outputs
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, TMixMaster::INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), false, module, TMixMaster::INSERT_TRACK_OUTPUTS + 1, module ? &module->panelTheme : NULL));
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, TMixMaster::INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8)), module, TMixMaster::INSERT_TRACK_OUTPUTS + 0));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 1)), module, TMixMaster::INSERT_TRACK_OUTPUTS + 1));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), module, TMixMaster::INSERT_GRP_AUX_OUTPUT));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), true, module, TMixMaster::INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, TMixMaster::INSERT_TRACK_INPUTS + 1, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, TMixMaster::INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), module, TMixMaster::INSERT_TRACK_INPUTS + 0));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), module, TMixMaster::INSERT_TRACK_INPUTS + 1));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), module, TMixMaster::INSERT_GRP_AUX_INPUT));
 		// Mute, solo and other CVs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TMixMaster::TRACK_MUTESOLO_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TMixMaster::TRACK_MUTESOLO_INPUTS + 1, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), true, module, TMixMaster::GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), module, TMixMaster::TRACK_MUTESOLO_INPUTS + 0));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), module, TMixMaster::TRACK_MUTESOLO_INPUTS + 1));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 9)), module, TMixMaster::GRPM_MUTESOLO_INPUT));
 		
 	
 		// Tracks
@@ -924,13 +924,13 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPF_LIGHTS + i));	
 			addParam(createParamCentered<FilterCutWidget>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPCUT_PARAMS + i));	
 			// Left inputs
-			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 0] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0));			
 			// Right inputs
-			addInput(inputWidgets[i + 16] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(inputWidgets[i + 16] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 1));	
 			// Volume inputs
-			addInput(inputWidgets[i + 16 * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), true, module, TMixMaster::TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 2] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), module, TMixMaster::TRACK_VOL_INPUTS + i));			
 			// Pan inputs
-			addInput(inputWidgets[i + 16 * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, TMixMaster::TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 16 * 3] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), module, TMixMaster::TRACK_PAN_INPUTS + i));			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobTrack;
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -1016,10 +1016,10 @@ struct MixMasterWidget : ModuleWidget {
 		for (int i = 0; i < N_GRP; i++) {
 			// Monitor outputs
 			if (i > 0) {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, TMixMaster::DIRECT_OUTPUTS + i - 1, module ? &module->panelTheme : NULL));
+				addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), module, TMixMaster::DIRECT_OUTPUTS + i - 1));
 			}
 			else {
-				addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), false, module, TMixMaster::FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));				
+				addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xGrp1 + 12.7 * (0), 11.5)), module, TMixMaster::FADE_CV_OUTPUT));				
 			}
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i, 23.5))));
@@ -1033,9 +1033,9 @@ struct MixMasterWidget : ModuleWidget {
 			}
 			
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), true, module, TMixMaster::GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), module, TMixMaster::GROUP_VOL_INPUTS + i));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, TMixMaster::GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), module, TMixMaster::GROUP_PAN_INPUTS + i));			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobGroup;
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -1094,12 +1094,12 @@ struct MixMasterWidget : ModuleWidget {
 		}
 	
 		// Master inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 12.8)), true, module, TMixMaster::CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62, 21.8)), true, module, TMixMaster::CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createInputCentered<MmPort>(mm2px(Vec(289.62, 12.8)), module, TMixMaster::CHAIN_INPUTS + 0));			
+		addInput(createInputCentered<MmPort>(mm2px(Vec(289.62, 21.8)), module, TMixMaster::CHAIN_INPUTS + 1));			
 		
 		// Master outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 12.8)), false, module, TMixMaster::MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12, 21.8)), false, module, TMixMaster::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		addOutput(createOutputCentered<MmPort>(mm2px(Vec(300.12, 12.8)), module, TMixMaster::MAIN_OUTPUTS + 0));			
+		addOutput(createOutputCentered<MmPort>(mm2px(Vec(300.12, 21.8)), module, TMixMaster::MAIN_OUTPUTS + 1));			
 		
 		// Master label
 		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.82, 128.5 - 97.15))));
@@ -1179,16 +1179,16 @@ struct MixMasterJrWidget : ModuleWidget {
 		// Inserts and CVs
 		static const float xIns = 13.8;
 		// Fade CV output
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8)), false, module, TMixMaster::FADE_CV_OUTPUT, module ? &module->panelTheme : NULL));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8)), module, TMixMaster::FADE_CV_OUTPUT));
 		// Insert outputs
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), false, module, TMixMaster::INSERT_TRACK_OUTPUTS + 0, module ? &module->panelTheme : NULL));				
-		addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), false, module, TMixMaster::INSERT_GRP_AUX_OUTPUT, module ? &module->panelTheme : NULL));
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 2)), module, TMixMaster::INSERT_TRACK_OUTPUTS + 0));				
+		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 3)), module, TMixMaster::INSERT_GRP_AUX_OUTPUT));
 		// Insert inputs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), true, module, TMixMaster::INSERT_TRACK_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), true, module, TMixMaster::INSERT_GRP_AUX_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 4)), module, TMixMaster::INSERT_TRACK_INPUTS + 0));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 5)), module, TMixMaster::INSERT_GRP_AUX_INPUT));
 		// Mute, solo and other CVs
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), true, module, TMixMaster::TRACK_MUTESOLO_INPUTS + 0, module ? &module->panelTheme : NULL));
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), true, module, TMixMaster::GRPM_MUTESOLO_INPUT, module ? &module->panelTheme : NULL));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 7)), module, TMixMaster::TRACK_MUTESOLO_INPUTS + 0));
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(xIns, 12.8 + 10.85 * 8)), module, TMixMaster::GRPM_MUTESOLO_INPUT));
 		
 	
 		// Tracks
@@ -1217,13 +1217,13 @@ struct MixMasterJrWidget : ModuleWidget {
 			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPF_LIGHTS + i));	
 			addParam(createParamCentered<FilterCutWidget>(mm2px(Vec(xTrck1 + 4.17 + 12.7 * i, 8.3)), module, TMixMaster::TRACK_LPCUT_PARAMS + i));	
 			// Left inputs
-			addInput(inputWidgets[i + 0] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + 0] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 12.8)), module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0));			
 			// Right inputs
-			addInput(inputWidgets[i + N_TRK] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), true, module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 1, module ? &module->panelTheme : NULL));	
+			addInput(inputWidgets[i + N_TRK] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 21.8)), module, TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 1));	
 			// Volume inputs
-			addInput(inputWidgets[i + N_TRK * 2] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), true, module, TMixMaster::TRACK_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + N_TRK * 2] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 31.5)), module, TMixMaster::TRACK_VOL_INPUTS + i));			
 			// Pan inputs
-			addInput(inputWidgets[i + N_TRK * 3] = createDynamicPortCentered<DynPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), true, module, TMixMaster::TRACK_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(inputWidgets[i + N_TRK * 3] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), module, TMixMaster::TRACK_PAN_INPUTS + i));			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobTrack;
 			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -1308,7 +1308,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		static const float xGrp1 = 217.17 - 12.7 * 8 + 20.32;
 		for (int i = 0; i < N_GRP; i++) {
 			// Monitor outputs
-			addOutput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), false, module, TMixMaster::DIRECT_OUTPUTS + i, module ? &module->panelTheme : NULL));
+			addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(xGrp1 + 12.7 * (i), 11.5)), module, TMixMaster::DIRECT_OUTPUTS + i));
 			// Labels
 			addChild(groupDisplays[i] = createWidgetCentered<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i, 23.5))));
 			if (module) {
@@ -1321,9 +1321,9 @@ struct MixMasterJrWidget : ModuleWidget {
 			}
 			
 			// Volume inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), true, module, TMixMaster::GROUP_VOL_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), module, TMixMaster::GROUP_VOL_INPUTS + i));			
 			// Pan inputs
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), true, module, TMixMaster::GROUP_PAN_INPUTS + i, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), module, TMixMaster::GROUP_PAN_INPUTS + i));			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobGroup;
 			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
@@ -1382,12 +1382,12 @@ struct MixMasterJrWidget : ModuleWidget {
 		}
 	
 		// Master inputs
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62 - 12.7 * 10, 12.8)), true, module, TMixMaster::CHAIN_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(289.62 - 12.7 * 10, 21.8)), true, module, TMixMaster::CHAIN_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createInputCentered<MmPort>(mm2px(Vec(289.62 - 12.7 * 10, 12.8)), module, TMixMaster::CHAIN_INPUTS + 0));			
+		addInput(createInputCentered<MmPort>(mm2px(Vec(289.62 - 12.7 * 10, 21.8)), module, TMixMaster::CHAIN_INPUTS + 1));			
 		
 		// Master outputs
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12 - 12.7 * 10, 12.8)), false, module, TMixMaster::MAIN_OUTPUTS + 0, module ? &module->panelTheme : NULL));			
-		addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(300.12 - 12.7 * 10, 21.8)), false, module, TMixMaster::MAIN_OUTPUTS + 1, module ? &module->panelTheme : NULL));			
+		addOutput(createOutputCentered<MmPort>(mm2px(Vec(300.12 - 12.7 * 10, 12.8)), module, TMixMaster::MAIN_OUTPUTS + 0));			
+		addOutput(createOutputCentered<MmPort>(mm2px(Vec(300.12 - 12.7 * 10, 21.8)), module, TMixMaster::MAIN_OUTPUTS + 1));			
 		
 		// Master label
 		addChild(masterDisplay = createWidgetCentered<MasterDisplay>(mm2px(Vec(294.81 - 12.7 * 10, 128.5 - 97.15))));

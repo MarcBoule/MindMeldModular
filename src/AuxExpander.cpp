@@ -799,14 +799,14 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Y is 4.7, same X as below
 			
 			// Left sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), false, module, TAuxExpander::SEND_OUTPUTS + i + 0, module ? &module->panelTheme : NULL));			
+			addOutput(createOutputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), module, TAuxExpander::SEND_OUTPUTS + i + 0));			
 			// Right sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, TAuxExpander::SEND_OUTPUTS + i + 4, module ? &module->panelTheme : NULL));
+			addOutput(createOutputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), module, TAuxExpander::SEND_OUTPUTS + i + 4));
 
 			// Left returns
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), true, module, TAuxExpander::RETURN_INPUTS + i * 2 + 0, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), module, TAuxExpander::RETURN_INPUTS + i * 2 + 0));			
 			// Right returns
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), true, module, TAuxExpander::RETURN_INPUTS + i * 2 + 1, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), module, TAuxExpander::RETURN_INPUTS + i * 2 + 1));			
 			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobAux;
@@ -1083,25 +1083,25 @@ struct AuxExpanderWidget : ModuleWidget {
 		static constexpr float cvx = 198.6f;
 		
 		// CV inputs A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8)), true, module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 1)), true, module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 2)), true, module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 2, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 3)), true, module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 3, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8)), module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 0));			
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 1)), module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 1));			
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 2)), module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 2));			
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 3)), module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 3));	
 		
 		// CV input M
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 4)), true, module, TAuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 4)), module, TAuxExpander::POLY_AUX_M_CV_INPUT));	
 		
 		// CV input grp A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 5)), true, module, TAuxExpander::POLY_GRPS_AD_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 5)), module, TAuxExpander::POLY_GRPS_AD_CV_INPUT));	
 		
 		// CV input M grp
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), true, module, TAuxExpander::POLY_GRPS_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), module, TAuxExpander::POLY_GRPS_M_CV_INPUT));	
 		
 		// CV input bus send, pan, return
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 7)), true, module, TAuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 7)), module, TAuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT));	
 	
 		// CV input bus mute, solo
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 8)), true, module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 8)), module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT));	
 	}
 };
 
@@ -1149,14 +1149,14 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			// Y is 4.7, same X as below
 			
 			// Left sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), false, module, TAuxExpander::SEND_OUTPUTS + i + 0, module ? &module->panelTheme : NULL));			
+			addOutput(createOutputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 12.8)), module, TAuxExpander::SEND_OUTPUTS + i + 0));			
 			// Right sends
-			addOutput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), false, module, TAuxExpander::SEND_OUTPUTS + i + 4, module ? &module->panelTheme : NULL));
+			addOutput(createOutputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 21.8)), module, TAuxExpander::SEND_OUTPUTS + i + 4));
 
 			// Left returns
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), true, module, TAuxExpander::RETURN_INPUTS + i * 2 + 0, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 31.5)), module, TAuxExpander::RETURN_INPUTS + i * 2 + 0));			
 			// Right returns
-			addInput(createDynamicPortCentered<DynPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), true, module, TAuxExpander::RETURN_INPUTS + i * 2 + 1, module ? &module->panelTheme : NULL));			
+			addInput(createInputCentered<MmPort>(mm2px(Vec(6.35 + 12.7 * i, 40.5)), module, TAuxExpander::RETURN_INPUTS + i * 2 + 1));			
 			
 			// Pan knobs
 			DynSmallKnobGreyWithArc *panKnobAux;
@@ -1436,20 +1436,20 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		static constexpr float cvx = 198.6 - 12.7 * 5 + 1.27;
 		
 		// CV inputs A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8)), true, module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 0, module ? &module->panelTheme : NULL));			
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 1)), true, module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 1, module ? &module->panelTheme : NULL));			
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8)), module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 0));			
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 1)), module, TAuxExpander::POLY_AUX_AD_CV_INPUTS + 1));			
 		
 		// CV input grp A-D
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 2)), true, module, TAuxExpander::POLY_GRPS_AD_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 2)), module, TAuxExpander::POLY_GRPS_AD_CV_INPUT));	
 		
 		// CV input M
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 3)), true, module, TAuxExpander::POLY_AUX_M_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 3)), module, TAuxExpander::POLY_AUX_M_CV_INPUT));	
 		
 		// CV input bus send, pan, return
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 5)), true, module, TAuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 5)), module, TAuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT));	
 	
 		// CV input bus mute, solo
-		addInput(createDynamicPortCentered<DynPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), true, module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT, module ? &module->panelTheme : NULL));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT));	
 	}
 };
 
