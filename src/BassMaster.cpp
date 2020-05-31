@@ -31,6 +31,8 @@ struct BassMaster : Module {
 	
 	enum InputIds {
 		ENUMS(IN_INPUTS, 2),
+		LOW_WIDTH_INPUT,
+		HIGH_WIDTH_INPUT,
 		NUM_INPUTS
 	};
 	
@@ -216,7 +218,14 @@ struct BassMaster : Module {
 		}
 		
 		// Width and gain slewers
-		simd::float_4 widthAndGain = simd::float_4(params[LOW_WIDTH_PARAM].getValue(), params[HIGH_WIDTH_PARAM].getValue(),
+		float lowWidth = params[LOW_WIDTH_PARAM].getValue();
+		float highWidth = params[HIGH_WIDTH_PARAM].getValue();
+		if (!IS_JR) {
+			lowWidth = clamp(lowWidth + inputs[LOW_WIDTH_INPUT].getVoltage() * 0.1f, 0.0f, 1.0f);
+			highWidth = clamp(highWidth + inputs[HIGH_WIDTH_INPUT].getVoltage() * 0.2f, 0.0f, 2.0f);
+		}
+		
+		simd::float_4 widthAndGain = simd::float_4(lowWidth, highWidth,
 												   params[LOW_GAIN_PARAM].getValue(), params[HIGH_GAIN_PARAM].getValue());
 		if (movemask(widthAndGain == widthAndGainSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
 			widthAndGainSlewers.process(args.sampleTime, widthAndGain);
@@ -383,12 +392,7 @@ struct BassMasterWidget : ModuleWidget {
 		// low solo button
 		addParam(createParamCentered<MmSoloRoundButton>(mm2px(Vec(15.24, 73.71 + 1)), module, BassMaster<IS_JR>::LOW_SOLO_PARAM));
 		// bypass button
-		// if (IS_JR) {
-			addParam(createParamCentered<MmBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
-		// }
-		// else {
-			// addParam(createParamCentered<MmSwitchInv>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
-		// }
+		addParam(createParamCentered<MmBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
 
 		// high width and gain
 		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM));
@@ -416,9 +420,13 @@ struct BassMasterWidget : ModuleWidget {
 				addChild(newVU);
 			}
 						
-			// master gain and mix
+			// master gain and mix knobs
 			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM));
 			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM));
+			
+			// width CV inputs
+			addInput(createInputCentered<MmPort>(mm2px(Vec(37.2, 102.03 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_INPUT));
+			addInput(createInputCentered<MmPort>(mm2px(Vec(37.2, 111.45 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_INPUT));
 		}
 	}
 	

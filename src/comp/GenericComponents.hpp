@@ -30,13 +30,6 @@ struct MmSwitch : app::SvgSwitch {
 	}
 };
 
-// struct MmSwitchInv : app::SvgSwitch {
-	// MmSwitchInv() {
-		// addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-active.svg")));
-		// addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-bypass.svg")));
-	// }
-// };
-
 
 
 // Ports
