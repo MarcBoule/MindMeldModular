@@ -806,7 +806,7 @@ static const NVGcolor COL_GREEN = nvgRGB(127, 200, 68);
 static const NVGcolor COL_RED = nvgRGB(247, 23, 41);
 
 
-struct TrackKnob : DynBigKnobWhite {
+struct TrackKnob : MmBigKnobWhite {
 	static constexpr float radius = 18.0f;
 	static constexpr float dotSize = 1.1f;
 
@@ -853,12 +853,12 @@ struct TrackKnob : DynBigKnobWhite {
 		if (updateTrackLabelRequestSrc) {
 			*updateTrackLabelRequestSrc = 1;
 		}
-		DynBigKnobWhite::onChange(e);
+		MmBigKnobWhite::onChange(e);
 	}
 	
 	
 	void draw(const DrawArgs &args) override {
-		DynamicSVGKnob::draw(args);
+		MmBigKnobWhite::draw(args);
 		if (paramQuantity) {
 			int newNumTracks = (int)(paramQuantity->getMaxValue() + 1.5f);
 			if (newNumTracks != numTracks) {
@@ -892,12 +892,12 @@ struct TrackKnob : DynBigKnobWhite {
 	}	
 };
 
-struct TrackGainKnob : DynSmallKnobGrey8mm {
+struct TrackGainKnob : MmSmallKnobGrey8mm {
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc;
 	
 	void onChange(const event::Change& e) override {
-		DynSmallKnobGrey8mm::onChange(e);
+		MmSmallKnobGrey8mm::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue());
@@ -905,7 +905,7 @@ struct TrackGainKnob : DynSmallKnobGrey8mm {
 	}
 };
 
-struct BandKnob : DynKnobWithArc {
+struct BandKnob : MmKnobWithArc {
 	// user must setup 
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc = NULL;
@@ -919,25 +919,25 @@ struct BandKnob : DynKnobWithArc {
 	void loadGraphics(int _band) {
 		band = _band;
 		if (band == 0) {
-			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lf-knob.svg")));
 			arcColor = nvgRGB(222, 61, 46);
 		}
 		else if (band == 1) {
-			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lmf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lmf-knob.svg")));
 			arcColor = nvgRGB(0, 155, 137);
 		}
 		else if (band == 2) {
-			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hmf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hmf-knob.svg")));
 			arcColor = nvgRGB(58, 115, 171);
 		}
 		else {
-			addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hf-knob.svg")));
 			arcColor = nvgRGB(134, 99, 137);
 		}
 	}
 	
 	void onDragMove(const event::DragMove& e) override {
-		DynKnob::onDragMove(e);
+		MmKnobWithArc::onDragMove(e);
 		if (paramQuantity) {
 			*lastMovedKnobIdSrc = paramQuantity->paramId;
 			*lastMovedKnobTimeSrc = time(0);
@@ -952,7 +952,7 @@ struct EqFreqKnob : BandKnob {
 	}
 		
 	void onChange(const event::Change& e) override {
-		DynKnob::onChange(e);
+		BandKnob::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setFreq(BAND, paramQuantity->getValue());
@@ -968,7 +968,7 @@ struct EqGainKnob : BandKnob {
 	}
 
 	void onChange(const event::Change& e) override {
-		DynKnob::onChange(e);
+		BandKnob::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setGain(BAND, paramQuantity->getValue());
@@ -983,7 +983,7 @@ struct EqQKnob : BandKnob {
 	}
 	
 	void onChange(const event::Change& e) override {
-		DynKnob::onChange(e);
+		BandKnob::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setQ(BAND, paramQuantity->getValue());

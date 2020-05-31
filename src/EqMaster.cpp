@@ -894,7 +894,7 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		// Track knob
 		TrackKnob* trackKnob;
-		addParam(trackKnob = createDynamicParamCentered<TrackKnob>(mm2px(Vec(leftX, 22.7f)), module, TRACK_PARAM, module ? &module->panelTheme : NULL));
+		addParam(trackKnob = createParamCentered<TrackKnob>(mm2px(Vec(leftX, 22.7f)), module, TRACK_PARAM));
 		if (module) {
 			trackKnob->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
 			trackKnob->trackEqsSrc = module->trackEqs;
@@ -994,20 +994,20 @@ struct EqMasterWidget : ModuleWidget {
 		// Freq, gain and q knobs
 		BandKnob* bandKnobs[12];
 		// freq
-		addParam(bandKnobs[0] = createDynamicParamCentered<EqFreqKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 91.2f)), module, FREQ_PARAMS + 0, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[1] = createDynamicParamCentered<EqFreqKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 91.2f)), module, FREQ_PARAMS + 1, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[2] = createDynamicParamCentered<EqFreqKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 91.2f)), module, FREQ_PARAMS + 2, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[3] = createDynamicParamCentered<EqFreqKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 91.2f)), module, FREQ_PARAMS + 3, module ? &module->panelTheme : NULL));
+		addParam(bandKnobs[0] = createParamCentered<EqFreqKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 91.2f)), module, FREQ_PARAMS + 0));
+		addParam(bandKnobs[1] = createParamCentered<EqFreqKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 91.2f)), module, FREQ_PARAMS + 1));
+		addParam(bandKnobs[2] = createParamCentered<EqFreqKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 91.2f)), module, FREQ_PARAMS + 2));
+		addParam(bandKnobs[3] = createParamCentered<EqFreqKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 91.2f)), module, FREQ_PARAMS + 3));
 		// gain
-		addParam(bandKnobs[0 + 4] = createDynamicParamCentered<EqGainKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0 + 11.04f, 101.78f)), module, GAIN_PARAMS + 0, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[1 + 4] = createDynamicParamCentered<EqGainKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1 + 11.04f, 101.78f)), module, GAIN_PARAMS + 1, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[2 + 4] = createDynamicParamCentered<EqGainKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2 + 11.04f, 101.78f)), module, GAIN_PARAMS + 2, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[3 + 4] = createDynamicParamCentered<EqGainKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3 + 11.04f, 101.78f)), module, GAIN_PARAMS + 3, module ? &module->panelTheme : NULL));
+		addParam(bandKnobs[0 + 4] = createParamCentered<EqGainKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0 + 11.04f, 101.78f)), module, GAIN_PARAMS + 0));
+		addParam(bandKnobs[1 + 4] = createParamCentered<EqGainKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1 + 11.04f, 101.78f)), module, GAIN_PARAMS + 1));
+		addParam(bandKnobs[2 + 4] = createParamCentered<EqGainKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2 + 11.04f, 101.78f)), module, GAIN_PARAMS + 2));
+		addParam(bandKnobs[3 + 4] = createParamCentered<EqGainKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3 + 11.04f, 101.78f)), module, GAIN_PARAMS + 3));
 		// q
-		addParam(bandKnobs[0 + 8] = createDynamicParamCentered<EqQKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 112.37f)), module, Q_PARAMS + 0, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[1 + 8] = createDynamicParamCentered<EqQKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 112.37f)), module, Q_PARAMS + 1, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[2 + 8] = createDynamicParamCentered<EqQKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 112.37f)), module, Q_PARAMS + 2, module ? &module->panelTheme : NULL));
-		addParam(bandKnobs[3 + 8] = createDynamicParamCentered<EqQKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 112.37f)), module, Q_PARAMS + 3, module ? &module->panelTheme : NULL));
+		addParam(bandKnobs[0 + 8] = createParamCentered<EqQKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 112.37f)), module, Q_PARAMS + 0));
+		addParam(bandKnobs[1 + 8] = createParamCentered<EqQKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 112.37f)), module, Q_PARAMS + 1));
+		addParam(bandKnobs[2 + 8] = createParamCentered<EqQKnob<2>>(mm2px(Vec(ctrlX + ctrlDX * 2, 112.37f)), module, Q_PARAMS + 2));
+		addParam(bandKnobs[3 + 8] = createParamCentered<EqQKnob<3>>(mm2px(Vec(ctrlX + ctrlDX * 3, 112.37f)), module, Q_PARAMS + 3));
 		//
 		if (module) {
 			for (int c = 0; c < 12; c++) {
@@ -1055,7 +1055,7 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		// Gain knob
 		TrackGainKnob* trackGainKnob;
-		addParam(trackGainKnob = createDynamicParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, TRACK_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(trackGainKnob = createParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, TRACK_GAIN_PARAM));
 		if (module) {
 			trackGainKnob->trackParamSrc = &(module->params[TRACK_PARAM]);
 			trackGainKnob->trackEqsSrc = module->trackEqs;

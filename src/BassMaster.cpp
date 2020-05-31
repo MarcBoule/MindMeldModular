@@ -364,7 +364,7 @@ struct BassMasterWidget : ModuleWidget {
 		}
  
 		// crossover knob
-		addParam(createDynamicParamCentered<DynBiggerKnobWhite>(mm2px(Vec(15.24, 22.98)), module, BassMaster<IS_JR>::CROSSOVER_PARAM, module ? &module->panelTheme : NULL));// was 22.49
+		addParam(createParamCentered<MmBiggerKnobWhite>(mm2px(Vec(15.24, 22.98)), module, BassMaster<IS_JR>::CROSSOVER_PARAM));
 		
 		// all labels (xover, width high, gain high, width low, gain low)
 		addChild(bassMasterLabels[0] = createWidgetCentered<BassMasterLabel>(mm2px(Vec(15.24, 32.3 + 1))));
@@ -391,12 +391,12 @@ struct BassMasterWidget : ModuleWidget {
 		// }
 
 		// high width and gain
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM));
+		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(22.9, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_GAIN_PARAM));
  
 		// low width and gain
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(7.5, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM, module ? &module->panelTheme : NULL));
-		addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(7.5, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM));
+		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM));
  
 		// inputs
 		addInput(createInputCentered<MmPort>(mm2px(Vec(6.81, 102.03 + 1)), module, BassMaster<IS_JR>::IN_INPUTS + 0));
@@ -417,8 +417,8 @@ struct BassMasterWidget : ModuleWidget {
 			}
 						
 			// master gain and mix
-			addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM, module ? &module->panelTheme : NULL));
-			addParam(createDynamicParamCentered<DynSmallKnobGrey8mm>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM));
+			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM));
 		}
 	}
 	

@@ -10,7 +10,6 @@
 
 
 #include "rack.hpp"
-#include "comp/DynamicComponents.hpp"
 #include "comp/GenericComponents.hpp"
 #include "MixerMessageBus.hpp"
 

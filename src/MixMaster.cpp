@@ -932,8 +932,8 @@ struct MixMasterWidget : ModuleWidget {
 			// Pan inputs
 			addInput(inputWidgets[i + 16 * 3] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), module, TMixMaster::TRACK_PAN_INPUTS + i));			
 			// Pan knobs
-			DynSmallKnobGreyWithArc *panKnobTrack;
-			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSmallKnobGreyWithArc *panKnobTrack;
+			addParam(panKnobTrack = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i));
 			if (module) {
 				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
@@ -1037,8 +1037,8 @@ struct MixMasterWidget : ModuleWidget {
 			// Pan inputs
 			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), module, TMixMaster::GROUP_PAN_INPUTS + i));			
 			// Pan knobs
-			DynSmallKnobGreyWithArc *panKnobGroup;
-			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSmallKnobGreyWithArc *panKnobGroup;
+			addParam(panKnobGroup = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i));
 			if (module) {
 				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
@@ -1225,8 +1225,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Pan inputs
 			addInput(inputWidgets[i + N_TRK * 3] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), module, TMixMaster::TRACK_PAN_INPUTS + i));			
 			// Pan knobs
-			DynSmallKnobGreyWithArc *panKnobTrack;
-			addParam(panKnobTrack = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSmallKnobGreyWithArc *panKnobTrack;
+			addParam(panKnobTrack = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i));
 			if (module) {
 				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
@@ -1325,8 +1325,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			// Pan inputs
 			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), module, TMixMaster::GROUP_PAN_INPUTS + i));			
 			// Pan knobs
-			DynSmallKnobGreyWithArc *panKnobGroup;
-			addParam(panKnobGroup = createDynamicParamCentered<DynSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSmallKnobGreyWithArc *panKnobGroup;
+			addParam(panKnobGroup = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i));
 			if (module) {
 				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);

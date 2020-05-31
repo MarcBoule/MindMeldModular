@@ -150,7 +150,6 @@ struct MomentarySvgSwitchNoParam : OpaqueWidget {
 		}
 		OpaqueWidget::onChange(e);
 	}	
-	
 };
 
 struct MmSoloRoundButton : SvgSwitch {
@@ -232,6 +231,53 @@ struct MmGroupPlusButtonNoParam : MomentarySvgSwitchNoParam {
 
 // Knobs and sliders
 
+
+struct MmKnob : SvgKnob {
+	MmKnob() {
+		minAngle = -0.83*M_PI;
+		maxAngle = 0.83*M_PI;
+		shadow->opacity = 0.0;
+	}
+};
+
+struct MmKnobWithArc : MmKnob {
+	// internal
+	NVGcolor arcColorDarker = nvgRGB(120, 120, 120);// grey
+	static constexpr float arcThickness = 1.6f;
+	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
+
+	// derived class must setup
+	NVGcolor arcColor;
+	bool topCentered = false;
+
+	// user must setup
+	float *paramWithCV = NULL;
+	bool *paramCvConnected;
+	int8_t *detailsShowSrc;
+	int8_t *cloakedModeSrc;
+
+	
+	void drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color);
+	void draw(const DrawArgs &args) override;
+};
+
+struct MmBigKnobWhite : MmKnob {
+	MmBigKnobWhite() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
+	}
+};	
+
+struct MmBiggerKnobWhite : MmKnob {
+	MmBiggerKnobWhite() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bigger-knob-pointer.svg")));
+	}
+};	
+
+struct MmSmallKnobGrey8mm : MmKnob {
+	MmSmallKnobGrey8mm() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey8mm.svg")));
+	}
+};
 
 struct MmSlider : SvgSlider {
 	void setupSlider() {

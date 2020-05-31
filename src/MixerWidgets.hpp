@@ -371,7 +371,7 @@ struct MmMuteFadeButton : SvgSwitchDual {
 // --------------------
 
 
-struct DynSmallKnobGreyWithArc : DynKnobWithArc {
+struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 	// internal
 	int oldDispColor = -1;
 	
@@ -380,9 +380,8 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 	int8_t *dispColorLocalSrc;
 	
 	
-	DynSmallKnobGreyWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+	MmSmallKnobGreyWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
 		topCentered = true;
 	}
 	
@@ -394,58 +393,54 @@ struct DynSmallKnobGreyWithArc : DynKnobWithArc {
 				oldDispColor = colorIndex;
 			}
 		}
-		DynKnobWithArc::draw(args);
+		MmKnobWithArc::draw(args);
 	}
 };
 
-struct DynSmallKnobRedWithArc : DynKnobWithArc {
-	DynSmallKnobRedWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+struct MmSmallKnobRedWithArc : MmKnobWithArc {
+	MmSmallKnobRedWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));
 		arcColor = nvgRGB(219, 65, 85);
 	}
 };
-struct DynSmallKnobRedWithArcTopCentered : DynSmallKnobRedWithArc {
-	DynSmallKnobRedWithArcTopCentered() {
+struct MmSmallKnobRedWithArcTopCentered : MmSmallKnobRedWithArc {
+	MmSmallKnobRedWithArcTopCentered() {
 		topCentered = true;
 	}
 };	
 
-struct DynSmallKnobOrangeWithArc : DynKnobWithArc {
-	DynSmallKnobOrangeWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+struct MmSmallKnobOrangeWithArc : MmKnobWithArc {
+	MmSmallKnobOrangeWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
 		arcColor = nvgRGB(255, 127, 42);
 	}
 };
-struct DynSmallKnobOrangeWithArcTopCentered : DynSmallKnobOrangeWithArc {
-	DynSmallKnobOrangeWithArcTopCentered() {
+struct MmSmallKnobOrangeWithArcTopCentered : MmSmallKnobOrangeWithArc {
+	MmSmallKnobOrangeWithArcTopCentered() {
 		topCentered = true;
 	}
 };	
 
-struct DynSmallKnobBlueWithArc : DynKnobWithArc {
-	DynSmallKnobBlueWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+struct MmSmallKnobBlueWithArc : MmKnobWithArc {
+	MmSmallKnobBlueWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
 		arcColor = nvgRGB(113, 160, 255);
 	}
 };
-struct DynSmallKnobBlueWithArcTopCentered : DynSmallKnobBlueWithArc {
-	DynSmallKnobBlueWithArcTopCentered() {
+struct MmSmallKnobBlueWithArcTopCentered : MmSmallKnobBlueWithArc {
+	MmSmallKnobBlueWithArcTopCentered() {
 		topCentered = true;
 	}
 };	
 
-struct DynSmallKnobPurpleWithArc : DynKnobWithArc {
-	DynSmallKnobPurpleWithArc() {
-		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
-		//addFrameAlt(asset::plugin(pluginInstance, "res/dark/comp/RoundSmallBlackKnob.svg"));
+struct MmSmallKnobPurpleWithArc : MmKnobWithArc {
+	MmSmallKnobPurpleWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
 		arcColor = nvgRGB(163, 93, 209);
 	}
 };
-struct DynSmallKnobPurpleWithArcTopCentered : DynSmallKnobPurpleWithArc {
-	DynSmallKnobPurpleWithArcTopCentered() {
+struct MmSmallKnobPurpleWithArcTopCentered : MmSmallKnobPurpleWithArc {
+	MmSmallKnobPurpleWithArcTopCentered() {
 		topCentered = true;
 	}
 };	
