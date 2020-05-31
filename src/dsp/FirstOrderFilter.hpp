@@ -1,4 +1,10 @@
-// A first-order low/high pass filter
+//***********************************************************************************************
+//Mind Meld Modular: Modules for VCV Rack by Steve Baker and Marc Boulé
+//
+//A first-order low/high pass filter
+//See ./LICENSE.md for all licenses
+//***********************************************************************************************
+
 
 class FirstOrderFilter {
 	float b[2];// coefficients b0, b1

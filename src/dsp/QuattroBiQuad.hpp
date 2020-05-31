@@ -26,19 +26,26 @@ class QuattroBiQuadCoeff {
 	
 	public: 
 	
+	
 	enum Type {
 		LOWSHELF,
 		HIGHSHELF,
 		PEAK,
 	};
 	
-	void setParameters(int i, Type type, float f, float V, float Q) {
+	
+	void setParameters(int i, Type type, float nfc, float V, float Q) {
 		// i: eq index (0 to 3),
 		// type: type of filter/eq
-		// f: normalized frequency (fc/sampleRate)
+		// nfc: normalized cutoff frequency (fc/sampleRate)
 		// V: linearGain for peak or shelving
 		// Q: quality factor
-		float K = std::tan(M_PI * f);
+		
+		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
+		// freq pre-warping with inclusion of M_PI factor; 
+		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
+		float K = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
+
 		switch (type) {
 			case LOWSHELF: {
 				float sqrtV = std::sqrt(V);
@@ -134,9 +141,7 @@ class QuattroBiQuadCoeff {
 		simd::float_4 norm = simd::hypot(num[0] / denom,  num[1] / denom);
 		return 20.0f * simd::log10(norm);// return in dB
 	}
-
 };
-
 
 
 
@@ -154,6 +159,7 @@ class QuattroBiQuad : public QuattroBiQuadCoeff {
 	// other
 	bool optResetDone;
 	int8_t gainsDifferentThanOne; // 4 ls bits are bool bits, when all zero, can bypass y0 math
+	
 	
 	public:
 
@@ -173,6 +179,22 @@ class QuattroBiQuad : public QuattroBiQuadCoeff {
 		y2R = 0.0f;
 		gainsDifferentThanOne = 0xF;	
 		optResetDone = false;
+	}
+	
+	
+	void setParameters(int i, Type type, float f, float V, float Q) {
+		// type: type of filter/eq
+		// i: eq index (0 to 3),
+		// f: normalized frequency (fc/sampleRate)
+		// V: linearGain for peak or shelving
+		// Q: quality factor
+		if (V == 1.0f) {
+			gainsDifferentThanOne &= ~(0x1 << i);
+		}
+		else {
+			gainsDifferentThanOne |= (0x1 << i);
+		}
+		QuattroBiQuadCoeff::setParameters(i, type, f, V, Q);
 	}
 	
 
@@ -228,19 +250,4 @@ class QuattroBiQuad : public QuattroBiQuadCoeff {
 		out[0] = y0L[3];
 		out[1] = y0R[3];
 	}	
-	
-	void setParameters(int i, Type type, float f, float V, float Q) {
-		// type: type of filter/eq
-		// i: eq index (0 to 3),
-		// f: normalized frequency (fc/sampleRate)
-		// V: linearGain for peak or shelving
-		// Q: quality factor
-		if (V == 1.0f) {
-			gainsDifferentThanOne &= ~(0x1 << i);
-		}
-		else {
-			gainsDifferentThanOne |= (0x1 << i);
-		}
-		QuattroBiQuadCoeff::setParameters(i, type, f, V, Q);
-	}
 };
