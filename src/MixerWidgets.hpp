@@ -319,10 +319,8 @@ struct MmGroupPlusButtonNotify : MmGroupPlusButtonNoParam {
 // switch with dual display types (for Mute/Fade buttons)
 // --------------------
 
-struct DynamicSVGSwitchDual : SvgSwitch {
-	int* mode = NULL;
+struct SvgSwitchDual : SvgSwitch {
     float* type = NULL;// mute when < minFadeRate, fade when >= minFadeRate
-    int oldMode = -1;
     float oldType = -1.0f;
 	std::vector<std::shared_ptr<Svg>> framesAll;
 	std::vector<std::string> frameAltNames;
@@ -336,7 +334,7 @@ struct DynamicSVGSwitchDual : SvgSwitch {
 	}
     void addFrameAlt(std::string filename) {frameAltNames.push_back(filename);}
 	void step() override {
-		if( mode != NULL && type != NULL && ((*mode != oldMode) || (*type != oldType)) ) {
+		if( (type != NULL) && (*type != oldType) ) {
 			if (!frameAltNames.empty()) {
 				for (std::string strName : frameAltNames) {
 					framesAll.push_back(APP->window->loadSvg(strName));
@@ -344,9 +342,8 @@ struct DynamicSVGSwitchDual : SvgSwitch {
 				frameAltNames.clear();
 			}
 			int typeOffset = (*type < GlobalConst::minFadeRate ? 0 : 2);
-			frames[0]=framesAll[(*mode) * 4 + typeOffset + 0];
-			frames[1]=framesAll[(*mode) * 4 + typeOffset + 1];
-			oldMode = *mode;
+			frames[0]=framesAll[typeOffset + 0];
+			frames[1]=framesAll[typeOffset + 1];
 			oldType = *type;
 			onChange(*(new event::Change()));// required because of the way SVGSwitch changes images, we only change the frames above.
 			fb->dirty = true;// dirty is not sufficient when changing via frames assignments above (i.e. onChange() is required)
@@ -357,8 +354,8 @@ struct DynamicSVGSwitchDual : SvgSwitch {
 
 
 
-struct DynMuteFadeButton : DynamicSVGSwitchDual {
-	DynMuteFadeButton() {
+struct MmMuteFadeButton : SvgSwitchDual {
+	MmMuteFadeButton() {
 		momentary = false;
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
 		addFrameAll(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
@@ -1034,7 +1031,7 @@ struct MmSoloButtonMutex : MmSoloButton {
 
 
 
-struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
+struct MmMuteFadeButtonWithClear : MmMuteFadeButton {
 	Param *muteParams;// 19 or 15 params in here must be cleared when mutex mute performed on a group (track)
 	//  (9 or 7 for jr)
 	int baseMuteParamId;
@@ -1052,7 +1049,7 @@ struct DynMuteFadeButtonWithClear : DynMuteFadeButton {
 				return;
 			}
 		}
-		DynMuteFadeButton::onButton(e);		
+		MmMuteFadeButton::onButton(e);		
 	}	
 };
 

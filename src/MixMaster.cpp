@@ -969,8 +969,8 @@ struct MixMasterWidget : ModuleWidget {
 			
 			
 			// Mutes
-			DynMuteFadeButtonWithClear* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TMixMaster::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmMuteFadeButtonWithClear* newMuteFade;
+			addParam(newMuteFade = createParamCentered<MmMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TMixMaster::TRACK_MUTE_PARAMS + i));
 			if (module) {
 				newMuteFade->type = module->tracks[i].fadeRate;
 				newMuteFade->muteParams = &module->params[TMixMaster::TRACK_MUTE_PARAMS];
@@ -1073,8 +1073,8 @@ struct MixMasterWidget : ModuleWidget {
 			}
 
 			// Mutes
-			DynMuteFadeButtonWithClear* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, TMixMaster::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmMuteFadeButtonWithClear* newMuteFade;
+			addParam(newMuteFade = createParamCentered<MmMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, TMixMaster::GROUP_MUTE_PARAMS + i));
 			if (module) {
 				newMuteFade->type = module->groups[i].fadeRate;
 				newMuteFade->muteParams = &module->params[TMixMaster::TRACK_MUTE_PARAMS];
@@ -1140,8 +1140,8 @@ struct MixMasterWidget : ModuleWidget {
 		}
 		
 		// Master mute
-		DynMuteFadeButton* newMuteFade;
-		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(294.82, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		MmMuteFadeButton* newMuteFade;
+		addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(294.82, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
 		}
@@ -1262,8 +1262,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			
 			
 			// Mutes
-			DynMuteFadeButtonWithClear* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TMixMaster::TRACK_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmMuteFadeButtonWithClear* newMuteFade;
+			addParam(newMuteFade = createParamCentered<MmMuteFadeButtonWithClear>(mm2px(Vec(xTrck1 + 12.7 * i, 109.8)), module, TMixMaster::TRACK_MUTE_PARAMS + i));
 			if (module) {
 				newMuteFade->type = module->tracks[i].fadeRate;
 				newMuteFade->muteParams = &module->params[TMixMaster::TRACK_MUTE_PARAMS];
@@ -1361,8 +1361,8 @@ struct MixMasterJrWidget : ModuleWidget {
 			}
 
 			// Mutes
-			DynMuteFadeButtonWithClear* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, TMixMaster::GROUP_MUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmMuteFadeButtonWithClear* newMuteFade;
+			addParam(newMuteFade = createParamCentered<MmMuteFadeButtonWithClear>(mm2px(Vec(xGrp1 + 12.7 * i, 109.8)), module, TMixMaster::GROUP_MUTE_PARAMS + i));
 			if (module) {
 				newMuteFade->type = module->groups[i].fadeRate;
 				newMuteFade->muteParams = &module->params[TMixMaster::TRACK_MUTE_PARAMS];
@@ -1428,8 +1428,8 @@ struct MixMasterJrWidget : ModuleWidget {
 		}
 		
 		// Master mute
-		DynMuteFadeButton* newMuteFade;
-		addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(294.82 - 12.7 * 10, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM, module ? &module->panelTheme : NULL));
+		MmMuteFadeButton* newMuteFade;
+		addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(294.82 - 12.7 * 10, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM));
 		if (module) {
 			newMuteFade->type = &(module->master.fadeRate);
 		}

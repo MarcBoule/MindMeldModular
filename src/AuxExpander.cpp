@@ -842,8 +842,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			}				
 			
 			// Global mute buttons
-			DynMuteFadeButton* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, TAuxExpander::GLOBAL_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmMuteFadeButton* newMuteFade;
+			addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, TAuxExpander::GLOBAL_AUXMUTE_PARAMS + i));
 			if (module) {
 				newMuteFade->type = &(module->auxFadeRatesAndProfiles[i]);
 			}
@@ -1192,8 +1192,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			}				
 			
 			// Global mute buttons
-			DynMuteFadeButton* newMuteFade;
-			addParam(newMuteFade = createDynamicParamCentered<DynMuteFadeButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, TAuxExpander::GLOBAL_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmMuteFadeButton* newMuteFade;
+			addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(6.35  + 12.7 * i, 109.8)), module, TAuxExpander::GLOBAL_AUXMUTE_PARAMS + i));
 			if (module) {
 				newMuteFade->type = &(module->auxFadeRatesAndProfiles[i]);
 			}
