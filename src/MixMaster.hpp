@@ -403,7 +403,7 @@ struct MixerMaster {
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	private:
-	OnePoleFilter dcBlocker[2];// 6dB/oct
+	FirstOrderFilter dcBlocker[2];// 6dB/oct
 	float oldFader;
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
@@ -431,6 +431,9 @@ struct MixerMaster {
 		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+		for (int i = 0; i < 2; i++) {
+			dcBlocker[i].setParameters(true, 0.1f);
+		}
 	}
 
 
@@ -537,10 +540,10 @@ struct MixerMaster {
 	}			
 	
 	void setupDcBlocker() {
-		float dcCutoffFreq = 10.0f;// Hz
-		dcCutoffFreq *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		dcBlocker[0].setCutoff(dcCutoffFreq);
-		dcBlocker[1].setCutoff(dcCutoffFreq);
+		float fc = 10.0f;// Hz
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		dcBlocker[0].setParameters(true, fc);
+		dcBlocker[1].setParameters(true, fc);
 	}
 	
 	
@@ -702,8 +705,8 @@ struct MixerMaster {
 		
 		// DC blocker (post VU)
 		if (dcBlock) {
-			mix[0] = dcBlocker[0].processHP(mix[0]);
-			mix[1] = dcBlocker[1].processHP(mix[1]);
+			mix[0] = dcBlocker[0].process(mix[0]);
+			mix[1] = dcBlocker[1].process(mix[1]);
 		}
 		
 		// Clipping (post VU, so that we can see true range)
@@ -1061,7 +1064,7 @@ struct MixerGroup {
 
 struct MixerTrack {
 	// Constants
-	static constexpr float hpfBiquadQ = 1.0f;// 1.0 Q since preceeeded by a one pole filter to get 18dB/oct
+	// none
 	
 	// need to save, no reset
 	// none
@@ -1093,7 +1096,7 @@ struct MixerTrack {
 	dsp::SlewLimiter inGainSlewer;
 	dsp::SlewLimiter stereoWidthSlewer;
 	dsp::SlewLimiter muteSoloGainSlewer;
-	OnePoleFilter hpPreFilter[2];// 6dB/oct
+	FirstOrderFilter hpPreFilter[2];// 6dB/oct
 	dsp::BiquadFilter hpFilter[2];// 12dB/oct
 	dsp::BiquadFilter lpFilter[2];// 12db/oct
 	float lastHpfCutoff;
@@ -1165,8 +1168,9 @@ struct MixerTrack {
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1, hpfBiquadQ, 0.0);
-			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4, 0.707, 0.0);
+			hpPreFilter[i].setParameters(true, 0.1f);
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, 0.1f, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
+			lpFilter[i].setParameters(dsp::BiquadFilter::LOWPASS, 0.4f, 0.707f, 0.0f);
 		}
 	}
 
@@ -1418,8 +1422,8 @@ struct MixerTrack {
 		lastHpfCutoff = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
 		for (int i = 0; i < 2; i++) {
-			hpPreFilter[i].setCutoff(fc);
-			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, hpfBiquadQ, 0.0);
+			hpPreFilter[i].setParameters(true, fc);
+			hpFilter[i].setParameters(dsp::BiquadFilter::HIGHPASS, fc, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
 		}
 	}
 	float getHPFCutoffFreq() {return paHpfCutoff->getValue();}
@@ -1428,8 +1432,8 @@ struct MixerTrack {
 		paLpfCutoff->setValue(fc);
 		lastLpfCutoff = fc;
 		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
-		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
-		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707, 0.0);
+		lpFilter[0].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707f, 0.0f);
+		lpFilter[1].setParameters(dsp::BiquadFilter::LOWPASS, fc, 0.707f, 0.0f);
 	}
 	float getLPFCutoffFreq() {return paLpfCutoff->getValue();}
 
@@ -1629,8 +1633,8 @@ struct MixerTrack {
 			// Filters
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].processHP(taps[N_TRK * 2 + 0]));
-				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
+				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].process(taps[N_TRK * 2 + 0]));
+				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].process(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
 			}
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
@@ -1644,8 +1648,8 @@ struct MixerTrack {
 			// Filters
 			// HPF
 			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
-				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].processHP(taps[N_TRK * 2 + 0]));
-				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].processHP(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
+				taps[N_TRK * 2 + 0] = hpFilter[0].process(hpPreFilter[0].process(taps[N_TRK * 2 + 0]));
+				taps[N_TRK * 2 + 1] = stereo ? hpFilter[1].process(hpPreFilter[1].process(taps[N_TRK * 2 + 1])) : taps[N_TRK * 2 + 0];
 			}
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
