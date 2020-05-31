@@ -153,6 +153,82 @@ struct MomentarySvgSwitchNoParam : OpaqueWidget {
 	
 };
 
+struct MmSoloRoundButton : SvgSwitch {
+	MmSoloRoundButton() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-on.svg")));
+		shadow->opacity = 0.0;
+	}
+};
+
+struct MmBypassRoundButton : SvgSwitch {
+	MmBypassRoundButton() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-on.svg")));
+		shadow->opacity = 0.0;
+	}
+};
+
+struct MmMuteButton : SvgSwitch {
+	MmMuteButton() {
+		momentary = false;
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
+		shadow->opacity = 0.0;
+	}
+};
+
+struct MmSoloButton : SvgSwitch {
+	MmSoloButton() {
+		momentary = false;
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-on.svg")));
+		shadow->opacity = 0.0;
+	}
+};
+
+
+struct MmDimButton : SvgSwitch {
+	MmDimButton() {
+		momentary = false;
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-on.svg")));
+		shadow->opacity = 0.0;
+	}
+};
+
+struct MmMonoButton : SvgSwitch {
+	MmMonoButton() {
+		momentary = false;
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-on.svg")));
+		shadow->opacity = 0.0;
+	}
+};
+
+struct MmBypassButton : SvgSwitch {
+	MmBypassButton() {
+		momentary = false;
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-on.svg")));
+		shadow->opacity = 0.0;
+	}
+	void randomize() override {}
+};
+
+struct MmGroupMinusButtonNoParam : MomentarySvgSwitchNoParam {
+	MmGroupMinusButtonNoParam() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-minus.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-minus-active.svg")));
+	}
+};
+
+struct MmGroupPlusButtonNoParam : MomentarySvgSwitchNoParam {
+	MmGroupPlusButtonNoParam() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-plus.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/group-plus-active.svg")));
+	}
+};
 
 // Knobs and sliders
 

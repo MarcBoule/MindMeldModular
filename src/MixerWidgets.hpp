@@ -283,12 +283,12 @@ struct GroupSelectDisplay : ParamWidget {
 //   they will do thier own processing in here and update their source automatically
 // --------------------
 
-struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
+struct MmGroupMinusButtonNotify : MmGroupMinusButtonNoParam {
 	Param* sourceParam = NULL;// param that is mapped to this
 	float numGroups;// (float)N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
-		DynGroupMinusButtonNoParam::onChange(e);
+		MmGroupMinusButtonNoParam::onChange(e);
 		if (sourceParam && state != 0) {
 			float group = sourceParam->getValue();// separate variable so no glitch
 			if (group < 0.5f) group = numGroups;
@@ -299,12 +299,12 @@ struct DynGroupMinusButtonNotify : DynGroupMinusButtonNoParam {
 };
 
 
-struct DynGroupPlusButtonNotify : DynGroupPlusButtonNoParam {
+struct MmGroupPlusButtonNotify : MmGroupPlusButtonNoParam {
 	Param* sourceParam = NULL;// param that is mapped to this
 	int numGroups;// N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
-		DynGroupPlusButtonNoParam::onChange(e);
+		MmGroupPlusButtonNoParam::onChange(e);
 		if (sourceParam && state != 0) {
 			float group = sourceParam->getValue();// separate variable so no glitch
 			if (group > (numGroups - 0.5f)) group = 0.0f;
@@ -965,7 +965,7 @@ struct AuxDisplay : EditableDisplayBase {
 
 // Special solo button with mutex feature (ctrl-click)
 
-struct DynSoloButtonMutex : DynSoloButton {
+struct MmSoloButtonMutex : MmSoloButton {
 	Param *soloParams;// 19 or 15 params in here must be cleared when mutex solo performed on a group (track)
 	//  (9 or 7 for jr)
 	int baseSoloParamId;
@@ -1028,7 +1028,7 @@ struct DynSoloButtonMutex : DynSoloButton {
 				}
 			}
 		}
-		DynSoloButton::onButton(e);		
+		MmSoloButton::onButton(e);		
 	}
 };
 

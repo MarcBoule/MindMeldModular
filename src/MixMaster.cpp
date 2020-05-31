@@ -978,22 +978,22 @@ struct MixMasterWidget : ModuleWidget {
 				newMuteFade->numTracksAndGroups = N_TRK + N_GRP;
 			}
 			// Solos
-			DynSoloButtonMutex *newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TMixMaster::TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSoloButtonMutex *newSoloButton;
+			addParam(newSoloButton = createParamCentered<MmSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TMixMaster::TRACK_SOLO_PARAMS + i));
 			newSoloButton->soloParams =  module ? &module->params[TMixMaster::TRACK_SOLO_PARAMS] : NULL;
 			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
 			newSoloButton->numTracks = N_TRK;
 			newSoloButton->numGroups = N_GRP;
 			// Group dec
-			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupMinusButtonNotify *newGrpMinusButton;
+			addChild(newGrpMinusButton = createWidgetCentered<MmGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1))));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
 				newGrpMinusButton->numGroups = (float)N_GRP;
 			}
 			// Group inc
-			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupPlusButtonNotify *newGrpPlusButton;
+			addChild(newGrpPlusButton = createWidgetCentered<MmGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1))));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
 				newGrpPlusButton->numGroups = (float)N_GRP;
@@ -1082,8 +1082,8 @@ struct MixMasterWidget : ModuleWidget {
 				newMuteFade->numTracksAndGroups = N_TRK + N_GRP;
 			}
 			// Solos
-			DynSoloButtonMutex* newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, TMixMaster::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSoloButtonMutex* newSoloButton;
+			addParam(newSoloButton = createParamCentered<MmSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, TMixMaster::GROUP_SOLO_PARAMS + i));
 			newSoloButton->soloParams =  module ? &module->params[TMixMaster::TRACK_SOLO_PARAMS] : NULL;
 			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
 			newSoloButton->numTracks = N_TRK;
@@ -1147,10 +1147,10 @@ struct MixMasterWidget : ModuleWidget {
 		}
 		
 		// Master dim
-		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(289.42, 116.1)), module, TMixMaster::MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmDimButton>(mm2px(Vec(289.42, 116.1)), module, TMixMaster::MAIN_DIM_PARAM));
 		
 		// Master mono
-		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22, 116.1)), module, TMixMaster::MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmMonoButton>(mm2px(Vec(300.22, 116.1)), module, TMixMaster::MAIN_MONO_PARAM));
 	}
 };
 
@@ -1271,22 +1271,22 @@ struct MixMasterJrWidget : ModuleWidget {
 				newMuteFade->numTracksAndGroups = N_TRK + N_GRP;
 			}
 			// Solos
-			DynSoloButtonMutex *newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TMixMaster::TRACK_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSoloButtonMutex *newSoloButton;
+			addParam(newSoloButton = createParamCentered<MmSoloButtonMutex>(mm2px(Vec(xTrck1 + 12.7 * i, 116.1)), module, TMixMaster::TRACK_SOLO_PARAMS + i));
 			newSoloButton->soloParams =  module ? &module->params[TMixMaster::TRACK_SOLO_PARAMS] : NULL;
 			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
 			newSoloButton->numTracks = N_TRK;
 			newSoloButton->numGroups = N_GRP;
 			// Group dec
-			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupMinusButtonNotify *newGrpMinusButton;
+			addChild(newGrpMinusButton = createWidgetCentered<MmGroupMinusButtonNotify>(mm2px(Vec(xTrck1 - 3.73 + 12.7 * i - 0.75, 123.1))));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
 				newGrpMinusButton->numGroups = (float)N_GRP;
 			}
 			// Group inc
-			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupPlusButtonNotify *newGrpPlusButton;
+			addChild(newGrpPlusButton = createWidgetCentered<MmGroupPlusButtonNotify>(mm2px(Vec(xTrck1 + 3.77 + 12.7 * i + 0.75, 123.1))));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[TMixMaster::GROUP_SELECT_PARAMS + i]);
 				newGrpPlusButton->numGroups = (float)N_GRP;
@@ -1370,8 +1370,8 @@ struct MixMasterJrWidget : ModuleWidget {
 				newMuteFade->numTracksAndGroups = N_TRK + N_GRP;
 			}
 			// Solos
-			DynSoloButtonMutex* newSoloButton;
-			addParam(newSoloButton = createDynamicParamCentered<DynSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, TMixMaster::GROUP_SOLO_PARAMS + i, module ? &module->panelTheme : NULL));
+			MmSoloButtonMutex* newSoloButton;
+			addParam(newSoloButton = createParamCentered<MmSoloButtonMutex>(mm2px(Vec(xGrp1 + 12.7 * i, 116.1)), module, TMixMaster::GROUP_SOLO_PARAMS + i));
 			newSoloButton->soloParams =  module ? &module->params[TMixMaster::TRACK_SOLO_PARAMS] : NULL;
 			newSoloButton->baseSoloParamId = TMixMaster::TRACK_SOLO_PARAMS;
 			newSoloButton->numTracks = N_TRK;
@@ -1435,10 +1435,10 @@ struct MixMasterJrWidget : ModuleWidget {
 		}
 		
 		// Master dim
-		addParam(createDynamicParamCentered<DynDimButton>(mm2px(Vec(289.42 - 12.7 * 10, 116.1)), module, TMixMaster::MAIN_DIM_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmDimButton>(mm2px(Vec(289.42 - 12.7 * 10, 116.1)), module, TMixMaster::MAIN_DIM_PARAM));
 		
 		// Master mono
-		addParam(createDynamicParamCentered<DynMonoButton>(mm2px(Vec(300.22 - 12.7 * 10, 116.1)), module, TMixMaster::MAIN_MONO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmMonoButton>(mm2px(Vec(300.22 - 12.7 * 10, 116.1)), module, TMixMaster::MAIN_MONO_PARAM));
 	}
 };
 

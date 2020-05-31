@@ -379,12 +379,12 @@ struct BassMasterWidget : ModuleWidget {
 		}
 		
 		// high solo button
-		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 45.93 + 1)), module, BassMaster<IS_JR>::HIGH_SOLO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmSoloRoundButton>(mm2px(Vec(15.24, 45.93 + 1)), module, BassMaster<IS_JR>::HIGH_SOLO_PARAM));
 		// low solo button
-		addParam(createDynamicParamCentered<DynSoloRoundButton>(mm2px(Vec(15.24, 73.71 + 1)), module, BassMaster<IS_JR>::LOW_SOLO_PARAM, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmSoloRoundButton>(mm2px(Vec(15.24, 73.71 + 1)), module, BassMaster<IS_JR>::LOW_SOLO_PARAM));
 		// bypass button
 		// if (IS_JR) {
-			addParam(createDynamicParamCentered<DynBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
 		// }
 		// else {
 			// addParam(createParamCentered<MmSwitchInv>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));

@@ -849,18 +849,18 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 			
 			// Global solo buttons
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(6.35  + 12.7 * i, 116.1)), module, TAuxExpander::GLOBAL_AUXSOLO_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(createParamCentered<MmSoloButton>(mm2px(Vec(6.35  + 12.7 * i, 116.1)), module, TAuxExpander::GLOBAL_AUXSOLO_PARAMS + i));		
 
 			// Group dec
-			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(6.35 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupMinusButtonNotify *newGrpMinusButton;
+			addChild(newGrpMinusButton = createWidgetCentered<MmGroupMinusButtonNotify>(mm2px(Vec(6.35 - 3.73 + 12.7 * i - 0.75, 123.1))));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
 				newGrpMinusButton->numGroups = (float)N_GRP;
 			}
 			// Group inc
-			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(6.35 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupPlusButtonNotify *newGrpPlusButton;
+			addChild(newGrpPlusButton = createWidgetCentered<MmGroupPlusButtonNotify>(mm2px(Vec(6.35 + 3.77 + 12.7 * i + 0.75, 123.1))));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
 				newGrpPlusButton->numGroups = (float)N_GRP;
@@ -936,7 +936,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// mute for tracks 1 to 8
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 55.7)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 55.7)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i));
 			
 			
 			// Labels for tracks 9 to 16
@@ -979,7 +979,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// mute for tracks 9 to 16
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 116.1)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i + 8, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 116.1)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i + 8));
 		}
 
 		// Right side (individual groups)
@@ -1030,7 +1030,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// mute for groups 1 to 2
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 55.7)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + i));
 			
 			
 			// Labels for groups 3 to 4
@@ -1077,7 +1077,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// mute for groups 3 to 4
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + i + 2, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmMuteButton>(mm2px(Vec(171.45  + 12.7 * i, 116.1)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + i + 2));
 		}
 		
 		static constexpr float cvx = 198.6f;
@@ -1199,18 +1199,18 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			}
 			
 			// Global solo buttons
-			addParam(createDynamicParamCentered<DynSoloButton>(mm2px(Vec(6.35  + 12.7 * i, 116.1)), module, TAuxExpander::GLOBAL_AUXSOLO_PARAMS + i, module ? &module->panelTheme : NULL));		
+			addParam(createParamCentered<MmSoloButton>(mm2px(Vec(6.35  + 12.7 * i, 116.1)), module, TAuxExpander::GLOBAL_AUXSOLO_PARAMS + i));		
 
 			// Group dec
-			DynGroupMinusButtonNotify *newGrpMinusButton;
-			addChild(newGrpMinusButton = createDynamicWidgetCentered<DynGroupMinusButtonNotify>(mm2px(Vec(6.35 - 3.73 + 12.7 * i - 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupMinusButtonNotify *newGrpMinusButton;
+			addChild(newGrpMinusButton = createWidgetCentered<MmGroupMinusButtonNotify>(mm2px(Vec(6.35 - 3.73 + 12.7 * i - 0.75, 123.1))));
 			if (module) {
 				newGrpMinusButton->sourceParam = &(module->params[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
 				newGrpMinusButton->numGroups = (float)N_GRP;
 			}
 			// Group inc
-			DynGroupPlusButtonNotify *newGrpPlusButton;
-			addChild(newGrpPlusButton = createDynamicWidgetCentered<DynGroupPlusButtonNotify>(mm2px(Vec(6.35 + 3.77 + 12.7 * i + 0.75, 123.1)), module ? &module->panelTheme : NULL));
+			MmGroupPlusButtonNotify *newGrpPlusButton;
+			addChild(newGrpPlusButton = createWidgetCentered<MmGroupPlusButtonNotify>(mm2px(Vec(6.35 + 3.77 + 12.7 * i + 0.75, 123.1))));
 			if (module) {
 				newGrpPlusButton->sourceParam = &(module->params[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + i]);
 				newGrpPlusButton->numGroups = (float)N_GRP;
@@ -1286,7 +1286,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// mute for tracks 1 to 4
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 55.7)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 55.7)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i));
 
 
 
@@ -1330,7 +1330,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// mute for tracks 5 to 8
-			addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 116.1)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i + 4, module ? &module->panelTheme : NULL));
+			addParam(createParamCentered<MmMuteButton>(mm2px(Vec(67.31  + 12.7 * i, 116.1)), module, TAuxExpander::TRACK_AUXMUTE_PARAMS + i + 4));
 		}
 
 		// Right side (individual groups)
@@ -1382,7 +1382,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// mute for group 1
-		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(xGrp1, 55.7)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + 0, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmMuteButton>(mm2px(Vec(xGrp1, 55.7)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + 0));
 			
 			
 		// Labels for group 2
@@ -1429,7 +1429,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// mute for group 2
-		addParam(createDynamicParamCentered<DynMuteButton>(mm2px(Vec(xGrp1, 116.1)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + 1, module ? &module->panelTheme : NULL));
+		addParam(createParamCentered<MmMuteButton>(mm2px(Vec(xGrp1, 116.1)), module, TAuxExpander::GROUP_AUXMUTE_PARAMS + 1));
 		
 		
 		
