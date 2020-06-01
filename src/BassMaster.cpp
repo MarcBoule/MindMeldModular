@@ -434,9 +434,9 @@ struct BassMasterWidget : ModuleWidget {
 		if (module) {
 			bassMasterLabels[0]->text = string::f("%i", (int)(module->crossover + 0.5f));
 			bassMasterLabels[1]->text = string::f("%i", (int)(module->params[BassMaster<IS_JR>::HIGH_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
-			bassMasterLabels[2]->text = string::f("%i", (int)std::round(module->params[BassMaster<IS_JR>::HIGH_GAIN_PARAM].getValue() * 20.0f));
+			bassMasterLabels[2]->text = string::f("%.1f", math::normalizeZero(module->params[BassMaster<IS_JR>::HIGH_GAIN_PARAM].getValue() * 20.0f));
 			bassMasterLabels[3]->text = string::f("%i", (int)(module->params[BassMaster<IS_JR>::LOW_WIDTH_PARAM].getValue() * 100.0f + 0.5f));
-			bassMasterLabels[4]->text = string::f("%i", (int)std::round(module->params[BassMaster<IS_JR>::LOW_GAIN_PARAM].getValue() * 20.0f));
+			bassMasterLabels[4]->text = string::f("%.1f", math::normalizeZero(module->params[BassMaster<IS_JR>::LOW_GAIN_PARAM].getValue() * 20.0f));
 		}
 		Widget::step();
 	}
