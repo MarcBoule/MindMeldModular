@@ -9,7 +9,7 @@
 #ifndef IM_BUTTERWORTHFILTERS_HPP
 #define IM_BUTTERWORTHFILTERS_HPP
 
-#include "rack.hpp"
+// #include "rack.hpp"
 #include "FirstOrderFilter.hpp"
 
 
@@ -18,9 +18,14 @@ class ButterworthSecondOrder {
 	float a[3 - 1];// coefficients a1 and a2
 	float x[3 - 1];
 	float y[3 - 1];
-
+	float midCoef = M_SQRT2;
+	
 	public:
-
+	
+	void setMidCoef(float _midCoef) {
+		midCoef = _midCoef;
+	}
+	
 	void reset() {
 		for (int i = 0; i < 2; i++) {
 			x[i] = 0.0f;
@@ -35,9 +40,9 @@ class ButterworthSecondOrder {
 		float nfcw = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
 
 		// denominator coefficients (same for both LPF and HPF)
-		float acst = nfcw * nfcw + nfcw * (float)M_SQRT2 + 1.0f;
+		float acst = nfcw * nfcw + nfcw * midCoef + 1.0f;
 		a[0] = 2.0f * (nfcw * nfcw - 1.0f) / acst;
-		a[1] = (nfcw * nfcw - nfcw * (float)M_SQRT2 + 1.0f) / acst;
+		a[1] = (nfcw * nfcw - nfcw * midCoef + 1.0f) / acst;
 		
 		// numerator coefficients
 		float hbcst = 1.0f / acst;
@@ -60,9 +65,14 @@ class ButterworthSecondOrder {
 
 class ButterworthThirdOrder {
 	FirstOrderFilter f1;
-	dsp::BiquadFilter f2;
+	ButterworthSecondOrder f2;
+	// dsp::BiquadFilter f2;
 	
 	public:
+	
+	ButterworthThirdOrder() {
+		f2.setMidCoef(1.0f);
+	}
 	
 	void reset() {
 		f1.reset();
@@ -71,7 +81,8 @@ class ButterworthThirdOrder {
 	
 	void setParameters(bool isHighPass, float nfc) {// normalized freq
 		f1.setParameters(isHighPass, nfc);
-		f2.setParameters(isHighPass ? dsp::BiquadFilter::HIGHPASS : dsp::BiquadFilter::LOWPASS, nfc, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
+		f2.setParameters(isHighPass, nfc);
+		// f2.setParameters(isHighPass ? dsp::BiquadFilter::HIGHPASS : dsp::BiquadFilter::LOWPASS, nfc, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
 	}
 	
 	float process(float in) {
