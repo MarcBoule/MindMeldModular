@@ -34,6 +34,7 @@ struct GlobalInfo {
 	float linkedFaderReloadValues[N_TRK + N_GRP];
 	int8_t momentaryCvButtons;// 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
 	int8_t masterFaderScalesSends;// 1 = yes 
+	int8_t linearVolCvInputs;// 0 means powN, 1 means linear
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -194,6 +195,7 @@ struct GlobalInfo {
 		}
 		momentaryCvButtons = 1;// momentary by default
 		masterFaderScalesSends = 0;// false by default
+		linearVolCvInputs = 0;// 0 means powN, 1 means linear
 		resetNonJson();
 	}
 
@@ -266,6 +268,9 @@ struct GlobalInfo {
 
 		// masterFaderScalesSends
 		json_object_set_new(rootJ, "masterFaderScalesSends", json_integer(masterFaderScalesSends));
+
+		// linearVolCvInputs
+		json_object_set_new(rootJ, "linearVolCvInputs", json_integer(linearVolCvInputs));
 	}
 
 
@@ -370,6 +375,11 @@ struct GlobalInfo {
 		if (masterFaderScalesSendsJ)
 			masterFaderScalesSends = json_integer_value(masterFaderScalesSendsJ);
 		
+		// linearVolCvInputs
+		json_t *linearVolCvInputsJ = json_object_get(rootJ, "linearVolCvInputs");
+		if (linearVolCvInputsJ)
+			linearVolCvInputs = json_integer_value(linearVolCvInputsJ);
+		
 		// extern must call resetNonJson()
 	}	
 		
@@ -397,14 +407,12 @@ struct MixerMaster {
 	// no need to save, with reset
 	private:
 	simd::float_4 chainGainsAndMute;// 0=L, 1=R, 2=mute
-	float faderGain;
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	public:
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	private:
 	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
-	float oldFader;
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
@@ -450,12 +458,10 @@ struct MixerMaster {
 
 	void resetNonJson() {
 		chainGainsAndMute = 0.0f;
-		faderGain = 0.0f;
 		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		chainGainAndMuteSlewers.reset();
 		setupDcBlocker();
-		oldFader = -10.0f;
 		vu.reset();
 		fadeGain = calcFadeGain();
 		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
@@ -630,27 +636,32 @@ struct MixerMaster {
 			
 			// calc ** fader, paramWithCV **
 			float fader = params[MAIN_FADER_PARAM].getValue();
+			float volCv;
 			if (inVol->isConnected() && inVol->getChannels() >= (N_GRP * 2 + 4)) {
-				fader *= clamp(inVol->getVoltage(N_GRP * 2 + 4 - 1) * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				paramWithCV = fader;
+				volCv = clamp(inVol->getVoltage(N_GRP * 2 + 4 - 1) * 0.1f, 0.0f, 1.0f);
+				paramWithCV = fader * volCv;
 			}
 			else {
+				volCv = 1.0f;
 				paramWithCV = -100.0f;
 			}
 
 			// scaling
-			if (fader != oldFader) {
-				oldFader = fader;
-				faderGain = std::pow(fader, GlobalConst::masterFaderScalingExponent);
+			if (gInfo->linearVolCvInputs == 0) {
+				fader *= volCv;
+			}			
+			fader = std::pow(fader, GlobalConst::masterFaderScalingExponent);
+			if (gInfo->linearVolCvInputs != 0) {
+				fader *= volCv;
 			}
 			
 			// calc ** gainMatrix **
 			// mono
 			if (params[MAIN_MONO_PARAM].getValue() >= 0.5f) {
-				gainMatrix = simd::float_4(0.5f * faderGain);
+				gainMatrix = simd::float_4(0.5f * fader);
 			}
 			else {
-				gainMatrix = simd::float_4(faderGain, faderGain, 0.0f, 0.0f);
+				gainMatrix = simd::float_4(fader, fader, 0.0f, 0.0f);
 			}
 		}
 		
@@ -737,11 +748,9 @@ struct MixerGroup {
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
 	private:
-	float faderGain;
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
 	float oldPan;
-	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
 	VuMeterAllDual vu;// use post[]
@@ -804,12 +813,10 @@ struct MixerGroup {
 
 	void resetNonJson() {
 		panMatrix = 0.0f;
-		faderGain = 0.0f;
 		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 		oldPan = -10.0f;
-		oldFader = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
 		fadeGain = calcFadeGain();
@@ -950,11 +957,13 @@ struct MixerGroup {
 
 			// calc ** fader, paramWithCV **
 			float fader = paFade->getValue();
+			float volCv;
 			if (inVol->isConnected()) {
-				fader *= clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				paramWithCV = fader;
+				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
+				paramWithCV = fader * volCv;
 			}
 			else {
+				volCv = 1.0f;
 				paramWithCV = -100.0f;
 			}
 
@@ -1005,17 +1014,17 @@ struct MixerGroup {
 						}
 					}
 				}
-			}
-			// calc ** faderGain **
-			if (fader != oldFader) {
-				faderGain = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
+				oldPan = pan;
 			}
 			// calc ** gainMatrix **
-			if (fader != oldFader || pan != oldPan) {
-				oldFader = fader;
-				oldPan = pan;	
-				gainMatrix = panMatrix * faderGain;
+			if (gInfo->linearVolCvInputs == 0) {
+				fader *= volCv;
 			}
+			fader = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
+			if (gInfo->linearVolCvInputs != 0) {
+				fader *= volCv;
+			}
+			gainMatrix = panMatrix * fader;
 		}
 	
 		// Calc group gains with slewer
@@ -1060,7 +1069,7 @@ struct MixerGroup {
 
 struct MixerTrack {
 	// Constants
-	static const bool linearVolCvInputs = true;
+	// none
 	
 	// need to save, no reset
 	// none
@@ -1086,7 +1095,6 @@ struct MixerTrack {
 	private:
 	float inGain;
 	simd::float_4 panMatrix;
-	float faderGain;
 	simd::float_4 gainMatrix;	
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter inGainSlewer;
@@ -1097,7 +1105,6 @@ struct MixerTrack {
 	float lastHpfCutoff;
 	float lastLpfCutoff;
 	float oldPan;
-	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
 	VuMeterAllDual vu;
@@ -1191,7 +1198,6 @@ struct MixerTrack {
 		stereo = false;
 		inGain = 0.0f;
 		panMatrix = 0.0f;
-		faderGain = 0.0f;
 		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		inGainSlewer.reset();
@@ -1206,7 +1212,6 @@ struct MixerTrack {
 			lpFilter[i].reset();
 		}
 		oldPan = -10.0f;
-		oldFader = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
 		fadeGain = calcFadeGain();
@@ -1523,9 +1528,8 @@ struct MixerTrack {
 			// calc ** fader, paramWithCV, volCv **
 			fader = paFade->getValue();
 			if (inVol->isConnected()) {
-				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);//(multiplying, pre-scaling)
-				fader *= volCv;
-				paramWithCV = fader;
+				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
+				paramWithCV = fader * volCv;
 			}
 			else {
 				volCv = 1.0f;
@@ -1730,17 +1734,17 @@ struct MixerTrack {
 						}
 					}
 				}
-			}
-			// calc ** faderGain **
-			if (fader != oldFader) {
-				faderGain = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
+				oldPan = pan;
 			}
 			// calc ** gainMatrix **
-			if (fader != oldFader || pan != oldPan) {
-				oldFader = fader;
-				oldPan = pan;	
-				gainMatrix = panMatrix * faderGain;
+			if (gInfo->linearVolCvInputs == 0) {
+				fader *= volCv;
 			}
+			fader = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
+			if (gInfo->linearVolCvInputs != 0) {
+				fader *= volCv;
+			}
+			gainMatrix = panMatrix * fader;
 		}
 		
 		// Apply gainMatrix

@@ -442,6 +442,13 @@ struct EcoItem : MenuItem {
 	}
 };
 
+struct LinCvItem : MenuItem {
+	int8_t *linearVolCvInputsSrc;
+	void onAction(const event::Action &e) override {
+		*linearVolCvInputsSrc = ~*linearVolCvInputsSrc;
+	}
+};
+
 
 
 // Track context menu
