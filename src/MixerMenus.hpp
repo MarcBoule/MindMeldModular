@@ -444,11 +444,28 @@ struct EcoItem : MenuItem {
 
 struct LinCvItem : MenuItem {
 	int8_t *linearVolCvInputsSrc;
-	void onAction(const event::Action &e) override {
-		*linearVolCvInputsSrc = ~*linearVolCvInputsSrc;
+
+	struct LinCvSubItem : MenuItem {
+		int8_t *linearVolCvInputsSrc;
+		void onAction(const event::Action &e) override {
+			*linearVolCvInputsSrc ^= 0x1;
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+
+		LinCvSubItem *lin0Item = createMenuItem<LinCvSubItem>("Fader scaling (default)", CHECKMARK(*linearVolCvInputsSrc == 0));
+		lin0Item->linearVolCvInputsSrc = linearVolCvInputsSrc;
+		menu->addChild(lin0Item);
+
+		LinCvSubItem *lin1Item = createMenuItem<LinCvSubItem>("Linear", CHECKMARK(*linearVolCvInputsSrc == 1));
+		lin1Item->linearVolCvInputsSrc = linearVolCvInputsSrc;
+		menu->addChild(lin1Item);
+
+		return menu;
 	}
 };
-
 
 
 // Track context menu

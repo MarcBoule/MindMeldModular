@@ -62,7 +62,7 @@ void appendContextMenu(Menu *menu) override {
 	fadItem->fadeCvOutsWithVolCvSrc = &(module->gInfo.fadeCvOutsWithVolCv);
 	menu->addChild(fadItem);
 	
-	LinCvItem *lincv0Item = createMenuItem<LinCvItem>("Linear Vol CV inputs", CHECKMARK(module->gInfo.linearVolCvInputs));
+	LinCvItem *lincv0Item = createMenuItem<LinCvItem>("Vol CV inputs", RIGHT_ARROW);
 	lincv0Item->linearVolCvInputsSrc = &(module->gInfo.linearVolCvInputs);
 	menu->addChild(lincv0Item);
 	
