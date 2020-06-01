@@ -109,6 +109,7 @@ struct AuxExpander : Module {
 	uint16_t ecoMode;
 	float auxRetFadeGains[4];// for return fades
 	int8_t momentaryCvButtons;
+	int8_t linearVolCvInputs;
 	
 	
 	AuxExpander() {
@@ -206,6 +207,7 @@ struct AuxExpander : Module {
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 		momentaryCvButtons = 1;// momentary by default
+		linearVolCvInputs = 0;// powN scaled by default (1 means linear)
 		
 		onReset();
 
@@ -424,13 +426,16 @@ struct AuxExpander : Module {
 				// Display colors (when per track)
 				memcpy(trackDispColsLocal, &messagesFromMother[Intf::AFM_TRK_DISP_COL], (N_TRK / 4 + 1) * 4);
 				// Eco mode
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_ECO_MODE], 4);
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_ECO_MODE], 2);
 				ecoMode = (uint16_t)tmp;
 				// Fade gains
 				memcpy(auxRetFadeGains, &messagesFromMother[Intf::AFM_FADE_GAINS], 4 * 4);
 				// momentaryCvButtons
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_MOMENTARY_CVBUTTONS], 4);
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_MOMENTARY_CVBUTTONS], 1);
 				momentaryCvButtons = (uint8_t)tmp;
+				// linearVolCvInputs
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_LINEARVOLCVINPUTS], 1);
+				linearVolCvInputs = (uint8_t)tmp;
 			}
 			
 			// Fast values from mother
@@ -603,19 +608,29 @@ struct AuxExpander : Module {
 			
 			// aux return fader
 			for (int i = 0; i < 4; i++) {
-				float val = params[GLOBAL_AUXPAN_PARAMS + 4 + i].getValue();
+				float fader = params[GLOBAL_AUXPAN_PARAMS + 4 + i].getValue();
 				// cv for return fader
 				bool isConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected() && 
 						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (8 + i + 1));
+				float volCv;
 				if (isConnected) {
-					val *= clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
-					paramRetFaderWithCv[i] = val;
+					volCv = clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+					paramRetFaderWithCv[i] = fader * volCv;
+					if (linearVolCvInputs == 0) {
+						fader = paramRetFaderWithCv[i];
+					}
 				}
 				else {
+					volCv = 1.0f;
 					paramRetFaderWithCv[i] = -100.0f;// do not show cv pointer
 				}
-				// scaling done in mother
-				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = val;
+
+				fader = std::pow(fader, GlobalConst::globalAuxReturnScalingExponent);// scaling
+				if (linearVolCvInputs != 0) {
+					fader *= volCv;
+				}
+				
+				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = fader;
 			}
 				
 			refreshCounter20++;

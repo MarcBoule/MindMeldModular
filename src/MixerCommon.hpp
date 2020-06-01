@@ -37,6 +37,7 @@ struct ExpansionInterface {
 		AFM_MOMENTARY_CVBUTTONS,
 		AFM_VU_INDEX,// a return VU related value; index 0-3 : quad vu floats of a given aux, 4-7 : mute ghost of given aux (in AFM_VU_VALUES[0] only)
 		ENUMS(AFM_VU_VALUES, 4),
+		AFM_LINEARVOLCVINPUTS,
 		AFM_NUM_VALUES
 	};
 	

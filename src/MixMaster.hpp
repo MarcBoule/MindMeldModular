@@ -1809,12 +1809,10 @@ struct MixerAux {
 	// no need to save, with reset
 	private:
 	simd::float_4 panMatrix;
-	float faderGain;
 	simd::float_4 gainMatrix;	
 	dsp::TSlewLimiter<simd::float_4> gainMatrixSlewers;
 	dsp::SlewLimiter muteSoloGainSlewer;
 	float oldPan;
-	float oldFader;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
 	VuMeterAllDual vu;
@@ -1867,12 +1865,10 @@ struct MixerAux {
 
 	void resetNonJson() {
 		panMatrix = 0.0f;
-		faderGain = 0.0f;
 		gainMatrix = 0.0f;
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
 		oldPan = -10.0f;
-		oldFader = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
 		fadeGain = calcFadeGain();
@@ -1993,18 +1989,10 @@ struct MixerAux {
 						}
 					}
 				}
-			}
-			// calc ** faderGain **
-			if (auxRetFadePan[0] != oldFader) {
-				// fader and fader cv input (multiplying and pre-scaling) both done in auxspander
-				faderGain = std::pow(auxRetFadePan[0], GlobalConst::globalAuxReturnScalingExponent);// scaling
+				oldPan = pan;
 			}
 			// calc ** gainMatrix **
-			if (auxRetFadePan[0] != oldFader || pan != oldPan) {
-				oldFader = auxRetFadePan[0];
-				oldPan = pan;	
-				gainMatrix = panMatrix * faderGain;
-			}			
+			gainMatrix = panMatrix * auxRetFadePan[0];
 		}
 		
 		// Calc gainMatrixSlewed

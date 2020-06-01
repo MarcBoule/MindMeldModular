@@ -557,14 +557,17 @@ struct MixMaster : Module {
 				memcpy(&messageToExpander[Intf::AFM_TRK_DISP_COL], tmpDispCols, (N_TRK / 4 + 1) * 4);
 				// Eco mode
 				tmp = gInfo.ecoMode;
-				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 4);
+				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 2);
 				// auxFadeGains
 				for (int auxi = 0; auxi < 4; auxi++) {
 					messageToExpander[Intf::AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
 				}
 				// momentaryCvButtons
 				tmp = gInfo.momentaryCvButtons;
-				memcpy(&messageToExpander[Intf::AFM_MOMENTARY_CVBUTTONS], &tmp, 4);			
+				memcpy(&messageToExpander[Intf::AFM_MOMENTARY_CVBUTTONS], &tmp, 1);			
+				// linearVolCvInputs
+				tmp = gInfo.linearVolCvInputs;
+				memcpy(&messageToExpander[Intf::AFM_LINEARVOLCVINPUTS], &tmp, 1);			
 			}
 			
 			// Fast
