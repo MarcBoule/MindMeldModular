@@ -9,7 +9,6 @@
 #ifndef IM_BUTTERWORTHFILTERS_HPP
 #define IM_BUTTERWORTHFILTERS_HPP
 
-// #include "rack.hpp"
 #include "FirstOrderFilter.hpp"
 
 
@@ -66,7 +65,6 @@ class ButterworthSecondOrder {
 class ButterworthThirdOrder {
 	FirstOrderFilter f1;
 	ButterworthSecondOrder f2;
-	// dsp::BiquadFilter f2;
 	
 	public:
 	
@@ -82,7 +80,6 @@ class ButterworthThirdOrder {
 	void setParameters(bool isHighPass, float nfc) {// normalized freq
 		f1.setParameters(isHighPass, nfc);
 		f2.setParameters(isHighPass, nfc);
-		// f2.setParameters(isHighPass ? dsp::BiquadFilter::HIGHPASS : dsp::BiquadFilter::LOWPASS, nfc, 1.0f, 0.0f);// Q = 1.0 since preceeeded by a 1st order filter to get 18dB/oct
 	}
 	
 	float process(float in) {

@@ -347,11 +347,11 @@ struct BassMasterWidget : ModuleWidget {
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
 			
-			VuTypeSubItem *vu0Item = createMenuItem<VuTypeSubItem>("Track-type", CHECKMARK(*isMasterTypeSrc == 0));
+			VuTypeSubItem *vu0Item = createMenuItem<VuTypeSubItem>("Scale as track", CHECKMARK(*isMasterTypeSrc == 0));
 			vu0Item->isMasterTypeSrc = isMasterTypeSrc;
 			menu->addChild(vu0Item);
 
-			VuTypeSubItem *vu1Item = createMenuItem<VuTypeSubItem>("Master-type", CHECKMARK(*isMasterTypeSrc != 0));
+			VuTypeSubItem *vu1Item = createMenuItem<VuTypeSubItem>("Scale as master", CHECKMARK(*isMasterTypeSrc != 0));
 			vu1Item->isMasterTypeSrc = isMasterTypeSrc;
 			menu->addChild(vu1Item);
 
@@ -380,7 +380,7 @@ struct BassMasterWidget : ModuleWidget {
 		menu->addChild(dispColItem);
 		
 		if (!IS_JR) {
-			VuTypeItem *vutItem = createMenuItem<VuTypeItem>("VU type", RIGHT_ARROW);
+			VuTypeItem *vutItem = createMenuItem<VuTypeItem>("VU scaling", RIGHT_ARROW);
 			vutItem->isMasterTypeSrc = &(module->miscSettings.cc4[3]);
 			menu->addChild(vutItem);
 			
