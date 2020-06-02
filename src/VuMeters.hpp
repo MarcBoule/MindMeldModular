@@ -102,46 +102,15 @@ static const float sepYmaster = 0.4f * SVG_DPI / MM_PER_IN;// height of separato
 static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
 
 
-// Menus
-// ----------------------------------------------------------------------------
-
-struct VuFiveColorItem : MenuItem {
-	int8_t *srcColors;// this can be a vector of colors that will all be set (when used in EQ for example)
-	int vectorSize = 1;
-
-	struct VuColorSubItem : MenuItem {
-		int8_t *srcColors;
-		int vectorSize;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			for (int t = 0; t < vectorSize; t++) {
-				srcColors[t] = setVal;
-			}
-		}
-	};
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-		
-		for (int i = 0; i < numVuThemes; i++) {
-			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColors == i));
-			vuColItem->srcColors = srcColors;
-			vuColItem->vectorSize = vectorSize;
-			vuColItem->setVal = i;
-			menu->addChild(vuColItem);
-		}
-
-		return menu;
-	}
-};
-
-
 // Base struct
 struct VuMeterBase : OpaqueWidget {
 	static constexpr float epsilon = 0.0001f;// don't show VUs below 0.1mV
 	static constexpr float peakHoldThick = 1.0f;// in px
 	static const int faderScalingExponent = 3;
 	static constexpr float faderMaxLinearGain = 2.0f;
+	static constexpr float zeroDbVoltage = 5.0f;// in volts (for track-type)
+	static constexpr float zeroDbVoltageMaster = 10.0f;// in volts (for master-type)
+
 	
 	// instantiator must setup:
 	float *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
@@ -154,7 +123,7 @@ struct VuMeterBase : OpaqueWidget {
 	float barX;// in px
 	float barY;// in px
 	// box.size // inherited from OpaqueWidget, no need to declare
-	float zeroDbVoltage;
+	int8_t* isMasterTypeSrc = NULL;// no need to setup when track-type only
 	
 	// local 
 	float peakHold[2] = {0.0f, 0.0f};
@@ -162,7 +131,8 @@ struct VuMeterBase : OpaqueWidget {
 	float yellowThreshold;// in px, before vertical inversion
 	float redThreshold;// in px, before vertical inversion
 	int colorTheme;
-	
+	float hardRedVoltage = 10.0f;
+
 	
 	VuMeterBase() {
 	}
@@ -176,10 +146,13 @@ struct VuMeterBase : OpaqueWidget {
 	}
 	void draw(const DrawArgs &args) override;
 	
-	// used for RMS or PEAK
-	virtual void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) {};
-
-	virtual void drawPeakHold(const DrawArgs &args, float holdValue, float posX) {};
+	
+	// track-like
+	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex);// used for RMS or PEAK
+	void drawPeakHold(const DrawArgs &args, float holdValue, float posX);
+	// master-like
+	void drawVuMaster(const DrawArgs &args, float vuValue, float posX, int colorIndex);// used for RMS or PEAK
+	void drawPeakHoldMaster(const DrawArgs &args, float holdValue, float posX);
 };
 
 // 2.8mm x 42mm VU for tracks and groups
@@ -191,15 +164,8 @@ struct VuMeterTrack : VuMeterBase {//
 		barX = mm2px(1.2);
 		barY = mm2px(42.0);
 		box.size = Vec(barX * 2 + gapX, barY);
-		zeroDbVoltage = 5.0f;// V
 		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
 	}
-
-	// used for RMS or PEAK
-	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override;
-	
-	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override;
-
 };
 
 
@@ -210,23 +176,18 @@ struct VuMeterTrack : VuMeterBase {//
 struct VuMeterMaster : VuMeterBase {
 	int* clippingPtr;
 	int oldClipping = 1;
-	float hardRedVoltage;
+	int8_t isMasterType = 1;
+	
 	
 	VuMeterMaster() {
 		gapX = mm2px(0.6);
 		barX = mm2px(1.6);
 		barY = mm2px(60.0);
 		box.size = Vec(barX * 2 + gapX, barY);
-		zeroDbVoltage = 10.0f;// V
-		hardRedVoltage = 10.0f;
 		prepareYellowAndRedThresholds(-6.0f, 0.0f);// dB
+		isMasterTypeSrc = &isMasterType;
 	}
 	
-	// used for RMS or PEAK
-	void drawVu(const DrawArgs &args, float vuValue, float posX, int colorIndex) override;
-	
-	void drawPeakHold(const DrawArgs &args, float holdValue, float posX) override;
-
 	void step() override {
 		if (*clippingPtr != oldClipping) {
 			oldClipping = *clippingPtr;
@@ -275,5 +236,40 @@ struct VuMeterBassMono : VuMeterTrack {
 		}	
 	}
 };
+
+
+// Menus
+// ----------------------------------------------------------------------------
+
+struct VuFiveColorItem : MenuItem {
+	int8_t *srcColors;// this can be a vector of colors that will all be set (when used in EQ for example)
+	int vectorSize = 1;
+
+	struct VuColorSubItem : MenuItem {
+		int8_t *srcColors;
+		int vectorSize;
+		int setVal;
+		void onAction(const event::Action &e) override {
+			for (int t = 0; t < vectorSize; t++) {
+				srcColors[t] = setVal;
+			}
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		for (int i = 0; i < numVuThemes; i++) {
+			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColors == i));
+			vuColItem->srcColors = srcColors;
+			vuColItem->vectorSize = vectorSize;
+			vuColItem->setVal = i;
+			menu->addChild(vuColItem);
+		}
+
+		return menu;
+	}
+};
+
 
 #endif

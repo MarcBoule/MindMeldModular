@@ -53,7 +53,7 @@ struct BassMaster : Module {
 	int panelTheme;
 	
 	// Need to save, with reset
-	PackedBytes4 miscSettings;// cc4[0] is display label colours, cc4[1] is polyStereo, cc4[2] is VU color, cc4[3] is unused
+	PackedBytes4 miscSettings;// cc4[0] is display label colours, cc4[1] is polyStereo, cc4[2] is VU color, cc4[3] is isMasterTrack
 	
 	// No need to save, with reset
 	float crossover;
@@ -102,7 +102,7 @@ struct BassMaster : Module {
 		miscSettings.cc4[0] = 0;// display label colours
 		miscSettings.cc4[1] = 0;// polyStereo
 		miscSettings.cc4[2] = 0;// default color
-		miscSettings.cc4[3] = 0;// unused
+		miscSettings.cc4[3] = 0;// isMasterTrack
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -334,6 +334,31 @@ struct BassMasterWidget : ModuleWidget {
 		}
 	};	
 	
+	struct VuTypeItem : MenuItem {
+		int8_t* isMasterTypeSrc;
+
+		struct VuTypeSubItem : MenuItem {
+			int8_t* isMasterTypeSrc;
+			void onAction(const event::Action &e) override {
+				*isMasterTypeSrc ^= 0x1;
+			}
+		};
+
+		Menu *createChildMenu() override {
+			Menu *menu = new Menu;
+			
+			VuTypeSubItem *vu0Item = createMenuItem<VuTypeSubItem>("Track-type", CHECKMARK(*isMasterTypeSrc == 0));
+			vu0Item->isMasterTypeSrc = isMasterTypeSrc;
+			menu->addChild(vu0Item);
+
+			VuTypeSubItem *vu1Item = createMenuItem<VuTypeSubItem>("Master-type", CHECKMARK(*isMasterTypeSrc != 0));
+			vu1Item->isMasterTypeSrc = isMasterTypeSrc;
+			menu->addChild(vu1Item);
+
+			return menu;
+		}
+	};	
+	
 	void appendContextMenu(Menu *menu) override {		
 		BassMaster<IS_JR>* module = (BassMaster<IS_JR>*)(this->module);
 		assert(module);
@@ -355,6 +380,10 @@ struct BassMasterWidget : ModuleWidget {
 		menu->addChild(dispColItem);
 		
 		if (!IS_JR) {
+			VuTypeItem *vutItem = createMenuItem<VuTypeItem>("VU type", RIGHT_ARROW);
+			vutItem->isMasterTypeSrc = &(module->miscSettings.cc4[3]);
+			menu->addChild(vutItem);
+			
 			VuFiveColorItem *vuColItem = createMenuItem<VuFiveColorItem>("VU colour", RIGHT_ARROW);
 			vuColItem->srcColors = &(module->miscSettings.cc4[2]);
 			menu->addChild(vuColItem);
@@ -416,6 +445,7 @@ struct BassMasterWidget : ModuleWidget {
 				VuMeterBassMono *newVU = createWidgetCentered<VuMeterBassMono>(mm2px(Vec(37.2, 37.5f)));
 				newVU->srcLevels = module->trackVu.vuValues;
 				newVU->bassVuColorsSrc = &(module->miscSettings.cc4[2]);
+				newVU->isMasterTypeSrc = &(module->miscSettings.cc4[3]);
 				addChild(newVU);
 			}
 						
