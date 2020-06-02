@@ -74,7 +74,7 @@ struct MixMaster : Module {
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
-	int panelTheme;
+	// none
 	
 	// Need to save, with reset
 	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only
@@ -226,7 +226,6 @@ struct MixMaster : Module {
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
-		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
 		sendToMessageBus();// register by just writing data
 	}
   
@@ -286,9 +285,6 @@ struct MixMaster : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 
-		// panelTheme
-		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
-
 		// trackLabels
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 		
@@ -315,11 +311,6 @@ struct MixMaster : Module {
 
 
 	void dataFromJson(json_t *rootJ) override {
-		// panelTheme
-		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
-		if (panelThemeJ)
-			panelTheme = json_integer_value(panelThemeJ);
-
 		// trackLabels
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
 		if (textJ)
@@ -522,9 +513,6 @@ struct MixMaster : Module {
 				// Track names
 				*afmUpdateSlow = 1;
 				memcpy(&messageToExpander[Intf::AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
-				// Panel theme
-				int32_t tmp = panelTheme;
-				memcpy(&messageToExpander[Intf::AFM_PANEL_THEME], &tmp, 4);
 				// Color theme
 				memcpy(&messageToExpander[Intf::AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
 				// Direct outs mode global and Stereo pan mode global
@@ -556,7 +544,7 @@ struct MixMaster : Module {
 				}	
 				memcpy(&messageToExpander[Intf::AFM_TRK_DISP_COL], tmpDispCols, (N_TRK / 4 + 1) * 4);
 				// Eco mode
-				tmp = gInfo.ecoMode;
+				int32_t tmp = gInfo.ecoMode;
 				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 2);
 				// auxFadeGains
 				for (int auxi = 0; auxi < 4; auxi++) {

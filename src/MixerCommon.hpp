@@ -25,8 +25,7 @@ struct ExpansionInterface {
 	enum AuxFromMotherIds { // for expander messages from main to aux panel
 		ENUMS(AFM_AUX_SENDS, (N_TRK + N_GRP) * 2), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
 		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP),
-		AFM_UPDATE_SLOW, // (track/group names, panelTheme, colorAndCloak)
-		AFM_PANEL_THEME,
+		AFM_UPDATE_SLOW, // (track/group names, colorAndCloak)
 		AFM_COLOR_AND_CLOAK,
 		AFM_DIRECT_AND_PAN_MODES,
 		AFM_TRACK_MOVE,

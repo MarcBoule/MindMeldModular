@@ -62,7 +62,7 @@ struct AuxExpander : Module {
 
 
 	// Need to save, no reset
-	int panelTheme;
+	// none
 	
 	// Need to save, with reset
 	alignas(4) char auxLabels[4 * 4 + 1];// 4 chars per label, 4 aux labels, null terminate the end the whole array only
@@ -210,9 +210,6 @@ struct AuxExpander : Module {
 		linearVolCvInputs = 0;// powN scaled by default (1 means linear)
 		
 		onReset();
-
-		panelTheme = 0;//(loadDarkAsDefault() ? 1 : 0);
-
 	}
   
 	void onReset() override {
@@ -265,9 +262,6 @@ struct AuxExpander : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 
-		// panelTheme
-		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
-
 		// vuColorThemeLocal
 		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal.cc1));
 
@@ -308,11 +302,6 @@ struct AuxExpander : Module {
 
 
 	void dataFromJson(json_t *rootJ) override {
-		// panelTheme
-		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
-		if (panelThemeJ)
-			panelTheme = json_integer_value(panelThemeJ);
-
 		// vuColorThemeLocal
 		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
 		if (vuColorThemeLocalJ)
@@ -403,15 +392,12 @@ struct AuxExpander : Module {
 				// Track labels
 				memcpy(trackLabels, &messagesFromMother[Intf::AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
 				updateTrackLabelRequest = 1;
-				// Panel theme
-				int32_t tmp;
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_PANEL_THEME], 4);
-				panelTheme = tmp;
 				// Color theme
 				memcpy(&colorAndCloak.cc1, &messagesFromMother[Intf::AFM_COLOR_AND_CLOAK], 4);
 				// Direct outs mode global and Stereo pan mode global
 				memcpy(&directOutsAndStereoPanModes.cc1, &messagesFromMother[Intf::AFM_DIRECT_AND_PAN_MODES], 4);			
 				// Track move
+				int32_t tmp;
 				memcpy(&tmp, &messagesFromMother[Intf::AFM_TRACK_MOVE], 4);
 				if (tmp != 0) {
 					moveTrack(tmp);

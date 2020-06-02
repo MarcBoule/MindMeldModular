@@ -37,7 +37,6 @@ struct Unmeld : Module {
 
 
 	// Need to save, no reset
-	int panelTheme;
 	int facePlate;
 	
 	// Need to save, with reset
@@ -55,7 +54,6 @@ struct Unmeld : Module {
 		
 		onReset();
 		
-		panelTheme = 0;
 		facePlate = 0;
 	}
   
@@ -73,9 +71,6 @@ struct Unmeld : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 
-		// panelTheme
-		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
-		
 		// facePlate
 		json_object_set_new(rootJ, "facePlate", json_integer(facePlate));
 		
@@ -84,11 +79,6 @@ struct Unmeld : Module {
 
 
 	void dataFromJson(json_t *rootJ) override {
-		// panelTheme
-		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
-		if (panelThemeJ)
-			panelTheme = json_integer_value(panelThemeJ);
-
 		// facePlate
 		json_t *facePlateJ = json_object_get(rootJ, "facePlate");
 		if (facePlateJ)
@@ -147,7 +137,7 @@ struct UnmeldWidget : ModuleWidget {
 	SvgPanel* facePlates[3];
 	int lastFacePlate = 0;
 		
-	struct PanelThemeItem : MenuItem {
+	struct FacePlateItem : MenuItem {
 		Unmeld *module;
 		int plate;
 		void onAction(const event::Action &e) override {
@@ -172,7 +162,7 @@ struct UnmeldWidget : ModuleWidget {
 		menu->addChild(themeLabel);
 
 		for (int i = 0; i < 3; i++) {
-			PanelThemeItem *aItem = new PanelThemeItem();
+			FacePlateItem *aItem = new FacePlateItem();
 			aItem->text = facePlateNames[i];
 			aItem->rightText = CHECKMARK(module->facePlate == i);
 			aItem->module = module;

@@ -37,7 +37,7 @@ struct EqMaster : Module {
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
-	int panelTheme;
+	// none
 	
 	// Need to save, with reset
 	int mappedId;// 0 means manual
@@ -135,7 +135,6 @@ struct EqMaster : Module {
 		
 		onReset();
 		
-		panelTheme = 0;
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
 		fftIn[0] = (float*)pffft_aligned_malloc(FFT_N * 4);
 		fftIn[1] = (float*)pffft_aligned_malloc(FFT_N * 4);
@@ -201,9 +200,6 @@ struct EqMaster : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 
-		// panelTheme
-		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
-				
 		// mappedId
 		json_object_set_new(rootJ, "mappedId", json_integer(mappedId));
 				
@@ -334,11 +330,6 @@ struct EqMaster : Module {
 
 
 	void dataFromJson(json_t *rootJ) override {
-		// panelTheme
-		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
-		if (panelThemeJ)
-			panelTheme = json_integer_value(panelThemeJ);
-
 		// mappedId
 		json_t *mappedIdJ = json_object_get(rootJ, "mappedId");
 		if (mappedIdJ)

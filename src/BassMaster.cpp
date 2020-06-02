@@ -50,7 +50,7 @@ struct BassMaster : Module {
 	static constexpr float DEFAULT_SLOPE = 0.0f;
 
 	// Need to save, no reset
-	int panelTheme;
+	// none
 	
 	// Need to save, with reset
 	PackedBytes4 miscSettings;// cc4[0] is display label colours, cc4[1] is polyStereo, cc4[2] is VU color, cc4[3] is isMasterTrack
@@ -93,8 +93,6 @@ struct BassMaster : Module {
 		mixSlewer.setRiseFall(25.0f, 25.0f);
 
 		onReset();
-		
-		panelTheme = 0;
 	}
   
 	void onReset() override {
@@ -129,9 +127,6 @@ struct BassMaster : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 		
-		// panelTheme
-		json_object_set_new(rootJ, "panelTheme", json_integer(panelTheme));
-				
 		// miscSettings
 		json_object_set_new(rootJ, "miscSettings", json_integer(miscSettings.cc1));
 				
@@ -140,11 +135,6 @@ struct BassMaster : Module {
 
 
 	void dataFromJson(json_t *rootJ) override {
-		// panelTheme
-		json_t *panelThemeJ = json_object_get(rootJ, "panelTheme");
-		if (panelThemeJ)
-			panelTheme = json_integer_value(panelThemeJ);
-
 		// miscSettings
 		json_t *miscSettingsJ = json_object_get(rootJ, "miscSettings");
 		if (miscSettingsJ)

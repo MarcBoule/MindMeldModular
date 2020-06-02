@@ -32,7 +32,6 @@ struct EqExpander : Module {
 	typedef ExpansionInterface Intf;
 	
 	
-	int panelTheme = 0;
 	int refreshCounter25;
 	int refreshCounter6;
 	bool motherPresentLeft = false;
