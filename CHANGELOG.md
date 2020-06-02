@@ -1,3 +1,11 @@
+### 1.1.6 (in development)
+
+- Added option in MixMasters to select Vol CV input response: linear-scaling (new) or fader-scaling (default)
+- Added new modules called BassMaster and BassMasterJr: dual band spatialisers for high spread and bass mono
+- Re-coded all filters in MixMasters
+- Allowed Stereo width in MixMasters to go to 200%
+
+
 ### 1.1.6 (2020-05-04)
 
 - Implemented darkened VUs when muted/faded in MixMasters and AuxSpanders
