@@ -257,8 +257,8 @@ struct BassMaster : Module {
 		}
 		
 		// bypass
-		outStereo[0] = crossfade(inputs[IN_INPUTS + 0].getVoltage(), outStereo[0], solosAndBypassSlewers.out[2]);
-		outStereo[1] = crossfade(inputs[IN_INPUTS + 1].getVoltage(), outStereo[1], solosAndBypassSlewers.out[2]);
+		outStereo[0] = crossfade(inLeft, outStereo[0], solosAndBypassSlewers.out[2]);
+		outStereo[1] = crossfade(inRight, outStereo[1], solosAndBypassSlewers.out[2]);
 
 		// VU meter (doesn't apply to Jr)
 		if (!IS_JR) {
