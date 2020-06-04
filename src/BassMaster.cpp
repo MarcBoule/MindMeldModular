@@ -48,6 +48,7 @@ struct BassMaster : Module {
 
 	// Constants
 	static constexpr float DEFAULT_SLOPE = 0.0f;
+	static constexpr float SLEW_RATE = 25.0f;
 
 	// Need to save, no reset
 	// none
@@ -88,9 +89,9 @@ struct BassMaster : Module {
 		configParam(GAIN_PARAM, -1.0f, 1.0f, 0.0f, "Master gain", " dB", 0.0f, 20.0f);// diplay params are: base, mult, offset
 		configParam(MIX_PARAM, 0.0f, 1.0f, 1.0f, "Mix", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 					
-		widthAndGainSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)		
-		solosAndBypassSlewers.setRiseFall(simd::float_4(25.0f), simd::float_4(25.0f)); // slew rate is in input-units per second (ex: V/s)	
-		mixSlewer.setRiseFall(25.0f, 25.0f);
+		widthAndGainSlewers.setRiseFall(simd::float_4(SLEW_RATE), simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)		
+		solosAndBypassSlewers.setRiseFall(simd::float_4(SLEW_RATE), simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)	
+		mixSlewer.setRiseFall(SLEW_RATE, SLEW_RATE);
 
 		onReset();
 	}
