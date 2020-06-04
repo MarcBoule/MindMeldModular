@@ -70,8 +70,8 @@ struct GlobalConst {
 	static const int 		globalAuxSendScalingExponent = 2; 
 	static constexpr float 	globalAuxSendMaxLinearGain = 4.0f; 
 	
-	static constexpr float antipopSlewFast = 125.0f;// for mute/solo
-	static constexpr float antipopSlewSlow = 125.0f;// for pan/fader
+	static constexpr float antipopSlewFast = 125.0f;// for pan/fader when linear, and mute/solo
+	static constexpr float antipopSlewSlow = 25.0f;// for pan/fader when not linear
 	static constexpr float minFadeRate = 0.1f;
 	static constexpr float minHPFCutoffFreq = 20.0f;
 	static constexpr float defHPFCutoffFreq = 13.0f;

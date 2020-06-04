@@ -142,6 +142,29 @@ struct TriggerRiseFall {
 };	
 
 
+template <typename T = float>
+struct TSlewLimiterDualRates {
+	T out = 0.f;
+	T riseFall1 = 0.f;
+	T riseFall2 = 0.f;
+
+	void reset() {
+		out = 0.f;
+	}
+
+	void setRiseFall(T riseFall1, T riseFall2) {
+		this->riseFall1 = riseFall1;
+		this->riseFall2 = riseFall2;
+	}
+	T process(T deltaTime, T in, int useSecondRate) {
+		if (useSecondRate == 0)
+			out = simd::clamp(in, out - riseFall1 * deltaTime, out + riseFall1 * deltaTime);
+		else 
+			out = simd::clamp(in, out - riseFall2 * deltaTime, out + riseFall2 * deltaTime);
+		return out;
+	}
+};
+
 struct HoldDetect {
 	long modeHoldDetect;// 0 when not detecting, downward counter when detecting
 	
