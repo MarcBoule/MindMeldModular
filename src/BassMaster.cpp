@@ -65,9 +65,9 @@ struct BassMaster : Module {
 	bool lowSolo;
 	bool highSolo;
 	LinkwitzRileyCrossover xover;
-	dsp::TSlewLimiter<simd::float_4> widthAndGainSlewers;// [0] = low width, high width, low gain, [3] = high gain
-	dsp::TSlewLimiter<simd::float_4> solosAndBypassSlewers;// [0] = low solo, high solo, bypass, [3] = master gain
-	dsp::SlewLimiter mixSlewer;
+	TSlewLimiterSingle<simd::float_4> widthAndGainSlewers;// [0] = low width, high width, low gain, [3] = high gain
+	TSlewLimiterSingle<simd::float_4> solosAndBypassSlewers;// [0] = low solo, high solo, bypass, [3] = master gain
+	SlewLimiterSingle mixSlewer;
 	float linearLowGain;
 	float linearHighGain;
 	float linearMasterGain;
@@ -96,9 +96,9 @@ struct BassMaster : Module {
 		configParam(GAIN_PARAM, -1.0f, 1.0f, 0.0f, "Master gain", " dB", 0.0f, 20.0f);// diplay params are: base, mult, offset
 		configParam(MIX_PARAM, 0.0f, 1.0f, 1.0f, "Mix", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 					
-		widthAndGainSlewers.setRiseFall(simd::float_4(SLEW_RATE), simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)		
-		solosAndBypassSlewers.setRiseFall(simd::float_4(SLEW_RATE), simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)	
-		mixSlewer.setRiseFall(SLEW_RATE, SLEW_RATE);
+		widthAndGainSlewers.setRiseFall(simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)		
+		solosAndBypassSlewers.setRiseFall(simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)	
+		mixSlewer.setRiseFall(SLEW_RATE);
 
 		onReset();
 	}

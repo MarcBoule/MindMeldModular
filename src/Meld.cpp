@@ -46,8 +46,7 @@ struct Meld : Module {
 	
 	// No need to save, with reset
 	int lastMergeInputIndex;// can be -1 when nothing connected
-	// dsp::SlewLimiter bypassSlewers[16];
-	dsp::TSlewLimiter<simd::float_4> bypassSlewersVect[4];
+	TSlewLimiterSingle<simd::float_4> bypassSlewersVect[4];
 	
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -80,11 +79,8 @@ struct Meld : Module {
 			configParam(BYPASS_PARAMS + i, 0.0f, 1.0f, 0.0f, string::f("Bypass %i", i + 1));
 		}
 		
-		// for (int i = 0; i < 16; i++) {
-			// bypassSlewers[i].setRiseFall(100.0f, 100.0f); // slew rate is in input-units per second (ex: V/s)			
-		// }
 		for (int i = 0; i < 4; i++) {
-			bypassSlewersVect[i].setRiseFall(simd::float_4(100.0f), simd::float_4(100.0f)); // slew rate is in input-units per second (ex: V/s)			
+			bypassSlewersVect[i].setRiseFall(simd::float_4(100.0f)); // slew rate is in input-units per second (ex: V/s)			
 		}
 
 		onReset();
@@ -99,7 +95,6 @@ struct Meld : Module {
 	void resetNonJson(bool recurseNonJson) {
 		calcLastMergeInputIndex();
 		for (int i = 0; i < 16; i++) {
-			//bypassSlewers[i].out = (float)bypassState[i >> 1];
 			bypassSlewersVect[i >> 2].out[i & 0x3] = (float)bypassState[i >> 1];
 		}
 	}
@@ -172,14 +167,6 @@ struct Meld : Module {
 		// here numChan can be 0		
 		outputs[OUT_OUTPUT].setChannels(numChan);// clears all and sets num chan to 1 when numChan == 0
 
-		// normal version
-		/*for (int c = 0; c < numChan; c++) {
-			bool bypass = !inputs[MERGE_INPUTS + c].isConnected() || (bypassState[c >> 1] == 1);
-			float bypassGain = bypassSlewers[c].process(args.sampleTime, bypass ? 1.0f : 0.0f);
-			float v = crossfade(inputs[MERGE_INPUTS + c].getVoltage(), inputs[POLY_INPUT].getVoltage(c), bypassGain);
-			outputs[OUT_OUTPUT].setVoltage(v, c);
-		}*/
-		
 		// simd version
 		simd::float_4 bypassVect[4];
 		for (int c = 0; c < 16; c++) {

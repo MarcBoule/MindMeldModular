@@ -26,7 +26,7 @@ struct AuxspanderAux {
 	ButterworthThirdOrder hpFilter[2];// 18dB/oct
 	ButterworthSecondOrder lpFilter[2];// 12db/oct
 	float sampleTime;
-	dsp::SlewLimiter stereoWidthSlewer;
+	SlewLimiterSingle stereoWidthSlewer;
 	public:
 
 	// no need to save, no reset
@@ -43,7 +43,7 @@ struct AuxspanderAux {
 			hpFilter[i].setParameters(true, 0.1f);
 			lpFilter[i].setParameters(false, 0.4f);
 		}
-		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
 
 

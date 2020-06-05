@@ -108,9 +108,9 @@ class TrackEq {
 
 	// dependants
 	QuattroBiQuad eqs;
-	dsp::TSlewLimiter<simd::float_4> freqSlewers;// in log(Hz)
-	dsp::TSlewLimiter<simd::float_4> gainSlewers;// in dB
-	dsp::SlewLimiter trackGainSlewer;// in dB
+	TSlewLimiterSingle<simd::float_4> freqSlewers;// in log(Hz)
+	TSlewLimiterSingle<simd::float_4> gainSlewers;// in dB
+	SlewLimiterSingle trackGainSlewer;// in dB
 	
 	
 	public:
@@ -120,9 +120,9 @@ class TrackEq {
 		bandTypes[1] = QuattroBiQuad::PEAK;
 		bandTypes[2] = QuattroBiQuad::PEAK;
 		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first init() will call setLowPeak()
-		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz), simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
-		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb), simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
-		trackGainSlewer.setRiseFall(antipopSlewDb, antipopSlewDb);
+		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
+		trackGainSlewer.setRiseFall(antipopSlewDb);
 	}
 	
 	void init(int _trackNum, float _sampleRate, uint32_t *_cvConnected) {

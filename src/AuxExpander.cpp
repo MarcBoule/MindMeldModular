@@ -88,7 +88,7 @@ struct AuxExpander : Module {
 	bool indivGroupSendCvConnected;
 	float globalRetPansWithCV[4];
 	bool globalRetPansCvConnected;
-	dsp::TSlewLimiter<simd::float_4> sendMuteSlewers[N_TRK / 4 + 1];
+	TSlewLimiterSingle<simd::float_4> sendMuteSlewers[N_TRK / 4 + 1];
 	simd::float_4 trackSendVcaGains[N_TRK];
 	simd::float_4 groupSendVcaGains[N_GRP];
 	
@@ -193,7 +193,7 @@ struct AuxExpander : Module {
 		directOutsAndStereoPanModes.cc1 = 0;
 		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			trackDispColsLocal[i].cc1 = 0;
-			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalConst::antipopSlewFast), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 		}
 		for (int i = 0; i < N_TRK; i++) {
 			trackSendVcaGains[i] = simd::float_4::zero();

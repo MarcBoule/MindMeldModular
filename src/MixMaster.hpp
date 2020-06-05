@@ -410,7 +410,7 @@ struct MixerMaster {
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	public:
 	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
-	dsp::TSlewLimiter<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
+	TSlewLimiterSingle<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	private:
 	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
 	public:
@@ -438,7 +438,7 @@ struct MixerMaster {
 		inChain = &_inputs[CHAIN_INPUTS];
 		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
-		chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+		chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 		dcBlockerStereo.setParameters(true, 0.1f);
 	}
 
@@ -746,7 +746,7 @@ struct MixerGroup {
 
 	// no need to save, with reset
 	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
-	dsp::SlewLimiter muteSoloGainSlewer;
+	SlewLimiterSingle muteSoloGainSlewer;
 	private:
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
@@ -794,7 +794,7 @@ struct MixerGroup {
 		taps = _taps;
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
 
 
@@ -1097,9 +1097,9 @@ struct MixerTrack {
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
 	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
-	dsp::SlewLimiter inGainSlewer;
-	dsp::SlewLimiter stereoWidthSlewer;
-	dsp::SlewLimiter muteSoloGainSlewer;
+	SlewLimiterSingle inGainSlewer;
+	SlewLimiterSingle stereoWidthSlewer;
+	SlewLimiterSingle muteSoloGainSlewer;
 	ButterworthThirdOrder hpFilter[2];// 18dB/oct
 	ButterworthSecondOrder lpFilter[2];// 12db/oct
 	float lastHpfCutoff;
@@ -1166,9 +1166,9 @@ struct MixerTrack {
 		insertOuts = _insertOuts;
 		fadeRate = &(_gInfo->fadeRates[trackNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
-		inGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
-		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		inGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setParameters(true, 0.1f);
 			lpFilter[i].setParameters(false, 0.4f);
@@ -1811,7 +1811,7 @@ struct MixerAux {
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
 	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
-	dsp::SlewLimiter muteSoloGainSlewer;
+	SlewLimiterSingle muteSoloGainSlewer;
 	float oldPan;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
 	public:
@@ -1854,7 +1854,7 @@ struct MixerAux {
 		taps = _taps;
 		panLawStereoLocal = _panLawStereoLocal;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
-		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
 
 

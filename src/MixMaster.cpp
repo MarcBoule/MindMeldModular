@@ -89,7 +89,7 @@ struct MixMaster : Module {
 	int refreshCounter8;
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	float values20[20];
-	dsp::SlewLimiter muteTrackWhenSoloAuxRetSlewer;
+	SlewLimiterSingle muteTrackWhenSoloAuxRetSlewer;
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
@@ -223,7 +223,7 @@ struct MixMaster : Module {
 			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
-		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast, GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
+		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
 		sendToMessageBus();// register by just writing data

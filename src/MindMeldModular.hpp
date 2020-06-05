@@ -120,7 +120,7 @@ struct TriggerRiseFall {
 	}	
 };	
 
-
+// struct below adapted from code by Andrew Belt in Rack/include/dsp/filter.hpp
 template <typename T = float>
 struct TSlewLimiterDualRates {
 	T out = 0.f;
@@ -143,6 +143,26 @@ struct TSlewLimiterDualRates {
 		return out;
 	}
 };
+
+// struct below adapted from code by Andrew Belt in Rack/include/dsp/filter.hpp
+template <typename T = float>
+struct TSlewLimiterSingle {
+	T out = 0.f;
+	T riseFall = 0.f;
+
+	void reset() {
+		out = 0.f;
+	}
+
+	void setRiseFall(T riseFall) {
+		this->riseFall = riseFall;
+	}
+	T process(T deltaTime, T in) {
+		out = simd::clamp(in, out - riseFall * deltaTime, out + riseFall * deltaTime);
+		return out;
+	}
+};
+typedef TSlewLimiterSingle<> SlewLimiterSingle;
 
 struct HoldDetect {
 	long modeHoldDetect;// 0 when not detecting, downward counter when detecting
