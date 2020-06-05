@@ -15,9 +15,28 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
-// Component offset constants
 
-// none
+// Display (label) colors
+static const int numDispThemes = 7;
+static const NVGcolor DISP_COLORS[numDispThemes] = {
+	nvgRGB(0xff, 0xd7, 0x14),// yellow
+	nvgRGB(240, 240, 240),// light-gray			
+	nvgRGB(140, 235, 107),// green
+	nvgRGB(102, 245, 207),// aqua
+	nvgRGB(102, 207, 245),// cyan
+	nvgRGB(102, 183, 245),// blue
+	nvgRGB(177, 107, 235)// purple
+};
+static const std::string dispColorNames[numDispThemes + 1] = {
+			"Yellow (default)",
+			"Light-grey",
+			"Green",
+			"Aqua",
+			"Cyan",
+			"Blue",
+			"Purple",
+			"Set per track"
+		};
 
 
 
@@ -233,6 +252,25 @@ struct MmKnob : SvgKnob {
 	}
 };
 
+struct MmBigKnobWhite : MmKnob {
+	MmBigKnobWhite() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
+	}
+};	
+
+struct MmBiggerKnobWhite : MmKnob {
+	MmBiggerKnobWhite() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bigger-knob-pointer.svg")));
+	}
+};	
+
+struct MmSmallKnobGrey8mm : MmKnob {
+	MmSmallKnobGrey8mm() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey8mm.svg")));
+	}
+};
+
+
 struct MmKnobWithArc : MmKnob {
 	// internal
 	NVGcolor arcColorDarker = nvgRGB(120, 120, 120);// grey
@@ -254,21 +292,63 @@ struct MmKnobWithArc : MmKnob {
 	void draw(const DrawArgs &args) override;
 };
 
-struct MmBigKnobWhite : MmKnob {
-	MmBigKnobWhite() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/big-knob-pointer.svg")));
+struct MmSmallKnobRedWithArc : MmKnobWithArc {
+	MmSmallKnobRedWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));
+		arcColor = nvgRGB(219, 65, 85);
+	}
+};
+struct MmSmallKnobRedWithArcTopCentered : MmSmallKnobRedWithArc {
+	MmSmallKnobRedWithArcTopCentered() {
+		topCentered = true;
 	}
 };	
 
-struct MmBiggerKnobWhite : MmKnob {
-	MmBiggerKnobWhite() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bigger-knob-pointer.svg")));
+struct MmSmallKnobOrangeWithArc : MmKnobWithArc {
+	MmSmallKnobOrangeWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
+		arcColor = nvgRGB(255, 127, 42);
+	}
+};
+struct MmSmallKnobOrangeWithArcTopCentered : MmSmallKnobOrangeWithArc {
+	MmSmallKnobOrangeWithArcTopCentered() {
+		topCentered = true;
 	}
 };	
 
-struct MmSmallKnobGrey8mm : MmKnob {
-	MmSmallKnobGrey8mm() {
+struct MmSmallKnobBlueWithArc : MmKnobWithArc {
+	MmSmallKnobBlueWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
+		arcColor = nvgRGB(113, 160, 255);
+	}
+};
+struct MmSmallKnobBlueWithArcTopCentered : MmSmallKnobBlueWithArc {
+	MmSmallKnobBlueWithArcTopCentered() {
+		topCentered = true;
+	}
+};	
+
+struct MmSmallKnobPurpleWithArc : MmKnobWithArc {
+	MmSmallKnobPurpleWithArc() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
+		arcColor = nvgRGB(163, 93, 209);
+	}
+};
+struct MmSmallKnobPurpleWithArcTopCentered : MmSmallKnobPurpleWithArc {
+	MmSmallKnobPurpleWithArcTopCentered() {
+		topCentered = true;
+	}
+};	
+
+struct Mm8mmKnobGrayWithArc : MmKnobWithArc {
+	Mm8mmKnobGrayWithArc() {
 		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey8mm.svg")));
+		arcColor = DISP_COLORS[1];// yellow knob by default
+	}
+};
+struct Mm8mmKnobGrayWithArcTopCentered : Mm8mmKnobGrayWithArc {
+	Mm8mmKnobGrayWithArcTopCentered() {
+		topCentered = true;
 	}
 };
 

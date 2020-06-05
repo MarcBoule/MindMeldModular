@@ -397,54 +397,6 @@ struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 	}
 };
 
-struct MmSmallKnobRedWithArc : MmKnobWithArc {
-	MmSmallKnobRedWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));
-		arcColor = nvgRGB(219, 65, 85);
-	}
-};
-struct MmSmallKnobRedWithArcTopCentered : MmSmallKnobRedWithArc {
-	MmSmallKnobRedWithArcTopCentered() {
-		topCentered = true;
-	}
-};	
-
-struct MmSmallKnobOrangeWithArc : MmKnobWithArc {
-	MmSmallKnobOrangeWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
-		arcColor = nvgRGB(255, 127, 42);
-	}
-};
-struct MmSmallKnobOrangeWithArcTopCentered : MmSmallKnobOrangeWithArc {
-	MmSmallKnobOrangeWithArcTopCentered() {
-		topCentered = true;
-	}
-};	
-
-struct MmSmallKnobBlueWithArc : MmKnobWithArc {
-	MmSmallKnobBlueWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
-		arcColor = nvgRGB(113, 160, 255);
-	}
-};
-struct MmSmallKnobBlueWithArcTopCentered : MmSmallKnobBlueWithArc {
-	MmSmallKnobBlueWithArcTopCentered() {
-		topCentered = true;
-	}
-};	
-
-struct MmSmallKnobPurpleWithArc : MmKnobWithArc {
-	MmSmallKnobPurpleWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
-		arcColor = nvgRGB(163, 93, 209);
-	}
-};
-struct MmSmallKnobPurpleWithArcTopCentered : MmSmallKnobPurpleWithArc {
-	MmSmallKnobPurpleWithArcTopCentered() {
-		topCentered = true;
-	}
-};	
-
 
 
 // Editable track, group and aux displays base struct

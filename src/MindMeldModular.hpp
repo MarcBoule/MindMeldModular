@@ -39,28 +39,7 @@ extern Model *modelBassMasterJr;
 
 // General constants
 
-// Display (label) colors
-static const int numDispThemes = 7;
-static const NVGcolor DISP_COLORS[numDispThemes] = {
-	nvgRGB(0xff, 0xd7, 0x14),// yellow
-	nvgRGB(240, 240, 240),// light-gray			
-	nvgRGB(140, 235, 107),// green
-	nvgRGB(102, 245, 207),// aqua
-	nvgRGB(102, 207, 245),// cyan
-	nvgRGB(102, 183, 245),// blue
-	nvgRGB(177, 107, 235)// purple
-};
-static const std::string dispColorNames[numDispThemes + 1] = {
-			"Yellow (default)",
-			"Light-grey",
-			"Green",
-			"Aqua",
-			"Cyan",
-			"Blue",
-			"Purple",
-			"Set per track"
-		};
-
+// none
 
 // General objects
 
