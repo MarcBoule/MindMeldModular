@@ -2,7 +2,7 @@ Modules for [VCV Rack](https://vcvrack.com), available in the [plugin library](h
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 1.1.6
+Version 1.1.7
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
@@ -24,6 +24,8 @@ The following modules are part of the MindMeld module pack ([user manual](https:
 * [EqSpander](#eqspander): CV expander for EqMaster.
 
 * [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
+
+* [BassMaster](#bassmaster): Dual band spatialiser for high spread and bass mono.
 
 
 ## MixMaster <a id="mixmaster"></a>
@@ -96,6 +98,13 @@ Expander module to add CV control over most parameters in the EqMaster. All jack
 ![IM](res/img/MeldUnmeld.png)
 
 Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green).
+
+
+## BassMaster <a id="bassmaster"></a>
+
+![IM](res/img/BassMaster.png)
+
+Dual band stereo width controllers for bass mono and high spread. Both modules have the same core functionality; however the Jr version omits the mix and master gain controls, the VU meter and the width CV inputs.
 
 
 # Videos <a id="videos"></a>
