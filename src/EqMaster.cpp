@@ -28,10 +28,9 @@ struct EqMaster : Module {
 		NUM_LIGHTS
 	};
 
-	typedef ExpansionInterface Intf;
 	
 	// Expander
-	float expMessages[2][Intf::MFE_NUM_VALUES] = {};// messages from eq-expander, see enum in EqCommon.hpp
+	MfeExpInterface expMessages[2];// messages from eq-expander, see enum in EqCommon.hpp
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
@@ -114,10 +113,10 @@ struct EqMaster : Module {
 	EqMaster() : worker(&EqMaster::worker_thread, this) {
 		config(NUM_EQ_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
-		rightExpander.producerMessage = expMessages[0];
-		rightExpander.consumerMessage = expMessages[1];
-		leftExpander.producerMessage = expMessages[0];
-		leftExpander.consumerMessage = expMessages[1];
+		rightExpander.producerMessage = &expMessages[0];
+		rightExpander.consumerMessage = &expMessages[1];
+		leftExpander.producerMessage = &expMessages[0];
+		leftExpander.consumerMessage = &expMessages[1];
 
 		// Track knob
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
@@ -616,25 +615,25 @@ struct EqMaster : Module {
 		
 		// From Eq-Expander
 		if (expPresentRight || expPresentLeft) {
-			float *messagesFromExpander = expPresentRight ? // use only when expander present
-											(float*)rightExpander.consumerMessage :
-											(float*)leftExpander.consumerMessage;
+			MfeExpInterface *messagesFromExpander = expPresentRight ? // use only when expander present
+											(MfeExpInterface*)rightExpander.consumerMessage :
+											(MfeExpInterface*)leftExpander.consumerMessage;
 			
 			// track band values
-			int index6 = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_CVS_INDEX6]), 0, 5);
-			int cvConnectedSubset = (int)(messagesFromExpander[Intf::MFE_TRACK_CVS_CONNECTED]);
+			int index6 = clamp(messagesFromExpander->trackCvsIndex6, 0, 5);
+			int cvConnectedSubset = messagesFromExpander->trackCvsConnected;
 			for (int i = 0; i < 4; i++) {
 				if ((cvConnectedSubset & (1 << i)) != 0) {
 					int bandTrkIndex = (index6 << 2) + i;
-					processTrackBandCvs(bandTrkIndex, selectedTrack, &messagesFromExpander[Intf::MFE_TRACK_CVS + 16 * i]);
+					processTrackBandCvs(bandTrkIndex, selectedTrack, &(messagesFromExpander->trackCvs[16 * i]));
 				}
 			}
 			cvConnected &= ~(0xF << (index6 << 2));// clear all connected bits for current subset
 			cvConnected |= (cvConnectedSubset << (index6 << 2));// set relevant connected bits for current subset
  
 			// track enables, each track refreshed at fs / 25
-			int enableTrkIndex = clamp((int)(messagesFromExpander[Intf::MFE_TRACK_ENABLE_INDEX]), 0, 24);
-			processTrackEnableCvs(enableTrkIndex, selectedTrack, messagesFromExpander[Intf::MFE_TRACK_ENABLE]);
+			int enableTrkIndex = clamp(messagesFromExpander->trackEnableIndex, 0, 24);
+			processTrackEnableCvs(enableTrkIndex, selectedTrack, messagesFromExpander->trackEnable);
 		}
 		else {
 			cvConnected = 0x000000;

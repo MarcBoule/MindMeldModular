@@ -13,16 +13,14 @@
 #include "dsp/QuattroBiQuad.hpp"
 
 
-struct ExpansionInterface {
-	enum MotherFromExpIds { // for messages from expander to mother
-		ENUMS(MFE_TRACK_CVS, 16 * 4), // room for 4 poly cables
-		MFE_TRACK_CVS_CONNECTED,// only 4 lsbits used, so float number is from 0 to 15 and can be easily cast to uint32_t in eqmaster
-		MFE_TRACK_CVS_INDEX6,
-		MFE_TRACK_ENABLE, // one of the 24+1 enable cvs
-		MFE_TRACK_ENABLE_INDEX,// 
-		MFE_NUM_VALUES
-	};	
+struct MfeExpInterface {// for messages to mother from expander
+	int trackCvsIndex6 = 0;
+	int trackEnableIndex = 0;
+	int trackCvsConnected = 0;// only 4 lsbits used
+	float trackCvs[16 * 4] = {0.0f};// room for 4 poly cables
+	float trackEnable = 0.0f;// one of the 24+1 enable cvs
 };
+	
 
 enum EqParamIds {
 	TRACK_PARAM,
