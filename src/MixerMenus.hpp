@@ -455,7 +455,7 @@ struct LinCvItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		LinCvSubItem *lin0Item = createMenuItem<LinCvSubItem>("Fader Control", CHECKMARK(*linearVolCvInputsSrc == 0));
+		LinCvSubItem *lin0Item = createMenuItem<LinCvSubItem>("Fader control", CHECKMARK(*linearVolCvInputsSrc == 0));
 		lin0Item->linearVolCvInputsSrc = linearVolCvInputsSrc;
 		menu->addChild(lin0Item);
 
