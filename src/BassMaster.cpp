@@ -453,7 +453,7 @@ struct BassMasterWidget : ModuleWidget {
  
 		// low width
 		MmKnobWithArc *lowWidthKnob;
-		addParam(lowWidthKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(7.5, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM));
+		addParam(lowWidthKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(7.5, 79.40 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM));
 		if (module) {
 			lowWidthKnob->paramWithCV = &(module->lowWidth);
 			lowWidthKnob->paramCvConnected = &(module->paramCvLowWidthConnected);
@@ -463,7 +463,7 @@ struct BassMasterWidget : ModuleWidget {
 		
 		// low gain
 		MmKnobWithArc *lowGainKnob;
-		addParam(lowGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM));
+		addParam(lowGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(22.9, 79.40 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM));
 		if (module) {
 			lowGainKnob->detailsShowSrc = &(module->detailsShow);
 			lowGainKnob->cloakedModeSrc = &(module->cloakedMode);
@@ -489,7 +489,7 @@ struct BassMasterWidget : ModuleWidget {
 						
 			// master gain
 			MmKnobWithArc *masterGainKnob;
-			addParam(masterGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM));
+			addParam(masterGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(37.2, 66.09)), module, BassMaster<IS_JR>::GAIN_PARAM));
 			if (module) {
 				masterGainKnob->detailsShowSrc = &(module->detailsShow);
 				masterGainKnob->cloakedModeSrc = &(module->cloakedMode);
@@ -497,7 +497,7 @@ struct BassMasterWidget : ModuleWidget {
 			
 			// mix knob
 			MmKnobWithArc *mixKnob;
-			addParam(mixKnob = createParamCentered<Mm8mmKnobGrayWithArc>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM));
+			addParam(mixKnob = createParamCentered<Mm8mmKnobGrayWithArc>(mm2px(Vec(37.2, 82.35)), module, BassMaster<IS_JR>::MIX_PARAM));
 			if (module) {
 				mixKnob->detailsShowSrc = &(module->detailsShow);
 				mixKnob->cloakedModeSrc = &(module->cloakedMode);
