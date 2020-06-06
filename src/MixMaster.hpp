@@ -409,7 +409,7 @@ struct MixerMaster {
 	simd::float_4 chainGainsAndMute;// 0=L, 1=R, 2=mute
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	public:
-	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
+	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
 	TSlewLimiterSingle<simd::float_4> chainGainAndMuteSlewers;// chain gains are [0] and [1], mute is [2], unused is [3]
 	private:
 	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
@@ -437,7 +437,7 @@ struct MixerMaster {
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
 		inVol = &_inputs[GRPM_MUTESOLO_INPUT];
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 		dcBlockerStereo.setParameters(true, 0.1f);
 	}
@@ -640,6 +640,9 @@ struct MixerMaster {
 			if (inVol->isConnected() && inVol->getChannels() >= (N_GRP * 2 + 4)) {
 				volCv = clamp(inVol->getVoltage(N_GRP * 2 + 4 - 1) * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
+				if (gInfo->linearVolCvInputs == 0) {
+					fader = paramWithCV;
+				}			
 			}
 			else {
 				volCv = 1.0f;
@@ -647,9 +650,6 @@ struct MixerMaster {
 			}
 
 			// scaling
-			if (gInfo->linearVolCvInputs == 0) {
-				fader *= volCv;
-			}			
 			fader = std::pow(fader, GlobalConst::masterFaderScalingExponent);
 			if (gInfo->linearVolCvInputs != 0) {
 				fader *= volCv;
@@ -667,7 +667,7 @@ struct MixerMaster {
 		
 		// Calc master gain with slewer
 		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix, gInfo->linearVolCvInputs);
+			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
 		}
 
 		// Calc gains for chain input (with antipop when signal connect, impossible for disconnect)
@@ -745,7 +745,7 @@ struct MixerGroup {
 	float panCvLevel;// 0 to 1.0f
 
 	// no need to save, with reset
-	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
+	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
 	SlewLimiterSingle muteSoloGainSlewer;
 	private:
 	simd::float_4 panMatrix;
@@ -793,7 +793,7 @@ struct MixerGroup {
 		groupName = _groupName;
 		taps = _taps;
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
 
@@ -961,6 +961,9 @@ struct MixerGroup {
 			if (inVol->isConnected()) {
 				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
+				if (gInfo->linearVolCvInputs == 0) {
+					fader = paramWithCV;
+				}
 			}
 			else {
 				volCv = 1.0f;
@@ -1017,9 +1020,6 @@ struct MixerGroup {
 				oldPan = pan;
 			}
 			// calc ** gainMatrix **
-			if (gInfo->linearVolCvInputs == 0) {
-				fader *= volCv;
-			}
 			fader = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
 			if (gInfo->linearVolCvInputs != 0) {
 				fader *= volCv;
@@ -1029,7 +1029,7 @@ struct MixerGroup {
 	
 		// Calc group gains with slewer
 		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix, gInfo->linearVolCvInputs);
+			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
 		}
 		
 		// Apply gainMatrixSlewed
@@ -1096,7 +1096,7 @@ struct MixerTrack {
 	float inGain;
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
-	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
+	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
 	SlewLimiterSingle inGainSlewer;
 	SlewLimiterSingle stereoWidthSlewer;
 	SlewLimiterSingle muteSoloGainSlewer;
@@ -1165,7 +1165,7 @@ struct MixerTrack {
 		groupTaps = _groupTaps;
 		insertOuts = _insertOuts;
 		fadeRate = &(_gInfo->fadeRates[trackNum]);
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		inGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
@@ -1530,6 +1530,9 @@ struct MixerTrack {
 			if (inVol->isConnected()) {
 				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
+				if (gInfo->linearVolCvInputs == 0) {
+					fader = paramWithCV;
+				}
 			}
 			else {
 				volCv = 1.0f;
@@ -1737,9 +1740,6 @@ struct MixerTrack {
 				oldPan = pan;
 			}
 			// calc ** gainMatrix **
-			if (gInfo->linearVolCvInputs == 0) {
-				fader *= volCv;
-			}
 			fader = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
 			if (gInfo->linearVolCvInputs != 0) {
 				fader *= volCv;
@@ -1749,7 +1749,7 @@ struct MixerTrack {
 		
 		// Apply gainMatrix
 		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix, gInfo->linearVolCvInputs);
+			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
 		}
 		simd::float_4 sigs(taps[N_TRK * 2 + 0], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 1], taps[N_TRK * 2 + 0]);// L, R, RinL, LinR
 		sigs *= gainMatrixSlewers.out;
@@ -1810,7 +1810,7 @@ struct MixerAux {
 	private:
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
-	TSlewLimiterDualRates<simd::float_4> gainMatrixSlewers;
+	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
 	SlewLimiterSingle muteSoloGainSlewer;
 	float oldPan;
 	PackedBytes4 oldPanSignature;// [0] is pan stereo local, [1] is pan stereo global, [2] is pan mono global
@@ -1853,7 +1853,7 @@ struct MixerAux {
 		fadeProfile = &_values20[auxNum + 16];
 		taps = _taps;
 		panLawStereoLocal = _panLawStereoLocal;
-		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow), simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
+		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 	}
 
@@ -1907,8 +1907,11 @@ struct MixerAux {
 		soloGain = calcSoloGain();
 	}
 	
-	void process(float *mix, float *auxRetFadePan, bool eco) {// mixer aux
-		// auxRetFadePan[0] points fader value, auxRetFadePan[4] points pan value, all indexed for a given aux
+	void process(float *mix, float *auxRetFadePanFadecv, bool eco) {// mixer aux
+		// auxRetFadePan[0] points fader value, 
+		// auxRetFadePan[4] points pan value, 
+		// auxRetFadePan[8] points fader cv value, 
+		// all indexed for a given aux
 		
 
 		// Tap[0],[1]: pre-insert (aux inputs)
@@ -1950,7 +1953,7 @@ struct MixerAux {
 
 
 			// calc ** panMatrix **
-			float pan = auxRetFadePan[4];// cv input and clamping already done in auxspander
+			float pan = auxRetFadePanFadecv[4];// cv input and clamping already done in auxspander
 			if (pan != oldPan) {
 				panMatrix = 0.0f;// L, R, RinL, LinR (used for fader-pan block)
 				if (pan == 0.5f) {
@@ -1992,12 +1995,15 @@ struct MixerAux {
 				oldPan = pan;
 			}
 			// calc ** gainMatrix **
-			gainMatrix = panMatrix * auxRetFadePan[0];
+			gainMatrix = panMatrix * auxRetFadePanFadecv[0];
+			if (gInfo->linearVolCvInputs != 0) {
+				gainMatrix *= auxRetFadePanFadecv[8];
+			}	
 		}
 		
 		// Calc gainMatrixSlewed
 		if (movemask(gainMatrix == gainMatrixSlewers.out) != 0xF) {// movemask returns 0xF when 4 floats are equal
-			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix, gInfo->linearVolCvInputs);
+			gainMatrixSlewers.process(gInfo->sampleTime, gainMatrix);
 		}
 		
 		// Apply gainMatrixSlewed

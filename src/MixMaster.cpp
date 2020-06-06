@@ -100,7 +100,7 @@ struct MixMaster : Module {
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
-	float *auxRetFadePan;// index into correct page of messages from expander (avoid having separate buffers)
+	float *auxRetFadePanFadecv;// index into correct page of messages from expander (avoid having separate buffers)
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
@@ -356,7 +356,7 @@ struct MixMaster : Module {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
 			auxReturns = &messagesFromExpander[Intf::MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
-			auxRetFadePan = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 8 values of the return faders and pan knobs
+			auxRetFadePanFadecv = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 12 values of the return faders and pan knobs and cvs for faders
 						
 			int value20i = clamp((int)(messagesFromExpander[Intf::MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
 			values20[value20i] = messagesFromExpander[Intf::MFA_VALUE20];
@@ -433,7 +433,7 @@ struct MixMaster : Module {
 				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
-					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePan[auxi], ecoStagger3);// stagger 3
+					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePanFadecv[auxi], ecoStagger3);// stagger 3
 					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
 						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
@@ -461,7 +461,7 @@ struct MixMaster : Module {
 			bool ecoStagger3 = (gInfo.ecoMode == 0 || ecoCode == 2);
 			for (int auxi = 0; auxi < 4; auxi++) {
 				if (aux[auxi].getAuxGroup() == 0) {
-					aux[auxi].process(mix, &auxRetFadePan[auxi], ecoStagger3);// stagger 3
+					aux[auxi].process(mix, &auxRetFadePanFadecv[auxi], ecoStagger3);// stagger 3
 				}
 			}
 		}

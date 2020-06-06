@@ -49,7 +49,7 @@ struct BassMaster : Module {
 	// Constants
 	static constexpr float DEFAULT_SLOPE = 0.0f;
 	static constexpr float SLEW_RATE = 25.0f;
-	bool paramCvConnected = true;
+	int8_t cloakedMode = 0x0;
 	int8_t detailsShow = 0x3;
 
 
@@ -75,10 +75,10 @@ struct BassMaster : Module {
 	
 	// No need to save, no reset
 	RefreshCounter refresh;
+	bool paramCvLowWidthConnected = false;
+	bool paramCvHighWidthConnected = false;
 	float lowWidth = 1.0f;
 	float highWidth = 1.0f;
-	int8_t cloakedModeLow = 0x3;// cloak by default, Senior will uncloak as needed
-	int8_t cloakedModeHigh = 0x3;// cloak by default, Senior will uncloak as needed
 	
 	
 	BassMaster() {
@@ -221,17 +221,17 @@ struct BassMaster : Module {
 		if (!IS_JR) {
 			if (inputs[LOW_WIDTH_INPUT].isConnected()) {
 				lowWidth = clamp(lowWidth + inputs[LOW_WIDTH_INPUT].getVoltage() * 0.2f, 0.0f, 2.0f);
-				cloakedModeLow = 0x0;
+				paramCvLowWidthConnected = true;
 			}
 			else {
-				cloakedModeLow = 0x3;
+				paramCvLowWidthConnected = false;
 			}
 			if (inputs[HIGH_WIDTH_INPUT].isConnected()) {
 				highWidth = clamp(highWidth + inputs[HIGH_WIDTH_INPUT].getVoltage() * 0.2f, 0.0f, 2.0f);
-				cloakedModeHigh = 0x0;
+				paramCvHighWidthConnected = true;
 			}
 			else {
-				cloakedModeHigh = 0x3;
+				paramCvHighWidthConnected = false;
 			}
 		}
 		
@@ -433,30 +433,42 @@ struct BassMasterWidget : ModuleWidget {
 		// bypass button
 		addParam(createParamCentered<MmBypassRoundButton>(mm2px(Vec(15.24, 95.4 + 1)), module, BassMaster<IS_JR>::BYPASS_PARAM));
 
-		// high width and gain
+		// high width
 		MmKnobWithArc *highWidthKnob;
 		addParam(highWidthKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM));
 		if (module) {
 			highWidthKnob->paramWithCV = &(module->highWidth);
-			highWidthKnob->paramCvConnected = &(module->paramCvConnected);
+			highWidthKnob->paramCvConnected = &(module->paramCvHighWidthConnected);
 			highWidthKnob->detailsShowSrc = &(module->detailsShow);
-			highWidthKnob->cloakedModeSrc = &(module->cloakedModeHigh);
+			highWidthKnob->cloakedModeSrc = &(module->cloakedMode);
 		}
-		// addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM));
-		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(22.9, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_GAIN_PARAM));
+		
+		// high gain
+		MmKnobWithArc *highGainKnob;
+		addParam(highGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(22.9, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_GAIN_PARAM));
+		if (module) {
+			highGainKnob->detailsShowSrc = &(module->detailsShow);
+			highGainKnob->cloakedModeSrc = &(module->cloakedMode);
+		}
  
-		// low width and gain
+		// low width
 		MmKnobWithArc *lowWidthKnob;
 		addParam(lowWidthKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(7.5, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM));
 		if (module) {
 			lowWidthKnob->paramWithCV = &(module->lowWidth);
-			lowWidthKnob->paramCvConnected = &(module->paramCvConnected);
+			lowWidthKnob->paramCvConnected = &(module->paramCvLowWidthConnected);
 			lowWidthKnob->detailsShowSrc = &(module->detailsShow);
-			lowWidthKnob->cloakedModeSrc = &(module->cloakedModeLow);
+			lowWidthKnob->cloakedModeSrc = &(module->cloakedMode);
 		}
-		// addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(7.5, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM));
-		addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM));
- 
+		
+		// low gain
+		MmKnobWithArc *lowGainKnob;
+		addParam(lowGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(22.9, 79.46 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM));
+		if (module) {
+			lowGainKnob->detailsShowSrc = &(module->detailsShow);
+			lowGainKnob->cloakedModeSrc = &(module->cloakedMode);
+		}
+
 		// inputs
 		addInput(createInputCentered<MmPort>(mm2px(Vec(6.81, 102.03 + 1)), module, BassMaster<IS_JR>::IN_INPUTS + 0));
 		addInput(createInputCentered<MmPort>(mm2px(Vec(6.81, 111.45 + 1)), module, BassMaster<IS_JR>::IN_INPUTS + 1));
@@ -475,9 +487,21 @@ struct BassMasterWidget : ModuleWidget {
 				addChild(newVU);
 			}
 						
-			// master gain and mix knobs
-			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM));
-			addParam(createParamCentered<MmSmallKnobGrey8mm>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM));
+			// master gain
+			MmKnobWithArc *masterGainKnob;
+			addParam(masterGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(37.2, 66.22)), module, BassMaster<IS_JR>::GAIN_PARAM));
+			if (module) {
+				masterGainKnob->detailsShowSrc = &(module->detailsShow);
+				masterGainKnob->cloakedModeSrc = &(module->cloakedMode);
+			}
+			
+			// mix knob
+			MmKnobWithArc *mixKnob;
+			addParam(mixKnob = createParamCentered<Mm8mmKnobGrayWithArc>(mm2px(Vec(37.2, 82.48)), module, BassMaster<IS_JR>::MIX_PARAM));
+			if (module) {
+				mixKnob->detailsShowSrc = &(module->detailsShow);
+				mixKnob->cloakedModeSrc = &(module->cloakedMode);
+			}
 			
 			// width CV inputs
 			addInput(createInputCentered<MmPort>(mm2px(Vec(36.4, 102.03 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_INPUT));

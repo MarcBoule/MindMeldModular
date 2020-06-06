@@ -892,12 +892,12 @@ struct TrackKnob : MmBigKnobWhite {
 	}	
 };
 
-struct TrackGainKnob : MmSmallKnobGrey8mm {
+struct TrackGainKnob : Mm8mmKnobGrayWithArcTopCentered {
 	Param* trackParamSrc;
 	TrackEq* trackEqsSrc;
 	
 	void onChange(const event::Change& e) override {
-		MmSmallKnobGrey8mm::onChange(e);
+		Mm8mmKnobGrayWithArcTopCentered::onChange(e);
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue());

@@ -57,7 +57,7 @@ void MmKnobWithArc::draw(const DrawArgs &args) {
 			drawArc(args, aBase, aParam, &arcColorDarker);
 		}
 		// cv
-		if ((*paramCvConnected) && paramWithCV && showMask != 0) {
+		if (paramWithCV && (*paramCvConnected) && showMask != 0) {
 			if (aParam == -10000.0f) {
 				aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
 			}

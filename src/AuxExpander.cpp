@@ -600,7 +600,7 @@ struct AuxExpander : Module {
 						(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getChannels() >= (8 + i + 1));
 				float volCv;
 				if (isConnected) {
-					volCv = clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);//(multiplying, pre-scaling)
+					volCv = clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);
 					paramRetFaderWithCv[i] = fader * volCv;
 					if (linearVolCvInputs == 0) {
 						fader = paramRetFaderWithCv[i];
@@ -612,11 +612,8 @@ struct AuxExpander : Module {
 				}
 
 				fader = std::pow(fader, GlobalConst::globalAuxReturnScalingExponent);// scaling
-				if (linearVolCvInputs != 0) {
-					fader *= volCv;
-				}
-				
 				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = fader;
+				messagesToMother[Intf::MFA_AUX_RET_FADER_CV + i] = volCv;// send back to mother in case linearVolCvInputs!=0
 			}
 				
 			refreshCounter20++;

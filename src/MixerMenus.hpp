@@ -455,11 +455,11 @@ struct LinCvItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		LinCvSubItem *lin0Item = createMenuItem<LinCvSubItem>("Fader scaling (default)", CHECKMARK(*linearVolCvInputsSrc == 0));
+		LinCvSubItem *lin0Item = createMenuItem<LinCvSubItem>("Fader Control", CHECKMARK(*linearVolCvInputsSrc == 0));
 		lin0Item->linearVolCvInputsSrc = linearVolCvInputsSrc;
 		menu->addChild(lin0Item);
 
-		LinCvSubItem *lin1Item = createMenuItem<LinCvSubItem>("Linear", CHECKMARK(*linearVolCvInputsSrc == 1));
+		LinCvSubItem *lin1Item = createMenuItem<LinCvSubItem>("Linear VCA", CHECKMARK(*linearVolCvInputsSrc == 1));
 		lin1Item->linearVolCvInputsSrc = linearVolCvInputsSrc;
 		menu->addChild(lin1Item);
 

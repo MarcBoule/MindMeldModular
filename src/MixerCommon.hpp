@@ -48,6 +48,7 @@ struct ExpansionInterface {
 		MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
 		ENUMS(MFA_AUX_RET_FADER, 4),
 		ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
+		ENUMS(MFA_AUX_RET_FADER_CV, 4),// must be contiguous with MFA_AUX_RET_PAN
 		MFA_UPDATE_SLOW, // (aux names, directOutsModeLocalAux, panLawStereoLocalAux, vu and display colors)
 		ENUMS(AFM_AUX_NAMES, 4),
 		AFM_AUX_VUCOL,
