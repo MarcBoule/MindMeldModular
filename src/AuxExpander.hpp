@@ -56,6 +56,10 @@ struct AuxspanderAux {
 
 	void resetNonJson() {
 		stereo = false;
+		for (int i = 0; i < 2; i++) {
+			hpFilter[i].reset();
+			lpFilter[i].reset();
+		}
 		sampleTime = APP->engine->getSampleTime();
 		stereoWidthSlewer.reset();
 	}
