@@ -122,4 +122,4 @@ Dual band stereo width controllers for bass mono and high spread. Both modules h
 * Wouter Spekkink, [Street lights](https://www.youtube.com/watch?v=QpDp3RGGcBg)
 * Alasdair Moons, [Hardbeatz - VCV Rack Voyage](https://www.youtube.com/watch?v=N7RGjp2ydIk)
 * Richard Squires, [Squelch](https://www.youtube.com/watch?v=Som0uU9kzxw)
-
+* Nick Dutton, [I Feel Love By Donna Summer (Cover)](https://www.youtube.com/watch?v=skfb8ZFm0yA)

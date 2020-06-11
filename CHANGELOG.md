@@ -1,3 +1,8 @@
+### 1.1.8 (in development)
+
+- Fixed initialization bug in AuxSpander filters
+
+
 ### 1.1.7 (2020-06-07)
 
 - Added new modules called BassMaster and BassMasterJr: dual band spatialisers for high spread and bass mono
