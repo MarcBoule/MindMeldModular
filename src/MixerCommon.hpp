@@ -130,6 +130,7 @@ struct TrackSettingsCpBuffer {
 	int8_t polyStereo;
 	float panCvLevel;
 	float stereoWidth;
+	int8_t invertInput;
 	bool linkedFader;
 
 	// second level of copy paste (for track re-ordering)

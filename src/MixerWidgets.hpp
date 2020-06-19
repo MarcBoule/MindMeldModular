@@ -594,6 +594,10 @@ struct TrackDisplay : EditableDisplayBase {
 			trkSetLabel->text = "Track settings: " + std::string(srcTrack->trackName, 4);
 			menu->addChild(trkSetLabel);
 			
+			InvertInputItem *invInItem = createMenuItem<InvertInputItem>("Invert input", CHECKMARK(srcTrack->invertInput != 0));
+			invInItem->invertInputSrc = &(srcTrack->invertInput);
+			menu->addChild(invInItem);
+
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(&(srcTrack->gainAdjust));
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);

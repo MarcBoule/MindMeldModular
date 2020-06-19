@@ -1087,6 +1087,7 @@ struct MixerTrack {
 	int8_t polyStereo;// 0 = off (default), 1 = on
 	float panCvLevel;// 0 to 1.0f
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo, 2 is 200% stereo widening
+	int8_t invertInput;// 0 = off (default), 1 = on
 
 	// no need to save, with reset
 
@@ -1189,6 +1190,7 @@ struct MixerTrack {
 		polyStereo = 0;
 		panCvLevel = 1.0f;
 		stereoWidth = 1.0f;
+		invertInput = 0;
 		resetNonJson();
 	}
 
@@ -1265,6 +1267,9 @@ struct MixerTrack {
 
 		// stereoWidth
 		json_object_set_new(rootJ, (ids + "stereoWidth").c_str(), json_real(stereoWidth));
+		
+		// invertInput
+		json_object_set_new(rootJ, (ids + "invertInput").c_str(), json_integer(invertInput));
 	}
 
 
@@ -1342,6 +1347,11 @@ struct MixerTrack {
 		if (stereoWidthJ)
 			stereoWidth = json_number_value(stereoWidthJ);
 		
+		// invertInput
+		json_t *invertInputJ = json_object_get(rootJ, (ids + "invertInput").c_str());
+		if (invertInputJ)
+			invertInput = json_integer_value(invertInputJ);
+		
 		// extern must call resetNonJson()
 	}
 
@@ -1362,6 +1372,7 @@ struct MixerTrack {
 		dest->polyStereo = polyStereo;
 		dest->panCvLevel = panCvLevel;
 		dest->stereoWidth = stereoWidth;
+		dest->invertInput = invertInput;
 		dest->linkedFader = isLinked(&(gInfo->linkBitMask), trackNum);
 	}
 	void read(TrackSettingsCpBuffer *src) {
@@ -1379,6 +1390,7 @@ struct MixerTrack {
 		polyStereo = src->polyStereo;
 		panCvLevel = src->panCvLevel;
 		stereoWidth = src->stereoWidth;
+		invertInput = src->invertInput;
 		gInfo->setLinked(trackNum, src->linkedFader);
 	}
 
@@ -1487,8 +1499,11 @@ struct MixerTrack {
 			oldPanSignature.cc1 = newPanSig.cc1;
 		}
 
-		// calc ** inGain **
+		// calc ** inGain ** (with invertInput)
 		inGain = inSig[0].isConnected() ? gainAdjust : 0.0f;
+		if (invertInput != 0) {
+			inGain *= -1.0f;
+		}
 		
 		// soloGain
 		soloGain = calcSoloGain();

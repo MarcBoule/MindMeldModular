@@ -471,6 +471,14 @@ struct LinCvItem : MenuItem {
 // Track context menu
 // --------------------
 
+
+struct InvertInputItem : MenuItem {
+	int8_t *invertInputSrc;
+	void onAction(const event::Action &e) override {
+		*invertInputSrc ^= 0x1;
+	}
+};
+
 // Gain adjust menu item
 
 struct GainAdjustQuantity : Quantity {
