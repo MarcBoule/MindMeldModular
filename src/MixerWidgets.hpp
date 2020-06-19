@@ -6,9 +6,7 @@
 //***********************************************************************************************
 
 
-#ifndef MMM_MIXERWIDGETS_HPP
-#define MMM_MIXERWIDGETS_HPP
-
+#pragma once
 
 #include "MixerMenus.hpp"
 
@@ -1050,5 +1048,3 @@ struct MmSmallFaderWithLink : MmSmallFader {
 		}
 	}
 };
-
-#endif

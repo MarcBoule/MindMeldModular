@@ -5,9 +5,7 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef MINDMELDMODULAR_HPP
-#define MINDMELDMODULAR_HPP
-
+#pragma once
 
 #include "rack.hpp"
 #include "comp/GenericComponents.hpp"
@@ -333,5 +331,3 @@ static inline float clamp20V(float in) {// meant to catch invalid values like -i
 	}
 	return in > 20.0f ? 20.0f : -20.0f;
 }
-
-#endif

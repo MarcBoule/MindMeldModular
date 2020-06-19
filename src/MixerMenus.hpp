@@ -5,8 +5,7 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef MMM_MIXERMENUS_HPP
-#define MMM_MIXERMENUS_HPP
+#pragma once
 
 #include "MixerCommon.hpp"
 #include "VuMeters.hpp"
@@ -1039,5 +1038,3 @@ struct DimGainSlider : ui::Slider {
 		delete quantity;
 	}
 };
-
-#endif

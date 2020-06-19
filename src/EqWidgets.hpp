@@ -6,8 +6,7 @@
 //***********************************************************************************************
 
 
-#ifndef MMM_EQWIDGETS_HPP
-#define MMM_EQWIDGETS_HPP
+#pragma once
 
 #include "EqMenus.hpp"
 #include "dsp/fft.hpp"
@@ -1116,10 +1115,3 @@ struct ShelfHighSwitch : PeakShelfBase {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/high-shelf-off.svg")));
 	}
 };
-
-
-
-
-
-
-#endif

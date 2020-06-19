@@ -8,9 +8,7 @@
 //Downloaded by Marc Boulé on sept 4th 2019
 //***********************************************************************************************
 
-#ifndef MIXER_MESSAGE_BUS_HPP
-#define MIXER_MESSAGE_BUS_HPP
-
+#pragma once
 
 #include <string>
 #include <vector>
@@ -104,5 +102,3 @@ struct MixerMessageBus {
 		memberData.erase(id);
 	}
 };
-
-#endif

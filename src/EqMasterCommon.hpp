@@ -5,9 +5,7 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef MMM_EQ_COMMON_HPP
-#define MMM_EQ_COMMON_HPP
-
+#pragma once
 
 #include "MindMeldModular.hpp"
 #include "dsp/QuattroBiQuad.hpp"
@@ -340,6 +338,3 @@ class TrackEq {
 		}
 	}
 };
-
-
-#endif

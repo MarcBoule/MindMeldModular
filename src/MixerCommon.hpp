@@ -5,9 +5,7 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef MMM_MIXER_COMMON_HPP
-#define MMM_MIXER_COMMON_HPP
-
+#pragma once
 
 #include "MindMeldModular.hpp"
 #include "dsp/FirstOrderFilter.hpp"
@@ -160,6 +158,3 @@ enum ccIds {
 	dispColorGlobal, // 0 is yellow, 1 is light-gray, 2 is green, 3 is aqua, 4 is cyan, 5 is blue, 6 is purple, 7 is per track
 	detailsShow // bit 0 is knob param arc, bit 1 is knob cv arc, bit 2 is fader cv pointer
 };
-
-
-#endif

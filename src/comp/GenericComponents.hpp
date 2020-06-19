@@ -4,8 +4,8 @@
 //See ./LICENSE.md for all licenses
 //***********************************************************************************************
 
-#ifndef IM_GENERICCOMP_HPP
-#define IM_GENERICCOMP_HPP
+
+#pragma once
 
 
 #include "rack.hpp"
@@ -404,9 +404,3 @@ struct TMMWhiteBlueLight : TBase {
 	}
 };
 typedef TMMWhiteBlueLight<> MMWhiteBlueLight;
-
-
-
-
-
-#endif

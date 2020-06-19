@@ -6,9 +6,7 @@
 //***********************************************************************************************
 
 
-#ifndef MMM_EQMENUS_HPP
-#define MMM_EQMENUS_HPP
-
+#pragma once
 
 #include "EqMasterCommon.hpp"
 #include "VuMeters.hpp"
@@ -255,8 +253,4 @@ struct HideEqWhenBypassItem : MenuItem {
 	void onAction(const event::Action &e) override {
 		*hideEqWhenBypass ^= 0x1;
 	}
-};	
-
-
-
-#endif
+};

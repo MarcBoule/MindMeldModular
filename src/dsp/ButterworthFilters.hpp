@@ -6,8 +6,7 @@
 //***********************************************************************************************
 
 
-#ifndef IM_BUTTERWORTHFILTERS_HPP
-#define IM_BUTTERWORTHFILTERS_HPP
+#pragma once
 
 #include "FirstOrderFilter.hpp"
 
@@ -86,6 +85,3 @@ class ButterworthThirdOrder {
 		return f2.process(f1.process(in));
 	}
 };
-
-
-#endif

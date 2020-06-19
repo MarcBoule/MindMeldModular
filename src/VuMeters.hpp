@@ -6,8 +6,7 @@
 //***********************************************************************************************
 
 
-#ifndef MMM_VUMETERS_HPP
-#define MMM_VUMETERS_HPP
+#pragma once
 
 #include "MindMeldModular.hpp"
 
@@ -270,6 +269,3 @@ struct VuFiveColorItem : MenuItem {
 		return menu;
 	}
 };
-
-
-#endif

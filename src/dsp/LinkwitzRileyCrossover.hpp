@@ -11,8 +11,7 @@
 // Cascaded 1st-order filters are used when offering 2nd order Linkwitz-Riley crossover
 
 
-#ifndef IM_LINKWITZRILEYCROSSOVER_HPP
-#define IM_LINKWITZRILEYCROSSOVER_HPP
+#pragma once
 
 
 class LinkwitzRileyCrossover {	
@@ -98,7 +97,3 @@ class LinkwitzRileyCrossover {
 		return outS2;
 	}
 };
-
-
-#endif
-
