@@ -214,6 +214,8 @@ struct Meld : Module {
 struct MeldWidget : ModuleWidget {
 	SvgPanel* facePlates[3];
 	int lastFacePlate = 0;
+	LedButton *ledButtons[8];
+	SmallLight<GreenRedLight> *smallLights[8];
 		
 	struct FacePlateItem : MenuItem {
 		Meld *module;
@@ -283,8 +285,8 @@ struct MeldWidget : ModuleWidget {
 			addInput(createInputCentered<MmPort>(mm2px(Vec(20.15, 34.5 + 10.85 * i)), module, Meld::MERGE_INPUTS + 2 * i + 1));
 			
 			// bypass led-buttons
-			addParam(createParamCentered<LedButton>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_PARAMS + i));
-			addChild(createLightCentered<SmallLight<GreenRedLight>>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_LIGHTS + 2 * i));
+			addParam(ledButtons[i] = createParamCentered<LedButton>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_PARAMS + i));
+			addChild(smallLights[i] = createLightCentered<SmallLight<GreenRedLight>>(mm2px(Vec(26.93, 34.5 + 10.85 * i)), module, Meld::BYPASS_LIGHTS + 2 * i));
 		}
 	}
 	
@@ -312,6 +314,10 @@ struct MeldWidget : ModuleWidget {
 						}
 					}
 				}
+			}
+			for (int i = 0; i < 8; i++) {
+				ledButtons[i]->visible = facePlate < 3;
+				smallLights[i]->visible = facePlate < 3;
 			}
 		}
 		Widget::step();
