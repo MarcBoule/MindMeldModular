@@ -211,8 +211,50 @@ struct Meld : Module {
 //-----------------------------------------------------------------------------
 
 
+
 struct MeldWidget : ModuleWidget {
-	SvgPanel* facePlates[3];
+	static const int NUM_8 = 0;
+	static const int NUM_16 = 12;
+	
+	std::string facePlateNames[3 + NUM_16 + NUM_8] = {
+		"1-8",
+		"9-16",
+		"Group/Aux",
+		
+		"Mute 1-16",
+		"Solo 1-16",
+		"M/S Grp Mstr",
+		"Aux A 1-16",
+		"Aux B 1-16",
+		"Aux C 1-16",
+		"Aux D 1-16",
+		"Aux mute 1-16",
+		"Aux A-D Grps",
+		"Mute Grps",
+		"Bus Snd Pan Rtn",
+		"Bus M_S"
+	};
+
+	std::string facePlateFileNames[3 + NUM_16 + NUM_8] = {
+		"res/dark/meld/meld-1-8.svg",
+		"res/dark/meld/meld-9-16.svg",
+		"res/dark/meld/meld-grp-aux.svg",
+		
+		"res/dark/meld/16track/Mute.svg",
+		"res/dark/meld/16track/Solo.svg",
+		"res/dark/meld/16track/M_S-Grp-Mstr.svg",
+		"res/dark/meld/16track/Aux-A.svg",
+		"res/dark/meld/16track/Aux-B.svg",
+		"res/dark/meld/16track/Aux-C.svg",
+		"res/dark/meld/16track/Aux-D.svg",
+		"res/dark/meld/16track/Mute.svg",
+		"res/dark/meld/16track/Aux-A-D-Grps.svg",
+		"res/dark/meld/16track/Mute-Grps.svg",
+		"res/dark/meld/16track/Bus-Snd-Pan-Rtn.svg",
+		"res/dark/meld/16track/Bus-M_S.svg"
+	};
+
+
 	int lastFacePlate = 0;
 	LedButton *ledButtons[8];
 	SmallLight<GreenRedLight> *smallLights[8];
@@ -225,12 +267,6 @@ struct MeldWidget : ModuleWidget {
 		}
 	};
 	
-	std::string facePlateNames[3] = {
-		"1-8",
-		"9-16",
-		"Group/Aux"
-	};
-
 	void appendContextMenu(Menu *menu) override {
 		Meld *module = (Meld*)(this->module);
 		assert(module);
@@ -256,18 +292,7 @@ struct MeldWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld-1-8.svg")));
-        if (module) {
-			facePlates[0] = (SvgPanel*)panel;
-			facePlates[1] = new SvgPanel();
-			facePlates[1]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld-9-16.svg")));
-			facePlates[1]->visible = false;
-			addChild(facePlates[1]);
-			facePlates[2] = new SvgPanel();
-			facePlates[2]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld-grp-aux.svg")));
-			facePlates[2]->visible = false;
-			addChild(facePlates[2]);
-		}
+        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[lastFacePlate])));
 
 		// poly in/thru
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Meld::POLY_INPUT));
@@ -294,10 +319,11 @@ struct MeldWidget : ModuleWidget {
 		if (module) {
 			int facePlate = (((Meld*)module)->facePlate);
 			if (facePlate != lastFacePlate) {
-				facePlates[lastFacePlate]->visible = false;
-				facePlates[facePlate]->visible = true;
+				// change main panel
+				setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate])));
 				lastFacePlate = facePlate;
-				// update bypass tooltips
+				
+				// update bypass led-buttons' tooltips
 				for (int i = 0; i < 8; i++) {
 					if (facePlate == 0) {
 						module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass %i", i + 1);
@@ -314,10 +340,12 @@ struct MeldWidget : ModuleWidget {
 						}
 					}
 				}
-			}
-			for (int i = 0; i < 8; i++) {
-				ledButtons[i]->visible = facePlate < 3;
-				smallLights[i]->visible = facePlate < 3;
+				
+				// update bypass led-buttons' visibilities
+				for (int i = 0; i < 8; i++) {
+					ledButtons[i]->visible = facePlate < 3;
+					smallLights[i]->visible = facePlate < 3;
+				}
 			}
 		}
 		Widget::step();
