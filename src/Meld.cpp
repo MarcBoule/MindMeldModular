@@ -211,62 +211,100 @@ struct Meld : Module {
 //-----------------------------------------------------------------------------
 
 
+static const int NUM_M = 3;// num panels in menu of Audio panels
+static const int NUM_16 = 12;// num panels in menu of CV panels for Jr
+static const int NUM_8 = 8;// num panels in menu of CV panels for Sr
 
-struct MeldWidget : ModuleWidget {
-	static const int NUM_8 = 0;
-	static const int NUM_16 = 12;
+static const std::string facePlateNames[NUM_M + NUM_16 + NUM_8] = {
+	"1-8",
+	"9-16",
+	"Group/Aux",
 	
-	std::string facePlateNames[3 + NUM_16 + NUM_8] = {
-		"1-8",
-		"9-16",
-		"Group/Aux",
-		
-		"Mute 1-16",
-		"Solo 1-16",
-		"M/S Grp Mstr",
-		"Aux A 1-16",
-		"Aux B 1-16",
-		"Aux C 1-16",
-		"Aux D 1-16",
-		"Aux mute 1-16",
-		"Aux A-D Grps",
-		"Mute Grps",
-		"Bus Snd Pan Rtn",
-		"Bus M_S"
-	};
+	"Mute 1-16",
+	"Solo 1-16",
+	"M/S Grp Mstr",
+	"Aux A 1-16",
+	"Aux B 1-16",
+	"Aux C 1-16",
+	"Aux D 1-16",
+	"Aux Mute 1-16",
+	"Aux A-D Grps",
+	"Aux Mute Grps",
+	"Aux Bus Snd Pan Rtn",
+	"Aux Bus M_S",
+	
+	"Mute/Solo 1-8",
+	"M/S Grp Mstr",
+	"Aux A/B 1-8",
+	"Aux C/D 1-8",
+	"Aux A-D Grps",
+	"Aux Mute 1-8 Grps",
+	"Aux Bus Snd Pan Rtn",
+	"Aux Bus M_S",
+};
 
-	std::string facePlateFileNames[3 + NUM_16 + NUM_8] = {
-		"res/dark/meld/meld-1-8.svg",
-		"res/dark/meld/meld-9-16.svg",
-		"res/dark/meld/meld-grp-aux.svg",
-		
-		"res/dark/meld/16track/Mute.svg",
-		"res/dark/meld/16track/Solo.svg",
-		"res/dark/meld/16track/M_S-Grp-Mstr.svg",
-		"res/dark/meld/16track/Aux-A.svg",
-		"res/dark/meld/16track/Aux-B.svg",
-		"res/dark/meld/16track/Aux-C.svg",
-		"res/dark/meld/16track/Aux-D.svg",
-		"res/dark/meld/16track/Mute.svg",
-		"res/dark/meld/16track/Aux-A-D-Grps.svg",
-		"res/dark/meld/16track/Mute-Grps.svg",
-		"res/dark/meld/16track/Bus-Snd-Pan-Rtn.svg",
-		"res/dark/meld/16track/Bus-M_S.svg"
-	};
-
-
+static const std::string facePlateFileNames[NUM_M + NUM_16 + NUM_8] = {
+	"res/dark/meld/meld-1-8.svg",
+	"res/dark/meld/meld-9-16.svg",
+	"res/dark/meld/meld-grp-aux.svg",
+	
+	"res/dark/meld/16track/Mute.svg",
+	"res/dark/meld/16track/Solo.svg",
+	"res/dark/meld/16track/M_S-Grp-Mstr.svg",
+	"res/dark/meld/16track/Aux-A.svg",
+	"res/dark/meld/16track/Aux-B.svg",
+	"res/dark/meld/16track/Aux-C.svg",
+	"res/dark/meld/16track/Aux-D.svg",
+	"res/dark/meld/16track/Mute.svg",
+	"res/dark/meld/16track/Aux-A-D-Grps.svg",
+	"res/dark/meld/16track/Mute-Grps.svg",
+	"res/dark/meld/16track/Bus-Snd-Pan-Rtn.svg",
+	"res/dark/meld/16track/Bus-M_S.svg",
+	
+	"res/dark/meld/8track/M_S-1-8Jr.svg",
+	"res/dark/meld/8track/M_S-Grp-MstrJr.svg",
+	"res/dark/meld/8track/Aux-A_B-1-8Jr.svg",
+	"res/dark/meld/8track/Aux-C_D-1-8Jr.svg",
+	"res/dark/meld/16track/Aux-A-D-Grps.svg",
+	"res/dark/meld/8track/Aux-M-1-8-GrpsJr.svg",
+	"res/dark/meld/16track/Bus-Snd-Pan-Rtn.svg",
+	"res/dark/meld/16track/Bus-M_S.svg",
+	
+};
+	
+	
+struct MeldWidget : ModuleWidget {
 	int lastFacePlate = 0;
 	LedButton *ledButtons[8];
 	SmallLight<GreenRedLight> *smallLights[8];
 		
-	struct FacePlateItem : MenuItem {
+	struct PanelsItem : MenuItem {
 		Meld *module;
-		int plate;
-		void onAction(const event::Action &e) override {
-			module->facePlate = plate;
+		int start;
+		int end;
+		
+		struct PanelsSubItem : MenuItem {
+			Meld *module;
+			int plate;
+			void onAction(const event::Action &e) override {
+				module->facePlate = plate;
+			}
+		};
+
+		Menu *createChildMenu() override {
+			Menu *menu = new Menu;
+				
+			for (int i = start; i < end; i++) {
+				PanelsSubItem *apItem = createMenuItem<PanelsSubItem>(facePlateNames[i], CHECKMARK(module->facePlate == i));
+				apItem->module = module;
+				apItem->plate = i;
+				menu->addChild(apItem);
+			}
+			
+			return menu;
 		}
 	};
-	
+
 	void appendContextMenu(Menu *menu) override {
 		Meld *module = (Meld*)(this->module);
 		assert(module);
@@ -274,17 +312,31 @@ struct MeldWidget : ModuleWidget {
 		menu->addChild(new MenuSeparator());
 
 		MenuLabel *themeLabel = new MenuLabel();
-		themeLabel->text = "Panel";
+		themeLabel->text = "Panel choices";
 		menu->addChild(themeLabel);
 
-		for (int i = 0; i < 3; i++) {
-			FacePlateItem *aItem = new FacePlateItem();
-			aItem->text = facePlateNames[i];
-			aItem->rightText = CHECKMARK(module->facePlate == i);
-			aItem->module = module;
-			aItem->plate = i;
-			menu->addChild(aItem);
-		}
+		int fp = module->facePlate;
+		char rights[8] = CHECKMARK_STRING; if (fp >= NUM_M) rights[0] = 0;
+		PanelsItem *audiopItem = createMenuItem<PanelsItem>("Audio panels", strcat(strcat(rights, " "), RIGHT_ARROW));
+		audiopItem->module = module;
+		audiopItem->start = 0;
+		audiopItem->end = NUM_M;
+		menu->addChild(audiopItem);
+
+		char rights2[8] = CHECKMARK_STRING; if (fp < NUM_M || fp >= (NUM_M + NUM_16)) rights2[0] = 0;
+		PanelsItem *cvsrpItem = createMenuItem<PanelsItem>("CV panels", strcat(strcat(rights2, " "), RIGHT_ARROW));
+		cvsrpItem->module = module;
+		cvsrpItem->start = NUM_M;
+		cvsrpItem->end = NUM_M + NUM_16;
+		menu->addChild(cvsrpItem);
+
+		char rights3[8] = CHECKMARK_STRING; if (fp < (NUM_M + NUM_16)) rights3[0] = 0;
+		PanelsItem *cvjrpItem = createMenuItem<PanelsItem>("CV panels Jr", strcat(strcat(rights3, " "), RIGHT_ARROW));
+		cvjrpItem->module = module;
+		cvjrpItem->start = NUM_M + NUM_16;
+		cvjrpItem->end = NUM_M + NUM_16 + NUM_8;
+		menu->addChild(cvjrpItem);
+
 	}	
 	
 	
@@ -300,8 +352,8 @@ struct MeldWidget : ModuleWidget {
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
-			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(14.3, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 0)));
-			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
+			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(14.3, 9.5 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 0)));
+			addChild(createLightCentered<TinyLight<MMWhiteBlueLight>>(mm2px(Vec(16.18, 9.5 + 2 * i)), module, Meld::CHAN_LIGHTS + 2 * (2 * i + 1)));
 		}
 				
 		for (int i = 0; i < 8; i++) {
