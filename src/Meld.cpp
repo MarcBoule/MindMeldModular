@@ -265,11 +265,10 @@ static const std::string facePlateFileNames[NUM_M + NUM_16 + NUM_8] = {
 	"res/dark/meld/8track/M_S-Grp-MstrJr.svg",
 	"res/dark/meld/8track/Aux-A_B-1-8Jr.svg",
 	"res/dark/meld/8track/Aux-C_D-1-8Jr.svg",
-	"res/dark/meld/16track/Aux-A-D-Grps.svg",
+	"res/dark/meld/8track/Aux-A-D-GrpsJr.svg",
 	"res/dark/meld/8track/Aux-M-1-8-GrpsJr.svg",
 	"res/dark/meld/16track/Bus-Snd-Pan-Rtn.svg",
 	"res/dark/meld/16track/Bus-M_S.svg",
-	
 };
 	
 	
