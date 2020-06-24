@@ -20,6 +20,7 @@
 // Utility
 
 float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade) {
+	// shape is 100.0f when exp, 0.0f when lin, -100.0f when log
 	static const float A = 4.0f;
 	static const float E_A_M1 = (std::exp(A) - 1.0f);// e^A - 1
 	

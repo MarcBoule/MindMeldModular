@@ -195,8 +195,8 @@ struct UnmeldWidget : ModuleWidget {
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
-			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(14.3, 10.7 + 2 * i)), module, Unmeld::CHAN_LIGHTS + 2 * i + 0));
-			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(16.18, 10.7 + 2 * i)), module, Unmeld::CHAN_LIGHTS + 2 * i + 1));
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(14.3, 9.5 + 2 * i)), module, Unmeld::CHAN_LIGHTS + 2 * i + 0));
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(16.18, 9.5 + 2 * i)), module, Unmeld::CHAN_LIGHTS + 2 * i + 1));
 		}
 		
 		// split signals
