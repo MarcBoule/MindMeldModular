@@ -398,7 +398,7 @@ struct MixerMaster {
 	bool dcBlock;
 	int clipping; // 0 is soft, 1 is hard (must be single ls bit)
 	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile; // exp when +100, lin when 0, log when -100
+	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t vuColorThemeLocal;
 	int8_t dispColorLocal;
 	float dimGain;// slider uses this gain, but displays it in dB instead of linear
@@ -562,7 +562,7 @@ struct MixerMaster {
 	// unipolar only, caller must take care of signs
 	// assumes that 6 <= x <= 12
 	// assumes f(x) := x  when x < 6
-	// assumes f(x) := 12  when x > 12
+	// assumes f(x) := 10  when x > 12
 	//
 	// Chosen polynomial:
 	// f(x) := a + b*x + c*x^2 + d*x^3
@@ -736,7 +736,7 @@ struct MixerGroup {
 	
 	// need to save, with reset
 	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile; // exp when +100, lin when 0, log when -100
+	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t directOutsMode;// when per track
 	int8_t auxSendsMode;// when per track
 	int8_t panLawStereo;// when per track
@@ -1077,7 +1077,7 @@ struct MixerTrack {
 	char  *trackName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all	
 	float gainAdjust;// this is a gain here (not dB)
 	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile; // exp when +100, lin when 0, log when -100
+	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t directOutsMode;// when per track
 	int8_t auxSendsMode;// when per track
 	int8_t panLawStereo;// when per track
