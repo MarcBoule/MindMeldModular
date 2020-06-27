@@ -417,11 +417,12 @@ struct MixerMaster {
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float fadeGainX;
+	float target;// used detect button press (needed to reset fadeGainXr and VUs)
+	float fadeGainX;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
+	float fadeGainXr;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
 	float fadeGainScaled;
 	float paramWithCV;
 	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
-	float target;
 
 	// no need to save, no reset
 	GlobalInfo *gInfo;
@@ -466,11 +467,12 @@ struct MixerMaster {
 		setupDcBlocker();
 		vu.reset();
 		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		target = fadeGain;
+		fadeGainX = fadeGain;
+		fadeGainXr = 0.0f;
 		fadeGainScaled = fadeGain;
 		paramWithCV = -100.0f;
 		dimGainIntegerDB = calcDimGainIntegerDB(dimGain);
-		target = -1.0f;
 	}
 
 
@@ -613,21 +615,21 @@ struct MixerMaster {
 			if (isFadeMode()) {
 				float newTarget = calcFadeGain();
 				if (newTarget != target) {
-					if (!gInfo->symmetricalFade) {
-						fadeGainX = 0.0f;
-					}
+					fadeGainXr = 0.0f;
 					target = newTarget;
 					vu.reset();
 				}
 				if (fadeGain != target) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::masterFaderScalingExponent);
 				}
 			}
 			else {// we are in mute mode
 				fadeGain = calcFadeGain(); // do manually below to optimized fader mult
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+				target = fadeGain;
+				fadeGainX = fadeGain;
+				fadeGainXr = 0.0f;
 				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 			}	
 			// dim (this affects fadeGainScaled only, so treated like a partial mute, but no effect on fade pointers or other just effect on sound
