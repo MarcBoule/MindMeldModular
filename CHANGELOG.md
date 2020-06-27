@@ -5,6 +5,7 @@
 - Added filters on groups in MixMasters
 - Added option for initializing individual group settings in MixMasters
 - Added many panel options to the Meld module to facilitate using the poly CV inputs in MixMasters and AuxSpanders
+- Added option to MM main menu direct outs to not send tracks that are assigned to a group
 
 
 ### 1.1.7 (2020-06-07)

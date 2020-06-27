@@ -249,8 +249,6 @@ struct MixMaster : Module {
 
 	
 	void onReset() override {
-		// track labels initialized in tracks[i].onReset()'s resetNonJson() call
-		// group labels initialized in groups[i].onReset()'s resetNonJson() call
 		gInfo.onReset();
 		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].onReset();
@@ -671,16 +669,22 @@ struct MixMaster : Module {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannels16);
 
 			for (unsigned int i = 0; i < 8; i++) {
-				int tapIndex = gInfo.directOutsMode < 4 ? gInfo.directOutsMode : tracks[base + i].directOutsMode;
-				int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
-				float leftSig = trackTaps[offset + 0];
-				float rightSig = (tapIndex < 2 && !inputs[((base + i) << 1) + 1].isConnected()) ? 0.0f : trackTaps[offset + 1];
-				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
-					leftSig *= muteTrackWhenSoloAuxRetSlewer.out;
-					rightSig *= muteTrackWhenSoloAuxRetSlewer.out;
+				if (gInfo.directOutsSkipGroupedTracks != 0 && tracks[base + i].paGroup->getValue() >= 0.5f) {
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i);
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i + 1);
 				}
-				outputs[DIRECT_OUTPUTS + outi].setVoltage(leftSig, 2 * i);
-				outputs[DIRECT_OUTPUTS + outi].setVoltage(rightSig, 2 * i + 1);
+				else {
+					int tapIndex = gInfo.directOutsMode < 4 ? gInfo.directOutsMode : tracks[base + i].directOutsMode;
+					int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
+					float leftSig = trackTaps[offset + 0];
+					float rightSig = (tapIndex < 2 && !inputs[((base + i) << 1) + 1].isConnected()) ? 0.0f : trackTaps[offset + 1];
+					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+						leftSig *= muteTrackWhenSoloAuxRetSlewer.out;
+						rightSig *= muteTrackWhenSoloAuxRetSlewer.out;
+					}
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(leftSig, 2 * i);
+					outputs[DIRECT_OUTPUTS + outi].setVoltage(rightSig, 2 * i + 1);
+				}
 			}
 		}
 	}

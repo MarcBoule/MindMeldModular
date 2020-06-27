@@ -140,6 +140,8 @@ struct PanLawStereoItem : MenuItem {
 struct TapModeItem : MenuItem {
 	int8_t* tapModePtr;
 	bool isGlobal;
+	bool isGlobalDirectOuts = false;
+	int8_t* directOutsSkipGroupedTracksPtr;// invalid value when isGlobalDirectOuts is false
 
 	struct TapModeSubItem : MenuItem {
 		int8_t* tapModePtr;
@@ -149,15 +151,23 @@ struct TapModeItem : MenuItem {
 		}
 	};
 
+	struct SkipGroupedSubItem : MenuItem {
+		int8_t* directOutsSkipGroupedTracksPtr;
+		void onAction(const event::Action &e) override {
+			*directOutsSkipGroupedTracksPtr ^= 0x1;
+		}
+	};
+
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		std::string tapModeNames[5] = {
+		std::string tapModeNames[6] = {
 			"Pre-insert",
 			"Pre-fader",
 			"Post-fader",
 			"Post-mute/solo (default)",
-			"Set per track"
+			"Set per track",
+			"Don't send tracks when grouped"
 		};
 		
 		for (int i = 0; i < (isGlobal ? 5 : 4); i++) {
@@ -165,6 +175,14 @@ struct TapModeItem : MenuItem {
 			tapModeItem->tapModePtr = tapModePtr;
 			tapModeItem->setVal = i;
 			menu->addChild(tapModeItem);
+		}
+
+		menu->addChild(new MenuSeparator());
+		
+		if (isGlobalDirectOuts) {
+			SkipGroupedSubItem *skipGrpItem = createMenuItem<SkipGroupedSubItem>(tapModeNames[5], CHECKMARK(*directOutsSkipGroupedTracksPtr != 0));
+			skipGrpItem->directOutsSkipGroupedTracksPtr = directOutsSkipGroupedTracksPtr;
+			menu->addChild(skipGrpItem);
 		}
 
 		return menu;

@@ -51,6 +51,8 @@ void appendContextMenu(Menu *menu) override {
 	TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 	directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
 	directOutsItem->isGlobal = true;
+	directOutsItem->isGlobalDirectOuts = true;
+	directOutsItem->directOutsSkipGroupedTracksPtr = &(module->gInfo.directOutsSkipGroupedTracks);
 	menu->addChild(directOutsItem);
 	
 	MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Mute/Solo CV", RIGHT_ARROW);

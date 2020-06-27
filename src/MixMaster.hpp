@@ -19,6 +19,7 @@ struct GlobalInfo {
 	int panLawMono;// +0dB (no compensation),  +3 (equal power),  +4.5 (compromize),  +6dB (linear, default)
 	int8_t panLawStereo;// Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
 	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+	int8_t directOutsSkipGroupedTracks;// 0 no (default), 1 is yes
 	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int groupsControlTrackSendLevels;//  0 = no, 1 = yes
 	int auxReturnsMutedWhenMainSolo;
@@ -175,6 +176,7 @@ struct GlobalInfo {
 		panLawMono = 1;
 		panLawStereo = 1;
 		directOutsMode = 3;// post-solo should be default
+		directOutsSkipGroupedTracks = 0;
 		auxSendsMode = 3;// post-solo should be default
 		groupsControlTrackSendLevels = 0;
 		auxReturnsMutedWhenMainSolo = 0;
@@ -219,6 +221,9 @@ struct GlobalInfo {
 
 		// directOutsMode
 		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
+		
+		// directOutsSkipGroupedTracks
+		json_object_set_new(rootJ, "directOutsSkipGroupedTracks", json_integer(directOutsSkipGroupedTracks));
 		
 		// auxSendsMode
 		json_object_set_new(rootJ, "auxSendsMode", json_integer(auxSendsMode));
@@ -289,6 +294,11 @@ struct GlobalInfo {
 		json_t *directOutsModeJ = json_object_get(rootJ, "directOutsMode");
 		if (directOutsModeJ)
 			directOutsMode = json_integer_value(directOutsModeJ);
+		
+		// directOutsSkipGroupedTracks
+		json_t *directOutsSkipGroupedTracksJ = json_object_get(rootJ, "directOutsSkipGroupedTracks");
+		if (directOutsSkipGroupedTracksJ)
+			directOutsSkipGroupedTracks = json_integer_value(directOutsSkipGroupedTracksJ);
 		
 		// auxSendsMode
 		json_t *auxSendsModeJ = json_object_get(rootJ, "auxSendsMode");
