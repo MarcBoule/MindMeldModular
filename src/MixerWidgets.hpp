@@ -772,6 +772,13 @@ struct GroupDisplay : EditableDisplayBase {
 				menu->addChild(directOutsItem);
 			}
 
+			if (srcGroup->gInfo->filterPos >= 2) {
+				FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
+				filterPosItem->filterPosSrc = &(srcGroup->filterPos);
+				filterPosItem->isGlobal = false;
+				menu->addChild(filterPosItem);
+			}
+
 			if (srcGroup->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
 				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
 				auxSendsItem->tapModePtr = &(srcGroup->auxSendsMode);

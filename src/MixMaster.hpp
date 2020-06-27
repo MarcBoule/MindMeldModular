@@ -742,6 +742,7 @@ struct MixerGroup {
 	int8_t auxSendsMode;// when per track
 	int8_t panLawStereo;// when per track
 	int8_t vuColorThemeLocal;
+	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
 	float panCvLevel;// 0 to 1.0f
 
@@ -783,12 +784,14 @@ struct MixerGroup {
 	Param *paHpfCutoff;
 	Param *paLpfCutoff;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
+	float *insertOuts;// [0][1]: insert outs for this group
+
 
 	float calcFadeGain() {return paMute->getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
+	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps, float* _insertOuts) {
 		groupNum = _groupNum;
 		ids = "id_g" + std::to_string(groupNum) + "_";
 		gInfo = _gInfo;
@@ -803,6 +806,7 @@ struct MixerGroup {
 		paLpfCutoff = &_params[GROUP_LPCUT_PARAMS + groupNum];
 		groupName = _groupName;
 		taps = _taps;
+		insertOuts = _insertOuts;
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
@@ -821,6 +825,7 @@ struct MixerGroup {
 		auxSendsMode = 3;// post-solo should be default
 		panLawStereo = 1;
 		vuColorThemeLocal = 0;
+		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
 		panCvLevel = 1.0f;
 		resetNonJson();
@@ -877,6 +882,9 @@ struct MixerGroup {
 		// vuColorThemeLocal
 		json_object_set_new(rootJ, (ids + "vuColorThemeLocal").c_str(), json_integer(vuColorThemeLocal));
 
+		// filterPos
+		json_object_set_new(rootJ, (ids + "filterPos").c_str(), json_integer(filterPos));
+
 		// dispColorLocal
 		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
 		
@@ -918,6 +926,11 @@ struct MixerGroup {
 		json_t *vuColorThemeLocalJ = json_object_get(rootJ, (ids + "vuColorThemeLocal").c_str());
 		if (vuColorThemeLocalJ)
 			vuColorThemeLocal = json_integer_value(vuColorThemeLocalJ);
+		
+		// filterPos
+		json_t *filterPosJ = json_object_get(rootJ, (ids + "filterPos").c_str());
+		if (filterPosJ)
+			filterPos = json_integer_value(filterPosJ);
 		
 		// dispColorLocal
 		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
@@ -986,15 +999,61 @@ struct MixerGroup {
 		// Tap[0],[1]: pre-insert (group inputs)
 		// nothing to do, already set up by the mix master
 		
-		// Tap[8],[9]: pre-fader (post insert)
-		if (inInsert->isConnected()) {
-			taps[N_GRP * 2 + 0] = clamp20V(inInsert->getVoltage((groupNum << 1) + 0));
-			taps[N_GRP * 2 + 1] = clamp20V(inInsert->getVoltage((groupNum << 1) + 1));
+		// Tap[8],[9]: pre-fader (inserts and filters)
+		// NEW VERSION
+		if (gInfo->filterPos == 1 || (gInfo->filterPos == 2 && filterPos == 1)) {// if filters post insert
+			// Insert outputs
+			insertOuts[0] = taps[0];
+			insertOuts[1] = taps[1];
+			
+			// Insert inputs
+			if (inInsert->isConnected()) {
+				taps[N_GRP * 2 + 0] = clamp20V(inInsert->getVoltage((groupNum << 1) + 0));
+				taps[N_GRP * 2 + 1] = clamp20V(inInsert->getVoltage((groupNum << 1) + 1));
+			}
+			else {
+				taps[N_GRP * 2 + 0] = taps[0];
+				taps[N_GRP * 2 + 1] = taps[1];
+			}
+
+			// Filters
+			// HPF
+			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
+				taps[N_GRP * 2 + 0] = hpFilter[0].process(taps[N_GRP * 2 + 0]);
+				taps[N_GRP * 2 + 1] = hpFilter[1].process(taps[N_GRP * 2 + 1]);
+			}
+			// LPF
+			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
+				taps[N_GRP * 2 + 0] = lpFilter[0].process(taps[N_GRP * 2 + 0]);
+				taps[N_GRP * 2 + 1] = lpFilter[1].process(taps[N_GRP * 2 + 1]);
+			}
 		}
-		else {
+		else {// filters before inserts
 			taps[N_GRP * 2 + 0] = taps[0];
 			taps[N_GRP * 2 + 1] = taps[1];
-		}
+			// Filters
+			// HPF
+			if (getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq) {
+				taps[N_GRP * 2 + 0] = hpFilter[0].process(taps[N_GRP * 2 + 0]);
+				taps[N_GRP * 2 + 1] = hpFilter[1].process(taps[N_GRP * 2 + 1]);
+			}
+			// LPF
+			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
+				taps[N_GRP * 2 + 0] = lpFilter[0].process(taps[N_GRP * 2 + 0]);
+				taps[N_GRP * 2 + 1] = lpFilter[1].process(taps[N_GRP * 2 + 1]);
+			}
+			
+			// Insert outputs
+			insertOuts[0] = taps[N_GRP * 2 + 0];
+			insertOuts[1] = taps[N_GRP * 2 + 1];
+			
+			// Insert inputs
+			if (inInsert->isConnected()) {
+				taps[N_GRP * 2 + 0] = clamp20V(inInsert->getVoltage((groupNum << 1) + 0));
+				taps[N_GRP * 2 + 1] = clamp20V(inInsert->getVoltage((groupNum << 1) + 1));
+			}
+		}// filterPos
+
 
 		if (eco) {	
 			// calc ** fadeGain, fadeGainX, fadeGainXr, target, fadeGainScaled **
@@ -1713,7 +1772,7 @@ struct MixerTrack {
 			// LPF
 			if (getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq) {
 				taps[N_TRK * 2 + 0] = lpFilter[0].process(taps[N_TRK * 2 + 0]);
-				taps[N_TRK * 2 + 1]  = stereo ? lpFilter[1].process(taps[N_TRK * 2 + 1]) : taps[N_TRK * 2 + 0];
+				taps[N_TRK * 2 + 1] = stereo ? lpFilter[1].process(taps[N_TRK * 2 + 1]) : taps[N_TRK * 2 + 0];
 			}
 		}
 		else {// filters before inserts

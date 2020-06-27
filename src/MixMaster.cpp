@@ -101,6 +101,7 @@ struct MixMaster : Module {
 	float trackTaps[N_TRK * 2 * 4];// room for 4 taps for each of the 16 (8) stereo tracks. Trk0-tap0, Trk1-tap0 ... Trk15-tap0,  Trk0-tap1
 	float trackInsertOuts[N_TRK * 2];// room for 16 (8) stereo track insert outs
 	float groupTaps[N_GRP * 2 * 4];// room for 4 taps for each of the 4 stereo groups
+	float groupInsertOuts[N_GRP * 2];// room for 4 (2) stereo group insert outs
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
 	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
@@ -228,7 +229,7 @@ struct MixMaster : Module {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < N_GRP; i++) {
-			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1]);
+			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < 4; i++) {
 			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
@@ -491,7 +492,7 @@ struct MixMaster : Module {
 		}
 		SetDirectGroupAuxOuts();
 				
-		// Insert outs (uses trackInsertOuts and group tap0 and aux tap0)
+		// Insert outs (uses trackInsertOuts, groupInsertOuts and aux tap0)
 		SetInsertTrackOuts(0);// 1-8
 		if (N_TRK == 16) {
 			SetInsertTrackOuts(8);// 9-16
@@ -750,7 +751,7 @@ struct MixMaster : Module {
 	void SetInsertGroupAuxOuts() {
 		if (outputs[INSERT_GRP_AUX_OUTPUT].isConnected()) {
 			outputs[INSERT_GRP_AUX_OUTPUT].setChannels(auxExpanderPresent ? numChannels16 : 8);
-			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupTaps, 4 *  N_GRP * 2);// insert out for groups is directly tap0
+			memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(), groupInsertOuts, 4 *  N_GRP * 2);
 			if (auxExpanderPresent) {
 				memcpy(outputs[INSERT_GRP_AUX_OUTPUT].getVoltages(8), auxTaps, 4 * 8);// insert out for aux is directly tap0
 			}
