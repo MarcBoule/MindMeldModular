@@ -22,7 +22,7 @@ class FirstOrderCoefficients {
 		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
 		// freq pre-warping with inclusion of M_PI factor; 
 		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
-		float nfcw = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
+		float nfcw = nfc < 0.025f ? float(M_PI) * nfc : std::tan(float(M_PI) * std::min(0.499f, nfc));
 		
 		// denominator coefficient (same for both LPF and HPF)
 		a = (nfcw - 1.0f) / (nfcw + 1.0f);

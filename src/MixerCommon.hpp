@@ -89,13 +89,13 @@ struct GlobalConst {
 // Assumes: 0 <= theta <= Pi/2
 static inline void sinCos(float *destSin, float *destCos, float theta) {
 	*destSin = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
-	theta = M_PI_2 - theta;
+	theta = float(M_PI_2) - theta;
 	*destCos = theta + std::pow(theta, 3) * (-0.166666667f + theta * theta * 0.00833333333f);
 }
 static inline void sinCosSqrt2(float *destSin, float *destCos, float theta) {
 	sinCos(destSin, destCos, theta);
-	*destSin *= M_SQRT2;
-	*destCos *= M_SQRT2;
+	*destSin *= float(M_SQRT2);
+	*destCos *= float(M_SQRT2);
 }
 
 

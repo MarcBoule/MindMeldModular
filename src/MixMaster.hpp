@@ -998,23 +998,17 @@ struct MixerGroup {
 					}
 					else if (stereoPanMode == 1) {
 						// Stereo balance equal power (+3dB), same as mono Equal power
-						// panMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-						// panMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-						sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * M_PI_2);
+						sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * float(M_PI_2));
 					}
 					else {
 						// True panning, equal power
-						// panMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-						// panMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-						// panMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-						// panMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 						if (pan > 0.5f) {
 							panMatrix[1] = 1.0f;
 							panMatrix[2] = 0.0f;
-							sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * M_PI);
+							sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * float(M_PI));
 						}
 						else {// must be < (not <= since = 0.5 is caught at above)
-							sinCos(&panMatrix[1], &panMatrix[2], pan * M_PI);
+							sinCos(&panMatrix[1], &panMatrix[2], pan * float(M_PI));
 							panMatrix[0] = 1.0f;
 							panMatrix[3] = 0.0f;
 						}
@@ -1714,15 +1708,11 @@ struct MixerTrack {
 						}
 						else if (gInfo->panLawMono == 1) {
 							// Equal power panning law (+3dB boost)
-							// panMatrix[3] = std::sin(pan * M_PI_2) * M_SQRT2;
-							// panMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-							sinCosSqrt2(&panMatrix[3], &panMatrix[0], pan * M_PI_2);
+							sinCosSqrt2(&panMatrix[3], &panMatrix[0], pan * float(M_PI_2));
 						}
 						else {//if (gInfo->panLawMono == 2) {
 							// Compromise (+4.5dB boost)
-							// panMatrix[3] = std::sqrt( std::abs( std::sin(pan * M_PI_2) * M_SQRT2   *   (pan * 2.0f) ) );
-							// panMatrix[0] = std::sqrt( std::abs( std::cos(pan * M_PI_2) * M_SQRT2   *   (2.0f - pan * 2.0f) ) );
-							sinCosSqrt2(&panMatrix[3], &panMatrix[0], pan * M_PI_2);
+							sinCosSqrt2(&panMatrix[3], &panMatrix[0], pan * float(M_PI_2));
 							panMatrix[3] = std::sqrt( std::abs( panMatrix[3] * (pan * 2.0f) ) );
 							panMatrix[0] = std::sqrt( std::abs( panMatrix[0] * (2.0f - pan * 2.0f) ) );
 						}
@@ -1736,23 +1726,17 @@ struct MixerTrack {
 						}
 						else if (stereoPanMode == 1) {
 							// Stereo balance equal power (+3dB), same as mono Equal power
-							// panMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-							// panMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-							sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * M_PI_2);
+							sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * float(M_PI_2));
 						}
 						else {
 							// True panning, equal power
-							// panMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-							// panMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-							// panMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-							// panMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 							if (pan > 0.5f) {
 								panMatrix[1] = 1.0f;
 								panMatrix[2] = 0.0f;
-								sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * M_PI);
+								sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * float(M_PI));
 							}
 							else {// must be < (not <= since = 0.5 is caught at above)
-								sinCos(&panMatrix[1], &panMatrix[2], pan * M_PI);
+								sinCos(&panMatrix[1], &panMatrix[2], pan * float(M_PI));
 								panMatrix[0] = 1.0f;
 								panMatrix[3] = 0.0f;
 							}
@@ -1989,23 +1973,17 @@ struct MixerAux {
 					}
 					else if (stereoPanMode == 1) {
 						// Stereo balance equal power (+3dB), same as mono Equal power
-						// panMatrix[1] = std::sin(pan * M_PI_2) * M_SQRT2;
-						// panMatrix[0] = std::cos(pan * M_PI_2) * M_SQRT2;
-						sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * M_PI_2);
+						sinCosSqrt2(&panMatrix[1], &panMatrix[0], pan * float(M_PI_2));
 					}
 					else {
 						// True panning, equal power
-						// panMatrix[1] = pan >= 0.5f ? (1.0f) : (std::sin(pan * M_PI));
-						// panMatrix[2] = pan >= 0.5f ? (0.0f) : (std::cos(pan * M_PI));
-						// panMatrix[0] = pan <= 0.5f ? (1.0f) : (std::cos((pan - 0.5f) * M_PI));
-						// panMatrix[3] = pan <= 0.5f ? (0.0f) : (std::sin((pan - 0.5f) * M_PI));
 						if (pan > 0.5f) {
 							panMatrix[1] = 1.0f;
 							panMatrix[2] = 0.0f;
-							sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * M_PI);
+							sinCos(&panMatrix[3], &panMatrix[0], (pan - 0.5f) * float(M_PI));
 						}
 						else {// must be < (not <= since = 0.5 is caught at above)
-							sinCos(&panMatrix[1], &panMatrix[2], pan * M_PI);
+							sinCos(&panMatrix[1], &panMatrix[2], pan * float(M_PI));
 							panMatrix[0] = 1.0f;
 							panMatrix[3] = 0.0f;
 						}

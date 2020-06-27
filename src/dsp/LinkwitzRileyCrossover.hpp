@@ -42,13 +42,13 @@ class LinkwitzRileyCrossover {
 		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
 		// freq pre-warping with inclusion of M_PI factor; 
 		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
-		float nfcw = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
+		float nfcw = nfc < 0.025f ? float(M_PI) * nfc : std::tan(float(M_PI) * std::min(0.499f, nfc));
 		
 		if (secondOrderFilters) {	
 			// denominator coefficients (same for both LPF and HPF)
-			float acst = nfcw * nfcw + nfcw * (float)M_SQRT2 + 1.0f;
+			float acst = nfcw * nfcw + nfcw * float(M_SQRT2) + 1.0f;
 			a[0] = simd::float_4(2.0f * (nfcw * nfcw - 1.0f) / acst);
-			a[1] = simd::float_4((nfcw * nfcw - nfcw * (float)M_SQRT2 + 1.0f) / acst);
+			a[1] = simd::float_4((nfcw * nfcw - nfcw * float(M_SQRT2) + 1.0f) / acst);
 			
 			// numerator coefficients
 			float hbcst = 1.0f / acst;

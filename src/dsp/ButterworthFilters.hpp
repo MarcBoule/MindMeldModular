@@ -16,7 +16,7 @@ class ButterworthSecondOrder {
 	float a[3 - 1];// coefficients a1 and a2
 	float x[3 - 1];
 	float y[3 - 1];
-	float midCoef = M_SQRT2;
+	float midCoef = float(M_SQRT2);
 	
 	public:
 	
@@ -35,7 +35,7 @@ class ButterworthSecondOrder {
 		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
 		// freq pre-warping with inclusion of M_PI factor; 
 		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
-		float nfcw = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
+		float nfcw = nfc < 0.025f ? float(M_PI) * nfc : std::tan(float(M_PI) * std::min(0.499f, nfc));
 
 		// denominator coefficients (same for both LPF and HPF)
 		float acst = nfcw * nfcw + nfcw * midCoef + 1.0f;

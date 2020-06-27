@@ -246,8 +246,8 @@ struct MmGroupPlusButtonNoParam : MomentarySvgSwitchNoParam {
 
 struct MmKnob : SvgKnob {
 	MmKnob() {
-		minAngle = -0.83*M_PI;
-		maxAngle = 0.83*M_PI;
+		minAngle = -0.83 * float(M_PI);
+		maxAngle = 0.83 * float(M_PI);
 		shadow->opacity = 0.0;
 	}
 };
@@ -275,7 +275,7 @@ struct MmKnobWithArc : MmKnob {
 	// internal
 	NVGcolor arcColorDarker = nvgRGB(120, 120, 120);// grey
 	static constexpr float arcThickness = 1.6f;
-	static constexpr float TOP_ANGLE = 3.0f * M_PI / 2.0f;
+	static constexpr float TOP_ANGLE = 3.0f * float(M_PI) / 2.0f;
 
 	// derived class must setup
 	NVGcolor arcColor;

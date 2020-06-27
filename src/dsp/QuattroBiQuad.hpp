@@ -47,12 +47,12 @@ class QuattroBiQuadCoeff {
 		// nfc: normalized cutoff frequency (cutoff frequency / sample rate), must be > 0
 		// freq pre-warping with inclusion of M_PI factor; 
 		//   avoid tan() if fc is low (< 1102.5 Hz @ 44.1 kHz, since error at this freq is 2 Hz)
-		float K = nfc < 0.025f ? M_PI * nfc : std::tan(M_PI * std::min(0.499f, nfc));
+		float K = nfc < 0.025f ? float(M_PI) * nfc : std::tan(float(M_PI) * std::min(0.499f, nfc));
 
 		switch (type) {
 			case LOWSHELF: {
 				float sqrtV = std::sqrt(V);
-				Q = std::sqrt(Q) / M_SQRT2;
+				Q = std::sqrt(Q) / float(M_SQRT2);
 				if (V >= 1.f) {// when V = 1, b0 = 1, a1 = b1, a2 = b2
 					float norm = 1.f / (1.f + K / Q + K * K);
 					b0[i] = (1.f + sqrtV * K / Q + V * K * K) * norm;
@@ -73,7 +73,7 @@ class QuattroBiQuadCoeff {
 
 			case HIGHSHELF: {
 				float sqrtV = std::sqrt(V);
-				Q = std::sqrt(Q) / M_SQRT2;
+				Q = std::sqrt(Q) / float(M_SQRT2);
 				if (V >= 1.f) {// when V = 1, b0 = 1, a1 = b1, a2 = b2
 					float norm = 1.f / (1.f + K / Q + K * K);
 					b0[i] = (V + sqrtV * K / Q + K * K) * norm;
@@ -120,7 +120,7 @@ class QuattroBiQuadCoeff {
 	simd::float_4 getFrequencyResponse(float f) {
 		// Compute sum(b_k z^-k) / sum(a_k z^-k) where z = e^(i s)
 		
-		float s = 2 * M_PI * f;// s: normalized angular frequency equal to $2 \pi f / f_{sr}$ ($\pi$ is the Nyquist frequency)
+		float s = 2 * float(M_PI) * f;// s: normalized angular frequency equal to $2 \pi f / f_{sr}$ ($\pi$ is the Nyquist frequency)
 		
 		simd::float_4 bSum[2] = {b0, 0.0f};
 		simd::float_4 aSum[2] = {1.0f, 0.0f};
