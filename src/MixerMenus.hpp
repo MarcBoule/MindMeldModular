@@ -809,6 +809,25 @@ struct InitializeTrackItem : MenuItem {
 	}
 };
 
+// init group settings
+template <typename TMixerGroup>
+struct InitializeGroupItem : MenuItem {
+	TMixerGroup *srcGroup;
+	int groupNumForLink;
+	int *updateTrackLabelRequestPtr;
+	void onAction(const event::Action &e) override {
+		srcGroup->paFade->setValue(1.0f);
+		srcGroup->paMute->setValue(0.0f);
+		srcGroup->paSolo->setValue(0.0f);
+		srcGroup->paPan->setValue(0.5f);
+		srcGroup->gInfo->clearLinked(groupNumForLink);
+		srcGroup->paHpfCutoff->setValue(GlobalConst::defHPFCutoffFreq);
+		srcGroup->paLpfCutoff->setValue(GlobalConst::defLPFCutoffFreq);
+		srcGroup->onReset();
+		*updateTrackLabelRequestPtr = 1;
+	}
+};
+
 // copy track menu settings to
 template <typename TMixerTrack>
 struct CopyTrackSettingsItem : MenuItem {

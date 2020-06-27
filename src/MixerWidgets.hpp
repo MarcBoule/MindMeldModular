@@ -600,18 +600,10 @@ struct TrackDisplay : EditableDisplayBase {
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			
-			// HPFCutoffSlider<TMixerTrack> *trackHPFAdjustSlider = new HPFCutoffSlider<TMixerTrack>(srcTrack);
-			// trackHPFAdjustSlider->box.size.x = 200.0f;
-			// menu->addChild(trackHPFAdjustSlider);
-			
 			HPFCutoffSlider2 *trackHPFAdjustSlider = new HPFCutoffSlider2(hpfParamQuantity);
 			trackHPFAdjustSlider->box.size.x = 200.0f;  
 			menu->addChild(trackHPFAdjustSlider);
 						
-			// LPFCutoffSlider<TMixerTrack> *trackLPFAdjustSlider = new LPFCutoffSlider<TMixerTrack>(srcTrack);
-			// trackLPFAdjustSlider->box.size.x = 200.0f;
-			// menu->addChild(trackLPFAdjustSlider);
-			
 			LPFCutoffSlider2 *trackLPFAdjustSlider = new LPFCutoffSlider2(lpfParamQuantity);
 			trackLPFAdjustSlider->box.size.x = 200.0f;  
 			menu->addChild(trackLPFAdjustSlider);
@@ -735,6 +727,9 @@ struct GroupDisplay : EditableDisplayBase {
 	TMixerGroup *srcGroup = NULL;
 	bool *auxExpanderPresentPtr;
 	int numTracks;// used to calc group offset in linkBitMask
+	int *updateTrackLabelRequestPtr;
+	ParamQuantity* hpfParamQuantity;
+	ParamQuantity* lpfParamQuantity;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -744,6 +739,14 @@ struct GroupDisplay : EditableDisplayBase {
 			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
 			menu->addChild(grpSetLabel);
 			
+			HPFCutoffSlider2 *trackHPFAdjustSlider = new HPFCutoffSlider2(hpfParamQuantity);
+			trackHPFAdjustSlider->box.size.x = 200.0f;  
+			menu->addChild(trackHPFAdjustSlider);
+						
+			LPFCutoffSlider2 *trackLPFAdjustSlider = new LPFCutoffSlider2(lpfParamQuantity);
+			trackLPFAdjustSlider->box.size.x = 200.0f;  
+			menu->addChild(trackLPFAdjustSlider);
+						
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcGroup->panCvLevel));
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);
@@ -797,6 +800,19 @@ struct GroupDisplay : EditableDisplayBase {
 				menu->addChild(dispColItem);
 			}
 			
+			menu->addChild(new MenuSeparator());
+			//menu->addChild(new MenuLabel());// empty line
+
+			MenuLabel *settingsALabel = new MenuLabel();
+			settingsALabel->text = "Actions: " + std::string(srcGroup->groupName, 4);
+			menu->addChild(settingsALabel);
+
+			InitializeGroupItem<TMixerGroup> *initGroupItem = createMenuItem<InitializeGroupItem<TMixerGroup>>("Initialize group settings", "");
+			initGroupItem->srcGroup = srcGroup;
+			initGroupItem->groupNumForLink = groupNumForLink;
+			initGroupItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			menu->addChild(initGroupItem);			
+
 			e.consume(this);
 			return;
 		}

@@ -29,6 +29,8 @@ struct MixMaster : Module {
 		ENUMS(GROUP_SELECT_PARAMS, N_TRK),
 		ENUMS(TRACK_HPCUT_PARAMS, N_TRK),
 		ENUMS(TRACK_LPCUT_PARAMS, N_TRK),
+		ENUMS(GROUP_HPCUT_PARAMS, N_GRP),
+		ENUMS(GROUP_LPCUT_PARAMS, N_GRP),
 		NUM_PARAMS
 	}; 
 
@@ -58,6 +60,8 @@ struct MixMaster : Module {
 	enum LightIds {
 		ENUMS(TRACK_HPF_LIGHTS, N_TRK),
 		ENUMS(TRACK_LPF_LIGHTS, N_TRK),
+		ENUMS(GROUP_HPF_LIGHTS, N_GRP),
+		ENUMS(GROUP_LPF_LIGHTS, N_GRP),
 		NUM_LIGHTS
 	};
 
@@ -77,7 +81,7 @@ struct MixMaster : Module {
 	// none
 	
 	// Need to save, with reset
-	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 4];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	GlobalInfo gInfo;
 	MixerTrack tracks[N_TRK];
 	MixerGroup groups[N_GRP];
@@ -195,6 +199,13 @@ struct MixMaster : Module {
 			// Solo
 			snprintf(strBuf, 32, "GRP%i: solo", i + 1);
 			configParam(GROUP_SOLO_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
+			
+			// HPF cutoff
+			snprintf(strBuf, 32, "GRP%i: HPF cutoff", i + 1);
+			configParam<HPFCutoffParamQuantity>(GROUP_HPCUT_PARAMS + i, 13.0f, 1000.0f, GlobalConst::defHPFCutoffFreq, strBuf); 
+			// LPF cutoff
+			snprintf(strBuf, 32, "GRP%i: LPF cutoff", i + 1);
+			configParam<LPFCutoffParamQuantity>(GROUP_LPCUT_PARAMS + i, 1000.0f, 21000.0f, GlobalConst::defLPFCutoffFreq, strBuf, "", 0.0f, 0.001f);// diplay params are: base, mult, offset 
 		}
 		float maxMFader = std::pow(GlobalConst::masterFaderMaxLinearGain, 1.0f / GlobalConst::masterFaderScalingExponent);
 		configParam(MAIN_FADER_PARAM, 0.0f, maxMFader, 1.0f, "MASTER: level", " dB", -10, 20.0f * GlobalConst::masterFaderScalingExponent);
@@ -238,9 +249,7 @@ struct MixMaster : Module {
 	
 	void onReset() override {
 		// track labels initialized in tracks[i].onReset()'s resetNonJson() call
-		for (int grp = 0; grp < N_GRP; grp++) {
-			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
-		}
+		// group labels initialized in groups[i].onReset()'s resetNonJson() call
 		gInfo.onReset();
 		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].onReset();
@@ -339,6 +348,9 @@ struct MixMaster : Module {
 		gInfo.sampleTime = APP->engine->getSampleTime();
 		for (int trk = 0; trk < N_TRK; trk++) {
 			tracks[trk].onSampleRateChange();
+		}
+		for (int grp = 0; grp < N_GRP; grp++) {
+			groups[grp].onSampleRateChange();
 		}
 		master.onSampleRateChange();
 	}
@@ -495,6 +507,10 @@ struct MixMaster : Module {
 			for (int i = 0; i < N_TRK; i++) {
 				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
 				lights[TRACK_LPF_LIGHTS + i].setBrightness(tracks[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
+			}
+			for (int i = 0; i < N_GRP; i++) {
+				lights[GROUP_HPF_LIGHTS + i].setBrightness(groups[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
+				lights[GROUP_LPF_LIGHTS + i].setBrightness(groups[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
 			}
 		}
 		
@@ -1019,10 +1035,18 @@ struct MixMasterWidget : ModuleWidget {
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
+				groupDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				groupDisplays[i]->numTracks = N_TRK;
+				groupDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i];
+				groupDisplays[i]->lpfParamQuantity = module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i];
 			}
-			
+			// HPF lights
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xGrp1 - 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_HPF_LIGHTS + i));	
+			addParam(createParamCentered<FilterCutWidget>(mm2px(Vec(xGrp1 - 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_HPCUT_PARAMS + i));				
+			// LPF lights
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xGrp1 + 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_LPF_LIGHTS + i));	
+			addParam(createParamCentered<FilterCutWidget>(mm2px(Vec(xGrp1 + 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_LPCUT_PARAMS + i));				
 			// Volume inputs
 			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), module, TMixMaster::GROUP_VOL_INPUTS + i));			
 			// Pan inputs
@@ -1307,10 +1331,18 @@ struct MixMasterJrWidget : ModuleWidget {
 				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
+				groupDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				groupDisplays[i]->numTracks = N_TRK;
+				groupDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i];
+				groupDisplays[i]->lpfParamQuantity = module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i];
 			}
-			
+			// HPF lights
+			addChild(createLightCentered<TinyLight<GreenLight>>(mm2px(Vec(xGrp1 - 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_HPF_LIGHTS + i));	
+			addParam(createParamCentered<FilterCutWidget>(mm2px(Vec(xGrp1 - 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_HPCUT_PARAMS + i));				
+			// LPF lights
+			addChild(createLightCentered<TinyLight<BlueLight>>(mm2px(Vec(xGrp1 + 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_LPF_LIGHTS + i));	
+			addParam(createParamCentered<FilterCutWidget>(mm2px(Vec(xGrp1 + 4.17 + 12.7 * i, 27.0)), module, TMixMaster::GROUP_LPCUT_PARAMS + i));				
 			// Volume inputs
 			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 31.5)), module, TMixMaster::GROUP_VOL_INPUTS + i));			
 			// Pan inputs

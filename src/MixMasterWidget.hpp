@@ -206,6 +206,13 @@ void step() override {
 				// Solo
 				snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_SOLO_PARAMS + i]->label = strBuf;
+				
+				// HPF cutoff
+				snprintf(strBuf, 32, "%s: HPF cutoff", groupLabel.c_str());
+				module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i]->label = strBuf;
+				// LPF cutoff
+				snprintf(strBuf, 32, "%s: LPF cutoff", groupLabel.c_str());
+				module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i]->label = strBuf;
 			}
 			std::string masterLabel = std::string(module->master.masterLabel, 6);
 			// Fader

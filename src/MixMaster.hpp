@@ -735,6 +735,7 @@ struct MixerGroup {
 	// none
 	
 	// need to save, with reset
+	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
 	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t directOutsMode;// when per track
@@ -748,6 +749,10 @@ struct MixerGroup {
 	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
 	SlewLimiterSingle muteSoloGainSlewer;
 	private:
+	ButterworthThirdOrder hpFilter[2];// 18dB/oct
+	ButterworthSecondOrder lpFilter[2];// 12db/oct
+	float lastHpfCutoff;
+	float lastLpfCutoff;
 	simd::float_4 panMatrix;
 	simd::float_4 gainMatrix;	
 	float volCv;
@@ -773,13 +778,14 @@ struct MixerGroup {
 	Input *inPan;
 	Param *paFade;
 	Param *paMute;
+	Param *paSolo;
 	Param *paPan;
-	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+	Param *paHpfCutoff;
+	Param *paLpfCutoff;
 	float *taps;// [0],[1]: pre-insert L R; [32][33]: pre-fader L R, [64][65]: post-fader L R, [96][97]: post-mute-solo L R
 
 	float calcFadeGain() {return paMute->getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
-
 
 
 	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps) {
@@ -791,16 +797,24 @@ struct MixerGroup {
 		inPan = &_inputs[GROUP_PAN_INPUTS + groupNum];
 		paFade = &_params[GROUP_FADER_PARAMS + groupNum];
 		paMute = &_params[GROUP_MUTE_PARAMS + groupNum];
+		paSolo = &_params[GROUP_SOLO_PARAMS + groupNum];
 		paPan = &_params[GROUP_PAN_PARAMS + groupNum];
+		paHpfCutoff = &_params[GROUP_HPCUT_PARAMS + groupNum];
+		paLpfCutoff = &_params[GROUP_LPCUT_PARAMS + groupNum];
 		groupName = _groupName;
 		taps = _taps;
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		for (int i = 0; i < 2; i++) {
+			hpFilter[i].setParameters(true, 0.1f);
+			lpFilter[i].setParameters(false, 0.4f);
+		}
 	}
 
 
 	void onReset() {
+		snprintf(groupName, 4, "GRP"); groupName[3] = 0x30 + (char)groupNum + 1;		
 		*fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		directOutsMode = 3;// post-solo should be default
@@ -819,6 +833,14 @@ struct MixerGroup {
 		volCv = 0.0f;
 		gainMatrixSlewers.reset();
 		muteSoloGainSlewer.reset();
+		setHPFCutoffFreq(paHpfCutoff->getValue());// off
+		setLPFCutoffFreq(paLpfCutoff->getValue());// off
+		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
+		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
+		for (int i = 0; i < 2; i++) {
+			hpFilter[i].reset();
+			lpFilter[i].reset();
+		}
 		oldPan = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
@@ -834,6 +856,9 @@ struct MixerGroup {
 
 
 	void dataToJson(json_t *rootJ) {
+		// groupName
+		// saved elsewhere
+		
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(*fadeRate));
 		
@@ -861,6 +886,9 @@ struct MixerGroup {
 
 
 	void dataFromJson(json_t *rootJ) {
+		// groupName 
+		// loaded elsewhere
+
 		// fadeRate
 		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
 		if (fadeRateJ)
@@ -903,8 +931,41 @@ struct MixerGroup {
 		
 		// extern must call resetNonJson()
 	}	
+
+	void setHPFCutoffFreq(float fc) {
+		paHpfCutoff->setValue(fc);
+		lastHpfCutoff = fc;
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		hpFilter[0].setParameters(true, fc);
+		hpFilter[1].setParameters(true, fc);
+	}
+	float getHPFCutoffFreq() {return paHpfCutoff->getValue();}
+	
+	void setLPFCutoffFreq(float fc) {
+		paLpfCutoff->setValue(fc);
+		lastLpfCutoff = fc;
+		fc *= gInfo->sampleTime;// fc is in normalized freq for rest of method
+		lpFilter[0].setParameters(false, fc);
+		lpFilter[1].setParameters(false, fc);
+	}
+	float getLPFCutoffFreq() {return paLpfCutoff->getValue();}
+
 		
+	void onSampleRateChange() {
+		setHPFCutoffFreq(paHpfCutoff->getValue());
+		setLPFCutoffFreq(paLpfCutoff->getValue());
+	}
+
+	
 	void updateSlowValues() {
+		// filters
+		if (paHpfCutoff->getValue() != lastHpfCutoff) {
+			setHPFCutoffFreq(paHpfCutoff->getValue());
+		}
+		if (paLpfCutoff->getValue() != lastLpfCutoff) {
+			setLPFCutoffFreq(paLpfCutoff->getValue());
+		}
+
 		// ** process linked **
 		gInfo->processLinked(N_TRK + groupNum, paFade->getValue());
 		
@@ -1086,7 +1147,6 @@ struct MixerTrack {
 	int8_t invertInput;// 0 = off (default), 1 = on
 
 	// no need to save, with reset
-
 	bool stereo;// pan coefficients use this, so set up first
 	private:
 	float inGain;

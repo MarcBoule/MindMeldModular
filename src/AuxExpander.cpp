@@ -65,7 +65,7 @@ struct AuxExpander : Module {
 	// none
 	
 	// Need to save, with reset
-	alignas(4) char auxLabels[4 * 4 + 1];// 4 chars per label, 4 aux labels, null terminate the end the whole array only
+	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice)
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
@@ -95,7 +95,7 @@ struct AuxExpander : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 1];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 4];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	PackedBytes4 colorAndCloak;
 	PackedBytes4 directOutsAndStereoPanModes;// cc1[0] is direct out mode, cc1[1] is stereo pan mode
 	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
@@ -107,9 +107,9 @@ struct AuxExpander : Module {
 	TriggerRiseFall muteSoloCvTriggers[N_TRK + N_GRP + 4 + 4];
 	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];// 4 (2) elements for 16 (8) tracks, and 1 element for 4 (2) groups
 	uint16_t ecoMode;
-	float auxRetFadeGains[4];// for return fades
 	int8_t momentaryCvButtons;
 	int8_t linearVolCvInputs;
+	float auxRetFadeGains[4];// for return fades
 	
 	
 	AuxExpander() {
