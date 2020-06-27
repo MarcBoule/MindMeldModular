@@ -154,33 +154,4 @@ float updateFadeGain2(float fadeGain, float target, float *fadeGainX, float *fad
 }
 
 
-void TrackSettingsCpBuffer::reset() {
-	// first level
-	gainAdjust = 1.0f;
-	fadeRate = 0.0f;
-	fadeProfile = 0.0f;
-	hpfCutoffFreq = 13.0f;// !! user must call filters' setCutoffs manually when copy pasting these
-	lpfCutoffFreq = 20010.0f;// !! user must call filters' setCutoffs manually when copy pasting these
-	directOutsMode = 3;
-	auxSendsMode = 3;
-	panLawStereo = 1;
-	vuColorThemeLocal = 0;
-	filterPos = 1;// default is post-insert
-	dispColorLocal = 0;
-	panCvLevel = 1.0f;
-	linkedFader = false;
-	
-	// second level
-	paGroup = 0.0f;
-	paFade = 1.0f;
-	paMute = 0.0f;
-	paSolo = 0.0f;
-	paPan = 0.5f;
-	trackName[0] = '-'; trackName[0] = '0'; trackName[0] = '0'; trackName[0] = '-';
-	fadeGain = 1.0f;
-	fadeGainX = 0.0f;
-}
-
-
-
 

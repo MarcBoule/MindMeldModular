@@ -470,7 +470,7 @@ struct MixerMaster {
 		target = fadeGain;
 		fadeGainX = fadeGain;
 		fadeGainXr = 0.0f;
-		fadeGainScaled = fadeGain;
+		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		paramWithCV = -100.0f;
 		dimGainIntegerDB = calcDimGainIntegerDB(dimGain);
 	}
@@ -611,27 +611,25 @@ struct MixerMaster {
 		// takes mix[0..1] and redeposits post in same place
 		
 		if (eco) {
-			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (isFadeMode()) {
-				float newTarget = calcFadeGain();
-				if (newTarget != target) {
-					fadeGainXr = 0.0f;
-					target = newTarget;
-					vu.reset();
-				}
-				if (fadeGain != target) {
+			// calc ** fadeGain, fadeGainX, fadeGainXr, target, fadeGainScaled **
+			float newTarget = calcFadeGain();
+			if (newTarget != target) {
+				fadeGainXr = 0.0f;
+				target = newTarget;
+				vu.reset();
+			}
+			if (fadeGain != target) {
+				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
 					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::masterFaderScalingExponent);
 				}
+				else {// we are in mute mode
+					fadeGain = target;
+					fadeGainX = target;
+					fadeGainScaled = target;// no pow needed here since 0.0f or 1.0f
+				}	
 			}
-			else {// we are in mute mode
-				fadeGain = calcFadeGain(); // do manually below to optimized fader mult
-				target = fadeGain;
-				fadeGainX = fadeGain;
-				fadeGainXr = 0.0f;
-				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
-			}	
 			// dim (this affects fadeGainScaled only, so treated like a partial mute, but no effect on fade pointers or other just effect on sound
 			chainGainsAndMute[2] = fadeGainScaled;
 			if (params[MAIN_DIM_PARAM].getValue() >= 0.5f) {
@@ -758,12 +756,13 @@ struct MixerGroup {
 	public:
 	VuMeterAllDual vu;// use post[]
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float target;
 	float fadeGainX;
+	float fadeGainXr;
 	float fadeGainScaled;
 	float paramWithCV;
 	float pan;
 	bool panCvConnected;
-	float target = -1.0f;
 	
 	// no need to save, no reset
 	int groupNum;// 0 to 3 (1)
@@ -824,12 +823,13 @@ struct MixerGroup {
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
 		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		target = fadeGain;
+		fadeGainX = fadeGain;
+		fadeGainXr = 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		paramWithCV = -100.0f;
 		pan = 0.5f;
 		panCvConnected = false;
-		target = -1.0f;
 	}
 
 
@@ -936,27 +936,27 @@ struct MixerGroup {
 		}
 
 		if (eco) {	
-			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (isFadeMode()) {
-				float newTarget = calcFadeGain();
-				if (newTarget != target) {
-					if (!gInfo->symmetricalFade) {
-						fadeGainX = 0.0f;
-					}
+			// calc ** fadeGain, fadeGainX, fadeGainXr, target, fadeGainScaled **
+			float newTarget = calcFadeGain();
+			if (newTarget != target) {
+				fadeGainXr = 0.0f;
+				if (isFadeMode()) {
 					gInfo->fadeOtherLinkedTracks(groupNum + N_TRK, newTarget);
-					target = newTarget;
-					vu.reset();
 				}
-				if (fadeGain != target) {
+				target = newTarget;
+				vu.reset();
+			}
+			if (fadeGain != target) {
+				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::trkAndGrpFaderScalingExponent);
 				}
-			}
-			else {// we are in mute mode
-				fadeGain = calcFadeGain();
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+				else {// we are in mute mode
+					fadeGain = target;
+					fadeGainX = target;
+					fadeGainScaled = target;// no pow needed here since 0.0f or 1.0f
+				}
 			}
 
 			// calc ** fader, paramWithCV **
@@ -1111,14 +1111,15 @@ struct MixerTrack {
 	public:
 	VuMeterAllDual vu;
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float target;
 	float fadeGainX;
+	float fadeGainXr;
 	float fadeGainScaled;
 	float fadeGainScaledWithSolo;
 	float paramWithCV;
 	float pan;// this is set only in process() when eco, and also used only (elsewhere) in process() when eco
 	bool panCvConnected;
 	float volCv;
-	float target;
 	float soloGain;
 
 	// no need to save, no reset
@@ -1218,14 +1219,15 @@ struct MixerTrack {
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
 		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		target = fadeGain;
+		fadeGainX = fadeGain;
+		fadeGainXr = 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		fadeGainScaledWithSolo = fadeGainScaled;
 		paramWithCV = -100.0f;
 		pan = 0.5f;
 		panCvConnected = false;
 		volCv = 1.0f;
-		target = -1.0f;
 		soloGain = 1.0f;
 	}
 
@@ -1409,8 +1411,10 @@ struct MixerTrack {
 			dest->trackName[chr] = trackName[chr];
 		}
 		dest->fadeGain = fadeGain;
+		dest->target = target;
 		dest->fadeGainX = fadeGainX;
-		// fadeGainScaled not really needed
+		dest->fadeGainXr = fadeGainXr;
+		dest->fadeGainScaled = fadeGainScaled;
 	}
 	void read2(TrackSettingsCpBuffer *src) {
 		read(src);
@@ -1423,8 +1427,10 @@ struct MixerTrack {
 			trackName[chr] = src->trackName[chr];
 		}
 		fadeGain = src->fadeGain;
+		target = src->target;
 		fadeGainX = src->fadeGainX;
-		// fadeGainScaled not really needed
+		fadeGainXr = src->fadeGainXr;
+		fadeGainScaled = src->fadeGainScaled;
 	}
 
 	
@@ -1517,27 +1523,27 @@ struct MixerTrack {
 
 	void process(float *mix, bool eco) {// track		
 		if (eco) {
-			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (isFadeMode()) {
-				float newTarget = calcFadeGain();
-				if (newTarget != target) {
-					if (!gInfo->symmetricalFade) {
-						fadeGainX = 0.0f;
-					}
+			// calc ** fadeGain, fadeGainX, fadeGainXr, target, fadeGainScaled **
+			float newTarget = calcFadeGain();
+			if (newTarget != target) {
+				fadeGainXr = 0.0f;
+				if (isFadeMode()) {
 					gInfo->fadeOtherLinkedTracks(trackNum, newTarget);
-					target = newTarget;
-					vu.reset();
 				}
-				if (fadeGain != target) {
+				target = newTarget;
+				vu.reset();
+			}
+			if (fadeGain != target) {
+				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::trkAndGrpFaderScalingExponent);
 				}
-			}
-			else {// we are in mute mode
-				fadeGain = calcFadeGain();
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+				else {// we are in mute mode
+					fadeGain = target;
+					fadeGainX = target;
+					fadeGainScaled = target;// no pow needed here since 0.0f or 1.0f
+				}
 			}
 			fadeGainScaledWithSolo = fadeGainScaled * soloGain;
 
@@ -1830,10 +1836,11 @@ struct MixerAux {
 	public:
 	VuMeterAllDual vu;
 	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float target;
 	float fadeGainX;
+	float fadeGainXr;
 	float fadeGainScaled;
 	float fadeGainScaledWithSolo;
-	float target;
 	float soloGain;
 
 
@@ -1885,10 +1892,11 @@ struct MixerAux {
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
 		fadeGain = calcFadeGain();
-		fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
+		target = fadeGain;
+		fadeGainX = fadeGain;
+		fadeGainXr = 0.0f;
 		fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
 		fadeGainScaledWithSolo = fadeGainScaled;
-		target = -1.0f;
 		soloGain = 1.0f;
 	}	
 
@@ -1941,26 +1949,24 @@ struct MixerAux {
 		}
 		
 		if (eco) {
-			// calc ** fadeGain, fadeGainX, fadeGainScaled **
-			if (isFadeMode()) {
-				float newTarget = calcFadeGain();
-				if (newTarget != target) {
-					if (!gInfo->symmetricalFade) {
-						fadeGainX = 0.0f;
-					}
-					target = newTarget;
-					vu.reset();
-				}
-				if (fadeGain != target) {
+			// calc ** fadeGain, fadeGainX, fadeGainXr, target, fadeGainScaled **
+			float newTarget = calcFadeGain();
+			if (newTarget != target) {
+				fadeGainXr = 0.0f;
+				target = newTarget;
+				vu.reset();
+			}
+			if (fadeGain != target) {
+				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, deltaX, *fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, *fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::globalAuxReturnScalingExponent);
 				}
-			}
-			else {// we are in mute mode
-				fadeGain = calcFadeGain();
-				fadeGainX = gInfo->symmetricalFade ? fadeGain : 0.0f;
-				fadeGainScaled = fadeGain;// no pow needed here since 0.0f or 1.0f
+				else {// we are in mute mode
+					fadeGain = target;
+					fadeGainX = target;
+					fadeGainScaled = target;// no pow needed here since 0.0f or 1.0f
+				}
 			}
 			fadeGainScaledWithSolo = fadeGainScaled * soloGain;
 

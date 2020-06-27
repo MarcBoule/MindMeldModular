@@ -139,9 +139,10 @@ struct TrackSettingsCpBuffer {
 	float paPan;
 	char trackName[4];// track names are not null terminated in MixerTracks
 	float fadeGain;
+	float target;
 	float fadeGainX;
-	
-	void reset();
+	float fadeGainXr;
+	float fadeGainScaled;
 };
 
 
