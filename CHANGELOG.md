@@ -2,6 +2,9 @@
 
 - Fixed initialization bug in AuxSpander filters
 - Added option to MixMaster track menus to invert input signal
+- Added filters on groups in MixMasters
+- Added option for initializing individual group settings in MixMasters
+- Added many panel options to the Meld module to facilitate using the poly CV inputs in MixMasters and AuxSpanders
 
 
 ### 1.1.7 (2020-06-07)

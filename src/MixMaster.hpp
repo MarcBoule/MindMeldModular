@@ -621,7 +621,7 @@ struct MixerMaster {
 			if (fadeGain != target) {
 				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::masterFaderScalingExponent);
 				}
 				else {// we are in mute mode
@@ -1069,7 +1069,7 @@ struct MixerGroup {
 			if (fadeGain != target) {
 				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::trkAndGrpFaderScalingExponent);
 				}
 				else {// we are in mute mode
@@ -1649,7 +1649,7 @@ struct MixerTrack {
 			if (fadeGain != target) {
 				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::trkAndGrpFaderScalingExponent);
 				}
 				else {// we are in mute mode
@@ -2062,7 +2062,7 @@ struct MixerAux {
 			if (fadeGain != target) {
 				if (isFadeMode()) {
 					float deltaX = (gInfo->sampleTime / *fadeRate) * (1 + (gInfo->ecoMode & 0x3));// last value is sub refresh
-					fadeGain = updateFadeGain2(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, *fadeProfile, gInfo->symmetricalFade);
+					fadeGain = updateFadeGain(fadeGain, target, &fadeGainX, &fadeGainXr, deltaX, *fadeProfile, gInfo->symmetricalFade);
 					fadeGainScaled = std::pow(fadeGain, GlobalConst::globalAuxReturnScalingExponent);
 				}
 				else {// we are in mute mode

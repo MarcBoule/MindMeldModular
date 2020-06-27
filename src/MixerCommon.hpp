@@ -109,8 +109,7 @@ static inline float calcDimGainIntegerDB(float dimGain) {
 //*****************************************************************************
 // Utility
 
-float updateFadeGain(float fadeGain, float target, float *fadeGainX, float timeStepX, float shape, bool symmetricalFade);
-float updateFadeGain2(float fadeGain, float target, float *fadeGainX, float *fadeGainXr, float timeStepX, float shape, bool symmetricalFade);
+float updateFadeGain(float fadeGain, float target, float *fadeGainX, float *fadeGainXr, float timeStepX, float shape, bool symmetricalFade);
 
 struct TrackSettingsCpBuffer {
 	// first level of copy paste (copy copy-paste of track settings)
