@@ -93,7 +93,6 @@ struct MixMaster : Module {
 	int refreshCounter4;
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	int8_t trackOrGroupResetInAux;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
-	float values20[20];
 	SlewLimiterSingle muteTrackWhenSoloAuxRetSlewer;
 
 	// No need to save, no reset
@@ -104,16 +103,16 @@ struct MixMaster : Module {
 	float groupTaps[N_GRP * 2 * 4];// room for 4 taps for each of the 4 stereo groups
 	float groupInsertOuts[N_GRP * 2];// room for 4 (2) stereo group insert outs
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
-	float *auxSends;// index into correct page of messages from expander (avoid having separate buffers)
-	float *auxReturns;// index into correct page of messages from expander (avoid having separate buffers)
-	float *auxRetFadePanFadecv;// index into correct page of messages from expander (avoid having separate buffers)
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
-	PackedBytes4 directOutsModeLocalAux;
-	PackedBytes4 stereoPanModeLocalAux;
-	alignas(4) char auxLabels[4 * 4 + 1];
-	PackedBytes4 auxVuColors;
-	PackedBytes4 auxDispColors;
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
+	float *auxReturns;
+	float *auxRetFadePanFadecv;
+	PackedBytes4 directOutsModeLocalAux;// slow expander
+	PackedBytes4 stereoPanModeLocalAux;// slow expander
+	alignas(4) char auxLabels[4 * 4 + 4];// slow expander
+	PackedBytes4 auxVuColors;// slow expander
+	PackedBytes4 auxDispColors;// slow expander
+	float values20[20];// slow expander
 		
 		
 	void sendToMessageBus() { 
@@ -224,8 +223,12 @@ struct MixMaster : Module {
 		snprintf(auxLabels, 16 + 1, "AUXAAUXBAUXCAUXD");
 		auxVuColors.cc1 = 0;
 		auxDispColors.cc1 = 0;
+		for (int i = 0; i < 20; i++) {
+			values20[i] = 0.0f;
+		}
 
 		gInfo.construct(&params[0], values20);
+		trackLabels[4 * (N_TRK + N_GRP)] = 0;
 		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
@@ -380,7 +383,7 @@ struct MixMaster : Module {
 				memcpy(&auxVuColors, &messagesFromExpander[Intf::MFA_AUX_VUCOL], 4);
 				memcpy(&auxDispColors, &messagesFromExpander[Intf::MFA_AUX_DISPCOL], 4);
 				// Aux mute, solo, group, fade rate and fade profile (called values20 in mother)
-				memcpy(values20, &messagesFromExpander[Intf::MFA_AUX_MUTE_SOLO_GROUP], 4 * 20);
+				memcpy(values20, &messagesFromExpander[Intf::MFA_AUX_VALUES20], 4 * 20);
 			}
 			
 			// Aux returns

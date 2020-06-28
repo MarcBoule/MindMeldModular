@@ -201,6 +201,7 @@ struct AuxExpander : Module {
 		for (int i = 0; i < N_GRP; i++) {
 			groupSendVcaGains[i] = simd::float_4::zero();
 		}
+		auxLabels[4 * 4] = 0;
 		for (int i = 0; i < 4; i++) {
 			aux[i].construct(i, &inputs[0], &params[0], &(auxLabels[4 * i]), &vuColorThemeLocal.cc4[i], &directOutsModeLocal.cc4[i], &panLawStereoLocal.cc4[i], &dispColorAuxLocal.cc4[i], &panCvLevels[i], &auxFadeRatesAndProfiles[i]);
 			auxRetFadeGains[i] = 1.0f;
@@ -563,10 +564,10 @@ struct AuxExpander : Module {
 
 				// Aux mute, solo, group
 				for (int i = 0; i < 12; i++) {
-					messagesToMother[Intf::MFA_AUX_MUTE_SOLO_GROUP + i] = params[GLOBAL_AUXMUTE_PARAMS + i].getValue();
+					messagesToMother[Intf::MFA_AUX_VALUES20 + i] = params[GLOBAL_AUXMUTE_PARAMS + i].getValue();
 				}
 				// Aux fade rate and profile
-				memcpy(&messagesToMother[Intf::MFA_AUX_FADE_RATE_AND_PROFILE], auxFadeRatesAndProfiles, 4 * 8);
+				memcpy(&messagesToMother[Intf::MFA_AUX_VALUES20 + 12], auxFadeRatesAndProfiles, 4 * 8);
 			}
 			
 			// Aux returns
@@ -585,7 +586,7 @@ struct AuxExpander : Module {
 					val = clamp(val, 0.0f, 1.0f);
 					globalRetPansWithCV[i] = val;// can put here since unused when cv disconnected
 				}
-				messagesToMother[Intf::MFA_AUX_RET_PAN + i] = val;
+				messagesToMother[Intf::MFA_AUX_RET_FADER + 4 + i] = val;
 			}
 			
 			// aux return fader
@@ -609,7 +610,7 @@ struct AuxExpander : Module {
 
 				fader = std::pow(fader, GlobalConst::globalAuxReturnScalingExponent);// scaling
 				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = fader;
-				messagesToMother[Intf::MFA_AUX_RET_FADER_CV + i] = volCv;// send back to mother in case linearVolCvInputs!=0
+				messagesToMother[Intf::MFA_AUX_RET_FADER + 8 + i] = volCv;// send back to mother in case linearVolCvInputs!=0
 			}
 				
 			refreshCounter20++;
