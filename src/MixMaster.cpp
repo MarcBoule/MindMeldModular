@@ -90,7 +90,7 @@ struct MixMaster : Module {
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
-	int refreshCounter8;
+	int refreshCounter4;
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	int8_t trackOrGroupResetInAux;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
 	float values20[20];
@@ -265,7 +265,7 @@ struct MixMaster : Module {
 	}
 	void resetNonJson(bool recurseNonJson) {
 		updateTrackLabelRequest = 1;
-		refreshCounter8 = 0;
+		refreshCounter4 = 0;
 		trackMoveInAuxRequest = 0;
 		trackOrGroupResetInAux = -1;
 		if (recurseNonJson) {
@@ -368,12 +368,6 @@ struct MixMaster : Module {
 		if (auxExpanderPresent) {
 			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
-			auxReturns = &messagesFromExpander[Intf::MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
-			auxRetFadePanFadecv = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 12 values of the return faders and pan knobs and cvs for faders
-						
-			int value20i = clamp((int)(messagesFromExpander[Intf::MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
-			values20[value20i] = messagesFromExpander[Intf::MFA_VALUE20];
-			
 			// Slow values from expander
 			uint32_t* mfaUpdateSlow = (uint32_t*)(&messagesFromExpander[Intf::MFA_UPDATE_SLOW]);
 			if (*mfaUpdateSlow != 0) {
@@ -381,11 +375,19 @@ struct MixMaster : Module {
 				memcpy(&directOutsModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_DIR_OUTS], 4);
 				memcpy(&stereoPanModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_STEREO_PANS], 4);
 				// Aux labels
-				memcpy(&auxLabels, &messagesFromExpander[Intf::AFM_AUX_NAMES], 4 * 4);
+				memcpy(&auxLabels, &messagesFromExpander[Intf::MFA_AUX_NAMES], 4 * 4);
 				// Colors
-				memcpy(&auxVuColors, &messagesFromExpander[Intf::AFM_AUX_VUCOL], 4);
-				memcpy(&auxDispColors, &messagesFromExpander[Intf::AFM_AUX_DISPCOL], 4);
+				memcpy(&auxVuColors, &messagesFromExpander[Intf::MFA_AUX_VUCOL], 4);
+				memcpy(&auxDispColors, &messagesFromExpander[Intf::MFA_AUX_DISPCOL], 4);
 			}
+			
+			// Aux returns
+			auxReturns = &messagesFromExpander[Intf::MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
+			auxRetFadePanFadecv = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 12 values of the return faders and pan knobs and cvs for faders
+						
+			int value20i = clamp((int)(messagesFromExpander[Intf::MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
+			values20[value20i] = messagesFromExpander[Intf::MFA_VALUE20];
+			
 		}
 		else {
 			muteTrackWhenSoloAuxRetSlewer.reset();
@@ -523,7 +525,6 @@ struct MixMaster : Module {
 			float *messageToExpander = (float*)(rightExpander.module->leftExpander.producerMessage);
 			
 			// Slow
-			
 			uint32_t* afmUpdateSlow = (uint32_t*)(&messageToExpander[Intf::AFM_UPDATE_SLOW]);
 			*afmUpdateSlow = 0;
 			if (refresh.refreshCounter == 0) {
@@ -575,7 +576,11 @@ struct MixMaster : Module {
 				memcpy(&messageToExpander[Intf::AFM_MOMENTARY_CVBUTTONS], &tmp, 1);			
 				// linearVolCvInputs
 				tmp = gInfo.linearVolCvInputs;
-				memcpy(&messageToExpander[Intf::AFM_LINEARVOLCVINPUTS], &tmp, 1);			
+				memcpy(&messageToExpander[Intf::AFM_LINEARVOLCVINPUTS], &tmp, 1);		
+				// mute ghost
+				for (int auxi = 0; auxi < 4; auxi++) {
+					messageToExpander[Intf::AFM_MUTE_GHOST + auxi] = aux[auxi].fadeGainScaledWithSolo;
+				}
 			}
 			
 			// Fast
@@ -583,18 +588,13 @@ struct MixMaster : Module {
 			// 16+4 (8+2) stereo signals to be used to make sends in aux expander
 			writeAuxSends(&messageToExpander[Intf::AFM_AUX_SENDS]);						
 			// Aux VUs
-			// a return VU related value; index 0-3 : quad vu floats of a given aux, 4-7 : mute ghost of given aux (in [AFM_VU_VALUES + 0] only)
-			messageToExpander[Intf::AFM_VU_INDEX] = (float)refreshCounter8;
-			if (refreshCounter8 < 4) {
-				memcpy(&messageToExpander[Intf::AFM_VU_VALUES], aux[refreshCounter8].vu.vuValues, 4 * 4);
-			}
-			else {
-				messageToExpander[Intf::AFM_VU_VALUES + 0] = aux[refreshCounter8 & 0x3].fadeGainScaledWithSolo;
-			}	
+			// a return VU related value; index 0-3 : quad vu floats of a given aux
+			messageToExpander[Intf::AFM_VU_INDEX] = (float)refreshCounter4;
+			memcpy(&messageToExpander[Intf::AFM_VU_VALUES], aux[refreshCounter4].vu.vuValues, 4 * 4);
 			
-			refreshCounter8++;
-			if (refreshCounter8 >= 8) {
-				refreshCounter8 = 0;
+			refreshCounter4++;
+			if (refreshCounter4 >= 4) {
+				refreshCounter4 = 0;
 			}
 			
 			rightExpander.module->leftExpander.messageFlipRequested = true;

@@ -21,37 +21,44 @@
 template <int N_TRK, int N_GRP>
 struct ExpansionInterface {
 	enum AuxFromMotherIds { // for expander messages from main to aux panel
+		// Fast (sample-rate)
+		AFM_UPDATE_SLOW,
 		ENUMS(AFM_AUX_SENDS, (N_TRK + N_GRP) * 2), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
-		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP),
-		AFM_UPDATE_SLOW, // (track/group names, colorAndCloak)
+		AFM_VU_INDEX, // a return VU related value; index 0-3 : quad vu floats of a given aux
+		ENUMS(AFM_VU_VALUES, 4),
+		
+		// Slow (sample-rate / 256)
+		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP), 
 		AFM_COLOR_AND_CLOAK,
 		AFM_DIRECT_AND_PAN_MODES,
 		AFM_TRACK_MOVE,
 		AFM_TRK_GRP_RESET,
 		AFM_AUXSENDMUTE_GROUPED_RETURN,
-		ENUMS(AFM_TRK_DISP_COL, N_TRK / 4 + 1),// 4 tracks per dword, 4 (2) groups in last dword
+		ENUMS(AFM_TRK_DISP_COL, N_TRK / 4 + 1), // 4 tracks per dword, 4 (2) groups in last dword
 		AFM_ECO_MODE,
 		ENUMS(AFM_FADE_GAINS, 4),
 		AFM_MOMENTARY_CVBUTTONS,
-		AFM_VU_INDEX,// a return VU related value; index 0-3 : quad vu floats of a given aux, 4-7 : mute ghost of given aux (in AFM_VU_VALUES[0] only)
-		ENUMS(AFM_VU_VALUES, 4),
 		AFM_LINEARVOLCVINPUTS,
+		ENUMS(AFM_MUTE_GHOST, 4), // mute ghost of each aux
 		AFM_NUM_VALUES
 	};
 	
 	enum MotherFromAuxIds { // for expander messages from aux panel to main
+		// Fast (sample-rate)	
+		MFA_UPDATE_SLOW,
 		ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
 		MFA_VALUE20_INDEX,// a return-related value, 20 of such values to bring back to main, one per sample (mute, solo, group, fadeRate, fadeProfile)
 		MFA_VALUE20,
-		MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
-		MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
 		ENUMS(MFA_AUX_RET_FADER, 4),
 		ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
 		ENUMS(MFA_AUX_RET_FADER_CV, 4),// must be contiguous with MFA_AUX_RET_PAN
-		MFA_UPDATE_SLOW, // (aux names, directOutsModeLocalAux, panLawStereoLocalAux, vu and display colors)
-		ENUMS(AFM_AUX_NAMES, 4),
-		AFM_AUX_VUCOL,
-		AFM_AUX_DISPCOL,
+		
+		// Slow (sample-rate / 256)
+		MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
+		MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
+		ENUMS(MFA_AUX_NAMES, 4),
+		MFA_AUX_VUCOL,
+		MFA_AUX_DISPCOL,
 		MFA_NUM_VALUES
 	};	
 };

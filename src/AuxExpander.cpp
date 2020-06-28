@@ -422,17 +422,15 @@ struct AuxExpander : Module {
 				// linearVolCvInputs
 				memcpy(&tmp, &messagesFromMother[Intf::AFM_LINEARVOLCVINPUTS], 1);
 				linearVolCvInputs = (uint8_t)tmp;
+				// mute ghost
+				memcpy(srcMuteGhost, &messagesFromMother[Intf::AFM_MUTE_GHOST], 4 * 4);
 			}
 			
 			// Fast values from mother
 			// Vus 
-			int value8i = clamp((int)(messagesFromMother[Intf::AFM_VU_INDEX]), 0, 8);
-			if (value8i < 4) {
-				memcpy(&srcLevelsVus[value8i][0], &messagesFromMother[Intf::AFM_VU_VALUES], 4 * 4);
-			}
-			else {
-				srcMuteGhost[value8i & 0x3] = messagesFromMother[Intf::AFM_VU_VALUES];
-			}
+			int value4i = clamp((int)(messagesFromMother[Intf::AFM_VU_INDEX]), 0, 4);
+			memcpy(&srcLevelsVus[value4i][0], &messagesFromMother[Intf::AFM_VU_VALUES], 4 * 4);
+
 						
 			// Aux sends
 
@@ -550,21 +548,6 @@ struct AuxExpander : Module {
 			
 			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
 			
-			// Aux returns
-			// left A, right A, left B, right B, left C, right C, left D, right D
-			for (int i = 0; i < 4; i++) {
-				aux[i].process(&messagesToMother[Intf::MFA_AUX_RETURNS + (i << 1)]);
-			}
-			
-			// values for returns, 20 such values (mute, solo, group, fadeRate, fadeProfile)
-			messagesToMother[Intf::MFA_VALUE20_INDEX] = (float)refreshCounter20;
-			if (refreshCounter20 < 12) {
-				messagesToMother[Intf::MFA_VALUE20] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter20].getValue();
-			}
-			else {
-				messagesToMother[Intf::MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
-			}
-			
 			uint32_t* mfaUpdateSlow = (uint32_t*)(&messagesToMother[Intf::MFA_UPDATE_SLOW]);
 			*mfaUpdateSlow = 0;
 			if (refresh.refreshCounter == 0) {
@@ -573,10 +556,25 @@ struct AuxExpander : Module {
 				memcpy(&messagesToMother[Intf::MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
 				memcpy(&messagesToMother[Intf::MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
 				// Aux labels
-				memcpy(&messagesToMother[Intf::AFM_AUX_NAMES], &auxLabels, 4 * 4);
+				memcpy(&messagesToMother[Intf::MFA_AUX_NAMES], &auxLabels, 4 * 4);
 				// Aux colors
-				memcpy(&messagesToMother[Intf::AFM_AUX_VUCOL], &vuColorThemeLocal.cc1, 4);
-				memcpy(&messagesToMother[Intf::AFM_AUX_DISPCOL], &dispColorAuxLocal.cc1, 4);
+				memcpy(&messagesToMother[Intf::MFA_AUX_VUCOL], &vuColorThemeLocal.cc1, 4);
+				memcpy(&messagesToMother[Intf::MFA_AUX_DISPCOL], &dispColorAuxLocal.cc1, 4);
+			}
+			
+			// Aux returns
+			// left A, right A, left B, right B, left C, right C, left D, right D
+			for (int i = 0; i < 4; i++) {
+				aux[i].process(&messagesToMother[Intf::MFA_AUX_RETURNS + (i << 1)]);
+			}
+			
+			// values for returns, 20 such values (mute, solo, group, fadeRate, fadeProfile)
+			messagesToMother[Intf::MFA_VALUE20_INDEX] = (float)refreshCounter20;
+			if (refreshCounter20 < 12) {// mute, solo, group are contiguous
+				messagesToMother[Intf::MFA_VALUE20] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter20].getValue();
+			}
+			else {// fadeRate and fadeProfile are contiguous
+				messagesToMother[Intf::MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
 			}
 			
 			// aux return pan
