@@ -47,8 +47,6 @@ struct ExpansionInterface {
 		// Fast (sample-rate)	
 		MFA_UPDATE_SLOW,
 		ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-		MFA_VALUE20_INDEX,// a return-related value, 20 of such values to bring back to main, one per sample (mute, solo, group, fadeRate, fadeProfile)
-		MFA_VALUE20,
 		ENUMS(MFA_AUX_RET_FADER, 4),
 		ENUMS(MFA_AUX_RET_PAN, 4),// must be contiguous with MFA_AUX_RET_FADER
 		ENUMS(MFA_AUX_RET_FADER_CV, 4),// must be contiguous with MFA_AUX_RET_PAN
@@ -59,6 +57,8 @@ struct ExpansionInterface {
 		ENUMS(MFA_AUX_NAMES, 4),
 		MFA_AUX_VUCOL,
 		MFA_AUX_DISPCOL,
+		ENUMS(MFA_AUX_MUTE_SOLO_GROUP, 12),
+		ENUMS(MFA_AUX_FADE_RATE_AND_PROFILE, 8),// must be contiguous with MFA_AUX_MUTE_SOLO_GROUP
 		MFA_NUM_VALUES
 	};	
 };

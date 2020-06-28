@@ -379,15 +379,13 @@ struct MixMaster : Module {
 				// Colors
 				memcpy(&auxVuColors, &messagesFromExpander[Intf::MFA_AUX_VUCOL], 4);
 				memcpy(&auxDispColors, &messagesFromExpander[Intf::MFA_AUX_DISPCOL], 4);
+				// Aux mute, solo, group, fade rate and fade profile (called values20 in mother)
+				memcpy(values20, &messagesFromExpander[Intf::MFA_AUX_MUTE_SOLO_GROUP], 4 * 20);
 			}
 			
 			// Aux returns
 			auxReturns = &messagesFromExpander[Intf::MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
-			auxRetFadePanFadecv = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 12 values of the return faders and pan knobs and cvs for faders
-						
-			int value20i = clamp((int)(messagesFromExpander[Intf::MFA_VALUE20_INDEX]), 0, 19);// mute, solo, group, fadeRate, fadeProfile for aux returns
-			values20[value20i] = messagesFromExpander[Intf::MFA_VALUE20];
-			
+			auxRetFadePanFadecv = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 12 values of the return faders and pan knobs and cvs for faders			
 		}
 		else {
 			muteTrackWhenSoloAuxRetSlewer.reset();

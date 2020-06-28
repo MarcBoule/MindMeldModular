@@ -560,6 +560,13 @@ struct AuxExpander : Module {
 				// Aux colors
 				memcpy(&messagesToMother[Intf::MFA_AUX_VUCOL], &vuColorThemeLocal.cc1, 4);
 				memcpy(&messagesToMother[Intf::MFA_AUX_DISPCOL], &dispColorAuxLocal.cc1, 4);
+
+				// Aux mute, solo, group
+				for (int i = 0; i < 12; i++) {
+					messagesToMother[Intf::MFA_AUX_MUTE_SOLO_GROUP + i] = params[GLOBAL_AUXMUTE_PARAMS + i].getValue();
+				}
+				// Aux fade rate and profile
+				memcpy(&messagesToMother[Intf::MFA_AUX_FADE_RATE_AND_PROFILE], auxFadeRatesAndProfiles, 4 * 8);
 			}
 			
 			// Aux returns
@@ -567,16 +574,7 @@ struct AuxExpander : Module {
 			for (int i = 0; i < 4; i++) {
 				aux[i].process(&messagesToMother[Intf::MFA_AUX_RETURNS + (i << 1)]);
 			}
-			
-			// values for returns, 20 such values (mute, solo, group, fadeRate, fadeProfile)
-			messagesToMother[Intf::MFA_VALUE20_INDEX] = (float)refreshCounter20;
-			if (refreshCounter20 < 12) {// mute, solo, group are contiguous
-				messagesToMother[Intf::MFA_VALUE20] = params[GLOBAL_AUXMUTE_PARAMS + refreshCounter20].getValue();
-			}
-			else {// fadeRate and fadeProfile are contiguous
-				messagesToMother[Intf::MFA_VALUE20] = auxFadeRatesAndProfiles[refreshCounter20 - 12];
-			}
-			
+						
 			// aux return pan
 			globalRetPansCvConnected = inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].isConnected();
 			for (int i = 0; i < 4; i++) {
