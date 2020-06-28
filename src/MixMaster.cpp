@@ -72,7 +72,7 @@ struct MixMaster : Module {
 	
 	
 	// Expander
-	float rightMessages[2][Intf::MFA_NUM_VALUES] = {};// messages from aux-expander, see enum in MixerCommon.hpp
+	MfaExpInterface rightMessages[2];// messages from aux-expander, see MixerCommon.hpp
 
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
@@ -109,10 +109,10 @@ struct MixMaster : Module {
 	float *auxRetFadePanFadecv;
 	PackedBytes4 directOutsModeLocalAux;// slow expander
 	PackedBytes4 stereoPanModeLocalAux;// slow expander
-	alignas(4) char auxLabels[4 * 4 + 4];// slow expander
 	PackedBytes4 auxVuColors;// slow expander
 	PackedBytes4 auxDispColors;// slow expander
 	float values20[20];// slow expander
+	alignas(4) char auxLabels[4 * 4 + 4];// slow expander
 		
 		
 	void sendToMessageBus() { 
@@ -156,8 +156,8 @@ struct MixMaster : Module {
 	MixMaster() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
-		rightExpander.producerMessage = rightMessages[0];
-		rightExpander.consumerMessage = rightMessages[1];
+		rightExpander.producerMessage = &rightMessages[0];
+		rightExpander.consumerMessage = &rightMessages[1];
 
 		char strBuf[32];
 		// Track
@@ -220,12 +220,12 @@ struct MixMaster : Module {
 
 		directOutsModeLocalAux.cc1 = 0;
 		stereoPanModeLocalAux.cc1 = 0;
-		snprintf(auxLabels, 16 + 1, "AUXAAUXBAUXCAUXD");
 		auxVuColors.cc1 = 0;
 		auxDispColors.cc1 = 0;
 		for (int i = 0; i < 20; i++) {
 			values20[i] = 0.0f;
 		}
+		snprintf(auxLabels, 16 + 1, "AUXAAUXBAUXCAUXD");
 
 		gInfo.construct(&params[0], values20);
 		trackLabels[4 * (N_TRK + N_GRP)] = 0;
@@ -369,26 +369,21 @@ struct MixMaster : Module {
 		
 		// From Aux-Expander
 		if (auxExpanderPresent) {
-			float *messagesFromExpander = (float*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
+			MfaExpInterface *messagesFromExpander = (MfaExpInterface*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
 			// Slow values from expander
-			uint32_t* mfaUpdateSlow = (uint32_t*)(&messagesFromExpander[Intf::MFA_UPDATE_SLOW]);
-			if (*mfaUpdateSlow != 0) {
-				// Direct outs and Stereo pan for each aux
-				memcpy(&directOutsModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_DIR_OUTS], 4);
-				memcpy(&stereoPanModeLocalAux, &messagesFromExpander[Intf::MFA_AUX_STEREO_PANS], 4);
-				// Aux labels
-				memcpy(&auxLabels, &messagesFromExpander[Intf::MFA_AUX_NAMES], 4 * 4);
-				// Colors
-				memcpy(&auxVuColors, &messagesFromExpander[Intf::MFA_AUX_VUCOL], 4);
-				memcpy(&auxDispColors, &messagesFromExpander[Intf::MFA_AUX_DISPCOL], 4);
-				// Aux mute, solo, group, fade rate and fade profile (called values20 in mother)
-				memcpy(values20, &messagesFromExpander[Intf::MFA_AUX_VALUES20], 4 * 20);
+			if (messagesFromExpander->updateSlow) {
+				directOutsModeLocalAux.cc1 = messagesFromExpander->directOutsModeLocalAux.cc1;
+				stereoPanModeLocalAux.cc1 = messagesFromExpander->stereoPanModeLocalAux.cc1;
+				auxVuColors.cc1 = messagesFromExpander->auxVuColors.cc1;
+				auxDispColors.cc1 = messagesFromExpander->auxDispColors.cc1;
+				memcpy(values20, messagesFromExpander->values20, 4 * 20);
+				memcpy(auxLabels, messagesFromExpander->auxLabels, 4 * 4);
 			}
 			
 			// Aux returns
-			auxReturns = &messagesFromExpander[Intf::MFA_AUX_RETURNS]; // contains 8 values of the returns from the aux panel
-			auxRetFadePanFadecv = &messagesFromExpander[Intf::MFA_AUX_RET_FADER]; // contains 12 values of the return faders and pan knobs and cvs for faders			
+			auxReturns = messagesFromExpander->auxReturns; // contains 8 values of the returns from the aux panel
+			auxRetFadePanFadecv = messagesFromExpander->auxRetFaderPanFadercv; // contains 12 values of the return faders and pan knobs and cvs for faders			
 		}
 		else {
 			muteTrackWhenSoloAuxRetSlewer.reset();

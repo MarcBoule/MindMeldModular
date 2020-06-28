@@ -42,22 +42,6 @@ struct ExpansionInterface {
 		ENUMS(AFM_MUTE_GHOST, 4), // mute ghost of each aux
 		AFM_NUM_VALUES
 	};
-		
-	enum MotherFromAuxIds { // for expander messages from aux panel to main
-		// Fast (sample-rate)	
-		MFA_UPDATE_SLOW,
-		ENUMS(MFA_AUX_RETURNS, 8), // left A, B, C, D, right A, B, C, D
-		ENUMS(MFA_AUX_RET_FADER, 12),// MFA_AUX_RET_FADER (4 floats), MFA_AUX_RET_PAN (4 floats), MFA_AUX_RET_FADER_CV (4 floats)
-		
-		// Slow (sample-rate / 256)
-		MFA_AUX_DIR_OUTS,// direct outs modes for all four aux
-		MFA_AUX_STEREO_PANS,// stereo pan modes for all four aux
-		ENUMS(MFA_AUX_NAMES, 4),
-		MFA_AUX_VUCOL,
-		MFA_AUX_DISPCOL,
-		ENUMS(MFA_AUX_VALUES20, 20),// MFA_AUX_MUTE_SOLO_GROUP (12 floats) and MFA_AUX_FADE_RATE_AND_PROFILE (8 floats)
-		MFA_NUM_VALUES
-	};	
 };
 
 struct MfaExpInterface {// for messages to mother from expander
@@ -69,10 +53,10 @@ struct MfaExpInterface {// for messages to mother from expander
 	// Slow (sample-rate / 256), no need to init
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
-	alignas(4) char auxLabels[4 * 4 + 4];
 	PackedBytes4 auxVuColors;
 	PackedBytes4 auxDispColors;
 	float values20[20];
+	char auxLabels[4 * 4];
 };
 
 

@@ -66,9 +66,9 @@ struct AuxExpander : Module {
 	
 	// Need to save, with reset
 	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
-	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice)
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
+	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice)
 	PackedBytes4 dispColorAuxLocal;
 	AuxspanderAux aux[4];
 	float panCvLevels[4];// 0 to 1.0f
@@ -547,33 +547,25 @@ struct AuxExpander : Module {
 			// To Mother
 			// ***********
 			
-			float *messagesToMother = (float*)leftExpander.module->rightExpander.producerMessage;
+			MfaExpInterface *messagesToMother = (MfaExpInterface*)leftExpander.module->rightExpander.producerMessage;
 			
-			uint32_t* mfaUpdateSlow = (uint32_t*)(&messagesToMother[Intf::MFA_UPDATE_SLOW]);
-			*mfaUpdateSlow = 0;
-			if (refresh.refreshCounter == 0) {
-				*mfaUpdateSlow = 1;
-				// Direct outs and Stereo pan for each aux
-				memcpy(&messagesToMother[Intf::MFA_AUX_DIR_OUTS], &directOutsModeLocal, 4);
-				memcpy(&messagesToMother[Intf::MFA_AUX_STEREO_PANS], &panLawStereoLocal, 4);
-				// Aux labels
-				memcpy(&messagesToMother[Intf::MFA_AUX_NAMES], &auxLabels, 4 * 4);
-				// Aux colors
-				memcpy(&messagesToMother[Intf::MFA_AUX_VUCOL], &vuColorThemeLocal.cc1, 4);
-				memcpy(&messagesToMother[Intf::MFA_AUX_DISPCOL], &dispColorAuxLocal.cc1, 4);
-
-				// Aux mute, solo, group
-				for (int i = 0; i < 12; i++) {
-					messagesToMother[Intf::MFA_AUX_VALUES20 + i] = params[GLOBAL_AUXMUTE_PARAMS + i].getValue();
+			messagesToMother->updateSlow = refresh.refreshCounter == 0;
+			if (messagesToMother->updateSlow) {
+				messagesToMother->directOutsModeLocalAux.cc1 = directOutsModeLocal.cc1;
+				messagesToMother->stereoPanModeLocalAux.cc1 = panLawStereoLocal.cc1;				
+				messagesToMother->auxVuColors.cc1 = vuColorThemeLocal.cc1;
+				messagesToMother->auxDispColors.cc1 = dispColorAuxLocal.cc1;
+				for (int i = 0; i < 12; i++) {// Aux mute, solo, group
+					messagesToMother->values20[i] = params[GLOBAL_AUXMUTE_PARAMS + i].getValue();
 				}
-				// Aux fade rate and profile
-				memcpy(&messagesToMother[Intf::MFA_AUX_VALUES20 + 12], auxFadeRatesAndProfiles, 4 * 8);
+				memcpy(&messagesToMother->values20[12], auxFadeRatesAndProfiles, 4 * 8);
+				memcpy(messagesToMother->auxLabels, &auxLabels, 4 * 4);
 			}
 			
 			// Aux returns
 			// left A, right A, left B, right B, left C, right C, left D, right D
 			for (int i = 0; i < 4; i++) {
-				aux[i].process(&messagesToMother[Intf::MFA_AUX_RETURNS + (i << 1)]);
+				aux[i].process(&messagesToMother->auxReturns[i << 1]);
 			}
 						
 			// aux return pan
@@ -586,7 +578,7 @@ struct AuxExpander : Module {
 					val = clamp(val, 0.0f, 1.0f);
 					globalRetPansWithCV[i] = val;// can put here since unused when cv disconnected
 				}
-				messagesToMother[Intf::MFA_AUX_RET_FADER + 4 + i] = val;
+				messagesToMother->auxRetFaderPanFadercv[4 + i] = val;
 			}
 			
 			// aux return fader
@@ -609,8 +601,8 @@ struct AuxExpander : Module {
 				}
 
 				fader = std::pow(fader, GlobalConst::globalAuxReturnScalingExponent);// scaling
-				messagesToMother[Intf::MFA_AUX_RET_FADER + i] = fader;
-				messagesToMother[Intf::MFA_AUX_RET_FADER + 8 + i] = volCv;// send back to mother in case linearVolCvInputs!=0
+				messagesToMother->auxRetFaderPanFadercv[i] = fader;
+				messagesToMother->auxRetFaderPanFadercv[8 + i] = volCv;// send back to mother in case linearVolCvInputs!=0
 			}
 				
 			refreshCounter20++;
