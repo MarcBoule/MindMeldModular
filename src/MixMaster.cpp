@@ -92,6 +92,7 @@ struct MixMaster : Module {
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int refreshCounter8;
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
+	int8_t trackOrGroupResetInAux;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
 	float values20[20];
 	SlewLimiterSingle muteTrackWhenSoloAuxRetSlewer;
 
@@ -266,6 +267,7 @@ struct MixMaster : Module {
 		updateTrackLabelRequest = 1;
 		refreshCounter8 = 0;
 		trackMoveInAuxRequest = 0;
+		trackOrGroupResetInAux = -1;
 		if (recurseNonJson) {
 			gInfo.resetNonJson();
 			for (int i = 0; i < N_TRK; i++) {
@@ -538,6 +540,9 @@ struct MixMaster : Module {
 				// Track move
 				memcpy(&messageToExpander[Intf::AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
 				trackMoveInAuxRequest = 0;
+				// Track or group reset
+				memcpy(&messageToExpander[Intf::AFM_TRK_GRP_RESET], &trackOrGroupResetInAux, 1);
+				trackOrGroupResetInAux = -1;
 				// Aux send mute when grouped return lights
 				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
 				// Display colors (when per track)
@@ -924,6 +929,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				trackDisplays[i]->numTracks = N_TRK;
 				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				trackDisplays[i]->trackOrGroupResetInAuxPtr = &(module->trackOrGroupResetInAux);
 				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
 				trackDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i];
@@ -1041,6 +1047,7 @@ struct MixMasterWidget : ModuleWidget {
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				groupDisplays[i]->trackOrGroupResetInAuxPtr = &(module->trackOrGroupResetInAux);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				groupDisplays[i]->numTracks = N_TRK;
 				groupDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i];
@@ -1225,6 +1232,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				trackDisplays[i]->numTracks = N_TRK;
 				trackDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				trackDisplays[i]->trackOrGroupResetInAuxPtr = &(module->trackOrGroupResetInAux);
 				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
 				trackDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i];
@@ -1337,6 +1345,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
+				groupDisplays[i]->trackOrGroupResetInAuxPtr = &(module->trackOrGroupResetInAux);
 				groupDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				groupDisplays[i]->numTracks = N_TRK;
 				groupDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i];

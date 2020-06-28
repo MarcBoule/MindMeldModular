@@ -578,6 +578,7 @@ struct TrackDisplay : EditableDisplayBase {
 	bool *auxExpanderPresentPtr;
 	int numTracks;
 	int *updateTrackLabelRequestPtr;
+	int8_t *trackOrGroupResetInAuxPtr;
 	int *trackMoveInAuxRequestPtr;
 	PortWidget **inputWidgets;
 	ParamQuantity* hpfParamQuantity;
@@ -687,6 +688,7 @@ struct TrackDisplay : EditableDisplayBase {
 			InitializeTrackItem<TMixerTrack> *initTrackItem = createMenuItem<InitializeTrackItem<TMixerTrack>>("Initialize track settings", "");
 			initTrackItem->srcTrack = srcTrack;
 			initTrackItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			initTrackItem->trackOrGroupResetInAuxPtr = trackOrGroupResetInAuxPtr;
 			menu->addChild(initTrackItem);			
 
 			CopyTrackSettingsItem<TMixerTrack> *copyItem = createMenuItem<CopyTrackSettingsItem<TMixerTrack>>("Copy track menu settings to:", RIGHT_ARROW);
@@ -728,6 +730,7 @@ struct GroupDisplay : EditableDisplayBase {
 	bool *auxExpanderPresentPtr;
 	int numTracks;// used to calc group offset in linkBitMask
 	int *updateTrackLabelRequestPtr;
+	int8_t *trackOrGroupResetInAuxPtr;
 	ParamQuantity* hpfParamQuantity;
 	ParamQuantity* lpfParamQuantity;
 
@@ -818,6 +821,7 @@ struct GroupDisplay : EditableDisplayBase {
 			initGroupItem->srcGroup = srcGroup;
 			initGroupItem->groupNumForLink = groupNumForLink;
 			initGroupItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
+			initGroupItem->trackOrGroupResetInAuxPtr = trackOrGroupResetInAuxPtr;
 			menu->addChild(initGroupItem);			
 
 			e.consume(this);

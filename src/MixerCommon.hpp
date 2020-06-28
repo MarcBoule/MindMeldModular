@@ -27,6 +27,7 @@ struct ExpansionInterface {
 		AFM_COLOR_AND_CLOAK,
 		AFM_DIRECT_AND_PAN_MODES,
 		AFM_TRACK_MOVE,
+		AFM_TRK_GRP_RESET,
 		AFM_AUXSENDMUTE_GROUPED_RETURN,
 		ENUMS(AFM_TRK_DISP_COL, N_TRK / 4 + 1),// 4 tracks per dword, 4 (2) groups in last dword
 		AFM_ECO_MODE,

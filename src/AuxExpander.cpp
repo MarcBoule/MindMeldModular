@@ -14,7 +14,7 @@ struct AuxExpander : Module {
 	
 	enum ParamIds {
 		ENUMS(TRACK_AUXSEND_PARAMS, N_TRK * 4), // trk 1 aux A, trk 1 aux B, ... 
-		ENUMS(GROUP_AUXSEND_PARAMS, N_GRP * 4),// Mapping: 1A, 2A, 3A, 4A, 1B, etc
+		ENUMS(GROUP_AUXSEND_PARAMS, N_GRP * 4),// Mapping: 1A, 1B, 1C, 1D, 2A, etc; must be contiguous with TRACK_AUXSEND_PARAMS
 		ENUMS(TRACK_AUXMUTE_PARAMS, N_TRK),
 		ENUMS(GROUP_AUXMUTE_PARAMS, N_GRP),// must be contiguous with TRACK_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),// must be contiguous with GROUP_AUXMUTE_PARAMS
@@ -396,6 +396,14 @@ struct AuxExpander : Module {
 					tmp = 0;
 					memcpy(&messagesFromMother[Intf::AFM_TRACK_MOVE], &tmp, 4);
 				}
+				// Track or group reset
+				int8_t tmp8;
+				memcpy(&tmp8, &messagesFromMother[Intf::AFM_TRK_GRP_RESET], 1);
+				if (tmp8 != -1) {
+					resetTrackOrGroup(tmp8);
+					tmp8 = -1;
+					memcpy(&messagesFromMother[Intf::AFM_TRK_GRP_RESET], &tmp8, 1);
+				}
 				// Aux send mute when grouped return lights
 				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN];
 				for (int i = 0; i < N_TRK; i++) {
@@ -671,6 +679,15 @@ struct AuxExpander : Module {
 			}
 		}
 		readTrackParams(trackNumDest, buffer2);
+	}
+	
+	void resetTrackOrGroup(int tg) {
+		// tg: 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
+		// since params are contiguous, no need to distinguish between track or group
+		for (int auxi = 0; auxi < 4; auxi++) {
+			params[TRACK_AUXSEND_PARAMS + (tg << 2) + auxi].setValue(0.0f);
+		}
+		params[TRACK_AUXMUTE_PARAMS + tg].setValue(0.0f);
 	}
 	
 	void processMuteSoloCvTriggers() {

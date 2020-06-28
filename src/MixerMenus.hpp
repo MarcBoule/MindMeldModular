@@ -813,6 +813,7 @@ template <typename TMixerTrack>
 struct InitializeTrackItem : MenuItem {
 	TMixerTrack *srcTrack;
 	int *updateTrackLabelRequestPtr;
+	int8_t *trackOrGroupResetInAuxPtr;
 	void onAction(const event::Action &e) override {
 		srcTrack->paGroup->setValue(0.0f);
 		srcTrack->paFade->setValue(1.0f);
@@ -824,6 +825,7 @@ struct InitializeTrackItem : MenuItem {
 		srcTrack->paLpfCutoff->setValue(GlobalConst::defLPFCutoffFreq);
 		srcTrack->onReset();
 		*updateTrackLabelRequestPtr = 1;
+		*trackOrGroupResetInAuxPtr = srcTrack->trackNum;
 	}
 };
 
@@ -833,6 +835,7 @@ struct InitializeGroupItem : MenuItem {
 	TMixerGroup *srcGroup;
 	int groupNumForLink;
 	int *updateTrackLabelRequestPtr;
+	int8_t *trackOrGroupResetInAuxPtr;
 	void onAction(const event::Action &e) override {
 		srcGroup->paFade->setValue(1.0f);
 		srcGroup->paMute->setValue(0.0f);
@@ -843,6 +846,7 @@ struct InitializeGroupItem : MenuItem {
 		srcGroup->paLpfCutoff->setValue(GlobalConst::defLPFCutoffFreq);
 		srcGroup->onReset();
 		*updateTrackLabelRequestPtr = 1;
+		*trackOrGroupResetInAuxPtr = groupNumForLink;
 	}
 };
 

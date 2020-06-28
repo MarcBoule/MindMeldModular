@@ -41,7 +41,7 @@ struct AuxspanderAux {
 	float *panCvLevel;
 	float *auxFadeRatesAndProfile;
 	Param *trackAuxSendParam;// all spaced out by 4, N_TRK of them
-	Param *groupAuxSendParam;// all contiguous since mapping is: 1A, 2A, 3A, 4A, 1B, etc
+	Param *groupAuxSendParam;// all spaced out by 4, N_GRP of them
 	Param *globalAuxParam;// all spaced out by 4: mute, solo, group, send, pan, return
 	
 
@@ -62,7 +62,7 @@ struct AuxspanderAux {
 		panCvLevel = _panCvLevel;
 		auxFadeRatesAndProfile = _auxFadeRatesAndProfile;
 		trackAuxSendParam = &_params[TRACK_AUXSEND_PARAMS + auxNum];// all spaced out by 4, N_TRK of them
-		groupAuxSendParam = &_params[GROUP_AUXSEND_PARAMS + auxNum];// all contiguous since mapping is: 1A, 2A, 3A, 4A, 1B, etc
+		groupAuxSendParam = &_params[GROUP_AUXSEND_PARAMS + auxNum];// all spaced out by 4, N_GRP of them
 		globalAuxParam = &_params[GLOBAL_AUXMUTE_PARAMS + auxNum];// all spaced out by 4: mute, solo, group, send, pan, return
 	}
 
