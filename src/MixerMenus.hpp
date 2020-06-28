@@ -846,6 +846,32 @@ struct InitializeGroupItem : MenuItem {
 	}
 };
 
+// init group settings
+template <typename TAuxspanderAux>
+struct InitializeAuxItem : MenuItem {
+	TAuxspanderAux *srcAux;
+	int numTracks;
+	int numGroups;
+	int *updateAuxLabelRequestPtr;
+	void onAction(const event::Action &e) override {
+		for (int i = 0; i < numTracks; i++) {
+			srcAux->trackAuxSendParam[4 * i].setValue(0.0f);
+		}
+		for (int i = 0; i < numGroups; i++) {
+			srcAux->groupAuxSendParam[4 * i].setValue(0.0f);
+		}
+		srcAux->globalAuxParam[0].setValue(0.0f);// mute
+		srcAux->globalAuxParam[4].setValue(0.0f);// solo
+		srcAux->globalAuxParam[8].setValue(0.0f);// group
+		srcAux->globalAuxParam[12].setValue(1.0f);// global send
+		srcAux->globalAuxParam[16].setValue(0.5f);// pan
+		srcAux->globalAuxParam[20].setValue(1.0f);// return fader
+		srcAux->onReset();
+		*updateAuxLabelRequestPtr = 1;
+	}
+};
+
+
 // copy track menu settings to
 template <typename TMixerTrack>
 struct CopyTrackSettingsItem : MenuItem {

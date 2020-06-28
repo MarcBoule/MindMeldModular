@@ -852,6 +852,9 @@ struct AuxDisplay : EditableDisplayBase {
 	float* srcFadeRatesAndProfiles = NULL;// use [0] for fade rate, [4] for fade profile, pointer must be setup with aux indexing
 	char* auxName;
 	int auxNumber = 0;
+	int numTracks;
+	int numGroups;
+	int *updateAuxLabelRequestPtr;
 	
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -915,6 +918,20 @@ struct AuxDisplay : EditableDisplayBase {
 				menu->addChild(dispColItem);
 			}
 			
+			menu->addChild(new MenuSeparator());
+			//menu->addChild(new MenuLabel());// empty line
+
+			MenuLabel *settingsALabel = new MenuLabel();
+			settingsALabel->text = "Actions: " + text;
+			menu->addChild(settingsALabel);
+
+			InitializeAuxItem<TAuxspanderAux> *initAuxItem = createMenuItem<InitializeAuxItem<TAuxspanderAux>>("Initialize aux settings", "");
+			initAuxItem->srcAux = srcAux;
+			initAuxItem->numTracks = numTracks;
+			initAuxItem->numGroups = numGroups;
+			initAuxItem->updateAuxLabelRequestPtr = updateAuxLabelRequestPtr;
+			menu->addChild(initAuxItem);			
+
 			e.consume(this);
 			return;
 		}

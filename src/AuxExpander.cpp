@@ -20,9 +20,9 @@ struct AuxExpander : Module {
 		ENUMS(GLOBAL_AUXMUTE_PARAMS, 4),// must be contiguous with GROUP_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXSOLO_PARAMS, 4),// must be contiguous with GLOBAL_AUXMUTE_PARAMS
 		ENUMS(GLOBAL_AUXGROUP_PARAMS, 4),// must be contiguous with GLOBAL_AUXSOLO_PARAMS
-		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),
-		ENUMS(GLOBAL_AUXPAN_PARAMS, 4),
-		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),
+		ENUMS(GLOBAL_AUXSEND_PARAMS, 4),// must be contiguous with GLOBAL_AUXGROUP_PARAMS
+		ENUMS(GLOBAL_AUXPAN_PARAMS, 4),// must be contiguous with GLOBAL_AUXSEND_PARAMS
+		ENUMS(GLOBAL_AUXRETURN_PARAMS, 4),// must be contiguous with GLOBAL_AUXPAN_PARAMS
 		NUM_PARAMS
 	};
 	
@@ -202,7 +202,7 @@ struct AuxExpander : Module {
 			groupSendVcaGains[i] = simd::float_4::zero();
 		}
 		for (int i = 0; i < 4; i++) {
-			aux[i].construct(i, &inputs[0]);
+			aux[i].construct(i, &inputs[0], &params[0], &(auxLabels[4 * i]), &vuColorThemeLocal.cc4[i], &directOutsModeLocal.cc4[i], &panLawStereoLocal.cc4[i], &dispColorAuxLocal.cc4[i], &panCvLevels[i], &auxFadeRatesAndProfiles[i]);
 			auxRetFadeGains[i] = 1.0f;
 		}
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
@@ -213,16 +213,8 @@ struct AuxExpander : Module {
 	}
   
 	void onReset() override {
-		snprintf(auxLabels, 4 * 4 + 1, "AUXAAUXBAUXCAUXD");	
 		for (int i = 0; i < 4; i++) {
-			vuColorThemeLocal.cc4[i] = 0;
-			directOutsModeLocal.cc4[i] = 3;// post-solo should be default
-			panLawStereoLocal.cc4[i] = 1;
-			dispColorAuxLocal.cc4[i] = 0;	
 			aux[i].onReset();
-			panCvLevels[i] = 1.0f;
-			auxFadeRatesAndProfiles[i] = 0.0f;
-			auxFadeRatesAndProfiles[i + 4] = 0.0f;
 		}
 		resetNonJson(false);
 	}
@@ -793,6 +785,9 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
 				auxDisplays[i]->auxNumber = i;
+				auxDisplays[i]->numTracks = N_TRK;
+				auxDisplays[i]->numGroups = N_GRP;
+				auxDisplays[i]->updateAuxLabelRequestPtr = &(module->updateAuxLabelRequest);
 			}
 			// Y is 4.7, same X as below
 			
@@ -1143,6 +1138,9 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
 				auxDisplays[i]->auxNumber = i;
+				auxDisplays[i]->numTracks = N_TRK;
+				auxDisplays[i]->numGroups = N_GRP;
+				auxDisplays[i]->updateAuxLabelRequestPtr = &(module->updateAuxLabelRequest);
 			}
 			// Y is 4.7, same X as below
 			

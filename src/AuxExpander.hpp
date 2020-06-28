@@ -31,12 +31,23 @@ struct AuxspanderAux {
 
 	// no need to save, no reset
 	int auxNum;
+	char *auxLabel;
 	std::string ids;
 	Input *inSig;
+	int8_t *vuColorThemeLocal;
+	int8_t *directOutsModeLocal;
+	int8_t *panLawStereoLocal;
+	int8_t *dispColorAuxLocal;
+	float *panCvLevel;
+	float *auxFadeRatesAndProfile;
+	Param *trackAuxSendParam;// all spaced out by 4, N_TRK of them
+	Param *groupAuxSendParam;// all contiguous since mapping is: 1A, 2A, 3A, 4A, 1B, etc
+	Param *globalAuxParam;// all spaced out by 4: mute, solo, group, send, pan, return
+	
 
-
-	void construct(int _auxNum, Input *_inputs) {
+	void construct(int _auxNum, Input *_inputs, Param *_params, char* _auxLabel, int8_t *_vuColorThemeLocal, int8_t *_directOutsModeLocal, int8_t *_panLawStereoLocal, int8_t *_dispColorAuxLocal, float *_panCvLevel, float *_auxFadeRatesAndProfile) {
 		auxNum = _auxNum;
+		auxLabel = _auxLabel;
 		ids = "id_x" + std::to_string(auxNum) + "_";
 		inSig = &_inputs[0 + 2 * auxNum + 0];
 		for (int i = 0; i < 2; i++) {
@@ -44,10 +55,30 @@ struct AuxspanderAux {
 			lpFilter[i].setParameters(false, 0.4f);
 		}
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		vuColorThemeLocal = _vuColorThemeLocal;
+		directOutsModeLocal = _directOutsModeLocal;
+		panLawStereoLocal = _panLawStereoLocal;
+		dispColorAuxLocal = _dispColorAuxLocal;
+		panCvLevel = _panCvLevel;
+		auxFadeRatesAndProfile = _auxFadeRatesAndProfile;
+		trackAuxSendParam = &_params[TRACK_AUXSEND_PARAMS + auxNum];// all spaced out by 4, N_TRK of them
+		groupAuxSendParam = &_params[GROUP_AUXSEND_PARAMS + auxNum];// all contiguous since mapping is: 1A, 2A, 3A, 4A, 1B, etc
+		globalAuxParam = &_params[GLOBAL_AUXMUTE_PARAMS + auxNum];// all spaced out by 4: mute, solo, group, send, pan, return
 	}
 
 
 	void onReset() {
+		// not managed here:
+		snprintf(auxLabel, 4, "AUX"); auxLabel[3] = 0x41 + auxNum;
+		*vuColorThemeLocal = 0;
+		*directOutsModeLocal = 3;// post-solo should be default
+		*panLawStereoLocal = 1;
+		*dispColorAuxLocal = 0;	
+		*panCvLevel = 1.0f;
+		*auxFadeRatesAndProfile = 0.0f;
+		auxFadeRatesAndProfile[4] = 0.0f;
+		
+		// managed here:
 		setHPFCutoffFreq(13.0f);// off
 		setLPFCutoffFreq(20010.0f);// off
 		stereoWidth = 1.0f;

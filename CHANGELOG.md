@@ -4,6 +4,7 @@
 - Added option to MixMaster track menus to invert input signal
 - Added filters on groups in MixMasters
 - Added option for initializing individual group settings in MixMasters
+- Added option for initializing individual aux settings in AuxSpanders
 - Added many panel options to the Meld module to facilitate using the poly CV inputs in MixMasters and AuxSpanders
 - Added option to MM main menu direct outs to not send tracks that are assigned to a group
 
