@@ -65,7 +65,7 @@ struct MixMaster : Module {
 		NUM_LIGHTS
 	};
 
-	typedef ExpansionInterface<N_TRK, N_GRP> Intf;
+	typedef TAfmExpInterface<N_TRK, N_GRP> AfmExpInterface;
 
 
 	#include "MixMaster.hpp"
@@ -520,31 +520,21 @@ struct MixMaster : Module {
 		
 		// To Aux-Expander
 		if (auxExpanderPresent) {
-			float *messageToExpander = (float*)(rightExpander.module->leftExpander.producerMessage);
+			AfmExpInterface *messageToExpander = (AfmExpInterface*)(rightExpander.module->leftExpander.producerMessage);
 			
 			// Slow
-			uint32_t* afmUpdateSlow = (uint32_t*)(&messageToExpander[Intf::AFM_UPDATE_SLOW]);
-			*afmUpdateSlow = 0;
-			if (refresh.refreshCounter == 0) {
-				// Color theme
-				memcpy(&messageToExpander[Intf::AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
-				// Direct outs mode global, Stereo pan mode global, momentCV and linearVol
-				memcpy(&messageToExpander[Intf::AFM_DIRECT_PAN_MOMENT_LIN_MODES], &gInfo.directOutPanStereoMomentCvLinearVol.cc1, 4);
-				// Aux send mute when grouped return lights
-				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
-				// Eco mode
-				int32_t tmp = gInfo.ecoMode;
-				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 4);
-				// Track move
-				memcpy(&messageToExpander[Intf::AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
+			messageToExpander->updateSlow = refresh.refreshCounter == 0;
+			if (messageToExpander->updateSlow) {
+				messageToExpander->colorAndCloak.cc1 = gInfo.colorAndCloak.cc1;
+				messageToExpander->directOutPanStereoMomentCvLinearVol.cc1 = gInfo.directOutPanStereoMomentCvLinearVol.cc1;
+				messageToExpander->muteAuxSendWhenReturnGrouped = muteAuxSendWhenReturnGrouped;
+				messageToExpander->ecoMode = gInfo.ecoMode;
+				messageToExpander->trackMoveInAuxRequest = trackMoveInAuxRequest;
 				trackMoveInAuxRequest = 0;
-				// Track or group reset
-				memcpy(&messageToExpander[Intf::AFM_TRK_GRP_RESET], &trackOrGroupResetInAux, 1);
+				messageToExpander->trackOrGroupResetInAux = trackOrGroupResetInAux;
 				trackOrGroupResetInAux = -1;
-				// Track names
-				*afmUpdateSlow = 1;
-				memcpy(&messageToExpander[Intf::AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
-				// Display colors (when per track)
+				memcpy(messageToExpander->trackLabels, trackLabels, ((N_TRK + N_GRP) << 2));
+				
 				PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
 				if (gInfo.colorAndCloak.cc4[dispColorGlobal] < numDispThemes) {
 					for (int i = 0; i < (N_TRK / 4 + 1); i++) {
@@ -561,25 +551,25 @@ struct MixMaster : Module {
 						tmpDispCols[N_TRK / 4].cc4[j] = groups[ j ].dispColorLocal;
 					}
 				}	
-				memcpy(&messageToExpander[Intf::AFM_TRK_DISP_COL], tmpDispCols, (N_TRK / 4 + 1) * 4);
+				memcpy(messageToExpander->trackDispColsLocal, tmpDispCols, (N_TRK / 4 + 1) * 4);
 				// auxFadeGains
 				for (int auxi = 0; auxi < 4; auxi++) {
-					messageToExpander[Intf::AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
+					messageToExpander->auxRetFadeGains[auxi] = aux[auxi].fadeGain;
 				}
 				// mute ghost
 				for (int auxi = 0; auxi < 4; auxi++) {
-					messageToExpander[Intf::AFM_MUTE_GHOST + auxi] = aux[auxi].fadeGainScaledWithSolo;
+					messageToExpander->srcMuteGhost[auxi] = aux[auxi].fadeGainScaledWithSolo;
 				}
 			}
 			
 			// Fast
 			
 			// 16+4 (8+2) stereo signals to be used to make sends in aux expander
-			writeAuxSends(&messageToExpander[Intf::AFM_AUX_SENDS]);						
+			writeAuxSends(messageToExpander->auxSends);						
 			// Aux VUs
 			// a return VU related value; index 0-3 : quad vu floats of a given aux
-			messageToExpander[Intf::AFM_VU_INDEX] = (float)refreshCounter4;
-			memcpy(&messageToExpander[Intf::AFM_VU_VALUES], aux[refreshCounter4].vu.vuValues, 4 * 4);
+			messageToExpander->vuIndex = refreshCounter4;
+			memcpy(messageToExpander->vuValues, aux[refreshCounter4].vu.vuValues, 4 * 4);
 			
 			refreshCounter4++;
 			if (refreshCounter4 >= 4) {

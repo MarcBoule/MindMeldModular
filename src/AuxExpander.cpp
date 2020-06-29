@@ -47,7 +47,6 @@ struct AuxExpander : Module {
 		NUM_LIGHTS
 	};
 	
-	typedef ExpansionInterface<N_TRK, N_GRP> Intf;
 	typedef TAfmExpInterface<N_TRK, N_GRP> AfmExpInterface;
 	
 	
@@ -55,7 +54,7 @@ struct AuxExpander : Module {
 	
 
 	// Expander
-	float leftMessages[2][Intf::AFM_NUM_VALUES] = {};// messages from mother (first index is page), see enum called AuxFromMotherIds in MixerCommon.hpp
+	AfmExpInterface leftMessages[2];// messages from mother (first index is page), see enum called AuxFromMotherIds in MixerCommon.hpp
 
 
 	// Constants
@@ -102,7 +101,8 @@ struct AuxExpander : Module {
 	simd::float_4 muteSends[N_TRK / 4 + 1];
 	TriggerRiseFall muteSoloCvTriggers[N_TRK + N_GRP + 4 + 4];
 	// fast exp values
-	// TODO
+	//   srcLevelsVus is declared above since better to do a reset on it (to kill displays)
+	//   auxSendsTrkGrp is declared locally, no need here
 	// slow exp values that are saved and need an init in constructor since not guaranteed to be set in first pass of expander:
 	PackedBytes4 colorAndCloak;
 	PackedBytes4 directOutPanStereoMomentCvLinearVol;// cc1[0] is direct out mode, cc1[1] is stereo pan mode, [2] is momentaryCvButtons, [3] is linearVolCvInputs	
@@ -117,8 +117,8 @@ struct AuxExpander : Module {
 	AuxExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);		
 		
-		leftExpander.producerMessage = leftMessages[0];
-		leftExpander.consumerMessage = leftMessages[1];
+		leftExpander.producerMessage = &leftMessages[0];
+		leftExpander.consumerMessage = &leftMessages[1];
 		
 		char strBuf[32];
 		maxAGIndivSendFader = std::pow(GlobalConst::individualAuxSendMaxLinearGain, 1.0f / GlobalConst::individualAuxSendScalingExponent);
@@ -376,7 +376,7 @@ struct AuxExpander : Module {
 		
 		motherPresent = (leftExpander.module && leftExpander.module->model == (N_TRK == 16 ? modelMixMaster : modelMixMasterJr));
 		
-		float *messagesFromMother = (float*)leftExpander.consumerMessage;
+		AfmExpInterface *messagesFromMother = (AfmExpInterface*)leftExpander.consumerMessage;
 		
 		if (refresh.processInputs()) {
 			processMuteSoloCvTriggers();
@@ -387,51 +387,33 @@ struct AuxExpander : Module {
 			// ***********
 			
 			// Slow values from mother
-			uint32_t* afmUpdateSlow = (uint32_t*)(&messagesFromMother[Intf::AFM_UPDATE_SLOW]);
-			if (*afmUpdateSlow != 0) {
-				// Color theme
-				memcpy(&colorAndCloak.cc1, &messagesFromMother[Intf::AFM_COLOR_AND_CLOAK], 4);
-				// Direct outs mode global, Stereo pan mode global momentCv and linearVol
-				memcpy(&directOutPanStereoMomentCvLinearVol.cc1, &messagesFromMother[Intf::AFM_DIRECT_PAN_MOMENT_LIN_MODES], 4);			
-				// Aux send mute when grouped return lights
-				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN];
+			if (messagesFromMother->updateSlow) {
+				colorAndCloak.cc1 = messagesFromMother->colorAndCloak.cc1;
+				directOutPanStereoMomentCvLinearVol.cc1 = messagesFromMother->directOutPanStereoMomentCvLinearVol.cc1;
+				muteAuxSendWhenReturnGrouped = messagesFromMother->muteAuxSendWhenReturnGrouped;
 				for (int i = 0; i < N_TRK; i++) {
 					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
 				}
-				// Eco mode
-				int32_t tmp;
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_ECO_MODE], 4);
-				ecoMode = (uint16_t)tmp;
-				// Track move
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_TRACK_MOVE], 4);
-				if (tmp != 0) {
-					moveTrack(tmp);
-					tmp = 0;
-					memcpy(&messagesFromMother[Intf::AFM_TRACK_MOVE], &tmp, 4);
+				ecoMode = messagesFromMother->ecoMode;
+				if (messagesFromMother->trackMoveInAuxRequest != 0) {
+					moveTrack(messagesFromMother->trackMoveInAuxRequest);
+					messagesFromMother->trackMoveInAuxRequest = 0;
 				}
-				// Track or group reset
-				int8_t tmp8;
-				memcpy(&tmp8, &messagesFromMother[Intf::AFM_TRK_GRP_RESET], 1);
-				if (tmp8 != -1) {
-					resetTrackOrGroup(tmp8);
-					tmp8 = -1;
-					memcpy(&messagesFromMother[Intf::AFM_TRK_GRP_RESET], &tmp8, 1);
+				if (messagesFromMother->trackOrGroupResetInAux != -1) {
+					resetTrackOrGroup(messagesFromMother->trackOrGroupResetInAux);
+					messagesFromMother->trackOrGroupResetInAux = -1;
 				}
-				// Track labels
-				memcpy(trackLabels, &messagesFromMother[Intf::AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
+				memcpy(trackLabels, messagesFromMother->trackLabels, 4 * (N_TRK + N_GRP));
 				updateTrackLabelRequest = 1;
-				// Display colors (when per track)
-				memcpy(trackDispColsLocal, &messagesFromMother[Intf::AFM_TRK_DISP_COL], (N_TRK / 4 + 1) * 4);
-				// Fade gains
-				memcpy(auxRetFadeGains, &messagesFromMother[Intf::AFM_FADE_GAINS], 4 * 4);
-				// mute ghost
-				memcpy(srcMuteGhost, &messagesFromMother[Intf::AFM_MUTE_GHOST], 4 * 4);
+				memcpy(trackDispColsLocal, messagesFromMother->trackDispColsLocal, (N_TRK / 4 + 1) * 4);
+				memcpy(auxRetFadeGains, messagesFromMother->auxRetFadeGains, 4 * 4);
+				memcpy(srcMuteGhost, messagesFromMother->srcMuteGhost, 4 * 4);
 			}
 			
 			// Fast values from mother
 			// Vus 
-			int value4i = clamp((int)(messagesFromMother[Intf::AFM_VU_INDEX]), 0, 4);
-			memcpy(&srcLevelsVus[value4i][0], &messagesFromMother[Intf::AFM_VU_VALUES], 4 * 4);
+			int value4i = clamp(messagesFromMother->vuIndex, 0, 4);
+			memcpy(&srcLevelsVus[value4i][0], messagesFromMother->vuValues, 4 * 4);
 
 						
 			// Aux sends
@@ -468,7 +450,7 @@ struct AuxExpander : Module {
 			}
 	
 			// Aux send VCAs
-			float* auxSendsTrkGrp = &messagesFromMother[Intf::AFM_AUX_SENDS];// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
+			float* auxSendsTrkGrp = messagesFromMother->auxSends;// 40 values of the sends (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R))
 			simd::float_4 auxSends[2] = {simd::float_4::zero(), simd::float_4::zero()};// [0] = ABCD left, [1] = ABCD right
 			// accumulate tracks
 			for (int trk = 0; trk < N_TRK; trk++) {

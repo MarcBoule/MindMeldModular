@@ -14,42 +14,14 @@
 
 
 //*****************************************************************************
-// Constants
-
-
 // Communications between mixer and auxspander
-template <int N_TRK, int N_GRP>
-struct ExpansionInterface {
-	// TODO: make this a struct!
-	enum AuxFromMotherIds { // for expander messages from main to aux panel
-		// Fast (sample-rate)
-		AFM_UPDATE_SLOW,
-		ENUMS(AFM_AUX_SENDS, (N_TRK + N_GRP) * 2), // Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R
-		AFM_VU_INDEX, // a return VU related value; index 0-3 : quad vu floats of a given aux
-		ENUMS(AFM_VU_VALUES, 4),
-		
-		// Slow (sample-rate / 256)
-		AFM_COLOR_AND_CLOAK,
-		AFM_DIRECT_PAN_MOMENT_LIN_MODES,
-		AFM_AUXSENDMUTE_GROUPED_RETURN,
-		AFM_ECO_MODE,
-		AFM_TRACK_MOVE,
-		AFM_TRK_GRP_RESET,
-		
-		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP), 
-		ENUMS(AFM_TRK_DISP_COL, N_TRK / 4 + 1), // 4 tracks per dword, 4 (2) groups in last dword
-		ENUMS(AFM_FADE_GAINS, 4),
-		ENUMS(AFM_MUTE_GHOST, 4), // mute ghost of each aux
-		AFM_NUM_VALUES
-	};
-};
 
 template <int N_TRK, int N_GRP>
 struct TAfmExpInterface {// messages to expander from mother (data is in expander, mother writes into expander)
 	// Fast (sample-rate)	
 	bool updateSlow = false;
 	float auxSends[(N_TRK + N_GRP) * 2] = {0.0f};
-	int vuIndex;
+	int vuIndex = 0;
 	float vuValues[4] = {0.0f};
 	
 	// Slow (sample-rate / 256), no need to init
@@ -82,7 +54,10 @@ struct MfaExpInterface {// messages to mother from expander (data is in mother, 
 };
 
 
-// Global
+
+//*****************************************************************************
+// Global constants
+
 struct GlobalConst {
 	static const int 		masterFaderScalingExponent = 3; // for example, 3 is x^3 scaling
 	static constexpr float 	masterFaderMaxLinearGain = 2.0f; // for example, 2.0f is +6 dB
@@ -103,7 +78,6 @@ struct GlobalConst {
 	static constexpr float maxLPFCutoffFreq = 20000.0f;
 	static constexpr float defLPFCutoffFreq = 20010.0f;
 };
-
 
 
 
