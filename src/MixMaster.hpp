@@ -16,9 +16,12 @@ struct GlobalInfo {
 	// none
 	
 	// need to save, with reset
+	PackedBytes4 directOutPanStereoMomentCvLinearVol;
+		// directOutsMode: 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
+		// panLawStereo: Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
+		// momentaryCvButtons: 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
+		// linearVolCvInputs: 0 means powN, 1 means linear
 	int panLawMono;// +0dB (no compensation),  +3 (equal power),  +4.5 (compromize),  +6dB (linear, default)
-	int8_t panLawStereo;// Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
-	int8_t directOutsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int8_t directOutsSkipGroupedTracks;// 0 no (default), 1 is yes
 	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int groupsControlTrackSendLevels;//  0 = no, 1 = yes
@@ -33,9 +36,8 @@ struct GlobalInfo {
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
 	float linkedFaderReloadValues[N_TRK + N_GRP];
-	int8_t momentaryCvButtons;// 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
 	int8_t masterFaderScalesSends;// 1 = yes 
-	int8_t linearVolCvInputs;// 0 means powN, 1 means linear
+	
 
 	// no need to save, with reset
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
@@ -173,9 +175,11 @@ struct GlobalInfo {
 	}	
 	
 	void onReset() {
+		directOutPanStereoMomentCvLinearVol.cc4[0] = 3; // directOutsMode: post-solo by default
+		directOutPanStereoMomentCvLinearVol.cc4[1] = 1; // panLawStereo
+		directOutPanStereoMomentCvLinearVol.cc4[2] = 1; // momentaryCvButtons: momentary by default
+		directOutPanStereoMomentCvLinearVol.cc4[3] = 0; // linearVolCvInputs: 0 means powN, 1 means linear		
 		panLawMono = 1;
-		panLawStereo = 1;
-		directOutsMode = 3;// post-solo should be default
 		directOutsSkipGroupedTracks = 0;
 		auxSendsMode = 3;// post-solo should be default
 		groupsControlTrackSendLevels = 0;
@@ -195,9 +199,7 @@ struct GlobalInfo {
 		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 			linkedFaderReloadValues[trkOrGrp] = 1.0f;
 		}
-		momentaryCvButtons = 1;// momentary by default
 		masterFaderScalesSends = 0;// false by default
-		linearVolCvInputs = 0;// 0 means powN, 1 means linear
 		resetNonJson();
 	}
 
@@ -217,10 +219,10 @@ struct GlobalInfo {
 		json_object_set_new(rootJ, "panLawMono", json_integer(panLawMono));
 
 		// panLawStereo
-		json_object_set_new(rootJ, "panLawStereo", json_integer(panLawStereo));
+		json_object_set_new(rootJ, "panLawStereo", json_integer(directOutPanStereoMomentCvLinearVol.cc4[1]));
 
 		// directOutsMode
-		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutsMode));
+		json_object_set_new(rootJ, "directOutsMode", json_integer(directOutPanStereoMomentCvLinearVol.cc4[0]));
 		
 		// directOutsSkipGroupedTracks
 		json_object_set_new(rootJ, "directOutsSkipGroupedTracks", json_integer(directOutsSkipGroupedTracks));
@@ -269,13 +271,13 @@ struct GlobalInfo {
 		json_object_set_new(rootJ, "faders", fadersJ);		
 
 		// momentaryCvButtons
-		json_object_set_new(rootJ, "momentaryCvButtons", json_integer(momentaryCvButtons));
+		json_object_set_new(rootJ, "momentaryCvButtons", json_integer(directOutPanStereoMomentCvLinearVol.cc4[2]));
 
 		// masterFaderScalesSends
 		json_object_set_new(rootJ, "masterFaderScalesSends", json_integer(masterFaderScalesSends));
 
 		// linearVolCvInputs
-		json_object_set_new(rootJ, "linearVolCvInputs", json_integer(linearVolCvInputs));
+		json_object_set_new(rootJ, "linearVolCvInputs", json_integer(directOutPanStereoMomentCvLinearVol.cc4[3]));
 	}
 
 
@@ -288,12 +290,12 @@ struct GlobalInfo {
 		// panLawStereo
 		json_t *panLawStereoJ = json_object_get(rootJ, "panLawStereo");
 		if (panLawStereoJ)
-			panLawStereo = json_integer_value(panLawStereoJ);
+			directOutPanStereoMomentCvLinearVol.cc4[1] = json_integer_value(panLawStereoJ);
 		
 		// directOutsMode
 		json_t *directOutsModeJ = json_object_get(rootJ, "directOutsMode");
 		if (directOutsModeJ)
-			directOutsMode = json_integer_value(directOutsModeJ);
+			directOutPanStereoMomentCvLinearVol.cc4[0] = json_integer_value(directOutsModeJ);
 		
 		// directOutsSkipGroupedTracks
 		json_t *directOutsSkipGroupedTracksJ = json_object_get(rootJ, "directOutsSkipGroupedTracks");
@@ -378,7 +380,7 @@ struct GlobalInfo {
 		// momentaryCvButtons
 		json_t *momentaryCvButtonsJ = json_object_get(rootJ, "momentaryCvButtons");
 		if (momentaryCvButtonsJ)
-			momentaryCvButtons = json_integer_value(momentaryCvButtonsJ);
+			directOutPanStereoMomentCvLinearVol.cc4[2] = json_integer_value(momentaryCvButtonsJ);
 		
 		// masterFaderScalesSends
 		json_t *masterFaderScalesSendsJ = json_object_get(rootJ, "masterFaderScalesSends");
@@ -388,7 +390,7 @@ struct GlobalInfo {
 		// linearVolCvInputs
 		json_t *linearVolCvInputsJ = json_object_get(rootJ, "linearVolCvInputs");
 		if (linearVolCvInputsJ)
-			linearVolCvInputs = json_integer_value(linearVolCvInputsJ);
+			directOutPanStereoMomentCvLinearVol.cc4[3] = json_integer_value(linearVolCvInputsJ);
 		
 		// extern must call resetNonJson()
 	}	
@@ -651,7 +653,7 @@ struct MixerMaster {
 			if (inVol->isConnected() && inVol->getChannels() >= (N_GRP * 2 + 4)) {
 				volCv = clamp(inVol->getVoltage(N_GRP * 2 + 4 - 1) * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
-				if (gInfo->linearVolCvInputs == 0) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] == 0) {
 					fader = paramWithCV;
 				}			
 			}
@@ -696,7 +698,7 @@ struct MixerMaster {
 		sigs = sigs * gainMatrixSlewers.out;
 		sigs[0] += sigs[2];// pre mute, do not change VU needs
 		sigs[1] += sigs[3];// pre mute, do not change VU needs
-		if (gInfo->linearVolCvInputs != 0) {
+		if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] != 0) {
 			sigs[0] *= volCv;
 			sigs[1] *= volCv;
 		}		
@@ -995,7 +997,7 @@ struct MixerGroup {
 		// ** detect pan mode change ** (and trigger recalc of panMatrix)
 		PackedBytes4 newPanSig;
 		newPanSig.cc4[0] = panLawStereo;
-		newPanSig.cc4[1] = gInfo->panLawStereo;
+		newPanSig.cc4[1] = gInfo->directOutPanStereoMomentCvLinearVol.cc4[1];
 		newPanSig.cc4[2] = gInfo->panLawMono;
 		newPanSig.cc4[3] = 0xFF;
 		if (newPanSig.cc1 != oldPanSignature.cc1) {
@@ -1094,7 +1096,7 @@ struct MixerGroup {
 			if (inVol->isConnected()) {
 				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
-				if (gInfo->linearVolCvInputs == 0) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] == 0) {
 					fader = paramWithCV;
 				}
 			}
@@ -1120,7 +1122,7 @@ struct MixerGroup {
 				}
 				else {		
 					// implicitly stereo for groups
-					int stereoPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo);
+					int stereoPanMode = (gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] < 3 ? gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] : panLawStereo);
 					if (stereoPanMode == 0) {
 						// Stereo balance linear, (+0 dB), same as mono No compensation
 						panMatrix[1] = std::min(1.0f, pan * 2.0f);
@@ -1159,7 +1161,7 @@ struct MixerGroup {
 		sigs = sigs * gainMatrixSlewers.out;
 		taps[N_GRP * 4 + 0] = sigs[0] + sigs[2];
 		taps[N_GRP * 4 + 1] = sigs[1] + sigs[3];
-		if (gInfo->linearVolCvInputs != 0) {
+		if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] != 0) {
 			taps[N_GRP * 4 + 0] *= volCv;
 			taps[N_GRP * 4 + 1] *= volCv;
 		}
@@ -1622,7 +1624,7 @@ struct MixerTrack {
 		// ** detect pan mode change ** (and trigger recalc of panMatrix)
 		PackedBytes4 newPanSig;
 		newPanSig.cc4[0] = panLawStereo;
-		newPanSig.cc4[1] = gInfo->panLawStereo;
+		newPanSig.cc4[1] = gInfo->directOutPanStereoMomentCvLinearVol.cc4[1];
 		newPanSig.cc4[2] = gInfo->panLawMono;
 		newPanSig.cc4[3] = 0xFF;
 		if (newPanSig.cc1 != oldPanSignature.cc1) {
@@ -1675,7 +1677,7 @@ struct MixerTrack {
 			if (inVol->isConnected()) {
 				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
-				if (gInfo->linearVolCvInputs == 0) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] == 0) {
 					fader = paramWithCV;
 				}
 			}
@@ -1847,7 +1849,7 @@ struct MixerTrack {
 						}
 					}
 					else {// stereo
-						int stereoPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : panLawStereo);			
+						int stereoPanMode = (gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] < 3 ? gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] : panLawStereo);			
 						if (stereoPanMode == 0) {
 							// Stereo balance linear, (+0 dB), same as mono No compensation
 							panMatrix[1] = std::min(1.0f, pan * 2.0f);
@@ -1887,7 +1889,7 @@ struct MixerTrack {
 		sigs *= gainMatrixSlewers.out;
 		taps[N_TRK * 4 + 0] = sigs[0] + sigs[2];
 		taps[N_TRK * 4 + 1] = sigs[1] + sigs[3];
-		if (gInfo->linearVolCvInputs != 0) {
+		if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] != 0) {
 			taps[N_TRK * 4 + 0] *= volCv;
 			taps[N_TRK * 4 + 1] *= volCv;
 		}
@@ -2029,7 +2031,7 @@ struct MixerAux {
 		// ** detect pan mode change ** (and trigger recalc of panMatrix)
 		PackedBytes4 newPanSig;
 		newPanSig.cc4[0] = *panLawStereoLocal;
-		newPanSig.cc4[1] = gInfo->panLawStereo;
+		newPanSig.cc4[1] = gInfo->directOutPanStereoMomentCvLinearVol.cc4[1];
 		newPanSig.cc4[2] = gInfo->panLawMono;
 		newPanSig.cc4[3] = 0xFF;
 		if (newPanSig.cc1 != oldPanSignature.cc1) {
@@ -2094,7 +2096,7 @@ struct MixerAux {
 				}
 				else {	
 					// implicitly stereo for aux
-					int stereoPanMode = (gInfo->panLawStereo < 3 ? gInfo->panLawStereo : *panLawStereoLocal);
+					int stereoPanMode = (gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] < 3 ? gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] : *panLawStereoLocal);
 					if (stereoPanMode == 0) {
 						// Stereo balance linear, (+0 dB), same as mono No compensation
 						panMatrix[1] = std::min(1.0f, pan * 2.0f);
@@ -2132,7 +2134,7 @@ struct MixerAux {
 		sigs = sigs * gainMatrixSlewers.out;	
 		taps[16] = sigs[0] + sigs[2];
 		taps[17] = sigs[1] + sigs[3];
-		if (gInfo->linearVolCvInputs != 0) {
+		if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] != 0) {
 			taps[16] *= auxRetFadePanFadecv[8];
 			taps[17] *= auxRetFadePanFadecv[8];
 		}	

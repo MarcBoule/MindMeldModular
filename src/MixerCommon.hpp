@@ -20,6 +20,7 @@
 // Communications between mixer and auxspander
 template <int N_TRK, int N_GRP>
 struct ExpansionInterface {
+	// TODO: make this a struct!
 	enum AuxFromMotherIds { // for expander messages from main to aux panel
 		// Fast (sample-rate)
 		AFM_UPDATE_SLOW,
@@ -28,23 +29,44 @@ struct ExpansionInterface {
 		ENUMS(AFM_VU_VALUES, 4),
 		
 		// Slow (sample-rate / 256)
-		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP), 
 		AFM_COLOR_AND_CLOAK,
-		AFM_DIRECT_AND_PAN_MODES,
+		AFM_DIRECT_PAN_MOMENT_LIN_MODES,
+		AFM_AUXSENDMUTE_GROUPED_RETURN,
+		AFM_ECO_MODE,
 		AFM_TRACK_MOVE,
 		AFM_TRK_GRP_RESET,
-		AFM_AUXSENDMUTE_GROUPED_RETURN,
+		
+		ENUMS(AFM_TRACK_GROUP_NAMES, N_TRK + N_GRP), 
 		ENUMS(AFM_TRK_DISP_COL, N_TRK / 4 + 1), // 4 tracks per dword, 4 (2) groups in last dword
-		AFM_ECO_MODE,
 		ENUMS(AFM_FADE_GAINS, 4),
-		AFM_MOMENTARY_CVBUTTONS,
-		AFM_LINEARVOLCVINPUTS,
 		ENUMS(AFM_MUTE_GHOST, 4), // mute ghost of each aux
 		AFM_NUM_VALUES
 	};
 };
 
-struct MfaExpInterface {// for messages to mother from expander
+template <int N_TRK, int N_GRP>
+struct TAfmExpInterface {// messages to expander from mother (data is in expander, mother writes into expander)
+	// Fast (sample-rate)	
+	bool updateSlow = false;
+	float auxSends[(N_TRK + N_GRP) * 2] = {0.0f};
+	int vuIndex;
+	float vuValues[4] = {0.0f};
+	
+	// Slow (sample-rate / 256), no need to init
+	PackedBytes4 colorAndCloak;
+	PackedBytes4 directOutPanStereoMomentCvLinearVol;
+	uint32_t muteAuxSendWhenReturnGrouped;
+	uint16_t ecoMode;// all 1's means yes, 0 means no
+	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
+	int8_t trackOrGroupResetInAux;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP)];
+	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];
+	float auxRetFadeGains[4];
+	float srcMuteGhost[4];
+};
+
+
+struct MfaExpInterface {// messages to mother from expander (data is in mother, expander writes into mother)
 	// Fast (sample-rate)	
 	bool updateSlow = false;
 	float auxReturns[8] = {0.0f};
@@ -55,8 +77,8 @@ struct MfaExpInterface {// for messages to mother from expander
 	PackedBytes4 stereoPanModeLocalAux;
 	PackedBytes4 auxVuColors;
 	PackedBytes4 auxDispColors;
-	float values20[20];
-	char auxLabels[4 * 4];
+	float values20[20];// Aux mute, solo, group, fade rate, fade profile; 4 consective floats for each (one per aux)
+	alignas(4) char auxLabels[4 * 4];
 };
 
 

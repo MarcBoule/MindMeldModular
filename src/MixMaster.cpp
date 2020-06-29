@@ -105,8 +105,10 @@ struct MixMaster : Module {
 	float auxTaps[4 * 2 * 4];// room for 4 taps for each of the 4 stereo aux
 	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	TriggerRiseFall muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 3];// 16 (8) trk mute, 16 (8) trk solo, 4 (2) grp mute, 4 (2) grp solo, 3 mast (mute, dim, mono)
+	// fast exp values
 	float *auxReturns;
 	float *auxRetFadePanFadecv;
+	// slow exp values that are saved and need an init in constructor since not guaranteed to be set in first pass of expander:
 	PackedBytes4 directOutsModeLocalAux;// slow expander
 	PackedBytes4 stereoPanModeLocalAux;// slow expander
 	PackedBytes4 auxVuColors;// slow expander
@@ -217,7 +219,7 @@ struct MixMaster : Module {
 		// Mono
 		configParam(MAIN_MONO_PARAM, 0.0f, 1.0f, 0.0f, "MASTER: mono");
 		
-
+		// slow exp values that are saved and need an init in constructor since not guaranteed to be set in first pass of expander:
 		directOutsModeLocalAux.cc1 = 0;
 		stereoPanModeLocalAux.cc1 = 0;
 		auxVuColors.cc1 = 0;
@@ -225,7 +227,7 @@ struct MixMaster : Module {
 		for (int i = 0; i < 20; i++) {
 			values20[i] = 0.0f;
 		}
-		snprintf(auxLabels, 16 + 1, "AUXAAUXBAUXCAUXD");
+		snprintf(auxLabels, 4 * 4 + 1, "AUXAAUXBAUXCAUXD");
 
 		gInfo.construct(&params[0], values20);
 		trackLabels[4 * (N_TRK + N_GRP)] = 0;
@@ -524,24 +526,24 @@ struct MixMaster : Module {
 			uint32_t* afmUpdateSlow = (uint32_t*)(&messageToExpander[Intf::AFM_UPDATE_SLOW]);
 			*afmUpdateSlow = 0;
 			if (refresh.refreshCounter == 0) {
-				// Track names
-				*afmUpdateSlow = 1;
-				memcpy(&messageToExpander[Intf::AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
 				// Color theme
 				memcpy(&messageToExpander[Intf::AFM_COLOR_AND_CLOAK], &gInfo.colorAndCloak.cc1, 4);
-				// Direct outs mode global and Stereo pan mode global
-				PackedBytes4 directAndPan;
-				directAndPan.cc4[0] = gInfo.directOutsMode;
-				directAndPan.cc4[1] = gInfo.panLawStereo;
-				memcpy(&messageToExpander[Intf::AFM_DIRECT_AND_PAN_MODES], &directAndPan.cc1, 4);
+				// Direct outs mode global, Stereo pan mode global, momentCV and linearVol
+				memcpy(&messageToExpander[Intf::AFM_DIRECT_PAN_MOMENT_LIN_MODES], &gInfo.directOutPanStereoMomentCvLinearVol.cc1, 4);
+				// Aux send mute when grouped return lights
+				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
+				// Eco mode
+				int32_t tmp = gInfo.ecoMode;
+				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 4);
 				// Track move
 				memcpy(&messageToExpander[Intf::AFM_TRACK_MOVE], &trackMoveInAuxRequest, 4);
 				trackMoveInAuxRequest = 0;
 				// Track or group reset
 				memcpy(&messageToExpander[Intf::AFM_TRK_GRP_RESET], &trackOrGroupResetInAux, 1);
 				trackOrGroupResetInAux = -1;
-				// Aux send mute when grouped return lights
-				messageToExpander[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN] = (float)(muteAuxSendWhenReturnGrouped);
+				// Track names
+				*afmUpdateSlow = 1;
+				memcpy(&messageToExpander[Intf::AFM_TRACK_GROUP_NAMES], trackLabels, ((N_TRK + N_GRP) << 2));
 				// Display colors (when per track)
 				PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
 				if (gInfo.colorAndCloak.cc4[dispColorGlobal] < numDispThemes) {
@@ -560,19 +562,10 @@ struct MixMaster : Module {
 					}
 				}	
 				memcpy(&messageToExpander[Intf::AFM_TRK_DISP_COL], tmpDispCols, (N_TRK / 4 + 1) * 4);
-				// Eco mode
-				int32_t tmp = gInfo.ecoMode;
-				memcpy(&messageToExpander[Intf::AFM_ECO_MODE], &tmp, 2);
 				// auxFadeGains
 				for (int auxi = 0; auxi < 4; auxi++) {
 					messageToExpander[Intf::AFM_FADE_GAINS + auxi] = aux[auxi].fadeGain;
 				}
-				// momentaryCvButtons
-				tmp = gInfo.momentaryCvButtons;
-				memcpy(&messageToExpander[Intf::AFM_MOMENTARY_CVBUTTONS], &tmp, 1);			
-				// linearVolCvInputs
-				tmp = gInfo.linearVolCvInputs;
-				memcpy(&messageToExpander[Intf::AFM_LINEARVOLCVINPUTS], &tmp, 1);		
 				// mute ghost
 				for (int auxi = 0; auxi < 4; auxi++) {
 					messageToExpander[Intf::AFM_MUTE_GHOST + auxi] = aux[auxi].fadeGainScaledWithSolo;
@@ -675,7 +668,7 @@ struct MixMaster : Module {
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i + 1);
 				}
 				else {
-					int tapIndex = gInfo.directOutsMode < 4 ? gInfo.directOutsMode : tracks[base + i].directOutsMode;
+					int tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4 ? gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] : tracks[base + i].directOutsMode;
 					int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
 					float leftSig = trackTaps[offset + 0];
 					float rightSig = (tapIndex < 2 && !inputs[((base + i) << 1) + 1].isConnected()) ? 0.0f : trackTaps[offset + 1];
@@ -696,8 +689,8 @@ struct MixMaster : Module {
 			outputs[outputNum].setChannels(auxExpanderPresent ? numChannels16 : 8);
 
 			// Groups
-			int tapIndex = gInfo.directOutsMode;			
-			if (gInfo.directOutsMode < 4) {// global direct outs
+			int tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0];			
+			if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
 				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 					for (unsigned int i = 0; i < N_GRP; i++) {
 						int offset = (tapIndex << (1 + N_GRP / 2)) + (i << 1);
@@ -727,8 +720,8 @@ struct MixMaster : Module {
 			// Aux
 			// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other diretct outs
 			if (auxExpanderPresent) {
-				if (gInfo.directOutsMode < 4) {// global direct outs
-					int tapIndex = gInfo.directOutsMode;
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
+					int tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0];
 					memcpy(outputs[outputNum].getVoltages(8), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
 				else {// per aux direct outs
@@ -771,7 +764,7 @@ struct MixMaster : Module {
 				// track mutes
 				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTESOLO_INPUTS + 0].getVoltage(trk));
 				if (state != 0) {
-					if (gInfo.momentaryCvButtons) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_MUTE_PARAMS + trk].getValue();// toggle
 							params[TRACK_MUTE_PARAMS + trk].setValue(newParam);
@@ -789,7 +782,7 @@ struct MixMaster : Module {
 				// track solos
 				state = muteSoloCvTriggers[trk + N_TRK].process(inputs[soloInputNum].getVoltage((N_TRK == 16 ? 0 : 8) + trk));
 				if (state != 0) {
-					if (gInfo.momentaryCvButtons) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_SOLO_PARAMS + trk].getValue();// toggle
 							params[TRACK_SOLO_PARAMS + trk].setValue(newParam);
@@ -806,7 +799,7 @@ struct MixMaster : Module {
 				// group mutes
 				state = muteSoloCvTriggers[grp + N_TRK * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp));
 				if (state != 0) {
-					if (gInfo.momentaryCvButtons) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_MUTE_PARAMS + grp].getValue();// toggle
 							params[GROUP_MUTE_PARAMS + grp].setValue(newParam);
@@ -819,7 +812,7 @@ struct MixMaster : Module {
 				// group solos 
 				state = muteSoloCvTriggers[grp + N_TRK * 2 + N_GRP].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp + N_GRP));
 				if (state != 0) {
-					if (gInfo.momentaryCvButtons) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_SOLO_PARAMS + grp].getValue();// toggle
 							params[GROUP_SOLO_PARAMS + grp].setValue(newParam);
@@ -833,7 +826,7 @@ struct MixMaster : Module {
 			// master mute
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2));
 			if (state != 0) {
-				if (gInfo.momentaryCvButtons) {
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MUTE_PARAM].getValue();// toggle
 						params[MAIN_MUTE_PARAM].setValue(newParam);
@@ -846,7 +839,7 @@ struct MixMaster : Module {
 			// master dim
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 1));
 			if (state != 0) {
-				if (gInfo.momentaryCvButtons) {
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_DIM_PARAM].getValue();// toggle
 						params[MAIN_DIM_PARAM].setValue(newParam);
@@ -859,7 +852,7 @@ struct MixMaster : Module {
 			// master mono
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 2));
 			if (state != 0) {
-				if (gInfo.momentaryCvButtons) {
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MONO_PARAM].getValue();// toggle
 						params[MAIN_MONO_PARAM].setValue(newParam);

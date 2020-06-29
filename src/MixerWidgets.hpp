@@ -636,7 +636,7 @@ struct TrackDisplay : EditableDisplayBase {
 			polySteItem->polyStereoSrc = &(srcTrack->polyStereo);
 			menu->addChild(polySteItem);
 
-			if (srcTrack->gInfo->directOutsMode >= 4) {
+			if (srcTrack->gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);
 				directOutsItem->isGlobal = false;
@@ -657,7 +657,7 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(auxSendsItem);
 			}
 
-			if (srcTrack->gInfo->panLawStereo >= 3) {
+			if (srcTrack->gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] >= 3) {
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = &(srcTrack->panLawStereo);
 				panLawStereoItem->isGlobal = false;
@@ -768,7 +768,7 @@ struct GroupDisplay : EditableDisplayBase {
 			linkFadItem->trackOrGroupNum = groupNumForLink;
 			menu->addChild(linkFadItem);
 			
-			if (srcGroup->gInfo->directOutsMode >= 4) {
+			if (srcGroup->gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
 				directOutsItem->isGlobal = false;
@@ -789,7 +789,7 @@ struct GroupDisplay : EditableDisplayBase {
 				menu->addChild(auxSendsItem);
 			}
 
-			if (srcGroup->gInfo->panLawStereo >= 3) {
+			if (srcGroup->gInfo->directOutPanStereoMomentCvLinearVol.cc4[1] >= 3) {
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
 				panLawStereoItem->isGlobal = false;

@@ -48,6 +48,7 @@ struct AuxExpander : Module {
 	};
 	
 	typedef ExpansionInterface<N_TRK, N_GRP> Intf;
+	typedef TAfmExpInterface<N_TRK, N_GRP> AfmExpInterface;
 	
 	
 	#include "AuxExpander.hpp"
@@ -65,20 +66,20 @@ struct AuxExpander : Module {
 	// none
 	
 	// Need to save, with reset
-	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	PackedBytes4 directOutsModeLocal;// must send back to main panel
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice)
 	PackedBytes4 dispColorAuxLocal;
+	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
+	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	AuxspanderAux aux[4];
 	float panCvLevels[4];// 0 to 1.0f
-	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
 
 	// No need to save, with reset
+	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int refreshCounter20;
 	float srcLevelsVus[4][4];// first index is aux number, 2nd index is a vuValue (organized according to VuMeters::VuIds)
-	float srcMuteGhost[4];// index is aux number
 	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
 	simd::float_4 globalSendsWithCV;
 	bool globalSendsCvConnected;
@@ -95,21 +96,22 @@ struct AuxExpander : Module {
 	// No need to save, no reset
 	RefreshCounter refresh;	
 	bool motherPresent = false;// can't be local to process() since widget must know in order to properly draw border
-	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 4];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only, pad with three extra chars for alignment
-	PackedBytes4 colorAndCloak;
-	PackedBytes4 directOutsAndStereoPanModes;// cc1[0] is direct out mode, cc1[1] is stereo pan mode
-	int updateTrackLabelRequest = 0;// 0 when nothing to do, 1 for read names in widget
 	float maxAGIndivSendFader;
 	float maxAGGlobSendFader;
-	uint32_t muteAuxSendWhenReturnGrouped = 0;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	simd::float_4 globalSends;
 	simd::float_4 muteSends[N_TRK / 4 + 1];
 	TriggerRiseFall muteSoloCvTriggers[N_TRK + N_GRP + 4 + 4];
-	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];// 4 (2) elements for 16 (8) tracks, and 1 element for 4 (2) groups
+	// fast exp values
+	// TODO
+	// slow exp values that are saved and need an init in constructor since not guaranteed to be set in first pass of expander:
+	PackedBytes4 colorAndCloak;
+	PackedBytes4 directOutPanStereoMomentCvLinearVol;// cc1[0] is direct out mode, cc1[1] is stereo pan mode, [2] is momentaryCvButtons, [3] is linearVolCvInputs	
+	uint32_t muteAuxSendWhenReturnGrouped;// { ... g2-B, g2-A, g1-D, g1-C, g1-B, g1-A}
 	uint16_t ecoMode;
-	int8_t momentaryCvButtons;
-	int8_t linearVolCvInputs;
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 4];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only, pad with three extra chars for alignment
+	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];// 4 (2) elements for 16 (8) tracks, and 1 element for 4 (2) groups
 	float auxRetFadeGains[4];// for return fades
+	float srcMuteGhost[4];// index is aux number
 	
 	
 	AuxExpander() {
@@ -118,17 +120,7 @@ struct AuxExpander : Module {
 		leftExpander.producerMessage = leftMessages[0];
 		leftExpander.consumerMessage = leftMessages[1];
 		
-
-		for (int trk = 0; trk < N_TRK; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
-		}
-		for (int grp = 0; grp < N_GRP; grp++) {
-			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
-		}
-		updateTrackLabelRequest = 1;
-
 		char strBuf[32];
-
 		maxAGIndivSendFader = std::pow(GlobalConst::individualAuxSendMaxLinearGain, 1.0f / GlobalConst::individualAuxSendScalingExponent);
 		for (int i = 0; i < N_TRK; i++) {
 			// Track send aux A
@@ -188,11 +180,30 @@ struct AuxExpander : Module {
 			configParam(GLOBAL_AUXGROUP_PARAMS + i, 0.0f, (float)N_GRP, 0.0f, strBuf);		
 		}		
 		
-
+		// slow exp values that are saved and need an init in constructor since not guaranteed to be set in first pass of expander:
 		colorAndCloak.cc1 = 0;
-		directOutsAndStereoPanModes.cc1 = 0;
+		directOutPanStereoMomentCvLinearVol.cc4[0] = 3; // directOutsMode: post-solo by default
+		directOutPanStereoMomentCvLinearVol.cc4[1] = 1; // panLawStereo
+		directOutPanStereoMomentCvLinearVol.cc4[2] = 1; // momentaryCvButtons: momentary by default
+		directOutPanStereoMomentCvLinearVol.cc4[3] = 0; // linearVolCvInputs: 0 means powN, 1 means linear		
+		muteAuxSendWhenReturnGrouped = 0;
+		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
+		for (int trk = 0; trk < N_TRK; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		}
+		for (int grp = 0; grp < N_GRP; grp++) {
+			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
+		}
 		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			trackDispColsLocal[i].cc1 = 0;
+		}
+		for (int i = 0; i < 4; i++) {
+			auxRetFadeGains[i] = 1.0f;
+			srcMuteGhost[i] = 0.0f;
+		}
+		
+		
+		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			sendMuteSlewers[i].setRiseFall(simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 		}
 		for (int i = 0; i < N_TRK; i++) {
@@ -204,11 +215,7 @@ struct AuxExpander : Module {
 		auxLabels[4 * 4] = 0;
 		for (int i = 0; i < 4; i++) {
 			aux[i].construct(i, &inputs[0], &params[0], &(auxLabels[4 * i]), &vuColorThemeLocal.cc4[i], &directOutsModeLocal.cc4[i], &panLawStereoLocal.cc4[i], &dispColorAuxLocal.cc4[i], &panCvLevels[i], &auxFadeRatesAndProfiles[i]);
-			auxRetFadeGains[i] = 1.0f;
 		}
-		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
-		momentaryCvButtons = 1;// momentary by default
-		linearVolCvInputs = 0;// powN scaled by default (1 means linear)
 		
 		onReset();
 	}
@@ -220,13 +227,13 @@ struct AuxExpander : Module {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
+		updateTrackLabelRequest = 1;
 		updateAuxLabelRequest = 1;
 		refreshCounter20 = 0;
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
 				srcLevelsVus[i][j] = 0.0f;
 			}
-			srcMuteGhost[i] = 0.0f;
 			paramRetFaderWithCv[i] = -100.0f;
 			globalSendsWithCV[i] = 1.0f;
 			globalRetPansWithCV[i] = 0.5f;
@@ -255,14 +262,14 @@ struct AuxExpander : Module {
 	json_t *dataToJson() override {
 		json_t *rootJ = json_object();
 
-		// vuColorThemeLocal
-		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal.cc1));
-
 		// directOutsModeLocal
 		json_object_set_new(rootJ, "directOutsModeLocal", json_integer(directOutsModeLocal.cc1));
 
 		// panLawStereoLocal
 		json_object_set_new(rootJ, "panLawStereoLocal", json_integer(panLawStereoLocal.cc1));
+
+		// vuColorThemeLocal
+		json_object_set_new(rootJ, "vuColorThemeLocal", json_integer(vuColorThemeLocal.cc1));
 
 		// dispColorAuxLocal
 		json_t *dispColorAuxLocalJ = json_array();
@@ -270,6 +277,12 @@ struct AuxExpander : Module {
 			json_array_insert_new(dispColorAuxLocalJ, c, json_integer(dispColorAuxLocal.cc4[c]));// keep as array for legacy
 		json_object_set_new(rootJ, "dispColorAuxLocal", dispColorAuxLocalJ);
 
+		// auxFadeRatesAndProfiles
+		json_t *auxFadeRatesAndProfilesJ = json_array();
+		for (int c = 0; c < 8; c++)
+			json_array_insert_new(auxFadeRatesAndProfilesJ, c, json_real(auxFadeRatesAndProfiles[c]));
+		json_object_set_new(rootJ, "auxFadeRatesAndProfiles", auxFadeRatesAndProfilesJ);
+		
 		// auxLabels
 		json_object_set_new(rootJ, "auxLabels", json_string(auxLabels));
 		
@@ -284,22 +297,11 @@ struct AuxExpander : Module {
 			json_array_insert_new(panCvLevelsJ, c, json_real(panCvLevels[c]));
 		json_object_set_new(rootJ, "panCvLevels", panCvLevelsJ);
 		
-		// auxFadeRatesAndProfiles
-		json_t *auxFadeRatesAndProfilesJ = json_array();
-		for (int c = 0; c < 8; c++)
-			json_array_insert_new(auxFadeRatesAndProfilesJ, c, json_real(auxFadeRatesAndProfiles[c]));
-		json_object_set_new(rootJ, "auxFadeRatesAndProfiles", auxFadeRatesAndProfilesJ);
-		
 		return rootJ;
 	}
 
 
 	void dataFromJson(json_t *rootJ) override {
-		// vuColorThemeLocal
-		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
-		if (vuColorThemeLocalJ)
-			vuColorThemeLocal.cc1 = json_integer_value(vuColorThemeLocalJ);
-
 		// directOutsModeLocal
 		json_t *directOutsModeLocalJ = json_object_get(rootJ, "directOutsModeLocal");
 		if (directOutsModeLocalJ)
@@ -309,6 +311,11 @@ struct AuxExpander : Module {
 		json_t *panLawStereoLocalJ = json_object_get(rootJ, "panLawStereoLocal");
 		if (panLawStereoLocalJ)
 			panLawStereoLocal.cc1 = json_integer_value(panLawStereoLocalJ);
+
+		// vuColorThemeLocal
+		json_t *vuColorThemeLocalJ = json_object_get(rootJ, "vuColorThemeLocal");
+		if (vuColorThemeLocalJ)
+			vuColorThemeLocal.cc1 = json_integer_value(vuColorThemeLocalJ);
 
 		// dispColorAuxLocal
 		json_t *dispColorAuxLocalJ = json_object_get(rootJ, "dispColorAuxLocal");
@@ -321,6 +328,17 @@ struct AuxExpander : Module {
 			}
 		}
 		
+		// auxFadeRatesAndProfiles
+		json_t *auxFadeRatesAndProfilesJ = json_object_get(rootJ, "auxFadeRatesAndProfiles");
+		if (auxFadeRatesAndProfilesJ) {
+			for (int c = 0; c < 8; c++)
+			{
+				json_t *auxFadeRatesAndProfilesArrayJ = json_array_get(auxFadeRatesAndProfilesJ, c);
+				if (auxFadeRatesAndProfilesArrayJ)
+					auxFadeRatesAndProfiles[c] = json_real_value(auxFadeRatesAndProfilesArrayJ);
+			}
+		}
+
 		// auxLabels
 		json_t *textJ = json_object_get(rootJ, "auxLabels");
 		if (textJ) {
@@ -340,17 +358,6 @@ struct AuxExpander : Module {
 				json_t *panCvLevelsArrayJ = json_array_get(panCvLevelsJ, c);
 				if (panCvLevelsArrayJ)
 					panCvLevels[c] = json_real_value(panCvLevelsArrayJ);
-			}
-		}
-
-		// auxFadeRatesAndProfiles
-		json_t *auxFadeRatesAndProfilesJ = json_object_get(rootJ, "auxFadeRatesAndProfiles");
-		if (auxFadeRatesAndProfilesJ) {
-			for (int c = 0; c < 8; c++)
-			{
-				json_t *auxFadeRatesAndProfilesArrayJ = json_array_get(auxFadeRatesAndProfilesJ, c);
-				if (auxFadeRatesAndProfilesArrayJ)
-					auxFadeRatesAndProfiles[c] = json_real_value(auxFadeRatesAndProfilesArrayJ);
 			}
 		}
 
@@ -382,15 +389,20 @@ struct AuxExpander : Module {
 			// Slow values from mother
 			uint32_t* afmUpdateSlow = (uint32_t*)(&messagesFromMother[Intf::AFM_UPDATE_SLOW]);
 			if (*afmUpdateSlow != 0) {
-				// Track labels
-				memcpy(trackLabels, &messagesFromMother[Intf::AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
-				updateTrackLabelRequest = 1;
 				// Color theme
 				memcpy(&colorAndCloak.cc1, &messagesFromMother[Intf::AFM_COLOR_AND_CLOAK], 4);
-				// Direct outs mode global and Stereo pan mode global
-				memcpy(&directOutsAndStereoPanModes.cc1, &messagesFromMother[Intf::AFM_DIRECT_AND_PAN_MODES], 4);			
-				// Track move
+				// Direct outs mode global, Stereo pan mode global momentCv and linearVol
+				memcpy(&directOutPanStereoMomentCvLinearVol.cc1, &messagesFromMother[Intf::AFM_DIRECT_PAN_MOMENT_LIN_MODES], 4);			
+				// Aux send mute when grouped return lights
+				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN];
+				for (int i = 0; i < N_TRK; i++) {
+					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
+				}
+				// Eco mode
 				int32_t tmp;
+				memcpy(&tmp, &messagesFromMother[Intf::AFM_ECO_MODE], 4);
+				ecoMode = (uint16_t)tmp;
+				// Track move
 				memcpy(&tmp, &messagesFromMother[Intf::AFM_TRACK_MOVE], 4);
 				if (tmp != 0) {
 					moveTrack(tmp);
@@ -405,24 +417,13 @@ struct AuxExpander : Module {
 					tmp8 = -1;
 					memcpy(&messagesFromMother[Intf::AFM_TRK_GRP_RESET], &tmp8, 1);
 				}
-				// Aux send mute when grouped return lights
-				muteAuxSendWhenReturnGrouped = (uint32_t)messagesFromMother[Intf::AFM_AUXSENDMUTE_GROUPED_RETURN];
-				for (int i = 0; i < N_TRK; i++) {
-					lights[AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i].setBrightness((muteAuxSendWhenReturnGrouped & (1 << i)) != 0 ? 1.0f : 0.0f);
-				}
+				// Track labels
+				memcpy(trackLabels, &messagesFromMother[Intf::AFM_TRACK_GROUP_NAMES], 4 * (N_TRK + N_GRP));
+				updateTrackLabelRequest = 1;
 				// Display colors (when per track)
 				memcpy(trackDispColsLocal, &messagesFromMother[Intf::AFM_TRK_DISP_COL], (N_TRK / 4 + 1) * 4);
-				// Eco mode
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_ECO_MODE], 2);
-				ecoMode = (uint16_t)tmp;
 				// Fade gains
 				memcpy(auxRetFadeGains, &messagesFromMother[Intf::AFM_FADE_GAINS], 4 * 4);
-				// momentaryCvButtons
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_MOMENTARY_CVBUTTONS], 1);
-				momentaryCvButtons = (uint8_t)tmp;
-				// linearVolCvInputs
-				memcpy(&tmp, &messagesFromMother[Intf::AFM_LINEARVOLCVINPUTS], 1);
-				linearVolCvInputs = (uint8_t)tmp;
 				// mute ghost
 				memcpy(srcMuteGhost, &messagesFromMother[Intf::AFM_MUTE_GHOST], 4 * 4);
 			}
@@ -591,7 +592,7 @@ struct AuxExpander : Module {
 				if (isConnected) {
 					volCv = clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);
 					paramRetFaderWithCv[i] = fader * volCv;
-					if (linearVolCvInputs == 0) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] == 0) {
 						fader = paramRetFaderWithCv[i];
 					}
 				}
@@ -687,7 +688,7 @@ struct AuxExpander : Module {
 			for (int trk = 0; trk < N_TRK; trk++) {
 				state = muteSoloCvTriggers[trk].process(inputs[POLY_AUX_M_CV_INPUT].getVoltage(trk));
 				if (state != 0) {
-					if (momentaryCvButtons) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_AUXMUTE_PARAMS + trk].getValue();// toggle
 							params[TRACK_AUXMUTE_PARAMS + trk].setValue(newParam);
@@ -705,7 +706,7 @@ struct AuxExpander : Module {
 			for (int grp = 0; grp < N_GRP; grp++) {
 				state = muteSoloCvTriggers[grp + N_TRK].process(inputs[inputNum].getVoltage(grp + (N_TRK & 0xF)));
 				if (state != 0) {
-					if (momentaryCvButtons) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_AUXMUTE_PARAMS + grp].getValue();// toggle
 							params[GROUP_AUXMUTE_PARAMS + grp].setValue(newParam);
@@ -723,7 +724,7 @@ struct AuxExpander : Module {
 				// mutes
 				state = muteSoloCvTriggers[aux + (N_TRK + N_GRP)].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux));
 				if (state != 0) {
-					if (momentaryCvButtons) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GLOBAL_AUXMUTE_PARAMS + aux].getValue();// toggle
 							params[GLOBAL_AUXMUTE_PARAMS + aux].setValue(newParam);
@@ -737,7 +738,7 @@ struct AuxExpander : Module {
 				// solos
 				state = muteSoloCvTriggers[aux + (N_TRK + N_GRP) + 4].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux + 4));
 				if (state != 0) {
-					if (momentaryCvButtons) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GLOBAL_AUXSOLO_PARAMS + aux].getValue();// toggle
 							params[GLOBAL_AUXSOLO_PARAMS + aux].setValue(newParam);
@@ -785,8 +786,8 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
-				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
-				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
+				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[0]);
+				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[1]);
 				auxDisplays[i]->srcPanCvLevel = &(module->panCvLevels[i]);
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
@@ -1138,8 +1139,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
-				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutsAndStereoPanModes.cc4[0]);
-				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutsAndStereoPanModes.cc4[1]);
+				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[0]);
+				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[1]);
 				auxDisplays[i]->srcPanCvLevel = &(module->panCvLevels[i]);
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);

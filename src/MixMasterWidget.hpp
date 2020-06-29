@@ -40,7 +40,7 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(panLawMonoItem);
 	
 	PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-	panLawStereoItem->panLawStereoSrc = &(module->gInfo.panLawStereo);
+	panLawStereoItem->panLawStereoSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[1]);
 	panLawStereoItem->isGlobal = true;
 	menu->addChild(panLawStereoItem);
 	
@@ -49,14 +49,14 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(chainItem);
 	
 	TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
-	directOutsItem->tapModePtr = &(module->gInfo.directOutsMode);
+	directOutsItem->tapModePtr = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[0]);
 	directOutsItem->isGlobal = true;
 	directOutsItem->isGlobalDirectOuts = true;
 	directOutsItem->directOutsSkipGroupedTracksPtr = &(module->gInfo.directOutsSkipGroupedTracks);
 	menu->addChild(directOutsItem);
 	
 	MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Mute/Solo CV", RIGHT_ARROW);
-	momentItem->momentaryCvButtonsSrc = &(module->gInfo.momentaryCvButtons);
+	momentItem->momentaryCvButtonsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]);
 	menu->addChild(momentItem);
 
 	FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
@@ -65,7 +65,7 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(fadItem);
 	
 	LinCvItem *lincv0Item = createMenuItem<LinCvItem>("Vol CV inputs", RIGHT_ARROW);
-	lincv0Item->linearVolCvInputsSrc = &(module->gInfo.linearVolCvInputs);
+	lincv0Item->linearVolCvInputsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[3]);
 	menu->addChild(lincv0Item);
 	
 	EcoItem *eco0Item = createMenuItem<EcoItem>("Eco mode", CHECKMARK(module->gInfo.ecoMode));
