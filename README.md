@@ -2,7 +2,7 @@ Modules for [VCV Rack](https://vcvrack.com), available in the [plugin library](h
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 1.1.7
+Version 1.1.8
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
@@ -38,8 +38,8 @@ The MixMaster beams the following features into your Rack for your demanding mix
 * 4 aux busses (requires [AuxSpander](#auxspander)) and 4 group busses
 * Editable track labels (scribble strips)
 * Gain adjustment (trim) on every track (±20 dB)
-* Hi Pass Filter (HPF) on every track (18 dB/oct.)
-* Low Pass Filter (LPF) on every track (12 dB/oct.)
+* Hi Pass Filter (HPF) on every track and bus (18 dB/oct.)
+* Low Pass Filter (LPF) on every track and bus (12 dB/oct.)
 * Fade automation with lin/log/exp curves
 * Track re-ordering and copy/paste settings
 * User selectable pan law
@@ -97,7 +97,7 @@ Expander module to add CV control over most parameters in the EqMaster. All jack
 
 ![IM](res/img/MeldUnmeld.png)
 
-Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green).
+Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green). The Meld module also features a set of panels for merging the CV poly-inputs found on the MixMaster and AuxSpander modules.
 
 
 ## BassMaster <a id="bassmaster"></a>

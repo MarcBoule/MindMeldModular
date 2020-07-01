@@ -1,4 +1,4 @@
-### 1.1.8 (in development)
+### 1.1.8 (2020-07-01)
 
 - Fixed initialization bug in AuxSpander filters
 - Added option to MixMaster track menus to invert input signal
