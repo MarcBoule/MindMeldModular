@@ -1254,7 +1254,9 @@ struct MixerTrack {
 	Input *inSig;
 	Input *inInsert;
 	Input *inVol;
+	Input *inVolTrack1;
 	Input *inPan;
+	Input *inPanTrack1;
 	Param *paGroup;// 0.0 is no group (i.e. deposit post in mix[0..1]), 1.0 to 4.0 is group (i.e. deposit in groupTaps[2*g..2*g+1]. Always use setter since need to update gInfo!
 	Param *paFade;
 	Param *paMute;
@@ -1280,7 +1282,9 @@ struct MixerTrack {
 		inSig = &_inputs[TRACK_SIGNAL_INPUTS + 2 * trackNum + 0];
 		inInsert = &_inputs[INSERT_TRACK_INPUTS];
 		inVol = &_inputs[TRACK_VOL_INPUTS + trackNum];
+		inVolTrack1 = &_inputs[TRACK_VOL_INPUTS + 0];
 		inPan = &_inputs[TRACK_PAN_INPUTS + trackNum];
+		inPanTrack1 = &_inputs[TRACK_PAN_INPUTS + 0];
 		paGroup = &_params[GROUP_SELECT_PARAMS + trackNum];
 		paFade = &_params[TRACK_FADER_PARAMS + trackNum];
 		paMute = &_params[TRACK_MUTE_PARAMS + trackNum];
@@ -1674,12 +1678,20 @@ struct MixerTrack {
 
 			// calc ** fader, paramWithCV, volCv **
 			fader = paFade->getValue();
+			float volCvVoltage = 1e6;
 			if (inVol->isConnected()) {
-				volCv = clamp(inVol->getVoltage() * 0.1f, 0.0f, 1.0f);
+				volCvVoltage = inVol->getVoltage();
+			}
+			else if (inVolTrack1->getChannels() > trackNum) {
+				// poly spread track 1 when sufficient channels in the poly cable
+				volCvVoltage = inVolTrack1->getVoltage(trackNum);
+			}
+			if (volCvVoltage != 1e6) {
+				volCv = clamp(volCvVoltage * 0.1f, 0.0f, 1.0f);
 				paramWithCV = fader * volCv;
 				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[3] == 0) {
 					fader = paramWithCV;
-				}
+				}	
 			}
 			else {
 				volCv = 1.0f;
@@ -1692,6 +1704,14 @@ struct MixerTrack {
 			if (panCvConnected) {
 				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
+			}
+			else {
+				// poly spread track 1 when sufficient channels in the poly cable
+				panCvConnected = (inPanTrack1->getChannels() > trackNum);
+				if (panCvConnected) {
+					pan += inPanTrack1->getVoltage(trackNum) * 0.1f * panCvLevel;// CV is a -5V to +5V input
+					pan = clamp(pan, 0.0f, 1.0f);
+				}
 			}
 		}
 
