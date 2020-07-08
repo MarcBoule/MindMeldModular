@@ -102,7 +102,7 @@ static const NVGcolor FADE_POINTER_FILL = nvgRGB(255, 106, 31);
 
 
 // Base struct
-struct VuMeterBase : OpaqueWidget {
+struct VuMeterBase : LightWidget {//OpaqueWidget {
 	static constexpr float epsilon = 0.0001f;// don't show VUs below 0.1mV
 	static constexpr float peakHoldThick = 1.0f;// in px
 	static const int faderScalingExponent = 3;

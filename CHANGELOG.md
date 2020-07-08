@@ -2,6 +2,7 @@
 
 - Added poly spreading of track 1's Pan and Vol cv input to other tracks in MixMasters
 - Added stereo width control in groups in MixMasters
+- Changed VU meters so that they work even when the lights are out (see Modular Fungi's "Light Out" module)
 
 
 ### 1.1.8 (2020-07-01)
