@@ -750,6 +750,10 @@ struct GroupDisplay : EditableDisplayBase {
 			trackLPFAdjustSlider->box.size.x = 200.0f;  
 			menu->addChild(trackLPFAdjustSlider);
 						
+			StereoWidthLevelSlider *widthSlider = new StereoWidthLevelSlider(&(srcGroup->stereoWidth));
+			widthSlider->box.size.x = 200.0f;
+			menu->addChild(widthSlider);
+
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcGroup->panCvLevel));
 			panCvSlider->box.size.x = 200.0f;
 			menu->addChild(panCvSlider);

@@ -757,9 +757,11 @@ struct MixerGroup {
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
 	float panCvLevel;// 0 to 1.0f
+	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo, 2 is 200% stereo widening
 
 	// no need to save, with reset
 	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
+	SlewLimiterSingle stereoWidthSlewer;
 	SlewLimiterSingle muteSoloGainSlewer;
 	private:
 	ButterworthThirdOrder hpFilter[2];// 18dB/oct
@@ -821,6 +823,7 @@ struct MixerGroup {
 		insertOuts = _insertOuts;
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].setParameters(true, 0.1f);
@@ -840,6 +843,7 @@ struct MixerGroup {
 		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
 		panCvLevel = 1.0f;
+		stereoWidth = 1.0f;
 		resetNonJson();
 	}
 
@@ -902,6 +906,9 @@ struct MixerGroup {
 		
 		// panCvLevel
 		json_object_set_new(rootJ, (ids + "panCvLevel").c_str(), json_real(panCvLevel));
+
+		// stereoWidth
+		json_object_set_new(rootJ, (ids + "stereoWidth").c_str(), json_real(stereoWidth));
 	}
 
 
@@ -953,6 +960,11 @@ struct MixerGroup {
 		json_t *panCvLevelJ = json_object_get(rootJ, (ids + "panCvLevel").c_str());
 		if (panCvLevelJ)
 			panCvLevel = json_number_value(panCvLevelJ);
+		
+		// stereoWidth
+		json_t *stereoWidthJ = json_object_get(rootJ, (ids + "stereoWidth").c_str());
+		if (stereoWidthJ)
+			stereoWidth = json_number_value(stereoWidthJ);
 		
 		// extern must call resetNonJson()
 	}	
@@ -1009,7 +1021,16 @@ struct MixerGroup {
 
 	void process(float *mix, bool eco) {// group
 		// Tap[0],[1]: pre-insert (group inputs)
-		// nothing to do, already set up by the mix master
+		// already set up by the mix master, so only stereo width to apply
+		
+		// Stereo width
+		if (stereoWidth != stereoWidthSlewer.out) {
+			stereoWidthSlewer.process(gInfo->sampleTime, stereoWidth);
+		}
+		if (stereoWidthSlewer.out != 1.0f) {
+			applyStereoWidth(stereoWidthSlewer.out, &taps[0], &taps[1]);
+		}
+
 		
 		// Tap[8],[9]: pre-fader (inserts and filters)
 		// NEW VERSION

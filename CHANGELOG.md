@@ -1,3 +1,9 @@
+### 1.1.9 (in development)
+
+- Added poly spreading of track 1's Pan and Vol cv input to other tracks in MixMasters
+- Added stereo width control in groups in MixMasters
+
+
 ### 1.1.8 (2020-07-01)
 
 - Fixed initialization bug in AuxSpander filters
