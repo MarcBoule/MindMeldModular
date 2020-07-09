@@ -264,7 +264,7 @@ struct BandLabelQ : BandLabelBase {
 // --------------------
 
 
-struct SpectrumSettingsButtons : OpaqueWidget {
+struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 	const float textWidths[5] = {45.0f, 21.0f, 21.0f, 26.0f, 32.0f};
 	const std::string textStrings[5] = {"ANALYSER:", "OFF", "PRE", "POST", "FREEZE"};
 	
@@ -350,13 +350,14 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 				*settingSrc ^= SPEC_MASK_FREEZE;// toggle freeze bit
 			}
 		}
-		OpaqueWidget::onButton(e);
+		LightWidget::onButton(e);
+		// OpaqueWidget::onButton(e);
 	}
 };
 
 
 
-struct ShowBandCurvesButtons : OpaqueWidget {
+struct ShowBandCurvesButtons : LightWidget {// OpaqueWidget {
 	const float textWidths[3] = {33.0f, 24.0f, 29.0f};
 	const std::string textStrings[3] = {"BANDS:", "HIDE", "SHOW"};
 	
@@ -412,12 +413,13 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 				*settingSrc ^= 0x1;
 			}
 		}
-		OpaqueWidget::onButton(e);
+		LightWidget::onButton(e);
+		// OpaqueWidget::onButton(e);
 	}
 };
 
 
-struct BigNumbers : TransparentWidget {
+struct BigNumbers : LightWidget {// TransparentWidget {
 	// user must set up
 	Param* trackParamSrc = NULL;
 	TrackEq* trackEqsSrc;
@@ -485,7 +487,7 @@ struct BigNumbers : TransparentWidget {
 };
 
 
-struct EqCurveAndGrid : TransparentWidget {
+struct EqCurveAndGrid : LightWidget {// TransparentWidget {// Lights Out will not work though, because of nanovg scissoring for some strange reason, see below for scissor code.
 	static constexpr float minDb = -20.0f;
 	static constexpr float maxDb = 20.0f;
 	static const int numDrawSteps = 200;
@@ -495,8 +497,8 @@ struct EqCurveAndGrid : TransparentWidget {
 	// user must set up
 	Param *trackParamSrc = NULL;
 	TrackEq *trackEqsSrc;
-	PackedBytes4 *miscSettingsSrc;	
-	PackedBytes4 *miscSettings2Src;	
+	PackedBytes4 *miscSettingsSrc;
+	PackedBytes4 *miscSettings2Src;
 	Param *globalBypassParamSrc;
 	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
 	bool *bandParamsCvConnected;
@@ -528,7 +530,7 @@ struct EqCurveAndGrid : TransparentWidget {
 			currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			sampleRate = trackEqsSrc[0].getSampleRate();
 		
-			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));// this makes the Lights Out module not work on this display for some reason
 			
 			// spectrum
 			if (*drawBufSize > 0) {
@@ -543,11 +545,11 @@ struct EqCurveAndGrid : TransparentWidget {
 			if (!hideEqCurves) {
 				calcCurveData();
 				drawAllEqCurves(args);
-			}
+			}		
 			
 			nvgResetScissor(args.vg);					
 		}
-		
+
 		nvgRestore(args.vg);
 	}
 	
