@@ -487,7 +487,7 @@ struct BigNumbers : LightWidget {// TransparentWidget {
 };
 
 
-struct EqCurveAndGrid : LightWidget {// TransparentWidget {// Lights Out will not work though, because of nanovg scissoring for some strange reason, see below for scissor code.
+struct EqCurveAndGrid : LightWidget {// TransparentWidget {
 	static constexpr float minDb = -20.0f;
 	static constexpr float maxDb = 20.0f;
 	static const int numDrawSteps = 200;
@@ -530,7 +530,7 @@ struct EqCurveAndGrid : LightWidget {// TransparentWidget {// Lights Out will no
 			currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			sampleRate = trackEqsSrc[0].getSampleRate();
 		
-			nvgScissor(args.vg, RECT_ARGS(args.clipBox));// this makes the Lights Out module not work on this display for some reason
+			nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 			
 			// spectrum
 			if (*drawBufSize > 0) {
