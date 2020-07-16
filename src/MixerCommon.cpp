@@ -21,6 +21,9 @@
 
 float updateFadeGain(float fadeGain, float target, float *fadeGainX, float *fadeGainXr, float timeStepX, float shape, bool symmetricalFade) {
 	// shape is 1.0f when exp, 0.0f when lin, -1.0f when log
+	// target is 0.0f or 1.0f
+	// fadeGainX moves from 0.0f to 1.0f gradually and linearly
+	// fadeGainXr is a resettable and relative gainX, which is used for non-symmetrical fades (to remember position when change direction while fade is happening
 	static const float A = 4.0f;
 	static const float E_A_M1 = (std::exp(A) - 1.0f);// e^A - 1
 	
@@ -61,7 +64,7 @@ float updateFadeGain(float fadeGain, float target, float *fadeGainX, float *fade
 			fadeGainDelta = crossfade(fadeGainDelta, fadeGainDeltaExp, shape);
 		}
 		else if (shape < 0.0f) {
-			float fadeGainDeltaLog = (std::log((*fadeGainXr) * E_A_M1 + 1.0f) - std::log((*fadeGainXr + timeStepX) * E_A_M1 + 1.0f)) / A;
+			float fadeGainDeltaLog = (std::log((*fadeGainXr) * E_A_M1 + 1.0f) - std::log((*fadeGainXr - timeStepX) * E_A_M1 + 1.0f)) / A;
 			fadeGainDelta = crossfade(fadeGainDelta, fadeGainDeltaLog, -1.0f * shape);		
 		}
 		
