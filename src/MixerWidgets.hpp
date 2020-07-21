@@ -72,7 +72,7 @@ struct LPFCutoffParamQuantity : ParamQuantity {
 // --------------------
 
 
-struct CvAndFadePointerBase : OpaqueWidget {
+struct CvAndFadePointerBase : LightWidget {
 	// instantiator must setup:
 	Param *srcParam;// to know where the fader is
 	float *srcParamWithCV = NULL;// for cv pointer, NULL indicates when cv pointers are not used (no cases so far)
@@ -82,7 +82,7 @@ struct CvAndFadePointerBase : OpaqueWidget {
 	int8_t* dispColorLocalPtr;
 	
 	// derived class must setup:
-	// box.size // inherited from OpaqueWidget, no need to declare
+	// box.size // inherited from LightWidget, no need to declare
 	float faderMaxLinearGain;
 	int faderScalingExponent;
 	
