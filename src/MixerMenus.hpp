@@ -1024,6 +1024,14 @@ struct DcBlockItem : MenuItem {
 	}
 };
 		
+// chainOnly
+struct ChainOnlyItem : MenuItem {
+	int8_t *chainOnlySrc;
+	void onAction(const event::Action &e) override {
+		*chainOnlySrc ^= 0x1;
+	}
+};
+		
 		
 // clipper
 struct ClippingItem : MenuItem {

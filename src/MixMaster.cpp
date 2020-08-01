@@ -1116,6 +1116,7 @@ struct MixMasterWidget : ModuleWidget {
 			masterDisplay->fadeProfile = &(module->master.fadeProfile);
 			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
 			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
+			masterDisplay->chainOnly = &(module->master.chainOnly);
 			masterDisplay->dimGain = &(module->master.dimGain);
 			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
@@ -1414,6 +1415,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			masterDisplay->fadeProfile = &(module->master.fadeProfile);
 			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
 			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
+			masterDisplay->chainOnly = &(module->master.chainOnly);
 			masterDisplay->dimGain = &(module->master.dimGain);
 			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);

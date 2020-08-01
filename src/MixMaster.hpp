@@ -413,6 +413,7 @@ struct MixerMaster {
 	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t vuColorThemeLocal;
 	int8_t dispColorLocal;
+	int8_t chainOnly;
 	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	char masterLabel[7];
 	
@@ -464,6 +465,7 @@ struct MixerMaster {
 		fadeProfile = 0.0f;
 		vuColorThemeLocal = 0;
 		dispColorLocal = 0;
+		chainOnly = 0;
 		dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
 		snprintf(masterLabel, 7, "MASTER");
 		resetNonJson();
@@ -507,6 +509,9 @@ struct MixerMaster {
 		// dispColorLocal
 		json_object_set_new(rootJ, "dispColorLocal", json_integer(dispColorLocal));
 		
+		// chainOnly
+		json_object_set_new(rootJ, "chainOnly", json_integer(chainOnly));
+		
 		// dimGain
 		json_object_set_new(rootJ, "dimGain", json_real(dimGain));
 		
@@ -545,6 +550,11 @@ struct MixerMaster {
 		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
 		if (dispColorLocalJ)
 			dispColorLocal = json_integer_value(dispColorLocalJ);
+		
+		// chainOnly
+		json_t *chainOnlyJ = json_object_get(rootJ, "chainOnly");
+		if (chainOnlyJ)
+			chainOnly = json_integer_value(chainOnlyJ);
 		
 		// dimGain
 		json_t *dimGainJ = json_object_get(rootJ, "dimGain");
@@ -621,6 +631,11 @@ struct MixerMaster {
 	
 	void process(float *mix, bool eco) {// master
 		// takes mix[0..1] and redeposits post in same place
+		
+		if (chainOnly != 0) {
+			mix[0] = 0.0f;
+			mix[1] = 0.0f;
+		}
 		
 		if (eco) {
 			// calc ** fadeGain, fadeGainX, fadeGainXr, target, fadeGainScaled **

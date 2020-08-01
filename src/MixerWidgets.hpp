@@ -495,6 +495,7 @@ struct MasterDisplay : EditableDisplayBase {
 	float* fadeRate;
 	float* fadeProfile;
 	int8_t* vuColorThemeLocal;
+	int8_t* chainOnly;
 	float* dimGain;
 	char* masterLabel;
 	float* dimGainIntegerDB;
@@ -554,6 +555,10 @@ struct MasterDisplay : EditableDisplayBase {
 				dispColItem->isGlobal = false;
 				menu->addChild(dispColItem);
 			}
+			
+			ChainOnlyItem *schItem = createMenuItem<ChainOnlyItem>("Solo chain inputs", CHECKMARK(*chainOnly));
+			schItem->chainOnlySrc = chainOnly;
+			menu->addChild(schItem);
 			
 			e.consume(this);
 			return;

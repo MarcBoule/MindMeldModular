@@ -1,4 +1,9 @@
-### 1.1.9 (in development)
+### 1.1.10 (in development)
+
+- Added option to MixMasters' master label menus to solo chain inputs
+
+
+### 1.1.9 (2020-07-19)
 
 - Added poly spreading of track 1's Pan and Vol cv input to other tracks in MixMasters
 - Added stereo width control in groups in MixMasters
