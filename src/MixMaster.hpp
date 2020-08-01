@@ -185,7 +185,7 @@ struct GlobalInfo {
 		groupsControlTrackSendLevels = 0;
 		auxReturnsMutedWhenMainSolo = 0;
 		auxReturnsSolosMuteDry = 0;
-		chainMode = 1;// post should be default
+		chainMode = 0;// pre should be default
 		colorAndCloak.cc4[cloakedMode] = 0;
 		colorAndCloak.cc4[vuColorGlobal] = 0;
 		colorAndCloak.cc4[dispColorGlobal] = 0;

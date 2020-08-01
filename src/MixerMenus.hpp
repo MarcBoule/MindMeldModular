@@ -287,11 +287,11 @@ struct ChainItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		ChainSubItem *ch0Item = createMenuItem<ChainSubItem>("Pre-master", CHECKMARK(*chainModeSrc == 0));
+		ChainSubItem *ch0Item = createMenuItem<ChainSubItem>("Pre-master (default)", CHECKMARK(*chainModeSrc == 0));
 		ch0Item->chainModeSrc = chainModeSrc;
 		menu->addChild(ch0Item);
 
-		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master (default)", CHECKMARK(*chainModeSrc == 1));
+		ChainSubItem *ch1Item = createMenuItem<ChainSubItem>("Post-master", CHECKMARK(*chainModeSrc == 1));
 		ch1Item->chainModeSrc = chainModeSrc;
 		ch1Item->setVal = 1;
 		menu->addChild(ch1Item);
