@@ -280,6 +280,7 @@ struct MmKnobWithArc : MmKnob {
 	// derived class must setup
 	NVGcolor arcColor;
 	bool topCentered = false;
+	bool rightWhenNottopCentered = false;
 
 	// user must setup
 	float *paramWithCV = NULL;

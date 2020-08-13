@@ -47,7 +47,12 @@ void MmKnobWithArc::draw(const DrawArgs &args) {
 		float aParam = -10000.0f;
 		float aBase = TOP_ANGLE;
 		if (!topCentered) {
-			aBase += minAngle;
+			if (rightWhenNottopCentered) {
+				aBase -= minAngle;
+			}
+			else {
+				aBase += minAngle;
+			}
 		}
 		int8_t showMask = (*detailsShowSrc & ~*cloakedModeSrc & 0x3); // 0 = off, 0x1 = cv_only, 0x3 = cv+param
 		// param
