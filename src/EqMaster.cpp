@@ -35,7 +35,6 @@ struct EqMaster : Module {
 	// Constants
 	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 	int8_t cloakedMode = 0x0;
-	int8_t detailsShow = 0x3;
 
 	// Need to save, no reset
 	// none
@@ -1051,7 +1050,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			trackGainKnob->trackParamSrc = &(module->params[TRACK_PARAM]);
 			trackGainKnob->trackEqsSrc = module->trackEqs;
-			trackGainKnob->detailsShowSrc = &(module->detailsShow);
+			trackGainKnob->detailsShowSrc = &(module->miscSettings.cc4[3]);
 			trackGainKnob->cloakedModeSrc = &(module->cloakedMode);			
 		}		
 		// Signal outputs
