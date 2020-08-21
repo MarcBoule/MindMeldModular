@@ -602,7 +602,7 @@ struct TrackDisplay : EditableDisplayBase {
 			invInItem->invertInputSrc = &(srcTrack->invertInput);
 			menu->addChild(invInItem);
 
-			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(&(srcTrack->gainAdjust));
+			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(&(srcTrack->gainAdjust), -20.0f, 20.0f);
 			trackGainAdjustSlider->box.size.x = 200.0f;
 			menu->addChild(trackGainAdjustSlider);
 			

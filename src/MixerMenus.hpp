@@ -496,44 +496,6 @@ struct InvertInputItem : MenuItem {
 	}
 };
 
-// Gain adjust menu item
-
-struct GainAdjustQuantity : Quantity {
-	float *gainAdjustSrc;
-	  
-	GainAdjustQuantity(float *_gainAdjustSrc) {
-		gainAdjustSrc = _gainAdjustSrc;
-	}
-	void setValue(float value) override {
-		float gainInDB = math::clamp(value, getMinValue(), getMaxValue());
-		*gainAdjustSrc = std::pow(10.0f, gainInDB / 20.0f);
-	}
-	float getValue() override {
-		return 20.0f * std::log10(*gainAdjustSrc);
-	}
-	float getMinValue() override {return -20.0f;}
-	float getMaxValue() override {return 20.0f;}
-	float getDefaultValue() override {return 0.0f;}
-	float getDisplayValue() override {return getValue();}
-	std::string getDisplayValueString() override {
-		float valGain = getDisplayValue();
-		valGain =  std::round(valGain * 100.0f);
-		return string::f("%.1f", math::normalizeZero(valGain / 100.0f));
-	}
-	void setDisplayValue(float displayValue) override {setValue(displayValue);}
-	std::string getLabel() override {return "Gain adjust";}
-	std::string getUnit() override {return " dB";}
-};
-
-struct GainAdjustSlider : ui::Slider {
-	GainAdjustSlider(float *gainAdjustSrc) {
-		quantity = new GainAdjustQuantity(gainAdjustSrc);
-	}
-	~GainAdjustSlider() {
-		delete quantity;
-	}
-};
-
 
 
 // HPF filter cutoff menu item

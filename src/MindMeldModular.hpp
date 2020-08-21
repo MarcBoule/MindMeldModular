@@ -220,6 +220,49 @@ struct PolyStereoItem : MenuItem {
 	}
 };
 
+
+// Gain adjust menu item
+struct GainAdjustQuantity : Quantity {
+	float *gainAdjustSrc;
+	float minDb;
+	float maxDb;
+	  
+	GainAdjustQuantity(float *_gainAdjustSrc, float _minDb, float _maxDb) {
+		gainAdjustSrc = _gainAdjustSrc;
+		minDb = _minDb;
+		maxDb = _maxDb;
+	}
+	void setValue(float value) override {
+		float gainInDB = math::clamp(value, getMinValue(), getMaxValue());
+		*gainAdjustSrc = std::pow(10.0f, gainInDB / 20.0f);
+	}
+	float getValue() override {
+		return 20.0f * std::log10(*gainAdjustSrc);
+	}
+	float getMinValue() override {return minDb;}
+	float getMaxValue() override {return maxDb;}
+	float getDefaultValue() override {return 0.0f;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		float valGain = getDisplayValue();
+		valGain =  std::round(valGain * 100.0f);
+		return string::f("%.1f", math::normalizeZero(valGain / 100.0f));
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {return "Gain adjust";}
+	std::string getUnit() override {return " dB";}
+};
+struct GainAdjustSlider : ui::Slider {
+	GainAdjustSlider(float *gainAdjustSrc, float minDb, float maxDb) {
+		quantity = new GainAdjustQuantity(gainAdjustSrc, minDb, maxDb);
+	}
+	~GainAdjustSlider() {
+		delete quantity;
+	}
+};
+
+
+
 // General functions
 
 // sort the 4 floats in a float_4 in ascending order starting with index 0
