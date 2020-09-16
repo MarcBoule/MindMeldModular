@@ -311,12 +311,12 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 			posx += textWidths[1];
 			
 			// PRE
-			nvgFillColor(args.vg, (specOn && !specFreeze && !specPost) ? colorOn : colorOff);
+			nvgFillColor(args.vg, (specOn && !specPost) ? colorOn : colorOff);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
 			posx += textWidths[2];
 			
 			// POST
-			nvgFillColor(args.vg, (specOn && !specFreeze && specPost) ? colorOn : colorOff);
+			nvgFillColor(args.vg, (specOn && specPost) ? colorOn : colorOff);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
 			posx += textWidths[3];
 			
@@ -346,7 +346,7 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 			leftX += textWidths[3];
 			// click FREEZE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[4]) {
-				*settingSrc |= SPEC_MASK_ON;// set on/off bit and keep pre/post bit unchanged
+				// *settingSrc |= SPEC_MASK_ON;// set on/off bit and keep pre/post bit unchanged
 				*settingSrc ^= SPEC_MASK_FREEZE;// toggle freeze bit
 			}
 		}
