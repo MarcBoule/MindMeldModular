@@ -263,6 +263,7 @@ struct BandLabelQ : BandLabelBase {
 // Displays
 // --------------------
 
+enum SpecMasks {SPEC_MASK_ON = 0x4, SPEC_MASK_POST = 0x2, SPEC_MASK_FREEZE = 0x1};
 
 struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 	const float textWidths[5] = {45.0f, 21.0f, 21.0f, 26.0f, 32.0f};
@@ -321,7 +322,7 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 			posx += textWidths[3];
 			
 			// FREEZE
-			nvgFillColor(args.vg, (specOn && specFreeze) ? colorOn : colorOff);
+			nvgFillColor(args.vg, specFreeze ? colorOn : colorOff);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[4].c_str(), NULL);
 		}
 	}
@@ -331,22 +332,22 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 			float leftX = textWidths[0];
 			// click OFF
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
-				*settingSrc &= ~(SPEC_MASK_ON | SPEC_MASK_FREEZE);// clear freeze and on/off bits, keep pre/post bit unchanged
+				*settingSrc ^= SPEC_MASK_ON;// toggle on/off bit, keep pre/post bit unchanged
 			}
 			leftX += textWidths[1];
 			// click PRE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
-				*settingSrc = (SPEC_MASK_ON);// set on/off bit, clear others
+				*settingSrc |= SPEC_MASK_ON;// set on/off bit
+				*settingSrc &= ~SPEC_MASK_POST;// clear pre/post bit
 			}
 			leftX += textWidths[2];
 			// click POST
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[3]) {
-				*settingSrc = (SPEC_MASK_ON | SPEC_MASK_POST);// set on/off and pre/post bits, clear freeze
+				*settingSrc |= (SPEC_MASK_ON | SPEC_MASK_POST);// set on/off and pre/post bits
 			}
 			leftX += textWidths[3];
 			// click FREEZE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[4]) {
-				// *settingSrc |= SPEC_MASK_ON;// set on/off bit and keep pre/post bit unchanged
 				*settingSrc ^= SPEC_MASK_FREEZE;// toggle freeze bit
 			}
 		}
