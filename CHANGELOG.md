@@ -1,6 +1,7 @@
 ### 1.1.10 (in development)
 
 - Added option to MixMasters' master label menus to solo chain inputs
+- Tweaked scope buttons' behaviors in EQMaster
 
 
 ### 1.1.9 (2020-07-19)

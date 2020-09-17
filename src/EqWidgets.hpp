@@ -332,7 +332,7 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 			float leftX = textWidths[0];
 			// click OFF
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
-				*settingSrc ^= SPEC_MASK_ON;// toggle on/off bit, keep pre/post bit unchanged
+				*settingSrc ^= SPEC_MASK_ON;// toggle on/off bit, keep pre/post and freeze bits unchanged
 			}
 			leftX += textWidths[1];
 			// click PRE
