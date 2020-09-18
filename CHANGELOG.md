@@ -1,6 +1,6 @@
-### 1.1.10 (in development)
+### 1.1.10 (2020-09-17)
 
-- Added option to MixMasters' master label menus to solo chain inputs
+- Added option to MixMasters' master label menus to solo chain inputs (useful for RackWindows' Console MM)
 - Tweaked scope buttons' behaviors in EQMaster
 
 
