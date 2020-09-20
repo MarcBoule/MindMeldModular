@@ -265,8 +265,9 @@ struct BandLabelQ : BandLabelBase {
 
 enum SpecMasks {SPEC_MASK_ON = 0x4, SPEC_MASK_POST = 0x2, SPEC_MASK_FREEZE = 0x1};
 
-struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
-	const float textWidths[5] = {45.0f, 21.0f, 21.0f, 26.0f, 32.0f};
+struct SpectrumSettingsButtons : LightWidget {
+	const float textHeight = 5.0f;// in mm
+	const float textWidths[5] =        {15.24f,      7.11f, 7.11f, 8.81f,  10.84f};// in mm
 	const std::string textStrings[5] = {"ANALYSER:", "OFF", "PRE", "POST", "FREEZE"};
 	
 	// user must set up
@@ -276,20 +277,21 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 	std::shared_ptr<Font> font;
 	NVGcolor colorOff;
 	NVGcolor colorOn;
+	float textWidthsPx[5];
 	
 	
 	SpectrumSettingsButtons() {
-		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2] + textWidths[3] + textWidths[4], 5.0f));
+		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2] + textWidths[3] + textWidths[4], textHeight));
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		colorOff = SCHEME_GRAY;
 		colorOn = SCHEME_YELLOW;
+		for (int i = 0; i < 5; i++) {
+			textWidthsPx[i] = mm2px(textWidths[i]);
+		}
 	}
 	
 	void draw(const DrawArgs &args) override {
 		if (font->handle >= 0) {
-			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
-			// nvgStrokeWidth(args.vg, 0.7f);
-			
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
@@ -304,22 +306,22 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 			float posx = 0.0f;
 			nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
-			posx += textWidths[0];
+			posx += textWidthsPx[0];
 			
 			// OFF
 			nvgFillColor(args.vg, (!specOn) ? colorOn : colorOff);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
-			posx += textWidths[1];
+			posx += textWidthsPx[1];
 			
 			// PRE
 			nvgFillColor(args.vg, (specOn && !specPost) ? colorOn : colorOff);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
-			posx += textWidths[2];
+			posx += textWidthsPx[2];
 			
 			// POST
 			nvgFillColor(args.vg, (specOn && specPost) ? colorOn : colorOff);
 			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
-			posx += textWidths[3];
+			posx += textWidthsPx[3];
 			
 			// FREEZE
 			nvgFillColor(args.vg, specFreeze ? colorOn : colorOff);
@@ -329,37 +331,37 @@ struct SpectrumSettingsButtons : LightWidget {// OpaqueWidget {
 	
 	void onButton(const event::Button& e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			float leftX = textWidths[0];
+			float leftX = textWidthsPx[0];
 			// click OFF
-			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[1]) {
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[1]) {
 				*settingSrc ^= SPEC_MASK_ON;// toggle on/off bit, keep pre/post and freeze bits unchanged
 			}
-			leftX += textWidths[1];
+			leftX += textWidthsPx[1];
 			// click PRE
-			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[2]) {
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[2]) {
 				*settingSrc |= SPEC_MASK_ON;// set on/off bit
 				*settingSrc &= ~SPEC_MASK_POST;// clear pre/post bit
 			}
-			leftX += textWidths[2];
+			leftX += textWidthsPx[2];
 			// click POST
-			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[3]) {
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[3]) {
 				*settingSrc |= (SPEC_MASK_ON | SPEC_MASK_POST);// set on/off and pre/post bits
 			}
-			leftX += textWidths[3];
+			leftX += textWidthsPx[3];
 			// click FREEZE
-			if (e.pos.x > leftX && e.pos.x < leftX + textWidths[4]) {
+			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[4]) {
 				*settingSrc ^= SPEC_MASK_FREEZE;// toggle freeze bit
 			}
 		}
 		LightWidget::onButton(e);
-		// OpaqueWidget::onButton(e);
 	}
 };
 
 
 
-struct ShowBandCurvesButtons : LightWidget {// OpaqueWidget {
-	const float textWidths[3] = {33.0f, 24.0f, 29.0f};
+struct ShowBandCurvesButtons : LightWidget {
+	const float textHeight = 5.0f;// in mm
+	const float textWidths[3] =        {11.18f,   8.13f,  9.82f};// in mm
 	const std::string textStrings[3] = {"BANDS:", "HIDE", "SHOW"};
 	
 	// user must set up
@@ -369,20 +371,21 @@ struct ShowBandCurvesButtons : LightWidget {// OpaqueWidget {
 	std::shared_ptr<Font> font;
 	NVGcolor colorOff;
 	NVGcolor colorOn;
+	float textWidthsPx[3];
 	
 	
 	ShowBandCurvesButtons() {
-		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2], 5.0f));
+		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2], textHeight));
 		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		colorOff = SCHEME_GRAY;
 		colorOn = SCHEME_YELLOW;
+		for (int i = 0; i < 3; i++) {
+			textWidthsPx[i] = mm2px(textWidths[i]);
+		}
 	}
 	
 	void draw(const DrawArgs &args) override {
 		if (font->handle >= 0) {
-			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
-			// nvgStrokeWidth(args.vg, 0.7f);
-			
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
@@ -400,22 +403,18 @@ struct ShowBandCurvesButtons : LightWidget {// OpaqueWidget {
 					nvgFillColor(args.vg, colorOff);
 				}
 				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[l].c_str(), NULL);
-				// nvgBeginPath(args.vg);
-				// nvgRect(args.vg, posx, 0.0f, textWidths[l], box.size.y);
-				// nvgStroke(args.vg);	
-				posx += textWidths[l];
+				posx += textWidthsPx[l];
 			}
 		}
 	}
 	
 	void onButton(const event::Button& e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			if (e.pos.x > textWidths[0]) {
+			if (e.pos.x > textWidthsPx[0]) {
 				*settingSrc ^= 0x1;
 			}
 		}
 		LightWidget::onButton(e);
-		// OpaqueWidget::onButton(e);
 	}
 };
 
