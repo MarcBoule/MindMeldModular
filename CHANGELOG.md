@@ -1,3 +1,8 @@
+### 1.1.11 (in development)
+
+- Added placeholder "Stereo width: N/A" in track menus when mono
+
+
 ### 1.1.10 (2020-09-17)
 
 - Added option to MixMasters' master label menus to solo chain inputs (useful for RackWindows' Console MM)

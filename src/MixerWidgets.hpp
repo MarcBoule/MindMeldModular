@@ -619,6 +619,11 @@ struct TrackDisplay : EditableDisplayBase {
 				widthSlider->box.size.x = 200.0f;
 				menu->addChild(widthSlider);
 			}
+			else {
+				MenuLabel *noWidthLabel = new MenuLabel();
+				noWidthLabel->text = "Stereo width: N/A";
+				menu->addChild(noWidthLabel);
+			}
 			
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcTrack->panCvLevel));
 			panCvSlider->box.size.x = 200.0f;
