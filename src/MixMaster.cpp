@@ -331,11 +331,14 @@ struct MixMaster : Module {
 	void dataFromJsonWithSize(json_t *rootJ, int nTrkSrc, int nGrpSrc) {
 		// trackLabels
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
-		if (textJ)
-			snprintf(trackLabels, 4 * (N_TRK + N_GRP) + 1, "%s", json_string_value(textJ));
+		if (textJ) {
+			const char* labels = json_string_value(textJ);
+			memcpy(  trackLabels,               labels,               4 * std::min(N_TRK, nTrkSrc));
+			memcpy(&(trackLabels[4 * N_TRK]), &(labels[4 * nTrkSrc]), 4 * std::min(N_GRP, nGrpSrc));		
+		}
 		
 		// gInfo
-		gInfo.dataFromJson(rootJ);
+		gInfo.dataFromJson(rootJ, nTrkSrc, nGrpSrc);
 
 		// tracks
 		for (int i = 0; i < std::min(N_TRK, nTrkSrc); i++) {
@@ -426,19 +429,19 @@ struct MixMaster : Module {
 		
 
 		// params
-		json_t* paramsJ = json_object_get(mixerJ, "params");
-		if ( !paramsJ || !json_is_array(paramsJ) ) {
-			WARN("MixMaster interchange: error params array malformed or missing");
-			return;
-		}
-		for (size_t i = 0; i < json_array_size(paramsJ); i++) {
-			json_t* paramJ = json_array_get(paramsJ, i);
-			if (!paramJ) {
-				WARN("MixMaster interchange: error missing param in params array");
-				return;		
-			}
-			params[i].setValue(json_number_value(paramJ));
-		}	
+		// json_t* paramsJ = json_object_get(mixerJ, "params");
+		// if ( !paramsJ || !json_is_array(paramsJ) ) {
+			// WARN("MixMaster interchange: error params array malformed or missing");
+			// return;
+		// }
+		// for (size_t i = 0; i < json_array_size(paramsJ); i++) {
+			// json_t* paramJ = json_array_get(paramsJ, i);
+			// if (!paramJ) {
+				// WARN("MixMaster interchange: error missing param in params array");
+				// return;		
+			// }
+			// params[i].setValue(json_number_value(paramJ));
+		// }	
 
 		// dataToJson data
 		json_t* dataToJsonJ = json_object_get(mixerJ, "dataToJson-data");

@@ -281,7 +281,9 @@ struct GlobalInfo {
 	}
 
 
-	void dataFromJson(json_t *rootJ) {
+	void dataFromJson(json_t *rootJ, int nTrkSrc, int nGrpSrc) {
+		// nTrkSrc and nGrpSrc are for those members which depend on number of tracks/groups
+		
 		// panLawMono
 		json_t *panLawMonoJ = json_object_get(rootJ, "panLawMono");
 		if (panLawMonoJ)
@@ -344,8 +346,22 @@ struct GlobalInfo {
 
 		// linkBitMask
 		json_t *linkBitMaskJ = json_object_get(rootJ, "linkBitMask");
-		if (linkBitMaskJ)
-			linkBitMask = json_integer_value(linkBitMaskJ);
+		if (linkBitMaskJ) {
+			unsigned long newLinkBitMask = json_integer_value(linkBitMaskJ);
+			if (N_TRK == nTrkSrc) {
+				linkBitMask = newLinkBitMask;
+			}
+			else {
+				// code below assumes when 8 track mixer has 2 groups and 16 track mixer has 4 groups
+				if (N_TRK == 8) {// nTrkSrc is automatically 16, so moving from 16 down to 8
+					linkBitMask = ( (newLinkBitMask & 0xFF) | ((newLinkBitMask & 0x30000) >> 8) );
+				}
+				else {// nTrkSrc is automatically 8, so moving from 8 up to 16
+					linkBitMask &= 0xCFF00;// kill bits in sr that correspond to jr's bits
+					linkBitMask |= ( (newLinkBitMask & 0xFF) | ((newLinkBitMask & 0x300) << 8) );
+				}
+			}
+		}
 		
 		// filterPos
 		json_t *filterPosJ = json_object_get(rootJ, "filterPos");

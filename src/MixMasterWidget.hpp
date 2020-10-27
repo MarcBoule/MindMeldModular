@@ -60,9 +60,9 @@ void appendContextMenu(Menu *menu) override {
 	TMixMaster* module = (TMixMaster*)(this->module);
 	assert(module);
 	
-	// MixerInterchangeItem *interchangeItem = createMenuItem<MixerInterchangeItem>("MixMaster interchange", RIGHT_ARROW);
-	// interchangeItem->module = module;
-	// menu->addChild(interchangeItem);
+	MixerInterchangeItem *interchangeItem = createMenuItem<MixerInterchangeItem>("MixMaster interchange", RIGHT_ARROW);
+	interchangeItem->module = module;
+	menu->addChild(interchangeItem);
 
 
 	menu->addChild(new MenuSeparator());
