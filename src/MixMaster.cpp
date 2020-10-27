@@ -326,6 +326,9 @@ struct MixMaster : Module {
 
 
 	void dataFromJson(json_t *rootJ) override {
+		dataFromJsonWithSize(rootJ, N_TRK, N_GRP);
+	}
+	void dataFromJsonWithSize(json_t *rootJ, int nTrkSrc, int nGrpSrc) {
 		// trackLabels
 		json_t *textJ = json_object_get(rootJ, "trackLabels");
 		if (textJ)
@@ -335,12 +338,15 @@ struct MixMaster : Module {
 		gInfo.dataFromJson(rootJ);
 
 		// tracks
-		for (int i = 0; i < N_TRK; i++) {
+		for (int i = 0; i < std::min(N_TRK, nTrkSrc); i++) {
 			tracks[i].dataFromJson(rootJ);
 		}
-		// groups/aux
-		for (int i = 0; i < N_GRP; i++) {
+		// groups
+		for (int i = 0; i < std::min(N_GRP, nGrpSrc); i++) {
 			groups[i].dataFromJson(rootJ);
+		}
+		// aux
+		for (int i = 0; i < 4; i++) {
 			aux[i].dataFromJson(rootJ);
 		}
 		// master
@@ -353,6 +359,10 @@ struct MixMaster : Module {
 	void interchangeCopyToClipboard() {
 		// mixer
 		json_t* mixerJ = json_object();
+		
+		// dimensions
+		json_object_set_new(mixerJ, "n-trk", json_integer(N_TRK));
+		json_object_set_new(mixerJ, "n-grp", json_integer(N_GRP));
 		
 		// params
 		json_t* paramsJ = json_array();
@@ -399,6 +409,22 @@ struct MixMaster : Module {
 			return;
 		}
 
+		// dimensions
+		json_t* nTrkJ = json_object_get(mixerJ, "n-trk");
+		if (!nTrkJ) {
+			WARN("MixMaster interchange: error num tracks missing");
+			return;
+		}
+		int n_trk = json_integer_value(nTrkJ);
+		
+		json_t* nGrpJ = json_object_get(mixerJ, "n-grp");
+		if (!nGrpJ) {
+			WARN("MixMaster interchange: error num groups missing");
+			return;
+		}
+		int n_grp = json_integer_value(nGrpJ);
+		
+
 		// params
 		json_t* paramsJ = json_object_get(mixerJ, "params");
 		if ( !paramsJ || !json_is_array(paramsJ) ) {
@@ -420,7 +446,7 @@ struct MixMaster : Module {
 			WARN("MixMaster interchange: error dataToJson-data missing");
 			return;
 		}
-		dataFromJson(dataToJsonJ);
+		dataFromJsonWithSize(dataToJsonJ, n_trk, n_grp);
 	}
 
 
