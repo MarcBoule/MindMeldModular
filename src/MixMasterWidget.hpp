@@ -20,9 +20,50 @@ time_t oldTime = 0;
 // Module's context menu
 // --------------------
 
+struct MixerInterchangeItem : MenuItem {
+	TMixMaster* module;
+	
+	struct MixerChangeCopyItem : MenuItem {
+		TMixMaster* module;
+		void onAction(const event::Action &e) override {
+			module->interchangeCopyToClipboard();
+		}
+	};
+
+	struct MixerChangePasteItem : MenuItem {
+		TMixMaster* module;
+		void onAction(const event::Action &e) override {
+			module->interchangePasteFromClipboard();
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		MixerChangeCopyItem *mcCopyItem = createMenuItem<MixerChangeCopyItem>("Copy mixer", "");
+		mcCopyItem->module = module;
+		menu->addChild(mcCopyItem);
+		
+		menu->addChild(new MenuSeparator());
+
+		MixerChangePasteItem *mcPasteItem = createMenuItem<MixerChangePasteItem>("Paste mixer", "");
+		mcPasteItem->module = module;
+		menu->addChild(mcPasteItem);
+
+		return menu;
+	}
+};
+
+
+
 void appendContextMenu(Menu *menu) override {		
 	TMixMaster* module = (TMixMaster*)(this->module);
 	assert(module);
+	
+	// MixerInterchangeItem *interchangeItem = createMenuItem<MixerInterchangeItem>("MixMaster interchange", RIGHT_ARROW);
+	// interchangeItem->module = module;
+	// menu->addChild(interchangeItem);
+
 
 	menu->addChild(new MenuSeparator());
 	
@@ -71,6 +112,7 @@ void appendContextMenu(Menu *menu) override {
 	EcoItem *eco0Item = createMenuItem<EcoItem>("Eco mode", CHECKMARK(module->gInfo.ecoMode));
 	eco0Item->ecoModeSrc = &(module->gInfo.ecoMode);
 	menu->addChild(eco0Item);
+	
 	
 	if (module->auxExpanderPresent) {
 		menu->addChild(new MenuSeparator());

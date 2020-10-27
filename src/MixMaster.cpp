@@ -350,6 +350,80 @@ struct MixMaster : Module {
 	}
 
 
+	void interchangeCopyToClipboard() {
+		// mixer
+		json_t* mixerJ = json_object();
+		
+		// params
+		json_t* paramsJ = json_array();
+		for (size_t i = 0; i < MixMaster::NUM_PARAMS; i++) {
+			json_array_append_new(paramsJ, json_real(params[i].getValue()));
+		}
+		json_object_set_new(mixerJ, "params", paramsJ);
+		
+		// dataToJson data
+		json_object_set_new(mixerJ, "dataToJson-data", dataToJson());
+		
+		// clipboard
+		json_t* clipboardJ = json_object();		
+		json_object_set_new(clipboardJ, "mixmaster-interchange", mixerJ);
+		
+		char* inerchangeClip = json_dumps(clipboardJ, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
+		json_decref(clipboardJ);
+		glfwSetClipboardString(APP->window->win, inerchangeClip);
+		free(inerchangeClip);
+	}
+
+
+	void interchangePasteFromClipboard() {
+		// clipboard
+		const char* inerchangeClip = glfwGetClipboardString(APP->window->win);
+
+		if (!inerchangeClip) {
+			WARN("MixMaster interchange: error getting clipboard string");
+			return;
+		}
+
+		json_error_t error;
+		json_t* clipboardJ = json_loads(inerchangeClip, 0, &error);
+		if (!clipboardJ) {
+			WARN("MixMaster interchange: error json parsing clipboard");
+			return;
+		}
+		DEFER({json_decref(clipboardJ);});
+
+		// mixer
+		json_t* mixerJ = json_object_get(clipboardJ, "mixmaster-interchange");
+		if (!mixerJ) {
+			WARN("MixMaster interchange: error no mixmaster-interchange present in clipboard");
+			return;
+		}
+
+		// params
+		json_t* paramsJ = json_object_get(mixerJ, "params");
+		if ( !paramsJ || !json_is_array(paramsJ) ) {
+			WARN("MixMaster interchange: error params array malformed or missing");
+			return;
+		}
+		for (size_t i = 0; i < json_array_size(paramsJ); i++) {
+			json_t* paramJ = json_array_get(paramsJ, i);
+			if (!paramJ) {
+				WARN("MixMaster interchange: error missing param in params array");
+				return;		
+			}
+			params[i].setValue(json_number_value(paramJ));
+		}	
+
+		// dataToJson data
+		json_t* dataToJsonJ = json_object_get(mixerJ, "dataToJson-data");
+		if (!dataToJsonJ) {
+			WARN("MixMaster interchange: error dataToJson-data missing");
+			return;
+		}
+		dataFromJson(dataToJsonJ);
+	}
+
+
 	void onSampleRateChange() override {
 		gInfo.sampleTime = APP->engine->getSampleTime();
 		for (int trk = 0; trk < N_TRK; trk++) {
