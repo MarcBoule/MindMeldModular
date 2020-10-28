@@ -365,13 +365,19 @@ struct AuxExpander : Module {
 	}
 
 
-	void interchangeCopyToClipboard() {
+	void swapCopyToClipboard() {
 		// auxspander
 		json_t* auxspanderJ = json_object();
 		
 		// params
+		//   first batch done this way:
+		json_object_set_new(auxspanderJ, "TRACK_AUXSEND_PARAMS", paramArrayToJsonArray(TRACK_AUXSEND_PARAMS, N_TRK * 4));
+		json_object_set_new(auxspanderJ, "GROUP_AUXSEND_PARAMS", paramArrayToJsonArray(GROUP_AUXSEND_PARAMS, N_GRP * 4));
+		json_object_set_new(auxspanderJ, "TRACK_AUXMUTE_PARAMS", paramArrayToJsonArray(TRACK_AUXMUTE_PARAMS, N_TRK));
+		json_object_set_new(auxspanderJ, "GROUP_AUXMUTE_PARAMS", paramArrayToJsonArray(GROUP_AUXMUTE_PARAMS, N_GRP));
+		//   second batch done this other way:
 		json_t* paramsJ = json_array();
-		for (size_t i = 0; i < NUM_PARAMS; i++) {
+		for (size_t i = GLOBAL_AUXMUTE_PARAMS; i < NUM_PARAMS; i++) {
 			json_array_append_new(paramsJ, json_real(params[i].getValue()));
 		}
 		json_object_set_new(auxspanderJ, "params", paramsJ);
@@ -381,61 +387,88 @@ struct AuxExpander : Module {
 		
 		// clipboard
 		json_t* clipboardJ = json_object();		
-		json_object_set_new(clipboardJ, "auxspander-interchange", auxspanderJ);
+		json_object_set_new(clipboardJ, "auxspander-swap", auxspanderJ);
 		
 		char* inerchangeClip = json_dumps(clipboardJ, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
 		json_decref(clipboardJ);
 		glfwSetClipboardString(APP->window->win, inerchangeClip);
 		free(inerchangeClip);
 	}
+	json_t* paramArrayToJsonArray(int baseParam, int numParam) {
+		json_t* paramJ = json_array();
+		for (int i = baseParam; i < (baseParam + numParam); i++) {
+			json_array_append_new(paramJ, json_real(params[i].getValue()));
+		}
+		return paramJ;
+	}
 
 
-	void interchangePasteFromClipboard() {
+	void swapPasteFromClipboard() {
 		// clipboard
 		const char* inerchangeClip = glfwGetClipboardString(APP->window->win);
 
 		if (!inerchangeClip) {
-			WARN("AuxSpander interchange: error getting clipboard string");
+			WARN("AuxSpander swap: error getting clipboard string");
 			return;
 		}
 
 		json_error_t error;
 		json_t* clipboardJ = json_loads(inerchangeClip, 0, &error);
 		if (!clipboardJ) {
-			WARN("AuxSpander interchange: error json parsing clipboard");
+			WARN("AuxSpander swap: error json parsing clipboard");
 			return;
 		}
 		DEFER({json_decref(clipboardJ);});
 
 		// auxspander
-		json_t* auxspanderJ = json_object_get(clipboardJ, "auxspander-interchange");
+		json_t* auxspanderJ = json_object_get(clipboardJ, "auxspander-swap");
 		if (!auxspanderJ) {
-			WARN("AuxSpander interchange: error no auxspander-interchange present in clipboard");
+			WARN("AuxSpander swap: error no auxspander-swap present in clipboard");
 			return;
 		}
 		
 		// params
+		//   first batch done this way:
+		jsonArrayToParamDirect(json_object_get(auxspanderJ, "TRACK_AUXSEND_PARAMS"), TRACK_AUXSEND_PARAMS, N_TRK * 4);		
+		jsonArrayToParamDirect(json_object_get(auxspanderJ, "GROUP_AUXSEND_PARAMS"), GROUP_AUXSEND_PARAMS, N_GRP * 4);		
+		jsonArrayToParamDirect(json_object_get(auxspanderJ, "TRACK_AUXMUTE_PARAMS"), TRACK_AUXMUTE_PARAMS, N_TRK);		
+		jsonArrayToParamDirect(json_object_get(auxspanderJ, "GROUP_AUXMUTE_PARAMS"), GROUP_AUXMUTE_PARAMS, N_GRP);		
+		//   second batch done this other way:
 		json_t* paramsJ = json_object_get(auxspanderJ, "params");
 		if ( !paramsJ || !json_is_array(paramsJ) ) {
-			WARN("AuxSpander interchange: error params array malformed or missing");
+			WARN("AuxSpander swap: error params array malformed or missing");
 			return;
 		}
 		for (size_t i = 0; i < json_array_size(paramsJ); i++) {
 			json_t* paramJ = json_array_get(paramsJ, i);
 			if (!paramJ) {
-				WARN("AuxSpander interchange: error missing param in params array");
+				WARN("AuxSpander swap: error missing param in params array");
 				return;		
 			}
-			params[i].setValue(json_number_value(paramJ));
+			params[GLOBAL_AUXMUTE_PARAMS + i].setValue(json_number_value(paramJ));
 		}	
 		
 		// dataToJson data
 		json_t* dataToJsonJ = json_object_get(auxspanderJ, "dataToJson-data");
 		if (!dataToJsonJ) {
-			WARN("AuxSpander interchange: error dataToJson-data missing");
+			WARN("AuxSpander swap: error dataToJson-data missing");
 			return;
 		}
 		dataFromJson(dataToJsonJ);
+	}
+	void jsonArrayToParamDirect(json_t* paramJ, int baseParam, int numParam) {// numParam is of .this
+		if ( !paramJ || !json_is_array(paramJ) ) {
+			WARN("AuxSpander swap: error param array malformed or missing");
+			return;
+		}
+		for (int i = 0; i < std::min((int)json_array_size(paramJ), numParam) ; i++) {
+			json_t* paramItemJ = json_array_get(paramJ, i);
+			if (!paramItemJ) {
+				WARN("AuxSpander swap: error missing param value in param array");
+				return;		
+			}
+			params[baseParam + i].setValue(json_number_value(paramItemJ));
+		}	
 	}
 	
 

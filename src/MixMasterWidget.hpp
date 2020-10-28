@@ -26,14 +26,14 @@ struct MixerInterchangeItem : MenuItem {
 	struct MixerChangeCopyItem : MenuItem {
 		TMixMaster* module;
 		void onAction(const event::Action &e) override {
-			module->interchangeCopyToClipboard();
+			module->swapCopyToClipboard();
 		}
 	};
 
 	struct MixerChangePasteItem : MenuItem {
 		TMixMaster* module;
 		void onAction(const event::Action &e) override {
-			module->interchangePasteFromClipboard();
+			module->swapPasteFromClipboard();
 		}
 	};
 
@@ -60,7 +60,7 @@ void appendContextMenu(Menu *menu) override {
 	TMixMaster* module = (TMixMaster*)(this->module);
 	assert(module);
 	
-	MixerInterchangeItem *interchangeItem = createMenuItem<MixerInterchangeItem>("MixMaster interchange", RIGHT_ARROW);
+	MixerInterchangeItem *interchangeItem = createMenuItem<MixerInterchangeItem>("MixMaster swap", RIGHT_ARROW);
 	interchangeItem->module = module;
 	menu->addChild(interchangeItem);
 

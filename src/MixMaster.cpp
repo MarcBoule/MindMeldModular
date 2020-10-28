@@ -359,7 +359,7 @@ struct MixMaster : Module {
 	}
 	
 
-	void interchangeCopyToClipboard() {
+	void swapCopyToClipboard() {
 		// mixer
 		json_t* mixerJ = json_object();
 		
@@ -391,7 +391,7 @@ struct MixMaster : Module {
 		
 		// clipboard
 		json_t* clipboardJ = json_object();		
-		json_object_set_new(clipboardJ, "mixmaster-interchange", mixerJ);
+		json_object_set_new(clipboardJ, "mixmaster-swap", mixerJ);
 		
 		char* inerchangeClip = json_dumps(clipboardJ, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
 		json_decref(clipboardJ);
@@ -407,41 +407,41 @@ struct MixMaster : Module {
 	}
 
 
-	void interchangePasteFromClipboard() {
+	void swapPasteFromClipboard() {
 		// clipboard
 		const char* inerchangeClip = glfwGetClipboardString(APP->window->win);
 
 		if (!inerchangeClip) {
-			WARN("MixMaster interchange: error getting clipboard string");
+			WARN("MixMaster swap: error getting clipboard string");
 			return;
 		}
 
 		json_error_t error;
 		json_t* clipboardJ = json_loads(inerchangeClip, 0, &error);
 		if (!clipboardJ) {
-			WARN("MixMaster interchange: error json parsing clipboard");
+			WARN("MixMaster swap: error json parsing clipboard");
 			return;
 		}
 		DEFER({json_decref(clipboardJ);});
 
 		// mixer
-		json_t* mixerJ = json_object_get(clipboardJ, "mixmaster-interchange");
+		json_t* mixerJ = json_object_get(clipboardJ, "mixmaster-swap");
 		if (!mixerJ) {
-			WARN("MixMaster interchange: error no mixmaster-interchange present in clipboard");
+			WARN("MixMaster swap: error no mixmaster-swap present in clipboard");
 			return;
 		}
 
 		// dimensions
 		json_t* nTrkJ = json_object_get(mixerJ, "n-trk");
 		if (!nTrkJ) {
-			WARN("MixMaster interchange: error num tracks missing");
+			WARN("MixMaster swap: error num tracks missing");
 			return;
 		}
 		int n_trk = json_integer_value(nTrkJ);
 		
 		json_t* nGrpJ = json_object_get(mixerJ, "n-grp");
 		if (!nGrpJ) {
-			WARN("MixMaster interchange: error num groups missing");
+			WARN("MixMaster swap: error num groups missing");
 			return;
 		}
 		int n_grp = json_integer_value(nGrpJ);
@@ -480,25 +480,24 @@ struct MixMaster : Module {
 		// dataToJson data
 		json_t* dataToJsonJ = json_object_get(mixerJ, "dataToJson-data");
 		if (!dataToJsonJ) {
-			WARN("MixMaster interchange: error dataToJson-data missing");
+			WARN("MixMaster swap: error dataToJson-data missing");
 			return;
 		}
 		dataFromJsonWithSize(dataToJsonJ, n_trk, n_grp);
 	}
 	void jsonArrayToParamDirect(json_t* paramJ, int baseParam, int numParam) {// numParam is of .this
 		if ( !paramJ || !json_is_array(paramJ) ) {
-			WARN("MixMaster interchange: error param array malformed or missing");
+			WARN("MixMaster swap: error param array malformed or missing");
 			return;
 		}
 		for (int i = 0; i < std::min((int)json_array_size(paramJ), numParam) ; i++) {
 			json_t* paramItemJ = json_array_get(paramJ, i);
 			if (!paramItemJ) {
-				WARN("MixMaster interchange: error missing param value in param array");
+				WARN("MixMaster swap: error missing param value in param array");
 				return;		
 			}
 			params[baseParam + i].setValue(json_number_value(paramItemJ));
 		}	
-		
 	}
 
 

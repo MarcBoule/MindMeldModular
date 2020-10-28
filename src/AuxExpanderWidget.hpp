@@ -24,14 +24,14 @@ struct AuxspanderInterchangeItem : MenuItem {
 	struct AuxspanderChangeCopyItem : MenuItem {
 		TAuxExpander* module;
 		void onAction(const event::Action &e) override {
-			module->interchangeCopyToClipboard();
+			module->swapCopyToClipboard();
 		}
 	};
 
 	struct AuxspanderChangePasteItem : MenuItem {
 		TAuxExpander* module;
 		void onAction(const event::Action &e) override {
-			module->interchangePasteFromClipboard();
+			module->swapPasteFromClipboard();
 		}
 	};
 
@@ -58,9 +58,9 @@ void appendContextMenu(Menu *menu) override {
 	TAuxExpander* module = (TAuxExpander*)(this->module);
 	assert(module);
 	
-	// AuxspanderInterchangeItem *interchangeItem = createMenuItem<AuxspanderInterchangeItem>("AuxSpander interchange", RIGHT_ARROW);
-	// interchangeItem->module = module;
-	// menu->addChild(interchangeItem);
+	AuxspanderInterchangeItem *interchangeItem = createMenuItem<AuxspanderInterchangeItem>("AuxSpander swap", RIGHT_ARROW);
+	interchangeItem->module = module;
+	menu->addChild(interchangeItem);
 }
 
 	
