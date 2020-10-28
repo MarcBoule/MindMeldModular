@@ -14,6 +14,57 @@ PanelBorder* panelBorder;
 time_t oldTime = 0;
 
 
+
+// Module's context menu
+// --------------------
+
+struct AuxspanderInterchangeItem : MenuItem {
+	TAuxExpander* module;
+	
+	struct AuxspanderChangeCopyItem : MenuItem {
+		TAuxExpander* module;
+		void onAction(const event::Action &e) override {
+			module->interchangeCopyToClipboard();
+		}
+	};
+
+	struct AuxspanderChangePasteItem : MenuItem {
+		TAuxExpander* module;
+		void onAction(const event::Action &e) override {
+			module->interchangePasteFromClipboard();
+		}
+	};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		AuxspanderChangeCopyItem *acCopyItem = createMenuItem<AuxspanderChangeCopyItem>("Copy auxspander", "");
+		acCopyItem->module = module;
+		menu->addChild(acCopyItem);
+		
+		menu->addChild(new MenuSeparator());
+
+		AuxspanderChangePasteItem *acPasteItem = createMenuItem<AuxspanderChangePasteItem>("Paste auxspander", "");
+		acPasteItem->module = module;
+		menu->addChild(acPasteItem);
+
+		return menu;
+	}
+};
+
+
+
+void appendContextMenu(Menu *menu) override {		
+	TAuxExpander* module = (TAuxExpander*)(this->module);
+	assert(module);
+	
+	// AuxspanderInterchangeItem *interchangeItem = createMenuItem<AuxspanderInterchangeItem>("AuxSpander interchange", RIGHT_ARROW);
+	// interchangeItem->module = module;
+	// menu->addChild(interchangeItem);
+}
+
+	
+
 void step() override {
 	if (module) {
 		TAuxExpander* module = (TAuxExpander*)(this->module);
