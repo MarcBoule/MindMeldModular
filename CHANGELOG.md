@@ -1,5 +1,6 @@
 ### 1.1.11 (in development)
 
+- Added options in MixMaster and AuxSpander to copy/paste the modules' states, to help when swapping 8-track versions for 16-track versions or vice-versa
 - Added placeholder "Stereo width: N/A" in track menus when mono
 
 
