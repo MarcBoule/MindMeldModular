@@ -380,14 +380,27 @@ struct GlobalInfo {
 		
 		// faders (populate linkedFaderReloadValues)
 		json_t *fadersJ = json_object_get(rootJ, "faders");
-		if (fadersJ) {
-			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
-				json_t *fadersArrayJ = json_array_get(fadersJ, trkOrGrp);
+		if (fadersJ && N_TRK == nTrkSrc) {
+			// for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
+				// json_t *fadersArrayJ = json_array_get(fadersJ, trkOrGrp);
+				// if (fadersArrayJ)
+					// linkedFaderReloadValues[trkOrGrp] = json_number_value(fadersArrayJ);
+			// }
+
+			// tracks
+			for (int trk = 0; trk < std::min(N_TRK, nTrkSrc); trk++) {
+				json_t *fadersArrayJ = json_array_get(fadersJ, trk);
 				if (fadersArrayJ)
-					linkedFaderReloadValues[trkOrGrp] = json_number_value(fadersArrayJ);
+					linkedFaderReloadValues[trk] = json_number_value(fadersArrayJ);
+			}
+			// groups
+			for (int grp = 0; grp < std::min(N_GRP, nGrpSrc); grp++) {
+				json_t *fadersArrayJ = json_array_get(fadersJ, nTrkSrc + grp);
+				if (fadersArrayJ)
+					linkedFaderReloadValues[N_TRK + grp] = json_number_value(fadersArrayJ);
 			}
 		}
-		else {// legacy
+		else {// legacy or mixer interchange of different sizes (16 <-> 8 track)
 			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
 				linkedFaderReloadValues[trkOrGrp] = paFade[trkOrGrp].getValue();
 			}

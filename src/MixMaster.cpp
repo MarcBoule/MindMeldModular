@@ -357,7 +357,7 @@ struct MixMaster : Module {
 		
 		resetNonJson(true);
 	}
-
+	
 
 	void interchangeCopyToClipboard() {
 		// mixer
@@ -368,12 +368,24 @@ struct MixMaster : Module {
 		json_object_set_new(mixerJ, "n-grp", json_integer(N_GRP));
 		
 		// params
-		json_t* paramsJ = json_array();
-		for (size_t i = 0; i < MixMaster::NUM_PARAMS; i++) {
-			json_array_append_new(paramsJ, json_real(params[i].getValue()));
-		}
-		json_object_set_new(mixerJ, "params", paramsJ);
-		
+		json_object_set_new(mixerJ, "TRACK_FADER_PARAMS", paramArrayToJsonArray(TRACK_FADER_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "GROUP_FADER_PARAMS", paramArrayToJsonArray(GROUP_FADER_PARAMS, N_GRP));
+		json_object_set_new(mixerJ, "TRACK_PAN_PARAMS", paramArrayToJsonArray(TRACK_PAN_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "GROUP_PAN_PARAMS", paramArrayToJsonArray(GROUP_PAN_PARAMS, N_GRP));
+		json_object_set_new(mixerJ, "TRACK_MUTE_PARAMS", paramArrayToJsonArray(TRACK_MUTE_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "GROUP_MUTE_PARAMS", paramArrayToJsonArray(GROUP_MUTE_PARAMS, N_GRP));
+		json_object_set_new(mixerJ, "TRACK_SOLO_PARAMS", paramArrayToJsonArray(TRACK_SOLO_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "GROUP_SOLO_PARAMS", paramArrayToJsonArray(GROUP_SOLO_PARAMS, N_GRP));
+		json_object_set_new(mixerJ, "MAIN_MUTE_PARAM", json_real(params[MAIN_MUTE_PARAM].getValue()));
+		json_object_set_new(mixerJ, "MAIN_DIM_PARAM", json_real(params[MAIN_DIM_PARAM].getValue()));
+		json_object_set_new(mixerJ, "MAIN_MONO_PARAM", json_real(params[MAIN_MONO_PARAM].getValue()));
+		json_object_set_new(mixerJ, "MAIN_FADER_PARAM", json_real(params[MAIN_FADER_PARAM].getValue()));
+		json_object_set_new(mixerJ, "GROUP_SELECT_PARAMS", paramArrayToJsonArray(GROUP_SELECT_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "TRACK_HPCUT_PARAMS", paramArrayToJsonArray(TRACK_HPCUT_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "TRACK_LPCUT_PARAMS", paramArrayToJsonArray(TRACK_LPCUT_PARAMS, N_TRK));
+		json_object_set_new(mixerJ, "GROUP_HPCUT_PARAMS", paramArrayToJsonArray(GROUP_HPCUT_PARAMS, N_GRP));
+		json_object_set_new(mixerJ, "GROUP_LPCUT_PARAMS", paramArrayToJsonArray(GROUP_LPCUT_PARAMS, N_GRP));
+
 		// dataToJson data
 		json_object_set_new(mixerJ, "dataToJson-data", dataToJson());
 		
@@ -385,6 +397,13 @@ struct MixMaster : Module {
 		json_decref(clipboardJ);
 		glfwSetClipboardString(APP->window->win, inerchangeClip);
 		free(inerchangeClip);
+	}
+	json_t* paramArrayToJsonArray(int baseParam, int numParam) {
+		json_t* paramJ = json_array();
+		for (int i = baseParam; i < (baseParam + numParam); i++) {
+			json_array_append_new(paramJ, json_real(params[i].getValue()));
+		}
+		return paramJ;
 	}
 
 
@@ -427,22 +446,37 @@ struct MixMaster : Module {
 		}
 		int n_grp = json_integer_value(nGrpJ);
 		
-
 		// params
-		// json_t* paramsJ = json_object_get(mixerJ, "params");
-		// if ( !paramsJ || !json_is_array(paramsJ) ) {
-			// WARN("MixMaster interchange: error params array malformed or missing");
-			// return;
-		// }
-		// for (size_t i = 0; i < json_array_size(paramsJ); i++) {
-			// json_t* paramJ = json_array_get(paramsJ, i);
-			// if (!paramJ) {
-				// WARN("MixMaster interchange: error missing param in params array");
-				// return;		
-			// }
-			// params[i].setValue(json_number_value(paramJ));
-		// }	
-
+		jsonArrayToParamDirect(json_object_get(mixerJ, "TRACK_FADER_PARAMS"), TRACK_FADER_PARAMS, N_TRK);		
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_FADER_PARAMS"), GROUP_FADER_PARAMS, N_GRP);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "TRACK_PAN_PARAMS"), TRACK_PAN_PARAMS, N_TRK);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_PAN_PARAMS"), GROUP_PAN_PARAMS, N_GRP);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "TRACK_MUTE_PARAMS"), TRACK_MUTE_PARAMS, N_TRK);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_MUTE_PARAMS"), GROUP_MUTE_PARAMS, N_GRP);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "TRACK_SOLO_PARAMS"), TRACK_SOLO_PARAMS, N_TRK);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_SOLO_PARAMS"), GROUP_SOLO_PARAMS, N_GRP);
+		json_t* muteJ = json_object_get(mixerJ, "MAIN_MUTE_PARAM");
+		if (muteJ) {
+			params[MAIN_MUTE_PARAM].setValue(json_number_value(muteJ));
+		}
+		json_t* dimJ = json_object_get(mixerJ, "MAIN_DIM_PARAM");
+		if (dimJ) {
+			params[MAIN_DIM_PARAM].setValue(json_number_value(dimJ));
+		}
+		json_t* monoJ = json_object_get(mixerJ, "MAIN_MONO_PARAM");
+		if (monoJ) {
+			params[MAIN_MONO_PARAM].setValue(json_number_value(monoJ));
+		}
+		json_t* faderJ = json_object_get(mixerJ, "MAIN_FADER_PARAM");
+		if (faderJ) {
+			params[MAIN_FADER_PARAM].setValue(json_number_value(faderJ));
+		}
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_SELECT_PARAMS"), GROUP_SELECT_PARAMS, N_TRK);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "TRACK_HPCUT_PARAMS"), TRACK_HPCUT_PARAMS, N_TRK);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "TRACK_LPCUT_PARAMS"), TRACK_LPCUT_PARAMS, N_TRK);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_HPCUT_PARAMS"), GROUP_HPCUT_PARAMS, N_GRP);
+		jsonArrayToParamDirect(json_object_get(mixerJ, "GROUP_LPCUT_PARAMS"), GROUP_LPCUT_PARAMS, N_GRP);
+		
 		// dataToJson data
 		json_t* dataToJsonJ = json_object_get(mixerJ, "dataToJson-data");
 		if (!dataToJsonJ) {
@@ -450,6 +484,21 @@ struct MixMaster : Module {
 			return;
 		}
 		dataFromJsonWithSize(dataToJsonJ, n_trk, n_grp);
+	}
+	void jsonArrayToParamDirect(json_t* paramJ, int baseParam, int numParam) {// numParam is of .this
+		if ( !paramJ || !json_is_array(paramJ) ) {
+			WARN("MixMaster interchange: error param array malformed or missing");
+			return;
+		}
+		for (int i = 0; i < std::min((int)json_array_size(paramJ), numParam) ; i++) {
+			json_t* paramItemJ = json_array_get(paramJ, i);
+			if (!paramItemJ) {
+				WARN("MixMaster interchange: error missing param value in param array");
+				return;		
+			}
+			params[baseParam + i].setValue(json_number_value(paramItemJ));
+		}	
+		
 	}
 
 
