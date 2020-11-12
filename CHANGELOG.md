@@ -1,3 +1,8 @@
+### 1.1.12 (in development)
+
+- Fixed DC-blocker init bug in MixMasters
+
+
 ### 1.1.11 (2020-10-30)
 
 - Added options in MixMaster and AuxSpander to copy/paste the modules' states, to help when swapping 8-track versions for 16-track versions or vice-versa
