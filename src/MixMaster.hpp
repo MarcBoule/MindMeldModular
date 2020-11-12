@@ -508,6 +508,7 @@ struct MixerMaster {
 		gainMatrixSlewers.reset();
 		chainGainAndMuteSlewers.reset();
 		setupDcBlocker();
+		dcBlockerStereo.reset();
 		vu.reset();
 		fadeGain = calcFadeGain();
 		target = fadeGain;
