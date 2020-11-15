@@ -1,4 +1,4 @@
-### 1.1.12 (in development)
+### 1.1.12 (2020-11-15)
 
 - Fixed DC-blocker init bug in MixMasters
 
