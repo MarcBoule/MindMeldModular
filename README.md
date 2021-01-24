@@ -7,7 +7,8 @@ Version 1.1.12
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
 
-# Modules <a id="modules"></a>
+<a id="modules"></a>
+# Modules
 
 The following modules are part of the MindMeld module pack ([user manual](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf)):
 
@@ -28,7 +29,8 @@ The following modules are part of the MindMeld module pack ([user manual](https:
 * [BassMaster](#bassmaster): Dual band spatialiser for high spread and bass mono.
 
 
-## MixMaster <a id="mixmaster"></a>
+<a id="mixmaster"></a>
+## MixMaster
 
 ![IM](res/img/MixMaster.png)
 
@@ -58,56 +60,64 @@ The MixMaster beams the following features into your Rack for your demanding mix
 Many labels contain separate menus that are different from the module's main menu; these can be accessed by right-clicking the labels.
 
 
-## AuxSpander <a id="auxspander"></a>
+<a id="auxspander"></a>
+## AuxSpander
 
 ![IM](res/img/Auxspander.png)
 
 4-aux FX bus expander for MixMaster, must be placed immediately to the right of the MixMaster module.
 
 
-## MixMasterJr <a id="mixmasterjr"></a>
+<a id="mixmasterjr"></a>
+## MixMasterJr
 
 ![IM](res/img/MixMasterJr.png)
 
 A smaller 8-track version of MixMaster, with 2 group busses. Functionality and options are identical to those found in MixMaster.
 
 
-## AuxSpanderJr <a id="auxspanderjr"></a>
+<a id="auxspanderjr"></a>
+## AuxSpanderJr
 
 ![IM](res/img/AuxspanderJr.png)
 
 4-aux FX bus expander for MixMasterJr, must be placed immediately to the right of the MixMasterJr module. Functionality and options are identical to those found in AuxSpander.
 
 
-## EqMaster <a id="eqmaster"></a>
+<a id="eqmaster"></a>
+## EqMaster
 
 ![IM](res/img/EqMaster.png)
 
 24-track multiband EQ for MixMaster and MixMasterJr. Can be placed anywhere in the patch, uses polyphonic cables for connecting to the inserts on the MixMaster mixers. Track names and colors can be linked to any MixMaster in the patch (right-click menu in EqMaster). Allows separate EQ control of each of the 24 stereo tracks. A [CV expander](#eqspander) is also available for added control over the module's parameters.
 
 
-## EqSpander <a id="eqspander"></a>
+<a id="eqspander"></a>
+## EqSpander
 
 ![IM](res/img/EqSpander.png)
 
 Expander module to add CV control over most parameters in the EqMaster. All jacks on the module are polyphonic CVs, and it can be placed on either side of the EqMaster. The state jacks at the top control the active/bypass status of the 24 tracks, with the global bypass located in channel 9 of the G/A jack; the other 24 jacks (one for each track) control the 4 parameters (state, freq, gain, Q) for each of the 4 bands in each track.
 
 
-## Meld / Unmeld <a id="meldunmeld"></a>
+<a id="meldunmeld"></a>
+## Meld / Unmeld
 
 ![IM](res/img/MeldUnmeld.png)
 
 Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green). The Meld module also features a set of panels for merging the CV poly-inputs found on the MixMaster and AuxSpander modules.
 
 
-## BassMaster <a id="bassmaster"></a>
+<a id="bassmaster"></a>
+## BassMaster
 
 ![IM](res/img/BassMaster.png)
 
 Dual band stereo width controllers for bass mono and high spread. Both modules have the same core functionality; however the Jr version omits the mix and master gain controls, the VU meter and the width CV inputs.
 
 
-# Videos <a id="videos"></a>
+<a id="videos"></a>
+# Videos
 
 ### Promo
 * Eurikon (Latif Karoumi), [MindMeld Modular - Mixmaster for VCV Rack](https://www.youtube.com/watch?v=8g_BwxgEuSw)
