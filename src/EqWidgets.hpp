@@ -163,7 +163,7 @@ struct BandLabelFreq : BandLabelBase {
 				}
 			}
 			else {
-				char noteBuf[6];
+				char noteBuf[5];
 				float cvVal = std::log2(freq / dsp::FREQ_C4);
 				printNote(cvVal, noteBuf, true);
 				text = noteBuf;

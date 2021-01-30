@@ -33,7 +33,7 @@ void init(rack::Plugin *p) {
 
 // General functions
 
-void printNote(float cvVal, char* text, bool sharp) {// text must be at least 6 chars long (4 displayed chars plus end of string)
+void printNote(float cvVal, char* text, bool sharp) {// text must be at least 5 chars long (4 displayed chars plus end of string)
 	static const char noteLettersSharp[12] = {'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'};
 	static const char noteLettersFlat [12] = {'C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'};
 	static const char isBlackKey      [12] = { 0,   1,   0,   1,   0,   0,   1,   0,   1,   0,   1,   0 };
@@ -49,7 +49,7 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 6 
 	// octave number
 	int octave = offsetScaledRounded / 12  -20 + 4;
 	
-	snprintf(text, 5, "%c%i", noteLetter, octave);
+	snprintf(text, 5, "%c%c", noteLetter, (char)(octave % 10) + 0x30);
 	
 	// sharp/flat
 	if (isBlackKey[indexNote] == 1) {
