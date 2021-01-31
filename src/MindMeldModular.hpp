@@ -135,6 +135,10 @@ struct TSlewLimiterSingle {
 		out = simd::clamp(in, out - riseFall * deltaTime, out + riseFall * deltaTime);
 		return out;
 	}
+	T process(T deltaTime, T in, T _riseFall) {
+		out = simd::clamp(in, out - _riseFall * deltaTime, out + _riseFall * deltaTime);
+		return out;
+	}
 };
 typedef TSlewLimiterSingle<> SlewLimiterSingle;
 
