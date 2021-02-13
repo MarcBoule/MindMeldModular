@@ -64,7 +64,7 @@ struct BassMaster : Module {
 	bool is24db;
 	bool lowSolo;
 	bool highSolo;
-	LinkwitzRileyCrossover xover;
+	LinkwitzRileyStereoCrossover xover;
 	TSlewLimiterSingle<simd::float_4> widthAndGainSlewers;// [0] = low width, high width, low gain, [3] = high gain
 	TSlewLimiterSingle<simd::float_4> solosAndBypassSlewers;// [0] = low solo, high solo, bypass, [3] = master gain
 	SlewLimiterSingle mixSlewer;

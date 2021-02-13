@@ -14,27 +14,16 @@
 #pragma once
 
 
-class LinkwitzRileyCrossover {	
+class LinkwitzRileyCoefficients {
+	protected:
+	
 	bool secondOrderFilters = false;// local memory of what is in iirs		
 	
 	simd::float_4 b[3];// coefficients b0, b1 and b2, where each float of float_4 is LeftLow, LeftHigh, RightLow, RightHigh
 	simd::float_4 a[3 - 1];// coefficients a1 and a2, where each float of float_4 is LeftLow, LeftHigh, RightLow, RightHigh
-	simd::float_4 xS1[3 - 1];
-	simd::float_4 yS1[3 - 1];
-	simd::float_4 xS2[3 - 1];
-	simd::float_4 yS2[3 - 1];
-	
-	
+
+
 	public: 
-		
-	void reset() {
-		for (int i = 0; i < 2; i++) {
-			xS1[i] = 0.0f;
-			yS1[i] = 0.0f;
-			xS2[i] = 0.0f;
-			yS2[i] = 0.0f;
-		}
-	}
 	
 	void setFilterCutoffs(float nfc, bool _secondOrder) {
 		secondOrderFilters = _secondOrder;
@@ -71,6 +60,26 @@ class LinkwitzRileyCrossover {
 			b[2] = simd::float_4(0.0f);
 		}
 	}
+};
+
+
+class LinkwitzRileyStereoCrossover : public LinkwitzRileyCoefficients {	
+	simd::float_4 xS1[3 - 1];
+	simd::float_4 yS1[3 - 1];
+	simd::float_4 xS2[3 - 1];
+	simd::float_4 yS2[3 - 1];
+	
+	
+	public: 
+		
+	void reset() {
+		for (int i = 0; i < 2; i++) {
+			xS1[i] = 0.0f;
+			yS1[i] = 0.0f;
+			xS2[i] = 0.0f;
+			yS2[i] = 0.0f;
+		}
+	}
 
 	simd::float_4 process(float left, float right) {
 		// return [0] = left low, left high, right low, [3] = right high
@@ -93,6 +102,54 @@ class LinkwitzRileyCrossover {
 		xS2[0] = outS1;
 		yS2[1] = yS2[0];
 		yS2[0] = outS2;
+
+		return outS2;
+	}
+};
+
+
+class LinkwitzRileyStereo8xCrossover : public LinkwitzRileyCoefficients {	
+	simd::float_4 xS1[8][3 - 1];
+	simd::float_4 yS1[8][3 - 1];
+	simd::float_4 xS2[8][3 - 1];
+	simd::float_4 yS2[8][3 - 1];
+	
+	
+	public: 
+		
+	void reset() {
+		for (int c = 0; c < 8; c++) {
+			for (int i = 0; i < 2; i++) {
+				xS1[c][i] = 0.0f;
+				yS1[c][i] = 0.0f;
+				xS2[c][i] = 0.0f;
+				yS2[c][i] = 0.0f;
+			}
+		}
+	}
+
+	simd::float_4 process(float left, float right, int c) {
+		// return [0] = left low, left high, right low, [3] = right high
+		simd::float_4 in = simd::float_4(left, left, right, right);
+		if (!secondOrderFilters) {
+			in[0] *= -1.0f;// phase correction needed for first order filters (used to make 2nd order L-R crossover)
+			in[2] *= -1.0f;
+		}
+
+		
+		// stage 1
+		simd::float_4 outS1 = b[0] * in + b[1] * xS1[c][0] + b[2] * xS1[c][1] - a[0] * yS1[c][0] - a[1] * yS1[c][1];
+		xS1[c][1] = xS1[c][0];
+		xS1[c][0] = in;
+		yS1[c][1] = yS1[c][0];
+		yS1[c][0] = outS1;
+
+		// stage 2 (outS1 used as in)
+		simd::float_4 outS2 = b[0] * outS1 + b[1] * xS2[c][0] + b[2] * xS2[c][1] - a[0] * yS2[c][0] - a[1] * yS2[c][1];
+		xS2[c][1] = xS2[c][0];
+		xS2[c][0] = outS1;
+		yS2[c][1] = yS2[c][0];
+		yS2[c][0] = outS2;
 
 		return outS2;
 	}
