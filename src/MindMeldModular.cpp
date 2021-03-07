@@ -49,7 +49,12 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 5 
 	// octave number
 	int octave = offsetScaledRounded / 12  -20 + 4;
 	
-	snprintf(text, 5, "%c%c", noteLetter, (char)(octave % 10) + 0x30);
+	if (octave >= 0 && octave <= 9) {
+		snprintf(text, 5, "%c%c", noteLetter, (char)(octave % 10) + 0x30);
+	}
+	else {
+		snprintf(text, 5, "%c", noteLetter);
+	}
 	
 	// sharp/flat
 	if (isBlackKey[indexNote] == 1) {
