@@ -33,10 +33,11 @@ void init(rack::Plugin *p) {
 
 // General functions
 
+char noteLettersSharp[12] = {'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'};
+char noteLettersFlat [12] = {'C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'};
+char isBlackKey      [12] = { 0,   1,   0,   1,   0,   0,   1,   0,   1,   0,   1,   0 };
+
 void printNote(float cvVal, char* text, bool sharp) {// text must be at least 5 chars long (4 displayed chars plus end of string)
-	static const char noteLettersSharp[12] = {'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'};
-	static const char noteLettersFlat [12] = {'C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'};
-	static const char isBlackKey      [12] = { 0,   1,   0,   1,   0,   0,   1,   0,   1,   0,   1,   0 };
 	static const float offByTolerance = 0.15f;
 	
 	float offsetScaled = (cvVal + 20.0f) * 12.0f;// +20.0f is to properly handle negative note voltages
@@ -45,23 +46,21 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 5 
 	
 	// note letter
 	char noteLetter = sharp ? noteLettersSharp[indexNote] : noteLettersFlat[indexNote];
-	
-	// octave number
-	int octave = offsetScaledRounded / 12  -20 + 4;
-	
-	if (octave >= 0 && octave <= 9) {
-		snprintf(text, 5, "%c%c", noteLetter, (char)(octave % 10) + 0x30);
-	}
-	else {
-		snprintf(text, 5, "%c", noteLetter);
-	}
-	
+	snprintf(text, 5, "%c", noteLetter);
+		
 	// sharp/flat
 	if (isBlackKey[indexNote] == 1) {
 		strcat(text, sharp ? "#" : "b");
 	}
 	
-	//
+	// octave number
+	int octave = offsetScaledRounded / 12  -20 + 4;
+	if (octave >= 0 && octave <= 9) {
+		char octChar = ((char)(octave % 10)) + '0';
+		strcat(text, &octChar);
+	}
+	
+	// off by
 	float offBy = offsetScaled - (float)offsetScaledRounded; 
 	if (offBy < -offByTolerance) {
 		strcat(text, "-");

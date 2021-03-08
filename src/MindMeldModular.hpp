@@ -318,7 +318,11 @@ inline PanelBorder* findBorder(Widget* widget) {
 }
 
 
+extern char noteLettersSharp[12];
+extern char noteLettersFlat [12];
+extern char isBlackKey      [12];
 void printNote(float cvVal, char* text, bool sharp);
+
 
 static inline void applyStereoWidth(float width, float* left, float* right) {
 	// in this algo, width can go to 2.0f to implement 200% stereo widening (1.0f stereo i.e. no change, 0.0f is mono)
