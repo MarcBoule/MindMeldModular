@@ -56,8 +56,8 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 5 
 	// octave number
 	int octave = offsetScaledRounded / 12  -20 + 4;
 	if (octave >= 0 && octave <= 9) {
-		char octChar = ((char)(octave % 10)) + '0';
-		strcat(text, &octChar);
+		char octChar[2] = {((char)(octave % 10 + 0x30)), 0};
+		strcat(text, octChar);
 	}
 	
 	// off by
