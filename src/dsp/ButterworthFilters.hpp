@@ -85,3 +85,30 @@ class ButterworthThirdOrder {
 		return f2.process(f1.process(in));
 	}
 };
+
+
+class ButterworthFourthOrder {
+	ButterworthSecondOrder f1;
+	ButterworthSecondOrder f2;
+	
+	public:
+	
+	ButterworthFourthOrder() {
+		f1.setMidCoef(0.765367f);
+		f2.setMidCoef(1.847759f);
+	}
+	
+	void reset() {
+		f1.reset();
+		f2.reset();
+	}
+	
+	void setParameters(bool isHighPass, float nfc) {// normalized freq
+		f1.setParameters(isHighPass, nfc);
+		f2.setParameters(isHighPass, nfc);
+	}
+	
+	float process(float in) {
+		return f2.process(f1.process(in));
+	}
+};
