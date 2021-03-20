@@ -152,7 +152,7 @@ struct BandLabelFreq : BandLabelBase {
 	void prepareText() override {
 		if (trackParamSrc) {
 			int trk = (int)(trackParamSrc->getValue() + 0.5f);
-			float freq = std::pow(10, trackEqsSrc[trk].getFreq(band));
+			float freq = std::pow(10.0f, trackEqsSrc[trk].getFreq(band));
 			if (*showFreqAsNotesSrc == 0) {			
 				if (freq < 10000.0f) {
 					text = string::f("%i", (int)(freq + 0.5f));
@@ -449,7 +449,7 @@ struct BigNumbers : LightWidget {// TransparentWidget {
 				int srcId = *lastMovedKnobIdSrc;
 				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 				if (srcId >= FREQ_PARAMS && srcId < FREQ_PARAMS + 4) {
-					float freq = std::pow(10, trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS));
+					float freq = std::pow(10.0f, trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS));
 					if (freq < 10000.0f) {
 						text = string::f("%i Hz", (int)(freq + 0.5f));
 					}
