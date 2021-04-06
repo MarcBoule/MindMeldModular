@@ -9,7 +9,7 @@
 #pragma once
 
 #include "EqMasterCommon.hpp"
-#include "../VuMeters.hpp"
+#include "../comp/VuMeters.hpp"
 
 
 // Freq, gain, q display labels right-click menu

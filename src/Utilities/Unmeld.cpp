@@ -6,7 +6,7 @@
 //***********************************************************************************************
 
 
-#include "MindMeldModular.hpp"
+#include "../MindMeldModular.hpp"
 
 
 struct Unmeld : Module {

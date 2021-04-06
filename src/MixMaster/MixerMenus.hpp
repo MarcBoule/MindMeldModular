@@ -8,7 +8,7 @@
 #pragma once
 
 #include "MixerCommon.hpp"
-#include "VuMeters.hpp"
+#include "../comp/VuMeters.hpp"
 
 
 // Module's context menu

@@ -8,8 +8,9 @@
 
 #pragma once
 
-#include "MindMeldModular.hpp"
+#include "rack.hpp"
 
+using namespace rack;
 
 // VuMeter signal processing code for peak/rms
 // ----------------------------------------------------------------------------

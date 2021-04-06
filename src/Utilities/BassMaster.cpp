@@ -6,9 +6,9 @@
 //***********************************************************************************************
 
 
-#include "MindMeldModular.hpp"
-#include "VuMeters.hpp"
-#include "dsp/LinkwitzRileyCrossover.hpp"
+#include "../MindMeldModular.hpp"
+#include "../comp/VuMeters.hpp"
+#include "../dsp/LinkwitzRileyCrossover.hpp"
 
 
 template<bool IS_JR>

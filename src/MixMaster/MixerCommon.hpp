@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "MindMeldModular.hpp"
-#include "dsp/FirstOrderFilter.hpp"
-#include "dsp/ButterworthFilters.hpp"
+#include "../MindMeldModular.hpp"
+#include "../dsp/FirstOrderFilter.hpp"
+#include "../dsp/ButterworthFilters.hpp"
 
 
 
