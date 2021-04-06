@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "MindMeldModular.hpp"
-#include "dsp/QuattroBiQuad.hpp"
+#include "../MindMeldModular.hpp"
+#include "../dsp/QuattroBiQuad.hpp"
 
 
 struct MfeExpInterface {// for messages to mother from expander
