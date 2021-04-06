@@ -142,6 +142,19 @@ struct TSlewLimiterSingle {
 };
 typedef TSlewLimiterSingle<> SlewLimiterSingle;
 
+struct SlewLimiterFast {
+	float out = 0.0f;
+
+	void reset() {
+		out = 0.0f;
+	}
+
+	float process(float deltaTimeTimesRiseFall, float in) {
+		out = clamp(in, out - deltaTimeTimesRiseFall, out + deltaTimeTimesRiseFall);
+		return out;
+	}
+};
+
 struct HoldDetect {
 	long modeHoldDetect;// 0 when not detecting, downward counter when detecting
 	
@@ -289,7 +302,6 @@ inline simd::float_4 sortFloat4(simd::float_4 in) {
 }
 
 
-
 // Remove Rack's standard border in the given widget's children
 // inline void removeBorder(Widget* widget) {
 	// for (auto it = widget->children.begin(); it != widget->children.end(); ) {
@@ -302,6 +314,7 @@ inline simd::float_4 sortFloat4(simd::float_4 in) {
 		// }
 	// }
 // }
+
 
 // Find a PanelBorder instance in the given widget's children
 inline PanelBorder* findBorder(Widget* widget) {
@@ -318,12 +331,6 @@ inline PanelBorder* findBorder(Widget* widget) {
 }
 
 
-extern char noteLettersSharp[12];
-extern char noteLettersFlat [12];
-extern char isBlackKey      [12];
-void printNote(float cvVal, char* text, bool sharp);
-
-
 static inline void applyStereoWidth(float width, float* left, float* right) {
 	// in this algo, width can go to 2.0f to implement 200% stereo widening (1.0f stereo i.e. no change, 0.0f is mono)
 	float wdiv2 = width * 0.5f;
@@ -335,6 +342,7 @@ static inline void applyStereoWidth(float width, float* left, float* right) {
 	*right = rightSig;
 }
 
+
 static inline float clamp20V(float in) {// meant to catch invalid values like -inf, +inf, strong overvoltage only.
 	//return in;
 	if (in >= -20.0f && in <= 20.0f) {
@@ -342,3 +350,14 @@ static inline float clamp20V(float in) {// meant to catch invalid values like -i
 	}
 	return in > 20.0f ? 20.0f : -20.0f;
 }
+
+
+extern char noteLettersSharp[12];
+extern char noteLettersFlat [12];
+extern char isBlackKey      [12];
+
+void printNote(float cvVal, char* text, bool sharp);
+
+std::string timeToString(float timeVal, bool lowPrecision);
+
+float stringToVoct(std::string* noteText);
