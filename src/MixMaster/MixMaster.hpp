@@ -1685,7 +1685,7 @@ struct MixerTrack {
 		}
 		
 		// calc ** stereo **
-		bool newStereo = inSig[1].isConnected() || (polyStereo != 0 && inSig[0].isPolyphonic());
+		bool newStereo = (inSig[0].isConnected() && inSig[1].isConnected()) || (polyStereo != 0 && inSig[0].isPolyphonic());
 		if (stereo != newStereo) {
 			stereo = newStereo;
 			oldPan = -10.0f;
