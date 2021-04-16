@@ -104,21 +104,25 @@ struct BandLabelBase : widget::OpaqueWidget {
 	// local
 	std::string text;
 	std::shared_ptr<Font> font;
+	std::string fontPath;
 	math::Vec textOffset;
 	NVGcolor color;
 	
 	
 	BandLabelBase() {
 		box.size = mm2px(Vec(10.6f, 5.0f));
-		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		color = DISP_COLORS[0];
 		textOffset = Vec(4.2f, 11.3f);
 		text = "---";
+		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	};
 	
 	virtual void prepareText() {}
 	
 	void draw(const DrawArgs &args) override {
+		if (!(font = APP->window->loadFont(fontPath))) {
+			return;
+		}
 		prepareText();
 		
 		if (bandLabelColorsSrc) {
@@ -275,6 +279,7 @@ struct SpectrumSettingsButtons : LightWidget {
 	
 	// local
 	std::shared_ptr<Font> font;
+	std::string fontPath;
 	NVGcolor colorOff;
 	NVGcolor colorOn;
 	float textWidthsPx[5];
@@ -282,15 +287,18 @@ struct SpectrumSettingsButtons : LightWidget {
 	
 	SpectrumSettingsButtons() {
 		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2] + textWidths[3] + textWidths[4], textHeight));
-		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		colorOff = SCHEME_GRAY;
 		colorOn = SCHEME_YELLOW;
 		for (int i = 0; i < 5; i++) {
 			textWidthsPx[i] = mm2px(textWidths[i]);
 		}
+		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
 	void draw(const DrawArgs &args) override {
+		if (!(font = APP->window->loadFont(fontPath))) {
+			return;
+		}
 		if (font->handle >= 0) {
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
@@ -369,6 +377,7 @@ struct ShowBandCurvesButtons : LightWidget {
 	
 	// local
 	std::shared_ptr<Font> font;
+	std::string fontPath;
 	NVGcolor colorOff;
 	NVGcolor colorOn;
 	float textWidthsPx[3];
@@ -376,15 +385,18 @@ struct ShowBandCurvesButtons : LightWidget {
 	
 	ShowBandCurvesButtons() {
 		box.size = mm2px(Vec(textWidths[0] + textWidths[1] + textWidths[2], textHeight));
-		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		colorOff = SCHEME_GRAY;
 		colorOn = SCHEME_YELLOW;
 		for (int i = 0; i < 3; i++) {
 			textWidthsPx[i] = mm2px(textWidths[i]);
 		}
+		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
 	void draw(const DrawArgs &args) override {
+		if (!(font = APP->window->loadFont(fontPath))) {
+			return;
+		}
 		if (font->handle >= 0) {
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
@@ -429,6 +441,7 @@ struct BigNumbers : LightWidget {// TransparentWidget {
 	
 	// local
 	std::shared_ptr<Font> font;
+	std::string fontPath;
 	NVGcolor color;
 	std::string text;
 	math::Vec textOffset;
@@ -436,12 +449,15 @@ struct BigNumbers : LightWidget {// TransparentWidget {
 	
 	BigNumbers() {
 		box.size = mm2px(Vec(40.0f, 15.0f));
-		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		color = SCHEME_LIGHT_GRAY;
 		textOffset = Vec(box.size.div(2.0f));
+		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 		
 	void draw(const DrawArgs &args) override {
+		if (!(font = APP->window->loadFont(fontPath))) {
+			return;
+		}
 		if (trackParamSrc != NULL) {
 			time_t currTime = time(0);
 			if (currTime - *lastMovedKnobTimeSrc < 4) {
@@ -510,17 +526,21 @@ struct EqCurveAndGrid : LightWidget {// TransparentWidget {
 	// internal
 	QuattroBiQuadCoeff drawEq;
 	std::shared_ptr<Font> font;
+	std::string fontPath;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
 		
 	
 	EqCurveAndGrid() {
 		box.size = Vec(eqCurveWidth, mm2px(60.605f));	
-		font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
 	
 	void draw(const DrawArgs &args) override {
+		if (!(font = APP->window->loadFont(fontPath))) {
+			return;
+		}
 		nvgSave(args.vg);
 		
 		// grid

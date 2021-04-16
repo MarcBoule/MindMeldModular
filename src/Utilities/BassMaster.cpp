@@ -297,16 +297,20 @@ template<bool IS_JR>
 struct BassMasterWidget : ModuleWidget {	
 	struct BassMasterLabel : LedDisplayChoice {
 		int8_t* dispColorPtr = NULL;
+		std::string fontPath;
 		
 		BassMasterLabel() {
 			box.size = mm2px(Vec(10.6f, 5.0f));
-			font = APP->window->loadFont(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 			color = DISP_COLORS[0];
 			textOffset = Vec(4.2f, 11.3f);
 			text = "---";
+			fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		};
 		
 		void draw(const DrawArgs &args) override {
+			if (!(font = APP->window->loadFont(fontPath))) {// TODO remove this if(){} if LedDisplayChoice::draw() has it in new v2
+				return;
+			}
 			if (dispColorPtr) {
 				color = DISP_COLORS[*dispColorPtr];
 			}	
