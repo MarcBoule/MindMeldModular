@@ -1,0 +1,70 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": 0.0,
+    "warp": 0.0,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.899999976,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "trigLevel": 0.0,
+    "audition": 0.0,
+    "hpfCutoffFreq": 13.0,
+    "lpfCutoffFreq": 20010.0,
+    "hysterisis": 0.0,
+    "holdOff": 0.0199999996,
+    "sensitivity": 0.0,
+    "gainAdjustVca": 1.0,
+    "gainAdjustSc": 1.0,
+    "gridX": 16,
+    "rangeIndex": 0,
+    "channelSettings": 256,
+    "presetPath": "/Users/Steve/Documents/Rack/MindMeldModular/ShapeMaster/UserPresets/Envelope/AD - Curved.smpr",
+    "shapePath": "",
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.25,
+        0.875,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ctrl": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "type": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "numPts": 4
+    },
+    "reps": 1.0,
+    "lengthSync": 5,
+    "lengthUnsync": -0.122244753,
+    "sync": 0.0,
+    "lock": 0.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "playMode": 0,
+    "triggerMode": 1,
+    "loopStart": 0.240468889,
+    "loopEndAndSustain": 0.501269281,
+    "playHeadSettings": 65792,
+    "playHeadSettings2": 0
+  }
+}

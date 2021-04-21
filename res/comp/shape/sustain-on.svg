@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.0 (4035a4f, 2020-05-01)" sodipodi:docname="sustain-on-new.svg" id="svg3748" version="1.1" viewBox="0 0 41.574804 17.007874" height="4.5mm" width="11mm">
+  <metadata id="metadata3754">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs id="defs3752" />
+  <sodipodi:namedview inkscape:current-layer="svg3748" inkscape:window-maximized="0" inkscape:window-y="23" inkscape:window-x="0" inkscape:cy="6.377955" inkscape:cx="15.590555" inkscape:zoom="33.738375" units="mm" inkscape:document-units="mm" showgrid="false" id="namedview3750" inkscape:window-height="996" inkscape:window-width="1991" inkscape:pageshadow="2" inkscape:pageopacity="0" guidetolerance="10" gridtolerance="10" objecttolerance="10" borderopacity="1" bordercolor="#666666" pagecolor="#ffffff" />
+  <g transform="scale(1.3333331)" data-name="Layer 2" id="Layer_2">
+    <g data-name="Sustain new copy" id="Sustain_new_copy">
+      <path id="path3736" style="fill:#ffffff" d="m 30.02371,0.5 a 0.65814,0.65814 0 0 1 0.6574,0.65738 v 10.44113 a 0.65815,0.65815 0 0 1 -0.6574,0.6574 H 1.15739 A 0.65814,0.65814 0 0 1 0.5,11.59851 V 1.15738 A 0.65814,0.65814 0 0 1 1.15739,0.5 h 28.86632 m 0,-0.5 H 1.15739 A 1.16078,1.16078 0 0 0 0,1.15738 v 10.44113 a 1.1608,1.1608 0 0 0 1.15739,1.1574 h 28.86632 a 1.1608,1.1608 0 0 0 1.1574,-1.1574 V 1.15738 A 1.16079,1.16079 0 0 0 30.02371,0 Z" />
+      <g id="g3742">
+        <line id="line3738" style="fill:none;stroke:#ffffff;stroke-width:0.9px;stroke-linecap:round" y2="6.3779402" x2="10.49125" y1="6.3779402" x1="16.026159" />
+        <polygon id="polygon3740" style="fill:#ffffff" points="18.287,6.378 15.567,7.948 15.567,4.807 " />
+      </g>
+      <line id="line3744" style="fill:none;stroke:#ffffff;stroke-width:0.9px;stroke-linecap:round" y2="9.2125902" x2="19.556" y1="3.5432999" x1="19.556" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,76 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": 0.0,
+    "warp": 0.0,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.0,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "hpfCutoffFreq": 13.0,
+    "lpfCutoffFreq": 20010.0,
+    "sensitivity": 0.0,
+    "gainAdjustVca": 1.0,
+    "gainAdjustSc": 1.0,
+    "gridX": 8,
+    "rangeIndex": 0,
+    "channelSettings": 1280,
+    "channelSettings2": 16,
+    "presetPath": "/Users/Steve/Documents/Rack/MindMeldModular/ShapeMaster/UserPresets/Drums:Percussion/Drum Envelopes/2&4 Clap Snare.smpr",
+    "shapePath": "",
+    "chanName": "NOISE SHAKERS",
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.5,
+        0.507759511,
+        0.529284239,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        0.0,
+        1.0,
+        0.998072088,
+        0.0
+      ],
+      "ctrl": [
+        0.5,
+        0.696603358,
+        0.968244016,
+        0.971138656,
+        0.5
+      ],
+      "type": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "numPts": 5
+    },
+    "reps": 100.0,
+    "lengthSync": 6,
+    "lengthUnsync": 3.62978208e-5,
+    "sync": 1.0,
+    "lock": 1.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "audition": 0.0,
+    "trigLevel": 0.0,
+    "playMode": 0,
+    "triggerMode": 0,
+    "hysteresis": 0.200000003,
+    "holdOff": 0.0199999996,
+    "loopStart": 0.5,
+    "loopEndAndSustain": 0.75,
+    "playHeadSettings": 65792,
+    "playHeadSettings2": 0
+  }
+}

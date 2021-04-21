@@ -1,0 +1,75 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": 0.0,
+    "warp": 0.0,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.0,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "hpfCutoffSqFreq": 3.60555124,
+    "lpfCutoffSqFreq": 144.913773,
+    "sensitivity": 0.5,
+    "gainAdjustVca": 1.0,
+    "gainAdjustSc": 1.0,
+    "gridX": 14,
+    "rangeIndex": 5,
+    "channelSettings": 0,
+    "channelSettings2": 272,
+    "presetPath": "",
+    "shapePath": "/Users/jakub.ciupinski/Documents/Rack/MindMeldModular/ShapeMaster/UserShapes/Glitched Triangle.smsh",
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.493804216,
+        0.5,
+        0.507500887,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        1.0,
+        0.699999988,
+        1.0,
+        0.0
+      ],
+      "ctrl": [
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "type": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "numPts": 5
+    },
+    "reps": 100.0,
+    "lengthSync": 5,
+    "lengthUnsync": -0.742698908,
+    "sync": 0.0,
+    "lock": 0.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "audition": 0.0,
+    "trigLevel": 5.0,
+    "playMode": 0,
+    "triggerMode": 0,
+    "hysteresis": 0.200000003,
+    "holdOff": 0.00999999978,
+    "loopStart": 0.5,
+    "loopEndAndSustain": 0.75,
+    "playHeadSettings": 16843008,
+    "playHeadSettings2": 65536
+  }
+}

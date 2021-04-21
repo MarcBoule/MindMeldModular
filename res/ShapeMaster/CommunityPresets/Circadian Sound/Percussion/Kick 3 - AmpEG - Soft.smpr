@@ -1,0 +1,67 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": -0.25,
+    "warp": -0.300000012,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.0,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "hpfCutoffFreq": 13.0,
+    "lpfCutoffFreq": 20010.0,
+    "sensitivity": 0.5,
+    "gainAdjustVca": 1.0,
+    "gainAdjustSc": 1.0,
+    "gridX": 16,
+    "rangeIndex": 0,
+    "channelSettings": 0,
+    "channelSettings2": 16,
+    "presetPath": "",
+    "shapePath": "/Users/simonbader/Documents/Rack/MindMeldModular/ShapeMaster/UserShapes/Circadian Sound_SHP/AD - Kick - EG 5.smsh",
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.0625,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "ctrl": [
+        0.964283168,
+        0.716306925,
+        0.5
+      ],
+      "type": [
+        0,
+        0,
+        0
+      ],
+      "numPts": 3
+    },
+    "reps": 1.0,
+    "lengthSync": 5,
+    "lengthUnsync": -0.184949175,
+    "sync": 0.0,
+    "lock": 0.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "audition": 0.0,
+    "trigLevel": 5.0,
+    "playMode": 0,
+    "triggerMode": 1,
+    "hysteresis": 0.200000003,
+    "holdOff": 0.0199999996,
+    "loopStart": 0.5,
+    "loopEndAndSustain": 0.75,
+    "playHeadSettings": 65792,
+    "playHeadSettings2": 0
+  }
+}

@@ -122,21 +122,21 @@ struct AuxExpander : Module {
 		
 		char strBuf[32];
 		maxAGIndivSendFader = std::pow(GlobalConst::individualAuxSendMaxLinearGain, 1.0f / GlobalConst::individualAuxSendScalingExponent);
-		for (int i = 0; i < N_TRK; i++) {
+		for (unsigned int i = 0; i < N_TRK; i++) {
 			// Track send aux A
-			snprintf(strBuf, 32, "-%02i-: send AUXA", i + 1);
+			snprintf(strBuf, 32, "-%02u-: send AUXA", i + 1);
 			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 0, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalConst::individualAuxSendScalingExponent);
 			// Track send aux B
-			snprintf(strBuf, 32, "-%02i-: send AUXB", i + 1);
+			snprintf(strBuf, 32, "-%02u-: send AUXB", i + 1);
 			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 1, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalConst::individualAuxSendScalingExponent);
 			// Track send aux C
-			snprintf(strBuf, 32, "-%02i-: send AUXC", i + 1);
+			snprintf(strBuf, 32, "-%02u-: send AUXC", i + 1);
 			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 2, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalConst::individualAuxSendScalingExponent);
 			// Track send aux D
-			snprintf(strBuf, 32, "-%02i-: send AUXD", i + 1);
+			snprintf(strBuf, 32, "-%02u-: send AUXD", i + 1);
 			configParam(TRACK_AUXSEND_PARAMS + i * 4 + 3, 0.0f, maxAGIndivSendFader, 0.0f, strBuf, " dB", -10, 20.0f * GlobalConst::individualAuxSendScalingExponent);
 			// Mute
-			snprintf(strBuf, 32, "-%02i-: send mute", i + 1);
+			snprintf(strBuf, 32, "-%02u-: send mute", i + 1);
 			configParam(TRACK_AUXMUTE_PARAMS + i, 0.0f, 1.0f, 0.0f, strBuf);
 		}
 		for (int grp = 0; grp < N_GRP; grp++) {
@@ -188,11 +188,11 @@ struct AuxExpander : Module {
 		directOutPanStereoMomentCvLinearVol.cc4[3] = 0; // linearVolCvInputs: 0 means powN, 1 means linear		
 		muteAuxSendWhenReturnGrouped = 0;
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
-		for (int trk = 0; trk < N_TRK; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		for (unsigned int trk = 0; trk < N_TRK; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "-%02u-", trk + 1);
 		}
-		for (int grp = 0; grp < N_GRP; grp++) {
-			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1i", grp + 1);
+		for (unsigned int grp = 0; grp < N_GRP; grp++) {
+			snprintf(&trackLabels[(N_TRK + grp) << 2], 5, "GRP%1u", grp + 1);
 		}
 		for (int i = 0; i < (N_TRK / 4 + 1); i++) {
 			trackDispColsLocal[i].cc1 = 0;

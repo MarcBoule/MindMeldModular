@@ -431,7 +431,7 @@ struct ShowBandCurvesButtons : LightWidget {
 };
 
 
-struct BigNumbers : LightWidget {// TransparentWidget {
+struct BigNumbersEq : LightWidget {// TransparentWidget {
 	// user must set up
 	Param* trackParamSrc = NULL;
 	TrackEq* trackEqsSrc;
@@ -447,7 +447,7 @@ struct BigNumbers : LightWidget {// TransparentWidget {
 	math::Vec textOffset;
 	
 	
-	BigNumbers() {
+	BigNumbersEq() {
 		box.size = mm2px(Vec(40.0f, 15.0f));
 		color = SCHEME_LIGHT_GRAY;
 		textOffset = Vec(box.size.div(2.0f));

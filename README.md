@@ -2,15 +2,20 @@ Modules for [VCV Rack](https://vcvrack.com), available in the [plugin library](h
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 1.1.12
+Version 1.1.13
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
+<a id="manuals"></a>
+# Manuals
+
+Here are the manuals for [MixMaster/AuxSpander](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf) and 
+[ShapeMaster](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-ShapeMaster-Manual-V1_0.pdf)
 
 <a id="modules"></a>
 # Modules
 
-The following modules are part of the MindMeld module pack ([user manual](https://github.com/MarcBoule/MindMeldModular/blob/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf)):
+The following modules are part of the MindMeld module pack:
 
 * [MixMaster](#mixmaster): 16-track stereo mixer with 4 group busses.
 
@@ -27,6 +32,8 @@ The following modules are part of the MindMeld module pack ([user manual](https:
 * [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
 
 * [BassMaster](#bassmaster): Dual band spatialiser for high spread and bass mono.
+
+* [ShapeMaster](#shapemaster): Multi-stage envelope generator (MSEG) / complex LFO.
 
 
 <a id="mixmaster"></a>
@@ -116,12 +123,50 @@ Two utility modules to help manage direct out and insert connections. Three pane
 Dual band stereo width controllers for bass mono and high spread. Both modules have the same core functionality; however the Jr version omits the mix and master gain controls, the VU meter and the width CV inputs.
 
 
+<a id="shapemaster"></a>
+## ShapeMaster
+
+![IM](res/img/ShapeMaster.png)
+
+Multi-stage envelope generator (MSEG) / complex LFO:
+
+* 8 Polyphonic channels
+* Built in VCA and CV out on every channel
+* Draw complex shapes with up to 270 nodes
+* Hundreds of built in Shapes and Presets
+* Powerful random shape generation
+* Freeze, Sustain and Loop envelopes
+* Flexible Trigger modes
+* Play forward, reverse or pingpong
+* Repeat count from 1 to 99 or Infinite (LFO)
+* All controls independently set per channel
+* Integrated dual band crossover
+* Unsynced lengths from 0.56ms to 30 minutes
+* Built-in scope shows pre and post envelope
+* Gain adjustment (Trim) on every track (± 20dB)
+* Editable Channel Labels
+* Trigger generation from sidechain audio
+
+The ShapeMaster Pro (not shown) is a commercial plugin which adds the following features 
+
+* Sync and quantise channels to clock
+* Synced lengths from 1/128 to 128 bars
+* Includes triplet and dotted lengths
+* CV Visualisation
+* SM-CV expander module for CV control
+* SM-Triggers expander module
+* uMeld - 8 channel poly merge module
+
+The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](https://library.vcvrack.com/).
+
+
 <a id="videos"></a>
 # Videos
 
 ### Promo
 * Eurikon (Latif Karoumi), [MindMeld Modular - Mixmaster for VCV Rack](https://www.youtube.com/watch?v=8g_BwxgEuSw)
 * Eurikon (Latif Karoumi), [MindMeld Modular - Mixmaster for VCV Rack : Go On (Eurikon Remix) - ShAi Dawn](https://www.youtube.com/watch?v=U_Wx2Jxx6Yg)
+* Eurikon (Latif Karoumi), [MindMeld Modular - ShapeMaster for VCV Rack](https://www.youtube.com/watch?v=O-diK-PWzEs)
 
 ### Tutorials
 * Omri Cohem, [MixMaster from MindMeld](https://www.youtube.com/watch?v=YcTPaG6N6nI)

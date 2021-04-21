@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.0 (4035a4f, 2020-05-01)" sodipodi:docname="sidechain-settings-on.svg" id="svg837" version="1.1" viewBox="0 0 16.062991 16.062991" height="4.25mm" width="4.25mm">
+  <metadata id="metadata843">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs id="defs841" />
+  <sodipodi:namedview inkscape:current-layer="svg837" inkscape:window-maximized="0" inkscape:window-y="23" inkscape:window-x="0" inkscape:cy="6.0250001" inkscape:cx="6.0250001" inkscape:zoom="24.128233" units="mm" inkscape:document-units="mm" showgrid="false" id="namedview839" inkscape:window-height="1064" inkscape:window-width="1953" inkscape:pageshadow="2" inkscape:pageopacity="0" guidetolerance="10" gridtolerance="10" objecttolerance="10" borderopacity="1" bordercolor="#666666" pagecolor="#ffffff" />
+  <g transform="scale(1.3330283,1.3352445)" data-name="Layer 2" id="Layer_2">
+    <g id="Knobs">
+      <path id="path833" style="fill:#cccccc" d="M 12.05,6.8 V 5 H 10.37 A 4.34,4.34 0 0 0 9.74,3.48 L 10.86,2.36 9.55,1 8.42,2.13 A 4.59,4.59 0 0 0 6.83,1.51 V 0 H 5 V 1.57 A 4.2,4.2 0 0 0 3.46,2.29 L 2.36,1.19 1,2.5 2.19,3.66 A 4.39,4.39 0 0 0 1.65,5.22 H 0 V 7.07 H 1.76 A 4.72,4.72 0 0 0 2.44,8.48 L 1.22,9.71 2.53,11 3.82,9.7 a 4.41,4.41 0 0 0 1.42,0.52 v 1.81 H 7.1 V 10.19 A 4.51,4.51 0 0 0 8.48,9.58 L 9.73,10.83 11.05,9.52 9.78,8.26 A 4.36,4.36 0 0 0 10.37,6.8 Z M 6,8.19 A 2.32,2.32 0 1 1 8.35,5.88 2.31,2.31 0 0 1 6,8.19 Z" />
+    </g>
+  </g>
+</svg>

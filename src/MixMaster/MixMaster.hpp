@@ -1375,7 +1375,7 @@ struct MixerTrack {
 
 
 	void onReset() {
-		snprintf(trackName, 4, "-%02i", trackNum + 1); trackName[3] = '-';
+		snprintf(trackName, 4, "-%02u", (unsigned int)(trackNum + 1)); trackName[3] = '-';
 		gainAdjust = 1.0f;
 		*fadeRate = 0.0f;
 		fadeProfile = 0.0f;

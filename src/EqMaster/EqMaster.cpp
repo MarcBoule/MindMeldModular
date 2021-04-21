@@ -82,16 +82,16 @@ struct EqMaster : Module {
 	}
 
 	void initTrackLabelsAndColors() {
-		for (int trk = 0; trk < 16; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "-%02i-", trk + 1);
+		for (unsigned int trk = 0; trk < 16; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "-%02u-", trk + 1);
 		}
-		for (int trk = 16; trk < 20; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "GRP%1i", trk - 16 + 1);
+		for (unsigned int trk = 16; trk < 20; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "GRP%1u", trk - 16 + 1);
 		}
-		for (int trk = 20; trk < 24; trk++) {
-			snprintf(&trackLabels[trk << 2], 5, "AUX%1i", trk - 20 + 1);
+		for (unsigned int trk = 20; trk < 24; trk++) {
+			snprintf(&trackLabels[trk << 2], 5, "AUX%1u", trk - 20 + 1);
 		}
-		for (int trk = 0; trk < 24; trk++) {
+		for (unsigned int trk = 0; trk < 24; trk++) {
 			trackLabelColors[trk] = 0;
 			trackVuColors[trk] = 0;
 		}
@@ -936,13 +936,13 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		
 		// Screen - Big Numbers
-		BigNumbers* bigNumbers;
-		addChild(bigNumbers = createWidgetCentered<BigNumbers>(mm2px(Vec(71.12f, 68.0f))));
+		BigNumbersEq* bigNumbersEq;
+		addChild(bigNumbersEq = createWidgetCentered<BigNumbersEq>(mm2px(Vec(71.12f, 68.0f))));
 		if (module) {
-			bigNumbers->trackParamSrc = &(module->params[TRACK_PARAM]);
-			bigNumbers->trackEqsSrc = module->trackEqs;
-			bigNumbers->lastMovedKnobIdSrc = &lastMovedKnobId;
-			bigNumbers->lastMovedKnobTimeSrc = &lastMovedKnobTime;
+			bigNumbersEq->trackParamSrc = &(module->params[TRACK_PARAM]);
+			bigNumbersEq->trackEqsSrc = module->trackEqs;
+			bigNumbersEq->lastMovedKnobIdSrc = &lastMovedKnobId;
+			bigNumbersEq->lastMovedKnobTimeSrc = &lastMovedKnobTime;
 		}
 		
 		

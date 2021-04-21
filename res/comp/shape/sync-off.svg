@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.0 (4035a4f, 2020-05-01)" sodipodi:docname="sync-off2.svg" id="svg948" version="1.1" viewBox="0 0 62.362206 17.007874" height="4.5mm" width="16.5mm">
+  <metadata id="metadata952">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview inkscape:current-layer="svg948" inkscape:window-maximized="0" inkscape:window-y="23" inkscape:window-x="0" inkscape:cy="6.3800001" inkscape:cx="23.385" inkscape:zoom="22.493051" units="mm" inkscape:document-units="mm" showgrid="false" id="namedview950" inkscape:window-height="1090" inkscape:window-width="1847" inkscape:pageshadow="2" inkscape:pageopacity="0" guidetolerance="10" gridtolerance="10" objecttolerance="10" borderopacity="1" bordercolor="#666666" pagecolor="#ffffff" />
+  <defs id="defs924">
+    <linearGradient gradientUnits="userSpaceOnUse" gradientTransform="matrix(1.25,0,0,0.55,-19.05,-84.95)" y2="176.69" x2="33.950001" y1="165.25999" x1="33.950001" id="linear-gradient">
+      <stop id="stop914" stop-color="#a5a5a5" offset="0" />
+      <stop id="stop916" stop-color="#878787" offset="0.87" />
+      <stop id="stop918" stop-color="#828282" offset="1" />
+    </linearGradient>
+    <linearGradient xlink:href="#linear-gradient" gradientTransform="matrix(0,-1.25,0.55,0,-49.6,-337.06)" y2="174.11" x2="-274.75" y1="132" x1="-274.75" id="linear-gradient-2" />
+    <linearGradient xlink:href="#linear-gradient" gradientTransform="matrix(-1.25,0,0,-0.55,-301.71,-306.52)" y2="-556.31" x2="-260.07001" y1="-567.73999" x1="-260.07001" id="linear-gradient-3" />
+    <linearGradient xlink:href="#linear-gradient" gradientTransform="matrix(0,1.25,-0.55,0,-271.16,-54.41)" y2="-492.34" x2="48.630001" y1="-534.45001" x1="48.630001" id="linear-gradient-4" />
+    <linearGradient y2="176.69" x2="33.950001" y1="165.25999" x1="33.950001" gradientTransform="matrix(1.25,0,0,0.55,-19.05,-84.95)" gradientUnits="userSpaceOnUse" id="linearGradient1517" xlink:href="#linear-gradient" inkscape:collect="always" />
+  </defs>
+  <g transform="scale(1.3333805,1.3329055)" data-name="Layer 2" id="Layer_2">
+    <g data-name="Sync Button" id="Sync_Button">
+      <g id="g936">
+        <path id="path926" style="fill:url(#linearGradient1517)" d="M 46.39,12.48 H 0.38 l 23,-6.3 h 0.05 z" />
+        <path id="path928" style="fill:url(#linear-gradient-2)" d="m 46.39,0.28 c 0,0 0,0 0,0 v 12.18 c 0,0 0,0 0,0 L 23.21,6.38 c 0,0 0,0 0,0 z" />
+        <path id="path930" style="fill:url(#linear-gradient-3)" d="m 0.38,0.28 c 0,0 0,0 0,0 h 46 c 0,0 0,0 0,0 l -23,6.29 h -0.05 z" />
+        <path id="path932" style="fill:url(#linear-gradient-4)" d="m 0.38,12.48 c 0,0 0,0 0,0 V 0.3 c 0,0 0,0 0,0 l 23.19,6.07 c 0,0 0,0 0,0 z" />
+        <path id="path934" style="fill:#333333" d="m 45.64,0.5 a 0.63,0.63 0 0 1 0.63,0.63 v 10.49 a 0.64,0.64 0 0 1 -0.63,0.64 H 1.13 A 0.64,0.64 0 0 1 0.5,11.62 V 1.13 A 0.63,0.63 0 0 1 1.13,0.5 h 44.51 m 0,-0.5 H 1.13 A 1.14,1.14 0 0 0 0,1.13 v 10.49 a 1.14,1.14 0 0 0 1.13,1.14 h 44.51 a 1.14,1.14 0 0 0 1.13,-1.14 V 1.13 A 1.14,1.14 0 0 0 45.64,0 Z" />
+      </g>
+      <g id="g944">
+        <path id="path938" style="fill:#1a1a1a" d="M 20.09,8.73 A 2.13,2.13 0 0 1 18.54,8.1 2.15,2.15 0 0 1 17.91,6.54 a 2.18,2.18 0 1 1 4.36,0 2.15,2.15 0 0 1 -0.63,1.56 2.13,2.13 0 0 1 -1.55,0.63 z m 0,-0.81 a 1.33,1.33 0 0 0 1,-0.39 1.3931619,1.3931619 0 0 0 -1.94,-2 1.37,1.37 0 0 0 -0.38,1 1.37,1.37 0 0 0 0.38,1 1.33,1.33 0 0 0 0.94,0.39 z" />
+        <path id="path940" style="fill:#1a1a1a" d="m 25.54,5.24 h -1.68 v 1 H 25.5 V 7 H 23.86 V 8.64 H 23 v -4.2 h 2.5 z" />
+        <path id="path942" style="fill:#1a1a1a" d="m 28.84,5.24 h -1.68 v 1 h 1.63 V 7 h -1.63 v 1.64 h -0.83 v -4.2 h 2.51 z" />
+      </g>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "ShapeMaster shape": {
+    "pointsX": [
+      0.0,
+      1.0
+    ],
+    "pointsY": [
+      1.0,
+      1.0
+    ],
+    "ctrl": [
+      0.5,
+      0.5
+    ],
+    "type": [
+      0,
+      0
+    ],
+    "numPts": 2
+  }
+}

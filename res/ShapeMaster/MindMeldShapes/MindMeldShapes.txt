@@ -1,0 +1,1 @@
+MindMeld Shape Master Factory shapes are stored in this directory

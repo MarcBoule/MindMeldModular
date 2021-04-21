@@ -1,0 +1,72 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": 0.999000013,
+    "warp": 0.563436091,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.0,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "hpfCutoffFreq": 13.0,
+    "lpfCutoffFreq": 20010.0,
+    "sensitivity": 0.5,
+    "gainAdjustVca": 1.0,
+    "gainAdjustSc": 2.52348185,
+    "gridX": 16,
+    "rangeIndex": 0,
+    "channelSettings": 1792,
+    "channelSettings2": 16,
+    "presetPath": "/Users/simonbader/Documents/Rack/MindMeldModular/ShapeMaster/UserPresets/Circadian Sound_PRE/Side Chain/S:C - Standard (Warped).smpr",
+    "shapePath": "",
+    "chanName": "Channel 8",
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.5,
+        0.999499977,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "ctrl": [
+        0.0892522633,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "type": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "numPts": 4
+    },
+    "reps": 1.0,
+    "lengthSync": 5,
+    "lengthUnsync": -0.138949156,
+    "sync": 1.0,
+    "lock": 1.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "audition": 0.0,
+    "trigLevel": 2.31499982,
+    "playMode": 0,
+    "triggerMode": 3,
+    "hysteresis": 0.250999987,
+    "holdOff": 0.0503800027,
+    "loopStart": 0.5,
+    "loopEndAndSustain": 0.75,
+    "playHeadSettings": 65792,
+    "playHeadSettings2": 256
+  }
+}

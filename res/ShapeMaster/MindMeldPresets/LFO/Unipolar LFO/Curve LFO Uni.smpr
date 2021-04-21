@@ -1,0 +1,68 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": 0.0,
+    "warp": 0.0,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.0,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "hpfCutoffFreq": 13.0,
+    "lpfCutoffFreq": 20010.0,
+    "sensitivity": 0.5,
+    "gainAdjustVca": 1.0,
+    "gainAdjustSc": 1.0,
+    "gridX": 16,
+    "rangeIndex": 0,
+    "channelSettings": 1280,
+    "channelSettings2": 16,
+    "presetPath": "/Users/Steve/Documents/Rack/MindMeldModular/ShapeMaster/UserPresets/LFO/Unipolar LFO/Curve LFO.smpr",
+    "shapePath": "",
+    "chanName": "Channel 1",
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.999499977,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "ctrl": [
+        0.809977591,
+        0.5,
+        0.5
+      ],
+      "type": [
+        1,
+        0,
+        0
+      ],
+      "numPts": 3
+    },
+    "reps": 100.0,
+    "lengthSync": 5,
+    "lengthUnsync": -0.0924745873,
+    "sync": 0.0,
+    "lock": 0.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "audition": 0.0,
+    "trigLevel": 5.0,
+    "playMode": 0,
+    "triggerMode": 0,
+    "hysteresis": 0.200000003,
+    "holdOff": 0.0199999996,
+    "loopStart": 0.5,
+    "loopEndAndSustain": 0.75,
+    "playHeadSettings": 65792,
+    "playHeadSettings2": 0
+  }
+}

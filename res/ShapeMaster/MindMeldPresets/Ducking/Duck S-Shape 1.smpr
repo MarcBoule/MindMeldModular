@@ -1,0 +1,83 @@
+{
+  "ShapeMaster channel preset": {
+    "phase": 0.0,
+    "response": 0.0,
+    "warp": 0.0,
+    "level": 1.0,
+    "slew": 0.0,
+    "smooth": 0.0,
+    "crossover": -1.0,
+    "high": 1.0,
+    "low": 1.0,
+    "hpfCutoffSqFreq": 3.60555124,
+    "lpfCutoffSqFreq": 141.456711,
+    "sensitivity": 0.0,
+    "gainAdjustSc": 1.0,
+    "gridX": 16,
+    "rangeIndex": 0,
+    "channelSettings": 0,
+    "channelSettings2": 16,
+    "presetPath": "/Users/Steve/Documents/Rack/MindMeldModular/ShapeMaster/UserPresets/* Moved to MindMeld/Sidechain:Ducking/Untitled.smpr",
+    "shapePath": "",
+    "r_numNodesMin": 5.0,
+    "r_numNodesMax": 30.0,
+    "r_ctrlMax": 100.0,
+    "r_zeroV": 0.0,
+    "r_maxV": 0.0,
+    "r_scale": 4095,
+    "r_stepped": 0,
+    "r_grid": 0,
+    "r_quantized": 0,
+    "shape": {
+      "pointsX": [
+        0.0,
+        0.25,
+        0.5,
+        0.984641075,
+        1.0
+      ],
+      "pointsY": [
+        0.0,
+        0.5,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "ctrl": [
+        0.103261709,
+        0.889019489,
+        0.5,
+        0.174587056,
+        0.5
+      ],
+      "type": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "numPts": 5
+    },
+    "reps": 100.0,
+    "lengthSync": 5,
+    "lengthUnsync": -0.0924382955,
+    "sync": 1.0,
+    "lock": 1.0,
+    "swing": 0.0,
+    "freeze": 0.0,
+    "play": 1.0,
+    "loop": 0.0,
+    "offset": 0.0,
+    "audition": 0.0,
+    "trigLevel": 0.0,
+    "playMode": 0,
+    "triggerMode": 0,
+    "hysteresis": 0.200000003,
+    "holdOff": 0.0199999996,
+    "loopStart": 0.5,
+    "loopEndAndSustain": 0.75,
+    "playHeadSettings2": 65536,
+    "playHeadSettings3": 1
+  }
+}

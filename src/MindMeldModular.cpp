@@ -24,6 +24,7 @@ void init(rack::Plugin *p) {
 	p->addModel(modelEqExpander);
 	p->addModel(modelBassMaster);
 	p->addModel(modelBassMasterJr);
+	p->addModel(modelShapeMaster);
 }
 
 
