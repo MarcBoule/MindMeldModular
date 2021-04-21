@@ -157,7 +157,7 @@ The ShapeMaster Pro (not shown) is a commercial plugin which adds the following 
 * SM-Triggers expander module
 * uMeld - 8 channel poly merge module
 
-The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](https://library.vcvrack.com/).
+The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](https://library.vcvrack.com/MindMeld-ShapeMasterPro).
 
 
 <a id="videos"></a>
