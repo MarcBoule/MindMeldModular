@@ -513,6 +513,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 		Shape* shape = channels[*currChan].getShape();
 		altSelect = 0;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+			DEBUG("onButton, press left, pt = %i", hoverPtSelect);
 			// check if point or control point selected
 			if (hoverPtSelect != MAX_PTS) {
 				if (hoverPtSelect >= 0) {// if normal point
@@ -548,6 +549,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 			}
 		}
 		else if (e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+			DEBUG("onButton, press right, pt = %i", hoverPtSelect);
 			if (hoverPtSelect < 0) {// if ctrl point
 				ui::Menu *menu = createMenu();
 				createCtrlMenu(menu, shape, -hoverPtSelect - 1);
@@ -567,6 +569,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 
 
 void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
+	DEBUG("onDoubleClick");
 	// happens after the the second click's GLFW_PRESS, but before its GLFW_RELEASE
 	// this happens only for double click of GLFW_MOUSE_BUTTON_LEFT
 	dragHistoryStep = NULL;
@@ -639,6 +642,7 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 	dragHistoryMisc = NULL;
 	
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+		DEBUG("onDragStart, left, pt = %i", hoverPtSelect);
 		Shape* shape = channels[*currChan].getShape();
 		int mods = APP->window->getMods();
 		if (hoverPtSelect != MAX_PTS) {
@@ -696,6 +700,7 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 
 void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+		DEBUG("onDragMove, left, pt = %i", hoverPtSelect);
 		Shape* shape = channels[*currChan].getShape();
 		Vec dragMouse = APP->scene->rack->mousePos;
 		int mods = APP->window->getMods();
