@@ -506,14 +506,11 @@ void ShapeMasterDisplay::drawMessages(const DrawArgs &args) {
 
 
 void ShapeMasterDisplay::onButton(const event::Button& e) {
-	onButtonMouse = APP->scene->rack->mousePos;
-	dragMouseOld = onButtonMouse;
-	onButtonPos = e.pos;
+	onButtonPos = e.pos;// used only for onDoubleClick()
 	if (e.action == GLFW_PRESS) {
 		Shape* shape = channels[*currChan].getShape();
 		altSelect = 0;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
-			DEBUG("onButton, press left, pt = %i", hoverPtSelect);
 			// check if point or control point selected
 			if (hoverPtSelect != MAX_PTS) {
 				if (hoverPtSelect >= 0) {// if normal point
@@ -536,20 +533,19 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 				bool isLoop = channels[*currChan].isLoopWithModeGuard();
 				int epc = 0;
 				loopSnapTargetCV = -1.0f;
-				if ( (onButtonPos.x > loopXR - LOOP_GRAB_X) && (onButtonPos.x < loopXR + LOOP_GRAB_X) ) {
+				if ( (e.pos.x > loopXR - LOOP_GRAB_X) && (e.pos.x < loopXR + LOOP_GRAB_X) ) {
 					altSelect = 1;// sustain/rightLoop selected
 					if (isLoop) {
 						loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtL, &epc);
 					}
 				}
-				else if (isLoop && (onButtonPos.x > loopXL - LOOP_GRAB_X) && (onButtonPos.x < loopXL + LOOP_GRAB_X) ) {
+				else if (isLoop && (e.pos.x > loopXL - LOOP_GRAB_X) && (e.pos.x < loopXL + LOOP_GRAB_X) ) {
 					altSelect = 2;// leftLoop selected
 					loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtR, &epc);
 				}
 			}
 		}
 		else if (e.button == GLFW_MOUSE_BUTTON_RIGHT) {
-			DEBUG("onButton, press right, pt = %i", hoverPtSelect);
 			if (hoverPtSelect < 0) {// if ctrl point
 				ui::Menu *menu = createMenu();
 				createCtrlMenu(menu, shape, -hoverPtSelect - 1);
@@ -560,7 +556,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 			}
 			else {// background of display
 				ui::Menu *menu = createMenu();
-				createBackgroundMenu(menu, shape, normalizePixelPoint(onButtonPos));						
+				createBackgroundMenu(menu, shape, normalizePixelPoint(e.pos));						
 			}
 		}
 	}
@@ -569,7 +565,6 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 
 
 void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
-	DEBUG("onDoubleClick");
 	// happens after the the second click's GLFW_PRESS, but before its GLFW_RELEASE
 	// this happens only for double click of GLFW_MOUSE_BUTTON_LEFT
 	dragHistoryStep = NULL;
@@ -641,8 +636,9 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 	dragHistoryStep = NULL;
 	dragHistoryMisc = NULL;
 	
+	dragStartPosY = APP->scene->rack->mousePos.y;// used only when dragging control points
+	
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
-		DEBUG("onDragStart, left, pt = %i", hoverPtSelect);
 		Shape* shape = channels[*currChan].getShape();
 		int mods = APP->window->getMods();
 		if (hoverPtSelect != MAX_PTS) {
@@ -700,13 +696,12 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 
 void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
-		DEBUG("onDragMove, left, pt = %i", hoverPtSelect);
 		Shape* shape = channels[*currChan].getShape();
-		Vec dragMouse = APP->scene->rack->mousePos;
+		Vec dragMovePos = APP->scene->rack->mousePos;
+		Vec posToSet = dragMovePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
 		int mods = APP->window->getMods();
 		if (hoverPtSelect != MAX_PTS) {
 			if (hoverPtSelect >= 0) {// if normal point
-				Vec posToSet = onButtonPos.plus(dragMouse).minus(onButtonMouse);// posToSet is in pixel space
 				int xQuant;
 				int yQuant;
 				calcQuants(&xQuant, &yQuant, mods);
@@ -716,7 +711,7 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 				int cpt = -hoverPtSelect - 1;
 				float dy = shape->getPointY(cpt + 1) - shape->getPointY(cpt);
 				if (std::fabs(dy) > 1e-5f) {
-					float deltaY = (onButtonMouse.y - dragMouse.y) / canvas.y / dy;// deltaY is +1 when mouse moves up by dy and is -1 when mouse moves down by dy
+					float deltaY = (dragStartPosY - dragMovePos.y) / canvas.y / dy;// deltaY is +1 when mouse moves up by dy and is -1 when mouse moves down by dy
 					
 					float newCtrl = onButtonOrigCtrl;
 					if (shape->getType(cpt) == 0) {
@@ -730,12 +725,10 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 					shape->setCtrlWithSafety(cpt, newCtrl);
 				}
 			}
-			dragMouseOld = dragMouse;
 		}
 		else if (altSelect != 0) {
 			// clicked alternate object (loop points, etc.)
-			float posToSetX = onButtonPos.x + dragMouse.x - onButtonMouse.x;// posToSetX is in pixel space
-			posToSetX = clamp((posToSetX - margins.x) / canvas.x, 0.0f, 1.0f);
+			float posToSetX = clamp((posToSet.x - margins.x) / canvas.x, 0.0f, 1.0f);
 			bool wantSnapToOtherCursor = ((mods & RACK_MOD_CTRL) != 0) && loopSnapTargetCV != -1.0f;
 			if (wantSnapToOtherCursor) {// && altSelect <= 2) { 
 				// look from posToSetX and find nearest PosToSetX within reasonabe grab that has CV of loopSnapTargetCV
@@ -755,7 +748,6 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 		else {
 			// clicked display background
 			if ((mods & GLFW_MOD_SHIFT) != 0) {// if step
-				Vec posToSet = onButtonPos.plus(dragMouse).minus(onButtonMouse);// posToSet is in pixel space
 				int xQuant;
 				int yQuant;
 				calcQuants(&xQuant, &yQuant, mods | GLFW_MOD_ALT);// force calc of xQuant since step is forcibly horizontally quantized	

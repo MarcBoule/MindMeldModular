@@ -88,9 +88,8 @@ struct ShapeMasterDisplay : LightWidget {
 	ScopeBuffers* scopeBuffers;	
 	
 	// internal
-	Vec onButtonMouse;
-	Vec onButtonPos;
-	Vec dragMouseOld;// initialized in onButton(), and then used only in onDragMove()
+	float dragStartPosY;// used only when dragging control points
+	Vec onButtonPos;// used only for onDoubleClick()
 	ShapeCompleteChange* dragHistoryStep = NULL;
 	DragMiscChange* dragHistoryMisc = NULL;
 	int hoverPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when hovering normal point, [-MAX_PTS:-1] when hovering ctrl point
