@@ -150,7 +150,7 @@ void ShapeMasterDisplay::drawGrid(const DrawArgs &args) {
 }
 
 
-void ShapeMasterDisplay::drawScopeWaveform(const DrawArgs &args, bool isFront) {
+void ShapeMasterDisplayLight::drawScopeWaveform(const DrawArgs &args, bool isFront) {
 	float* drawBufMin = isFront ? scopeBuffers->scpFrontYmin : scopeBuffers->scpBackYmin;
 	float* drawBufMax = isFront ? scopeBuffers->scpFrontYmax : scopeBuffers->scpBackYmax;
 	
@@ -188,7 +188,7 @@ void ShapeMasterDisplay::drawScopeWaveform(const DrawArgs &args, bool isFront) {
 }
 
 
-void ShapeMasterDisplay::drawScope(const DrawArgs &args) {
+void ShapeMasterDisplayLight::drawScope(const DrawArgs &args) {
 	if (scopeBuffers->scopeOn) {
 		nvgStrokeWidth(args.vg, 1.0f);
 		nvgMiterLimit(args.vg, 1.0f);

@@ -82,7 +82,6 @@ struct ShapeMasterDisplay : LightWidget {
 	int* currChan = NULL;
 	Channel* channels;
 	float* lineWidthSrc;
-	ScopeBuffers* scopeBuffers;	
 	float* shaY;
 	
 	// internal
@@ -127,7 +126,7 @@ struct ShapeMasterDisplay : LightWidget {
 		
 			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 
-			drawScope(args);
+			// drawScope(args);
 
 			// drawShape(args);
 			
@@ -177,10 +176,7 @@ struct ShapeMasterDisplay : LightWidget {
 	}
 
 	void drawGrid(const DrawArgs &args); 
-	
-	void drawScopeWaveform(const DrawArgs &args, bool isFront);
-	void drawScope(const DrawArgs &args);
-	
+		
 	void onButton(const event::Button& e) override;
 	
 	
@@ -246,6 +242,7 @@ struct ShapeMasterDisplayLight : LightWidget {
 	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
 	float* lineWidthSrc;
 	int* hoverPtSelect;
+	ScopeBuffers* scopeBuffers;	
 	
 
 	// internal
@@ -274,6 +271,8 @@ struct ShapeMasterDisplayLight : LightWidget {
 					
 			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 
+			drawScope(args);
+
 			drawShape(args);
 
 			drawMessages(args);
@@ -283,7 +282,10 @@ struct ShapeMasterDisplayLight : LightWidget {
 
 		nvgRestore(args.vg);
 	}
-	
+
+	void drawScopeWaveform(const DrawArgs &args, bool isFront);
+	void drawScope(const DrawArgs &args);
+
 	void drawShape(const DrawArgs &args);
 
 	void drawMessages(const DrawArgs &args);

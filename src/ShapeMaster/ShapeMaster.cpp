@@ -480,10 +480,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	if (module) {
 		smDisplay->currChan = &(module->currChan);
 		smDisplay->channels = module->channels;
-		// smDisplay->settingSrc = &(module->miscSettings);
-		// smDisplay->setting2Src = &(module->miscSettings2);
 		smDisplay->lineWidthSrc = &(module->lineWidth);
-		smDisplay->scopeBuffers = &(module->scopeBuffers);
 
 		smDisplayLight->currChan = &(module->currChan);
 		smDisplayLight->channels = module->channels;
@@ -491,6 +488,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		smDisplayLight->settingSrc = &(module->miscSettings);
 		smDisplayLight->setting2Src = &(module->miscSettings2);
 		smDisplayLight->lineWidthSrc = &(module->lineWidth);
+		smDisplayLight->scopeBuffers = &(module->scopeBuffers);
 	}
 
 	// Screen - Big Numbers
