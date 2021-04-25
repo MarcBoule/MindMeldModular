@@ -61,7 +61,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 		Shape* shape = channels[*currChan].getShape();
 		Vec normalizedPos = normalizePixelPoint(e.pos);
 		
-		int buttonPtSelect = matchPtExtra(normalizedPos, shape, hoverPtMouse);
+		int buttonPtSelect = matchPtExtra(normalizedPos, shape);
 		
 		if (buttonPtSelect < 0) {// if ctrl point
 			ui::Menu *menu = createMenu();
@@ -124,11 +124,9 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 		Shape* shape = channels[*currChan].getShape();
 		int mods = APP->window->getMods();
 		
-		dragPtSelect = matchPtExtra(normalizePixelPoint(onButtonPos), shape, hoverPtMouse);
+		dragPtSelect = matchPtExtra(normalizePixelPoint(onButtonPos), shape);
 		altSelect = 0;
-		
-		// TODO: take care of history when double click happens (after dragStart, before dragEnd)
-		
+				
 		// check if point or control point selected
 		if (dragPtSelect != MAX_PTS) {
 			if (dragPtSelect < 0) {// if ctrl point
@@ -267,9 +265,9 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 			int yQuant;
 			calcQuants(&xQuant, &yQuant, mods | GLFW_MOD_ALT);// force calc of xQuant since step is forcibly horizontally quantized	
 			Vec normPos = normalizePixelPoint(posToSet);
-			int gp = std::min(mouseStepP, shape->getNumPts() - 2);
-			mouseStepP = shape->calcPointFromX<float>(normPos.x, gp);
-			shape->makeStep(mouseStepP, normPos, xQuant, yQuant);
+			int gp = std::min(mouseStepGp, shape->getNumPts() - 2);
+			mouseStepGp = shape->calcPointFromX<float>(normPos.x, gp);
+			shape->makeStep(mouseStepGp, normPos, xQuant, yQuant);
 		}
 	}
 	
@@ -326,19 +324,30 @@ int ShapeMasterDisplay::matchPt(Vec normalizedPos, Shape* shape, int pt) {
 	return MAX_PTS;
 }
 
-int ShapeMasterDisplay::matchPtExtra(Vec normalizedPos, Shape* shape, int pt) {	// will also check a few neighbours
-	int	newpt = matchPt(normalizedPos, shape, pt);
+int ShapeMasterDisplay::matchPtExtra(Vec normalizedPos, Shape* shape) {	// will also check a few neighbours
 	int numPts = shape->getNumPts();
-	if (newpt == MAX_PTS && pt < (numPts - 1)) {
-		newpt = matchPt(normalizedPos, shape, pt + 1);
-		if (newpt == MAX_PTS && pt < (numPts - 2)) {
-			newpt = matchPt(normalizedPos, shape, pt + 2);
+	if (normalizedPos.x <= 0.0f) {
+		matchPtExtraGp = 0;
+	}
+	else if (normalizedPos.x >= 1.0f) {
+		matchPtExtraGp = numPts - 1;
+	}
+	else {
+		int gp = std::min(matchPtExtraGp, numPts - 2);
+		matchPtExtraGp = shape->calcPointFromX<float>(normalizedPos.x, gp);
+	}
+
+	int	newpt = matchPt(normalizedPos, shape, matchPtExtraGp);
+	if (newpt == MAX_PTS && matchPtExtraGp < (numPts - 1)) {
+		newpt = matchPt(normalizedPos, shape, matchPtExtraGp + 1);
+		if (newpt == MAX_PTS && matchPtExtraGp < (numPts - 2)) {
+			newpt = matchPt(normalizedPos, shape, matchPtExtraGp + 2);
 		}	
 	}
-	if (newpt == MAX_PTS && pt > 0) {
-		newpt = matchPt(normalizedPos, shape, pt - 1);
-		if (newpt == MAX_PTS && pt > 1) {
-			newpt = matchPt(normalizedPos, shape, pt - 2);
+	if (newpt == MAX_PTS && matchPtExtraGp > 0) {
+		newpt = matchPt(normalizedPos, shape, matchPtExtraGp - 1);
+		if (newpt == MAX_PTS && matchPtExtraGp > 1) {
+			newpt = matchPt(normalizedPos, shape, matchPtExtraGp - 2);
 		}	
 	}	
 	return newpt;
@@ -346,7 +355,7 @@ int ShapeMasterDisplay::matchPtExtra(Vec normalizedPos, Shape* shape, int pt) {	
 
 	
 void ShapeMasterDisplay::onHover(const event::Hover& e) {
-	DEBUG("onHover");
+	DEBUG("onHover at %g, %g", e.pos.x, e.pos.y);
 	// find closest node 
 	
 	hoverPtSelect = MAX_PTS;
@@ -354,22 +363,10 @@ void ShapeMasterDisplay::onHover(const event::Hover& e) {
 	int mods = APP->window->getMods();
 	if ((mods & GLFW_MOD_SHIFT) == 0 && (dragPtSelect == MAX_PTS) ) {// disallow hovering when making steps, much easier, and when dragging
 		Shape* shape = channels[*currChan].getShape();
-		int numPts = shape->getNumPts();
 		
 		Vec normalizedPos = normalizePixelPoint(e.pos);
-				
-		if (normalizedPos.x <= 0.0f) {
-			hoverPtMouse = 0;
-		}
-		else if (normalizedPos.x >= 1.0f) {
-			hoverPtMouse = numPts - 1;
-		}
-		else {
-			int gp = std::min(hoverPtMouse, numPts - 2);
-			hoverPtMouse = shape->calcPointFromX<float>(normalizedPos.x, gp);
-		}
-		
-		hoverPtSelect = matchPtExtra(normalizedPos, shape, hoverPtMouse);
+						
+		hoverPtSelect = matchPtExtra(normalizedPos, shape);
 	}
 	OpaqueWidget::onHover(e);
 }

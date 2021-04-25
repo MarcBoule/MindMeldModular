@@ -132,8 +132,8 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	int altSelect = 0;// alternate select 0=none, 1=loopEndAndSustain, 2=loopStart, this is only used when dragPtSelect == MAX_PTS; if other altSelects are added, review code since != 0 currently assumes 1 or 2 
 	int hoverPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when hovering normal point, [-MAX_PTS:-1] when hovering ctrl point
 	float loopSnapTargetCV = -1.0f;// used only when altSelect != 0;
-	int hoverPtMouse = 0;// this is the point where mouse is located, can be different than hoverPtSelect because of grab area
-	int mouseStepP = 0;// used in onDragMove() to improve guess point; using hoverPtMouse is not perfect (not synced when move mouse fast)
+	int matchPtExtraGp = 0;// used in matchPtExtra() as a memory for its guess point;
+	int mouseStepGp = 0;// used in onDragMove() to improve guess point; using hoverPtMouse is not perfect (not synced when move mouse fast)
 	float onButtonOrigCtrl;// only used when hoverPtSelect < 0
 	Vec margins;
 	Vec canvas;
@@ -197,7 +197,7 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	void onDragEnd(const event::DragEnd& e) override;
 
 	int matchPt(Vec normalizedPos, Shape* shape, int pt);
-	int matchPtExtra(Vec normalizedPos, Shape* shape, int pt);
+	int matchPtExtra(Vec normalizedPos, Shape* shape);
 	void onHover(const event::Hover& e) override;
 
 	
