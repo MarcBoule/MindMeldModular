@@ -27,7 +27,7 @@ struct ShapeMasterDisplayLight : LightWidget {
 	PackedBytes4 *settingSrc;// cc4[2] is scope settings, cc4[3] is show points
 	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
 	float* lineWidthSrc;
-	int* hoverPtSelect;
+	int* hoverPtSelect;// from ShapeMasterDisplay
 	ScopeBuffers* scopeBuffers;	
 	
 
@@ -120,7 +120,7 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	int* currChan = NULL;
 	Channel* channels;
 	float* lineWidthSrc;
-	float* shaY;
+	float* shaY;// from ShapeMasterDisplayLight
 	
 	// internal
 	float dragStartPosY;// used only when dragging control points
