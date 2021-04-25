@@ -269,7 +269,7 @@ struct BandLabelQ : BandLabelBase {
 
 enum SpecMasks {SPEC_MASK_ON = 0x4, SPEC_MASK_POST = 0x2, SPEC_MASK_FREEZE = 0x1};
 
-struct SpectrumSettingsButtons : LightWidget {
+struct SpectrumSettingsButtons : OpaqueWidget {
 	const float textHeight = 5.0f;// in mm
 	const float textWidths[5] =        {15.24f,      7.11f, 7.11f, 8.81f,  10.84f};// in mm
 	const std::string textStrings[5] = {"ANALYSER:", "OFF", "PRE", "POST", "FREEZE"};
@@ -361,13 +361,13 @@ struct SpectrumSettingsButtons : LightWidget {
 				*settingSrc ^= SPEC_MASK_FREEZE;// toggle freeze bit
 			}
 		}
-		LightWidget::onButton(e);
+		OpaqueWidget::onButton(e);
 	}
 };
 
 
 
-struct ShowBandCurvesButtons : LightWidget {
+struct ShowBandCurvesButtons : OpaqueWidget {
 	const float textHeight = 5.0f;// in mm
 	const float textWidths[3] =        {11.18f,   8.13f,  9.82f};// in mm
 	const std::string textStrings[3] = {"BANDS:", "HIDE", "SHOW"};
@@ -426,7 +426,7 @@ struct ShowBandCurvesButtons : LightWidget {
 				*settingSrc ^= 0x1;
 			}
 		}
-		LightWidget::onButton(e);
+		OpaqueWidget::onButton(e);
 	}
 };
 

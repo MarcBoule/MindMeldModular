@@ -9,72 +9,15 @@
 #pragma once
 
 #include "../MindMeldModular.hpp"
+#include "DisplayUtil.hpp"
 #include "Channel.hpp"
 #include "Menus.hpp"
 #include "time.h"
 
 
-enum ScopeMasks {SCOPE_MASK_ON = 0x2, SCOPE_MASK_VCA_nSC = 0x1};
 
-struct ScopeBuffers {
-	static const int SCOPE_PTS = 767;// scope memories, divide into this many segments, other code must be adapted if chaged (drawPoint binary stuff depends on this)
-	
-	// no need to reset/init the points during run, we will use the drawPoint flags for that
-	float scpFrontYmin[SCOPE_PTS + 1];// points of the main (front) scope curve, with an extra element for last
-	float scpFrontYmax[SCOPE_PTS + 1];// points of the main (front) scope curve, with an extra element for last
-	float scpBackYmin[SCOPE_PTS + 1];// points of the alt (back) scope curve, with an extra element for last
-	float scpBackYmax[SCOPE_PTS + 1];// points of the alt (back) scope curve, with an extra element for last
-	bool scopeOn;// takes channelActive into account (not the case in ScopeSettingsButtons())
-	bool scopeVca;
-	int lastState;
-	int8_t lastTrigMode;
-	Channel* lastChannel;
-	
-	int lastScpI;
-	uint64_t drawPoint[12];// 12 is (767 + 1) / 64
-	
-	
-	void reset() {
-		memset(scpFrontYmin, 0, sizeof(scpFrontYmin));
-		memset(scpFrontYmax, 0, sizeof(scpFrontYmax));
-		memset(scpBackYmin, 0, sizeof(scpBackYmin));
-		memset(scpBackYmax, 0, sizeof(scpBackYmax));
-		scopeOn = false;
-		scopeVca = false;
-		lastState = PlayHead::STOPPED;
-		lastTrigMode = -1;
-		lastChannel = NULL;
-		clear();
-	}
-	void clear() {
-		lastScpI = -1;
-		memset(drawPoint, 0, sizeof(drawPoint));
-	}
-	
-	void setPoint(uint64_t i) {
-		drawPoint[i >> 6] |= ((uint64_t)0x1 << (i & (uint64_t)0x3F));
-	}
-	bool isDrawPoint(uint64_t i) {
-		return ( drawPoint[i >> 6] & ((uint64_t)0x1 << (i & (uint64_t)0x3F)) ) != 0;
-	}
-	
-	void populate(Channel* channel, int8_t scopeSettings);
-};
-
-
-struct DisplayInfo {
-	int lastMovedKnobId = -1;// this is a param index to indicate a param knob type and is only in [0; NUM_KNOB_PARAMS - 1]
-	time_t lastMovedKnobTime = 0;
-	
-	std::string displayMessage = "";	
-	time_t displayMessageTimeOff = 0;// value of time(0) at which the message can stop being displayed
-};
-
-
-struct ShapeMasterDisplay : LightWidget {	
+struct ShapeMasterDisplay : OpaqueWidget {	
 	// constants
-	const NVGcolor DARKER_GRAY = nvgRGB(39, 39, 0x27);// grid and center of control points
-	const NVGcolor DARK_GRAY = nvgRGB(55, 55, 55);// major grid when applicable
 	static constexpr float MINI_SHAPES_Y = 6.8f;// can be set to 0.0f
 	static constexpr float LOOP_GRAB_X = 3.0f;
 	
@@ -99,8 +42,6 @@ struct ShapeMasterDisplay : LightWidget {
 	Vec canvas;
 	float grabX;
 	float grabY;
-	int numGridXmajorX;
-	float gridXmajorX[16];
 
 
 	ShapeMasterDisplay() {
@@ -111,75 +52,20 @@ struct ShapeMasterDisplay : LightWidget {
 	}
 	
 	
-	void draw(const DrawArgs &args) override {
-		nvgSave(args.vg);
-		nvgLineCap(args.vg, NVG_ROUND);
+	void step() override {
 		grabX = 0.01f;
-		grabY = 0.02f;
-		
+		grabY = 0.02f;		
 		
 		if (currChan != NULL) {
 			grabX *= *lineWidthSrc;
 			grabY *= *lineWidthSrc;
-			
-			drawGrid(args);
-		
-			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
-
-			// drawScope(args);
-
-			// drawShape(args);
-			
-			// drawMessages(args);
-			
-			// nvgResetScissor(args.vg);					
 		}
-
-		nvgRestore(args.vg);
+		OpaqueWidget::step();
 	}
 	
-	
-	void loopVLines(const DrawArgs &args, float startX, float xDelta, int numVLines) {
-		// assumes "numGridXmajorX = 0" was done before calling this
-		// also sets numGridXmajorX and gridXmajorX array as needed, numGridXmajorX will be 0 for numVLines < 16
-		int majorGridModulo = ( (numVLines % 12) == 0 ? 6 : 8 );
-		float xPos = startX + xDelta;
-		for (int i = 1; i < numVLines; i++) {
-			nvgMoveTo(args.vg, xPos, margins.y);
-			nvgLineTo(args.vg, xPos, margins.y + canvas.y);
-			if (i % majorGridModulo == 0 && (numVLines >= 16 || numVLines == 12) && numGridXmajorX < 16) {
-				gridXmajorX[numGridXmajorX] = xPos;
-				numGridXmajorX++;
-			}
-			xPos += xDelta;
-		}
-	}
-	void loopHLines(const DrawArgs &args, float startY, float yDelta, int numHLines) {
-		float yPos = startY + yDelta;
-		for (int i = 0; i < numHLines - 1; i++) {
-			nvgMoveTo(args.vg, margins.x, yPos);
-			nvgLineTo(args.vg, margins.x + canvas.x, yPos);
-			yPos += yDelta;
-		}
-	}
-
-	int calcNumHLinesAndWithOct(int _rangeIndex, int* _numHLines) {
-		*_numHLines = rangeValues[_rangeIndex];
-		if (*_numHLines < 0) {
-			*_numHLines *= -2;
-		}
-		int numHLinesWithOct = *_numHLines;
-		if (numHLinesWithOct < 5) {
-			numHLinesWithOct *= 12;
-		}	
-		return numHLinesWithOct;
-	}
-
-	void drawGrid(const DrawArgs &args); 
 		
 	void onButton(const event::Button& e) override;
-	
-	
+
 	void onDoubleClick(const event::DoubleClick &e) override;
 	
 	
@@ -221,7 +107,7 @@ struct ShapeMasterDisplay : LightWidget {
 	void onLeave(const event::Leave& e) override {
 		hoverPtSelect = MAX_PTS;
 		altSelect = 0;
-		e.consume(this);
+		OpaqueWidget::onLeave(e);
 	}
 };
 
@@ -251,6 +137,9 @@ struct ShapeMasterDisplayLight : LightWidget {
 	std::shared_ptr<Font> font;
 	std::string fontPath;
 	float shaY[SHAPE_PTS + 1];// points of the shadow curve, with an extra element for last end point
+	int numGridXmajorX;
+	float gridXmajorX[16];
+
 
 	ShapeMasterDisplayLight() {
 		canvas = mm2px(Vec(133.0f, 57.8f - MINI_SHAPES_Y));// inner region where actual drawing takes place
@@ -271,6 +160,8 @@ struct ShapeMasterDisplayLight : LightWidget {
 					
 			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 
+			drawGrid(args);
+
 			drawScope(args);
 
 			drawShape(args);
@@ -282,6 +173,33 @@ struct ShapeMasterDisplayLight : LightWidget {
 
 		nvgRestore(args.vg);
 	}
+
+
+	void loopVLines(const DrawArgs &args, float startX, float xDelta, int numVLines) {
+		// assumes "numGridXmajorX = 0" was done before calling this
+		// also sets numGridXmajorX and gridXmajorX array as needed, numGridXmajorX will be 0 for numVLines < 16
+		int majorGridModulo = ( (numVLines % 12) == 0 ? 6 : 8 );
+		float xPos = startX + xDelta;
+		for (int i = 1; i < numVLines; i++) {
+			nvgMoveTo(args.vg, xPos, margins.y);
+			nvgLineTo(args.vg, xPos, margins.y + canvas.y);
+			if (i % majorGridModulo == 0 && (numVLines >= 16 || numVLines == 12) && numGridXmajorX < 16) {
+				gridXmajorX[numGridXmajorX] = xPos;
+				numGridXmajorX++;
+			}
+			xPos += xDelta;
+		}
+	}
+	void loopHLines(const DrawArgs &args, float startY, float yDelta, int numHLines) {
+		float yPos = startY + yDelta;
+		for (int i = 0; i < numHLines - 1; i++) {
+			nvgMoveTo(args.vg, margins.x, yPos);
+			nvgLineTo(args.vg, margins.x + canvas.x, yPos);
+			yPos += yDelta;
+		}
+	}
+
+	void drawGrid(const DrawArgs &args); 
 
 	void drawScopeWaveform(const DrawArgs &args, bool isFront);
 	void drawScope(const DrawArgs &args);

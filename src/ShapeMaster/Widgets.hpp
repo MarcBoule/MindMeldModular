@@ -10,7 +10,7 @@
 
 #include "../MindMeldModular.hpp"
 #include "Channel.hpp"
-#include "Display.hpp"
+#include "DisplayUtil.hpp"
 #include "Menus.hpp"
 #include "time.h"
 
@@ -44,7 +44,7 @@ struct RepetitionsParamQuantity : ParamQuantity {
 };
 
 
-struct ScopeSettingsButtons : LightWidget {
+struct ScopeSettingsButtons : OpaqueWidget {
 	const float textHeight = 3.5f;// in mm
 	const float textWidths[4] =        {10.84f,   7.11f, 7.11f, 15.92f};// in mm
 	const std::string textStrings[4] = {"SCOPE:", "OFF", "VCA", "SIDECHAIN"};
@@ -140,12 +140,12 @@ struct ScopeSettingsButtons : LightWidget {
 			}
 			// leftX += textWidthsPx[3];
 		}
-		LightWidget::onButton(e);
+		OpaqueWidget::onButton(e);
 	}
 };
 
 
-struct ShapeCommandsButtons : OpaqueWidget {// had to use Opaque since LightWidget was not calling onDragEnd()
+struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget will not call onDragEnd()
 	const float textHeight = 3.5f;// in mm
 	const float textWidths[5] =        {9.14f,  10.33f,  13.21f,    11.15f,   12.84f};// in mm
 	const std::string textStrings[5] = {"COPY", "PASTE", "REVERSE", "INVERT", "RANDOM"};
