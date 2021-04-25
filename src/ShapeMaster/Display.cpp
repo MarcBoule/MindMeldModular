@@ -225,7 +225,7 @@ void ShapeMasterDisplay::drawScope(const DrawArgs &args) {
 
 
 
-void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
+void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	Shape* shape = channels[*currChan].getShape();
 	
 	NVGcolor chanColor = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
@@ -307,7 +307,7 @@ void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
 	nvgFillColor(args.vg, DARKER_GRAY);
 	nvgBeginPath(args.vg);		
 	float ctrlSizeSelected = 2.7f * *lineWidthSrc;
-	int ctrlPt = hoverPtSelect < 0 ? -hoverPtSelect - 1 : -1;// will be -1 if normal point or none is currently selected
+	int ctrlPt = *hoverPtSelect < 0 ? -*hoverPtSelect - 1 : -1;// will be -1 if normal point or none is currently selected
 	if (settingSrc->cc4[3] == 0) {// if not showing shape points, then show only hovered ctrl point
 		if (ctrlPt != -1) {
 			Vec point = (shape->getCtrlVectFlipY(ctrlPt).mult(canvas)).plus(margins);
@@ -319,7 +319,7 @@ void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
 		for (int pt = 0; pt < (numPts - 1); pt++) {
 			if (shape->isCtrlVisible(pt)) {// hide control points for horiz/vertical segments
 				Vec point = (shape->getCtrlVectFlipY(pt).mult(canvas)).plus(margins);
-				nvgCircle(args.vg, point.x, point.y, (hoverPtSelect == (-pt - 1) ? ctrlSizeSelected : ctrlSizeUnselected));
+				nvgCircle(args.vg, point.x, point.y, (*hoverPtSelect == (-pt - 1) ? ctrlSizeSelected : ctrlSizeUnselected));
 			}
 		}
 	}
@@ -331,8 +331,8 @@ void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
 	nvgBeginPath(args.vg);
 	float ptSizeSelected = 3.2f * *lineWidthSrc;
 	if (settingSrc->cc4[3] == 0) {// if not showing shape points, then show only hovered point
-		if (hoverPtSelect >= 0 && hoverPtSelect != MAX_PTS) {
-			Vec point = (shape->getPointVectFlipY(hoverPtSelect).mult(canvas)).plus(margins);
+		if (*hoverPtSelect >= 0 && *hoverPtSelect != MAX_PTS) {
+			Vec point = (shape->getPointVectFlipY(*hoverPtSelect).mult(canvas)).plus(margins);
 			nvgCircle(args.vg, point.x, point.y,  ptSizeSelected);
 		}
 	}
@@ -340,7 +340,7 @@ void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
 		float ptSizeUnselected = 2.1f * *lineWidthSrc;
 		for (int pt = 0; pt < numPts; pt++) {
 			Vec point = (shape->getPointVectFlipY(pt).mult(canvas)).plus(margins);
-			nvgCircle(args.vg, point.x, point.y, (hoverPtSelect == pt ? ptSizeSelected : ptSizeUnselected));
+			nvgCircle(args.vg, point.x, point.y, (*hoverPtSelect == pt ? ptSizeSelected : ptSizeUnselected));
 		}
 	}
 	nvgFill(args.vg);
@@ -432,8 +432,8 @@ void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
 	}
 	
 	// tooltip on hovered normal point
-	if (setting2Src->cc4[3] != 0 && hoverPtSelect >= 0 && hoverPtSelect != MAX_PTS && font->handle >= 0) {
-		Vec ptVec = shape->getPointVect(hoverPtSelect);
+	if (setting2Src->cc4[3] != 0 && *hoverPtSelect >= 0 && *hoverPtSelect != MAX_PTS && font->handle >= 0) {
+		Vec ptVec = shape->getPointVect(*hoverPtSelect);
 		
 		float length;
 		#ifdef SM_PRO
@@ -482,7 +482,7 @@ void ShapeMasterDisplay::drawShape(const DrawArgs &args) {
 
 
 
-void ShapeMasterDisplay::drawMessages(const DrawArgs &args) {
+void ShapeMasterDisplayLight::drawMessages(const DrawArgs &args) {
 	std::string text = "";
 	if (currChan && !channels[*currChan].getChannelActive()) {
 		text = "Inactive channel (connect output)";
@@ -599,20 +599,20 @@ float ShapeMasterDisplay::findXWithGivenCvI(int shaI, float givenCv) {
 		if (std::fabs(dY) < 1e-5) {
 			return -1.0f;
 		}
-		float dX = 1.0f / (float)SHAPE_PTS;
-		return (givenCv - shaY[shaI]) * dX / dY + shaI / (float)SHAPE_PTS;
+		float dX = 1.0f / (float)ShapeMasterDisplayLight::SHAPE_PTS;
+		return (givenCv - shaY[shaI]) * dX / dY + shaI / (float)ShapeMasterDisplayLight::SHAPE_PTS;
 	}
 	return -1.0f;
 }
 
 float ShapeMasterDisplay::findXWithGivenCv(float startX, float givenCv) {
 	static const int NUM_SEGMENTS = 3;
-	const float MAX_DIST = (float)NUM_SEGMENTS / (float)SHAPE_PTS;
+	const float MAX_DIST = (float)NUM_SEGMENTS / (float)ShapeMasterDisplayLight::SHAPE_PTS;
 	
 	// find within +-MAX_DIST of startX only, if not found, return original startX
-	int startI = std::round(startX * (float)SHAPE_PTS); 
+	int startI = std::round(startX * (float)ShapeMasterDisplayLight::SHAPE_PTS); 
 	int leftI = std::max(0, startI - NUM_SEGMENTS);
-	int rightI = std::min(SHAPE_PTS - 1, (startI + 1) + NUM_SEGMENTS);
+	int rightI = std::min(ShapeMasterDisplayLight::SHAPE_PTS - 1, (startI + 1) + NUM_SEGMENTS);
 	float distXBest = 10.0f;
 	float xBest = 0.0f;// invalid while distXBest == 10.0f;
 	for (int i = leftI; i <= rightI; i++) {

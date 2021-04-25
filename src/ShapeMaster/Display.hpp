@@ -81,11 +81,9 @@ struct ShapeMasterDisplay : LightWidget {
 	// user must set up
 	int* currChan = NULL;
 	Channel* channels;
-	PackedBytes4 *settingSrc;// cc4[2] is scope settings, cc4[3] is show points
-	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
 	float* lineWidthSrc;
-	DisplayInfo* displayInfo;
 	ScopeBuffers* scopeBuffers;	
+	float* shaY;
 	
 	// internal
 	float dragStartPosY;// used only when dragging control points
@@ -100,14 +98,10 @@ struct ShapeMasterDisplay : LightWidget {
 	float onButtonOrigCtrl;// only used when hoverPtSelect < 0
 	Vec margins;
 	Vec canvas;
-	std::shared_ptr<Font> font;
-	std::string fontPath;
 	float grabX;
 	float grabY;
 	int numGridXmajorX;
 	float gridXmajorX[16];
-	static const int SHAPE_PTS = 300;// shadow memory, divide into this many segments
-	float shaY[SHAPE_PTS + 1];// points of the shadow curve, with an extra element for last end point
 
 
 	ShapeMasterDisplay() {
@@ -115,14 +109,10 @@ struct ShapeMasterDisplay : LightWidget {
 		margins = mm2px(Vec(1.3f, 1.3f));// extra space to be able to click points that are on canvas' boundary
 		box.size = canvas.plus(margins.mult(2.0f));
 		box.size.y += mm2px(MINI_SHAPES_Y);
-		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
 	
 	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
 		nvgSave(args.vg);
 		nvgLineCap(args.vg, NVG_ROUND);
 		grabX = 0.01f;
@@ -139,9 +129,9 @@ struct ShapeMasterDisplay : LightWidget {
 
 			drawScope(args);
 
-			drawShape(args);
+			// drawShape(args);
 			
-			drawMessages(args);
+			// drawMessages(args);
 			
 			// nvgResetScissor(args.vg);					
 		}
@@ -191,10 +181,6 @@ struct ShapeMasterDisplay : LightWidget {
 	void drawScopeWaveform(const DrawArgs &args, bool isFront);
 	void drawScope(const DrawArgs &args);
 	
-	void drawShape(const DrawArgs &args);
-	
-	void drawMessages(const DrawArgs &args);
-
 	void onButton(const event::Button& e) override;
 	
 	
@@ -244,3 +230,61 @@ struct ShapeMasterDisplay : LightWidget {
 };
 
 
+
+struct ShapeMasterDisplayLight : LightWidget {	
+	// constants
+	const NVGcolor DARKER_GRAY = nvgRGB(39, 39, 0x27);// grid and center of control points
+	const NVGcolor DARK_GRAY = nvgRGB(55, 55, 55);// major grid when applicable
+	static constexpr float MINI_SHAPES_Y = 6.8f;// can be set to 0.0f
+	static const int SHAPE_PTS = 300;// shadow memory, divide into this many segments
+	
+	// user must set up
+	int* currChan = NULL;
+	Channel* channels;
+	DisplayInfo* displayInfo;
+	PackedBytes4 *settingSrc;// cc4[2] is scope settings, cc4[3] is show points
+	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
+	float* lineWidthSrc;
+	int* hoverPtSelect;
+	
+
+	// internal
+	Vec margins;
+	Vec canvas;
+	std::shared_ptr<Font> font;
+	std::string fontPath;
+	float shaY[SHAPE_PTS + 1];// points of the shadow curve, with an extra element for last end point
+
+	ShapeMasterDisplayLight() {
+		canvas = mm2px(Vec(133.0f, 57.8f - MINI_SHAPES_Y));// inner region where actual drawing takes place
+		margins = mm2px(Vec(1.3f, 1.3f));// extra space to be able to click points that are on canvas' boundary
+		box.size = canvas.plus(margins.mult(2.0f));
+		box.size.y += mm2px(MINI_SHAPES_Y);
+		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
+	}
+	
+	void draw(const DrawArgs &args) override {
+		if (!(font = APP->window->loadFont(fontPath))) {
+			return;
+		}
+		nvgSave(args.vg);
+		nvgLineCap(args.vg, NVG_ROUND);
+		
+		if (currChan != NULL) {
+					
+			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
+
+			drawShape(args);
+
+			drawMessages(args);
+			
+			// nvgResetScissor(args.vg);					
+		}
+
+		nvgRestore(args.vg);
+	}
+	
+	void drawShape(const DrawArgs &args);
+
+	void drawMessages(const DrawArgs &args);
+};

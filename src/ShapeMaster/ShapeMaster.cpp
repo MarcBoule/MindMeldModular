@@ -473,14 +473,24 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	// Display area
 	ShapeMasterDisplay* smDisplay;
 	addChild(smDisplay = createWidgetCentered<ShapeMasterDisplay>(mm2px(Vec(96.52f, 45.0f + 7.0f))));
+	ShapeMasterDisplayLight* smDisplayLight;
+	addChild(smDisplayLight = createWidgetCentered<ShapeMasterDisplayLight>(mm2px(Vec(96.52f, 45.0f + 7.0f))));
+	smDisplay->shaY = smDisplayLight->shaY;
+	smDisplayLight->hoverPtSelect = &(smDisplay->hoverPtSelect);
 	if (module) {
 		smDisplay->currChan = &(module->currChan);
 		smDisplay->channels = module->channels;
-		smDisplay->settingSrc = &(module->miscSettings);
-		smDisplay->setting2Src = &(module->miscSettings2);
+		// smDisplay->settingSrc = &(module->miscSettings);
+		// smDisplay->setting2Src = &(module->miscSettings2);
 		smDisplay->lineWidthSrc = &(module->lineWidth);
-		smDisplay->displayInfo = &displayInfo;
 		smDisplay->scopeBuffers = &(module->scopeBuffers);
+
+		smDisplayLight->currChan = &(module->currChan);
+		smDisplayLight->channels = module->channels;
+		smDisplayLight->displayInfo = &displayInfo;
+		smDisplayLight->settingSrc = &(module->miscSettings);
+		smDisplayLight->setting2Src = &(module->miscSettings2);
+		smDisplayLight->lineWidthSrc = &(module->lineWidth);
 	}
 
 	// Screen - Big Numbers
