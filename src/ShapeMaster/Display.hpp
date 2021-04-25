@@ -27,6 +27,7 @@ struct ShapeMasterDisplayLight : LightWidget {
 	PackedBytes4 *settingSrc;// cc4[2] is scope settings, cc4[3] is show points
 	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
 	float* lineWidthSrc;
+	int* dragPtSelect;// from ShapeMasterDisplay
 	int* hoverPtSelect;// from ShapeMasterDisplay
 	ScopeBuffers* scopeBuffers;	
 	
@@ -124,11 +125,12 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	
 	// internal
 	float dragStartPosY;// used only when dragging control points
-	Vec onButtonPos;// used only for onDoubleClick()
+	Vec onButtonPos;// used only for onDoubleClick() and onDragStart()
 	ShapeCompleteChange* dragHistoryStep = NULL;
 	DragMiscChange* dragHistoryMisc = NULL;
+	int dragPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when dragging normal point, [-MAX_PTS:-1] when dragging ctrl point
+	int altSelect = 0;// alternate select 0=none, 1=loopEndAndSustain, 2=loopStart, this is only used when dragPtSelect == MAX_PTS; if other altSelects are added, review code since != 0 currently assumes 1 or 2 
 	int hoverPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when hovering normal point, [-MAX_PTS:-1] when hovering ctrl point
-	int altSelect = 0;// alternate select 0=none, 1=loopEndAndSustain, 2=loopStart, this is only used when hoverPtSelect == MAX_PTS; if other altSelects are added, review code since != 0 currently assumes 1 or 2 
 	float loopSnapTargetCV = -1.0f;// used only when altSelect != 0;
 	int hoverPtMouse = 0;// this is the point where mouse is located, can be different than hoverPtSelect because of grab area
 	int mouseStepP = 0;// used in onDragMove() to improve guess point; using hoverPtMouse is not perfect (not synced when move mouse fast)
@@ -194,13 +196,13 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	void onDragMove(const event::DragMove& e) override;
 	void onDragEnd(const event::DragEnd& e) override;
 
-	bool hoverMatch(Vec normalizedPos, Shape* shape, int pt);	
+	int matchPt(Vec normalizedPos, Shape* shape, int pt);
+	int matchPtExtra(Vec normalizedPos, Shape* shape, int pt);
 	void onHover(const event::Hover& e) override;
 
 	
 	void onLeave(const event::Leave& e) override {
 		hoverPtSelect = MAX_PTS;
-		altSelect = 0;
 		OpaqueWidget::onLeave(e);
 	}
 };

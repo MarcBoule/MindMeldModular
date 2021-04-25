@@ -477,6 +477,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	addChild(smDisplayLight = createWidgetCentered<ShapeMasterDisplayLight>(mm2px(Vec(96.52f, 45.0f + 7.0f))));
 	smDisplay->shaY = smDisplayLight->shaY;
 	smDisplayLight->hoverPtSelect = &(smDisplay->hoverPtSelect);
+	smDisplayLight->dragPtSelect = &(smDisplay->dragPtSelect);
 	if (module) {
 		smDisplay->currChan = &(module->currChan);
 		smDisplay->channels = module->channels;

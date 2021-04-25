@@ -141,6 +141,8 @@ void ShapeMasterDisplayLight::drawScope(const DrawArgs &args) {
 void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	Shape* shape = channels[*currChan].getShape();
 	
+	int ptSelect = *dragPtSelect != MAX_PTS ? *dragPtSelect : *hoverPtSelect;
+	
 	NVGcolor chanColor = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
 
 	nvgFillColor(args.vg, chanColor);
@@ -220,11 +222,11 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	nvgFillColor(args.vg, DARKER_GRAY);
 	nvgBeginPath(args.vg);		
 	float ctrlSizeSelected = 2.7f * *lineWidthSrc;
-	int ctrlPt = *hoverPtSelect < 0 ? -*hoverPtSelect - 1 : -1;// will be -1 if normal point or none is currently selected
+	int ctrlPt = ptSelect < 0 ? -ptSelect - 1 : -1;// will be -1 if normal point or none is currently selected
 	if (settingSrc->cc4[3] != 0) {// if showing points
 		float ctrlSizeUnselected = 1.6f * *lineWidthSrc;
 		for (int pt = 0; pt < (numPts - 1); pt++) {
-			if (shape->isCtrlVisible(pt)) {// hide control points for horiz/vertical segments
+			if (shape->isCtrlVisible(pt) && pt != ctrlPt) {// hide control points for horiz/vertical segments
 				Vec point = (shape->getCtrlVectFlipY(pt).mult(canvas)).plus(margins);
 				nvgCircle(args.vg, point.x, point.y, ctrlSizeUnselected);
 			}
@@ -248,8 +250,8 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 			nvgCircle(args.vg, point.x, point.y, ptSizeUnselected);
 		}
 	}
-	if (*hoverPtSelect >= 0 && *hoverPtSelect != MAX_PTS) {
-		Vec point = (shape->getPointVectFlipY(*hoverPtSelect).mult(canvas)).plus(margins);
+	if (ptSelect >= 0 && ptSelect != MAX_PTS) {
+		Vec point = (shape->getPointVectFlipY(ptSelect).mult(canvas)).plus(margins);
 		nvgCircle(args.vg, point.x, point.y,  ptSizeSelected);
 	}
 	nvgFill(args.vg);
@@ -341,8 +343,8 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	}
 	
 	// tooltip on hovered normal point
-	if (setting2Src->cc4[3] != 0 && *hoverPtSelect >= 0 && *hoverPtSelect != MAX_PTS && font->handle >= 0) {
-		Vec ptVec = shape->getPointVect(*hoverPtSelect);
+	if (setting2Src->cc4[3] != 0 && ptSelect >= 0 && ptSelect != MAX_PTS && font->handle >= 0) {
+		Vec ptVec = shape->getPointVect(ptSelect);
 		
 		float length;
 		#ifdef SM_PRO

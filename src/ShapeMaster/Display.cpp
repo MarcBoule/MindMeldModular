@@ -54,88 +54,59 @@ float ShapeMasterDisplay::findXWithGivenCv(float startX, float givenCv) {
 void ShapeMasterDisplay::onButton(const event::Button& e) {
 	OpaqueWidget::onButton(e);
 	
-	onButtonPos = e.pos;// used only for onDoubleClick()
-	if (e.action == GLFW_PRESS) {
+	if (e.action == GLFW_PRESS) DEBUG("onButton press at %g, %g", e.pos.x, e.pos.y);
+	
+	onButtonPos = e.pos;// used only for onDoubleClick() and onDragStart
+	if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
 		Shape* shape = channels[*currChan].getShape();
-		altSelect = 0;
-		if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
-			// check if point or control point selected
-			if (hoverPtSelect != MAX_PTS) {
-				if (hoverPtSelect >= 0) {// if normal point
-					// no need to setPointWithSafety since drag move will be called 
-				}
-				else {// else ctrl point
-					int cpt = -hoverPtSelect - 1;
-					onButtonOrigCtrl = shape->getCtrl(cpt);
-					if (shape->getType(cpt) == 0) {
-						onButtonOrigCtrl = Shape::applyScalingToCtrl(onButtonOrigCtrl, 1.0f / 3.0f);
-					}
-				}
-			}
-			// check if loop/sustain cursor(s) selected
-			else if (channels[*currChan].isSustain() || channels[*currChan].isLoopWithModeGuard()) {
-				float loopXtR = channels[*currChan].getLoopEndAndSustain();
-				float loopXR = loopXtR * canvas.x + margins.x;
-				float loopXtL = channels[*currChan].getLoopStart();
-				float loopXL = loopXtL * canvas.x + margins.x;
-				bool isLoop = channels[*currChan].isLoopWithModeGuard();
-				int epc = 0;
-				loopSnapTargetCV = -1.0f;
-				if ( (e.pos.x > loopXR - LOOP_GRAB_X) && (e.pos.x < loopXR + LOOP_GRAB_X) ) {
-					altSelect = 1;// sustain/rightLoop selected
-					if (isLoop) {
-						loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtL, &epc);
-					}
-				}
-				else if (isLoop && (e.pos.x > loopXL - LOOP_GRAB_X) && (e.pos.x < loopXL + LOOP_GRAB_X) ) {
-					altSelect = 2;// leftLoop selected
-					loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtR, &epc);
-				}
-			}
-			e.consume(this);
+		Vec normalizedPos = normalizePixelPoint(e.pos);
+		
+		int buttonPtSelect = matchPtExtra(normalizedPos, shape, hoverPtMouse);
+		
+		if (buttonPtSelect < 0) {// if ctrl point
+			ui::Menu *menu = createMenu();
+			createCtrlMenu(menu, shape, -buttonPtSelect - 1);
 		}
-		else if (e.button == GLFW_MOUSE_BUTTON_RIGHT) {
-			if (hoverPtSelect < 0) {// if ctrl point
-				ui::Menu *menu = createMenu();
-				createCtrlMenu(menu, shape, -hoverPtSelect - 1);
-			}
-			else if (hoverPtSelect < MAX_PTS) {// normal point
-				ui::Menu *menu = createMenu();
-				createPointMenu(menu, &channels[*currChan], hoverPtSelect);
-			}
-			else {// background of display
-				ui::Menu *menu = createMenu();
-				createBackgroundMenu(menu, shape, normalizePixelPoint(e.pos));						
-			}
-			e.consume(this);
+		else if (buttonPtSelect < MAX_PTS) {// normal point
+			ui::Menu *menu = createMenu();
+			createPointMenu(menu, &channels[*currChan], buttonPtSelect);
 		}
+		else {// background of display
+			ui::Menu *menu = createMenu();
+			createBackgroundMenu(menu, shape, normalizedPos);						
+		}
+		e.consume(this);
 	}
-}
+}// onButton
 
 
 void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
 	// happens after the the second click's GLFW_PRESS, but before its GLFW_RELEASE
+	// happens after the the second click's onDragStart, but before its onDragEnd
 	// this happens only for double click of GLFW_MOUSE_BUTTON_LEFT
+	DEBUG("onDoubleClick");
 	dragHistoryStep = NULL;
 	dragHistoryMisc = NULL;
 
 	Shape* shape = channels[*currChan].getShape();
-	if (hoverPtSelect == MAX_PTS) {
+	if (dragPtSelect == MAX_PTS) {
 		// double clicked empty (so create new node)
 		int retPt = shape->insertPointWithSafetyAndBlock(normalizePixelPoint(onButtonPos), true);// with history
 		if (retPt >= 0) {
-			hoverPtSelect = retPt;
+			dragPtSelect = retPt;
 		}
 	}
-	else if (hoverPtSelect >= 0) {
+	else if (dragPtSelect >= 0) {
 		// double clicked a normal node (so delete node)
-		shape->deletePointWithBlock(hoverPtSelect, true);// with history
-		hoverPtSelect = MAX_PTS;
+		shape->deletePointWithBlock(dragPtSelect, true);// with history
+		dragPtSelect = MAX_PTS;
+		altSelect = 0;
 	}
 	else {
 		// double clicked on a ctrl node 
-		shape->makeLinear(-hoverPtSelect - 1);// remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
-		hoverPtSelect = MAX_PTS;// this is needed after makeLinear() or else an instant hover brings the ctrl point back to where it was
+		shape->makeLinear(-dragPtSelect - 1);// remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
+		dragPtSelect = MAX_PTS;// this is needed after makeLinear() or else an instant hover brings the ctrl point back to where it was
+		altSelect = 0;
 	}
 }
 
@@ -145,24 +116,64 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 	dragHistoryStep = NULL;
 	dragHistoryMisc = NULL;
 	
-	dragStartPosY = APP->scene->rack->mousePos.y;// used only when dragging control points
+	Vec dragStartPos = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);
+	dragStartPosY = dragStartPos.y;// used only when dragging control points
+	DEBUG("onDragStart at %g, %g", dragStartPos.x, dragStartPos.y);
 	
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
 		Shape* shape = channels[*currChan].getShape();
 		int mods = APP->window->getMods();
-		if (hoverPtSelect != MAX_PTS) {
+		
+		dragPtSelect = matchPtExtra(normalizePixelPoint(onButtonPos), shape, hoverPtMouse);
+		altSelect = 0;
+		
+		// TODO: take care of history when double click happens (after dragStart, before dragEnd)
+		
+		// check if point or control point selected
+		if (dragPtSelect != MAX_PTS) {
+			if (dragPtSelect < 0) {// if ctrl point
+				int cpt = -dragPtSelect - 1;
+				onButtonOrigCtrl = shape->getCtrl(cpt);
+				if (shape->getType(cpt) == 0) {
+					onButtonOrigCtrl = Shape::applyScalingToCtrl(onButtonOrigCtrl, 1.0f / 3.0f);
+				}
+			}
+		}
+		// check if loop/sustain cursor(s) selected
+		else if (channels[*currChan].isSustain() || channels[*currChan].isLoopWithModeGuard()) {
+			float loopXtR = channels[*currChan].getLoopEndAndSustain();
+			float loopXR = loopXtR * canvas.x + margins.x;
+			float loopXtL = channels[*currChan].getLoopStart();
+			float loopXL = loopXtL * canvas.x + margins.x;
+			bool isLoop = channels[*currChan].isLoopWithModeGuard();
+			int epc = 0;
+			loopSnapTargetCV = -1.0f;
+			if ( (onButtonPos.x > loopXR - LOOP_GRAB_X) && (onButtonPos.x < loopXR + LOOP_GRAB_X) ) {
+				altSelect = 1;// sustain/rightLoop selected
+				if (isLoop) {
+					loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtL, &epc);
+				}
+			}
+			else if (isLoop && (onButtonPos.x > loopXL - LOOP_GRAB_X) && (onButtonPos.x < loopXL + LOOP_GRAB_X) ) {
+				altSelect = 2;// leftLoop selected
+				loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtR, &epc);
+			}
+		}
+		
+		// history
+		if (dragPtSelect != MAX_PTS) {
 			// Push DragMiscChange history action (rest is done in onDragEnd())
 			dragHistoryMisc = new DragMiscChange;
 			dragHistoryMisc->shapeSrc = shape;
-			if (hoverPtSelect >= 0) {// if normal point
-				// hoverPtSelect will start moving
+			if (dragPtSelect >= 0) {// if normal point
+				// dragPtSelect will start moving
 				//   shape->setPointWithSafety()
 				dragHistoryMisc->dragType = DM_POINT;
-				dragHistoryMisc->pt = hoverPtSelect;
-				dragHistoryMisc->oldVec = shape->getPointVect(hoverPtSelect);
+				dragHistoryMisc->pt = dragPtSelect;
+				dragHistoryMisc->oldVec = shape->getPointVect(dragPtSelect);
 			}
 			else {// else is a ctrl point
-				int cpt = -hoverPtSelect - 1;
+				int cpt = -dragPtSelect - 1;
 				// cpt will start moving
 				//   shape->setCtrlWithSafety()
 				dragHistoryMisc->dragType = DM_CTRL;
@@ -200,21 +211,22 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	}
 	
 	Shape* shape = channels[*currChan].getShape();
-	Vec dragMovePos = APP->scene->rack->mousePos;
-	Vec posToSet = dragMovePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
+	Vec posToSet = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
+	DEBUG("onDragMove at %g, %g", posToSet.x, posToSet.y);
+	
 	int mods = APP->window->getMods();
-	if (hoverPtSelect != MAX_PTS) {
-		if (hoverPtSelect >= 0) {// if normal point
+	if (dragPtSelect != MAX_PTS) {
+		if (dragPtSelect >= 0) {// if normal point
 			int xQuant;
 			int yQuant;
 			calcQuants(&xQuant, &yQuant, mods);
-			channels[*currChan].setPointWithSafety(hoverPtSelect, normalizePixelPoint(posToSet), xQuant, yQuant);
+			channels[*currChan].setPointWithSafety(dragPtSelect, normalizePixelPoint(posToSet), xQuant, yQuant);
 		}
 		else {// else is a ctrl point
-			int cpt = -hoverPtSelect - 1;
+			int cpt = -dragPtSelect - 1;
 			float dy = shape->getPointY(cpt + 1) - shape->getPointY(cpt);
 			if (std::fabs(dy) > 1e-5f) {
-				float deltaY = (dragStartPosY - dragMovePos.y) / canvas.y / dy;// deltaY is +1 when mouse moves up by dy and is -1 when mouse moves down by dy
+				float deltaY = (dragStartPosY - posToSet.y) / canvas.y / dy;// deltaY is +1 when mouse moves up by dy and is -1 when mouse moves down by dy
 				
 				float newCtrl = onButtonOrigCtrl;
 				if (shape->getType(cpt) == 0) {
@@ -266,7 +278,13 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	
 	
 void ShapeMasterDisplay::onDragEnd(const event::DragEnd& e) {
+	DEBUG("onDragEnd");
 	Shape* shape = channels[*currChan].getShape();
+	
+	dragPtSelect = MAX_PTS;
+	altSelect = 0;
+	
+	// history
 	if (dragHistoryStep != NULL) {
 		dragHistoryStep->newShape = new Shape();
 		shape->copyShapeTo(dragHistoryStep->newShape);
@@ -294,34 +312,51 @@ void ShapeMasterDisplay::onDragEnd(const event::DragEnd& e) {
 }
 
 	
-bool ShapeMasterDisplay::hoverMatch(Vec normalizedPos, Shape* shape, int pt) {// return value is stop search (because found or will never be found)		
+int ShapeMasterDisplay::matchPt(Vec normalizedPos, Shape* shape, int pt) {		
 	Vec point = shape->getPointVect(pt);
 	Vec delta = (normalizedPos.minus(point)).abs();
 	if (delta.x < grabX && delta.y < grabY) {
-		hoverPtSelect = pt;
-		return true;
+		return pt;
 	}
 	Vec ctrl = shape->getCtrlVect(pt);
 	delta = (normalizedPos.minus(ctrl)).abs();
 	if (delta.x < grabX && delta.y < grabY) {
-		hoverPtSelect = -pt - 1;
-		return true;
+		return -pt - 1;
 	}
-	return false;
+	return MAX_PTS;
 }
+
+int ShapeMasterDisplay::matchPtExtra(Vec normalizedPos, Shape* shape, int pt) {	// will also check a few neighbours
+	int	newpt = matchPt(normalizedPos, shape, pt);
+	int numPts = shape->getNumPts();
+	if (newpt == MAX_PTS && pt < (numPts - 1)) {
+		newpt = matchPt(normalizedPos, shape, pt + 1);
+		if (newpt == MAX_PTS && pt < (numPts - 2)) {
+			newpt = matchPt(normalizedPos, shape, pt + 2);
+		}	
+	}
+	if (newpt == MAX_PTS && pt > 0) {
+		newpt = matchPt(normalizedPos, shape, pt - 1);
+		if (newpt == MAX_PTS && pt > 1) {
+			newpt = matchPt(normalizedPos, shape, pt - 2);
+		}	
+	}	
+	return newpt;
+}
+
 	
 void ShapeMasterDisplay::onHover(const event::Hover& e) {
+	DEBUG("onHover");
 	// find closest node 
-	Shape* shape = channels[*currChan].getShape();
-	Vec normalizedPos = e.pos.minus(margins).div(canvas);
-	normalizedPos.y = 1.0f - normalizedPos.y;
 	
 	hoverPtSelect = MAX_PTS;
-	altSelect = 0;
 	
 	int mods = APP->window->getMods();
-	if ((mods & GLFW_MOD_SHIFT) == 0) {// disallow hovering when making steps, much easier
+	if ((mods & GLFW_MOD_SHIFT) == 0 && (dragPtSelect == MAX_PTS) ) {// disallow hovering when making steps, much easier, and when dragging
+		Shape* shape = channels[*currChan].getShape();
 		int numPts = shape->getNumPts();
+		
+		Vec normalizedPos = normalizePixelPoint(e.pos);
 				
 		if (normalizedPos.x <= 0.0f) {
 			hoverPtMouse = 0;
@@ -333,18 +368,8 @@ void ShapeMasterDisplay::onHover(const event::Hover& e) {
 			int gp = std::min(hoverPtMouse, numPts - 2);
 			hoverPtMouse = shape->calcPointFromX<float>(normalizedPos.x, gp);
 		}
-	
-		hoverMatch(normalizedPos, shape, hoverPtMouse);
-		if (hoverPtSelect == MAX_PTS && hoverPtMouse < (numPts - 1)) {
-			if (!hoverMatch(normalizedPos, shape, hoverPtMouse + 1) && hoverPtMouse < (numPts - 2)) {
-				hoverMatch(normalizedPos, shape, hoverPtMouse + 2);
-			}	
-		}
-		if (hoverPtSelect == MAX_PTS && hoverPtMouse > 0) {
-			if (!hoverMatch(normalizedPos, shape, hoverPtMouse - 1) && hoverPtMouse > 1) {
-				hoverMatch(normalizedPos, shape, hoverPtMouse - 2);
-			}	
-		}	
+		
+		hoverPtSelect = matchPtExtra(normalizedPos, shape, hoverPtMouse);
 	}
 	OpaqueWidget::onHover(e);
 }
