@@ -10,106 +10,6 @@
 
 #include "../MindMeldModular.hpp"
 #include "DisplayUtil.hpp"
-#include "Channel.hpp"
-#include "Menus.hpp"
-#include "time.h"
-
-
-
-struct ShapeMasterDisplay : OpaqueWidget {	
-	// constants
-	static constexpr float MINI_SHAPES_Y = 6.8f;// can be set to 0.0f
-	static constexpr float LOOP_GRAB_X = 3.0f;
-	
-	// user must set up
-	int* currChan = NULL;
-	Channel* channels;
-	float* lineWidthSrc;
-	float* shaY;
-	
-	// internal
-	float dragStartPosY;// used only when dragging control points
-	Vec onButtonPos;// used only for onDoubleClick()
-	ShapeCompleteChange* dragHistoryStep = NULL;
-	DragMiscChange* dragHistoryMisc = NULL;
-	int hoverPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when hovering normal point, [-MAX_PTS:-1] when hovering ctrl point
-	int altSelect = 0;// alternate select 0=none, 1=loopEndAndSustain, 2=loopStart, this is only used when hoverPtSelect == MAX_PTS; if other altSelects are added, review code since != 0 currently assumes 1 or 2 
-	float loopSnapTargetCV = -1.0f;// used only when altSelect != 0;
-	int hoverPtMouse = 0;// this is the point where mouse is located, can be different than hoverPtSelect because of grab area
-	int mouseStepP = 0;// used in onDragMove() to improve guess point; using hoverPtMouse is not perfect (not synced when move mouse fast)
-	float onButtonOrigCtrl;// only used when hoverPtSelect < 0
-	Vec margins;
-	Vec canvas;
-	float grabX;
-	float grabY;
-
-
-	ShapeMasterDisplay() {
-		canvas = mm2px(Vec(133.0f, 57.8f - MINI_SHAPES_Y));// inner region where actual drawing takes place
-		margins = mm2px(Vec(1.3f, 1.3f));// extra space to be able to click points that are on canvas' boundary
-		box.size = canvas.plus(margins.mult(2.0f));
-		box.size.y += mm2px(MINI_SHAPES_Y);
-	}
-	
-	
-	void step() override {
-		grabX = 0.01f;
-		grabY = 0.02f;		
-		
-		if (currChan != NULL) {
-			grabX *= *lineWidthSrc;
-			grabY *= *lineWidthSrc;
-		}
-		OpaqueWidget::step();
-	}
-	
-		
-	void onButton(const event::Button& e) override;
-
-	void onDoubleClick(const event::DoubleClick &e) override;
-	
-	
-	Vec normalizePixelPoint(Vec pixelPoint) {
-		pixelPoint = pixelPoint.minus(margins).div(canvas);// after this line we are in normalized space but inverted Y
-		pixelPoint.x = clamp(pixelPoint.x, 0.0f, 1.0f);
-		pixelPoint.y = clamp(1.0f - pixelPoint.y, 0.0f, 1.0f);
-		return pixelPoint;
-	}
-		
-		
-	void calcQuants(int* xQ, int* yQ, int mods) {
-		*xQ = -1;
-		// x quantize (snap)
-		if ((mods & GLFW_MOD_ALT) != 0) {
-			*xQ = channels[*currChan].getGridX();
-		}
-		*yQ = -1;
-		// y quantize (range)
-		if ((mods & RACK_MOD_CTRL) != 0) {
-			int rangeIndex = channels[*currChan].getRangeIndex();
-			int numHLines;// unused here
-			*yQ = calcNumHLinesAndWithOct(rangeIndex, &numHLines);
-		}
-	}
-	
-	float findXWithGivenCvI(int shaI, float givenCv);
-	float findXWithGivenCv(float startX, float givenCv);
-	
-	void onDragStart(const event::DragStart& e) override;
-	void onDragMove(const event::DragMove& e) override;
-	void onDragEnd(const event::DragEnd& e) override;
-
-	bool hoverMatch(Vec normalizedPos, Shape* shape, int pt);
-	
-	void onHover(const event::Hover& e) override;
-
-	
-	void onLeave(const event::Leave& e) override {
-		hoverPtSelect = MAX_PTS;
-		altSelect = 0;
-		OpaqueWidget::onLeave(e);
-	}
-};
 
 
 
@@ -207,4 +107,100 @@ struct ShapeMasterDisplayLight : LightWidget {
 	void drawShape(const DrawArgs &args);
 
 	void drawMessages(const DrawArgs &args);
+};
+
+
+
+struct ShapeMasterDisplay : OpaqueWidget {	
+	// constants
+	static constexpr float MINI_SHAPES_Y = 6.8f;// can be set to 0.0f
+	static constexpr float LOOP_GRAB_X = 3.0f;
+	
+	// user must set up
+	int* currChan = NULL;
+	Channel* channels;
+	float* lineWidthSrc;
+	float* shaY;
+	
+	// internal
+	float dragStartPosY;// used only when dragging control points
+	Vec onButtonPos;// used only for onDoubleClick()
+	ShapeCompleteChange* dragHistoryStep = NULL;
+	DragMiscChange* dragHistoryMisc = NULL;
+	int hoverPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when hovering normal point, [-MAX_PTS:-1] when hovering ctrl point
+	int altSelect = 0;// alternate select 0=none, 1=loopEndAndSustain, 2=loopStart, this is only used when hoverPtSelect == MAX_PTS; if other altSelects are added, review code since != 0 currently assumes 1 or 2 
+	float loopSnapTargetCV = -1.0f;// used only when altSelect != 0;
+	int hoverPtMouse = 0;// this is the point where mouse is located, can be different than hoverPtSelect because of grab area
+	int mouseStepP = 0;// used in onDragMove() to improve guess point; using hoverPtMouse is not perfect (not synced when move mouse fast)
+	float onButtonOrigCtrl;// only used when hoverPtSelect < 0
+	Vec margins;
+	Vec canvas;
+	float grabX;
+	float grabY;
+
+
+	ShapeMasterDisplay() {
+		canvas = mm2px(Vec(133.0f, 57.8f - MINI_SHAPES_Y));// inner region where actual drawing takes place
+		margins = mm2px(Vec(1.3f, 1.3f));// extra space to be able to click points that are on canvas' boundary
+		box.size = canvas.plus(margins.mult(2.0f));
+		box.size.y += mm2px(MINI_SHAPES_Y);
+	}
+	
+	
+	void step() override {
+		grabX = 0.01f;
+		grabY = 0.02f;		
+		
+		if (currChan != NULL) {
+			grabX *= *lineWidthSrc;
+			grabY *= *lineWidthSrc;
+		}
+		OpaqueWidget::step();
+	}
+	
+		
+	
+	
+	Vec normalizePixelPoint(Vec pixelPoint) {
+		pixelPoint = pixelPoint.minus(margins).div(canvas);// after this line we are in normalized space but inverted Y
+		pixelPoint.x = clamp(pixelPoint.x, 0.0f, 1.0f);
+		pixelPoint.y = clamp(1.0f - pixelPoint.y, 0.0f, 1.0f);
+		return pixelPoint;
+	}
+		
+		
+	void calcQuants(int* xQ, int* yQ, int mods) {
+		*xQ = -1;
+		// x quantize (snap)
+		if ((mods & GLFW_MOD_ALT) != 0) {
+			*xQ = channels[*currChan].getGridX();
+		}
+		*yQ = -1;
+		// y quantize (range)
+		if ((mods & RACK_MOD_CTRL) != 0) {
+			int rangeIndex = channels[*currChan].getRangeIndex();
+			int numHLines;// unused here
+			*yQ = calcNumHLinesAndWithOct(rangeIndex, &numHLines);
+		}
+	}
+	
+	float findXWithGivenCvI(int shaI, float givenCv);
+	float findXWithGivenCv(float startX, float givenCv);
+	
+	void onButton(const event::Button& e) override;
+	void onDoubleClick(const event::DoubleClick &e) override;
+
+	void onDragStart(const event::DragStart& e) override;
+	void onDragMove(const event::DragMove& e) override;
+	void onDragEnd(const event::DragEnd& e) override;
+
+	bool hoverMatch(Vec normalizedPos, Shape* shape, int pt);	
+	void onHover(const event::Hover& e) override;
+
+	
+	void onLeave(const event::Leave& e) override {
+		hoverPtSelect = MAX_PTS;
+		altSelect = 0;
+		OpaqueWidget::onLeave(e);
+	}
 };

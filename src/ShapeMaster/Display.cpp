@@ -7,6 +7,8 @@
 
 
 #include "Display.hpp"
+#include "Menus.hpp"
+#include "time.h"
 
 
 // ShapeMasterDisplayLight
@@ -219,20 +221,18 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	nvgBeginPath(args.vg);		
 	float ctrlSizeSelected = 2.7f * *lineWidthSrc;
 	int ctrlPt = *hoverPtSelect < 0 ? -*hoverPtSelect - 1 : -1;// will be -1 if normal point or none is currently selected
-	if (settingSrc->cc4[3] == 0) {// if not showing shape points, then show only hovered ctrl point
-		if (ctrlPt != -1) {
-			Vec point = (shape->getCtrlVectFlipY(ctrlPt).mult(canvas)).plus(margins);
-			nvgCircle(args.vg, point.x, point.y, ctrlSizeSelected);
-		}
-	}
-	else {
+	if (settingSrc->cc4[3] != 0) {// if showing points
 		float ctrlSizeUnselected = 1.6f * *lineWidthSrc;
 		for (int pt = 0; pt < (numPts - 1); pt++) {
 			if (shape->isCtrlVisible(pt)) {// hide control points for horiz/vertical segments
 				Vec point = (shape->getCtrlVectFlipY(pt).mult(canvas)).plus(margins);
-				nvgCircle(args.vg, point.x, point.y, (*hoverPtSelect == (-pt - 1) ? ctrlSizeSelected : ctrlSizeUnselected));
+				nvgCircle(args.vg, point.x, point.y, ctrlSizeUnselected);
 			}
 		}
+	}
+	if (ctrlPt != -1) {
+		Vec point = (shape->getCtrlVectFlipY(ctrlPt).mult(canvas)).plus(margins);
+		nvgCircle(args.vg, point.x, point.y, ctrlSizeSelected);
 	}
 	nvgFill(args.vg);
 	nvgStroke(args.vg);
@@ -241,18 +241,16 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	nvgFillColor(args.vg, chanColor);
 	nvgBeginPath(args.vg);
 	float ptSizeSelected = 3.2f * *lineWidthSrc;
-	if (settingSrc->cc4[3] == 0) {// if not showing shape points, then show only hovered point
-		if (*hoverPtSelect >= 0 && *hoverPtSelect != MAX_PTS) {
-			Vec point = (shape->getPointVectFlipY(*hoverPtSelect).mult(canvas)).plus(margins);
-			nvgCircle(args.vg, point.x, point.y,  ptSizeSelected);
-		}
-	}
-	else {	
+	if (settingSrc->cc4[3] != 0) {// if showing points
 		float ptSizeUnselected = 2.1f * *lineWidthSrc;
 		for (int pt = 0; pt < numPts; pt++) {
 			Vec point = (shape->getPointVectFlipY(pt).mult(canvas)).plus(margins);
-			nvgCircle(args.vg, point.x, point.y, (*hoverPtSelect == pt ? ptSizeSelected : ptSizeUnselected));
+			nvgCircle(args.vg, point.x, point.y, ptSizeUnselected);
 		}
+	}
+	if (*hoverPtSelect >= 0 && *hoverPtSelect != MAX_PTS) {
+		Vec point = (shape->getPointVectFlipY(*hoverPtSelect).mult(canvas)).plus(margins);
+		nvgCircle(args.vg, point.x, point.y,  ptSizeSelected);
 	}
 	nvgFill(args.vg);
 
@@ -419,7 +417,50 @@ void ShapeMasterDisplayLight::drawMessages(const DrawArgs &args) {
 // ShapeMasterDisplay
 // --------------------
 
+float ShapeMasterDisplay::findXWithGivenCvI(int shaI, float givenCv) {
+	// returns -1.0f if givenCv is not within [shaY[shaI] ; shaY[shaI + 1]], else returns the interpolated x
+	if ( (givenCv <= shaY[shaI] && givenCv >= shaY[shaI + 1]) || (givenCv >= shaY[shaI] && givenCv <= shaY[shaI + 1]) ) {
+		float dY = shaY[shaI + 1] - shaY[shaI];
+		if (std::fabs(dY) < 1e-5) {
+			return -1.0f;
+		}
+		float dX = 1.0f / (float)ShapeMasterDisplayLight::SHAPE_PTS;
+		return (givenCv - shaY[shaI]) * dX / dY + shaI / (float)ShapeMasterDisplayLight::SHAPE_PTS;
+	}
+	return -1.0f;
+}
+
+
+float ShapeMasterDisplay::findXWithGivenCv(float startX, float givenCv) {
+	static const int NUM_SEGMENTS = 3;
+	const float MAX_DIST = (float)NUM_SEGMENTS / (float)ShapeMasterDisplayLight::SHAPE_PTS;
+	
+	// find within +-MAX_DIST of startX only, if not found, return original startX
+	int startI = std::round(startX * (float)ShapeMasterDisplayLight::SHAPE_PTS); 
+	int leftI = std::max(0, startI - NUM_SEGMENTS);
+	int rightI = std::min(ShapeMasterDisplayLight::SHAPE_PTS - 1, (startI + 1) + NUM_SEGMENTS);
+	float distXBest = 10.0f;
+	float xBest = 0.0f;// invalid while distXBest == 10.0f;
+	for (int i = leftI; i <= rightI; i++) {
+		float interpX = findXWithGivenCvI(i, givenCv);
+		if (interpX != -1.0f) {
+			float newDist = std::fabs(interpX - startX);
+			if (newDist <= MAX_DIST && newDist < distXBest) {
+				distXBest = newDist;
+				xBest = interpX;
+			}
+		}
+	}
+	if (distXBest == 10.0f) {
+		return startX;
+	}
+	return xBest;
+}
+
+
 void ShapeMasterDisplay::onButton(const event::Button& e) {
+	OpaqueWidget::onButton(e);
+	
 	onButtonPos = e.pos;// used only for onDoubleClick()
 	if (e.action == GLFW_PRESS) {
 		Shape* shape = channels[*currChan].getShape();
@@ -458,6 +499,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 					loopSnapTargetCV = channels[*currChan].evalShapeForShadow(loopXtR, &epc);
 				}
 			}
+			e.consume(this);
 		}
 		else if (e.button == GLFW_MOUSE_BUTTON_RIGHT) {
 			if (hoverPtSelect < 0) {// if ctrl point
@@ -472,9 +514,9 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 				ui::Menu *menu = createMenu();
 				createBackgroundMenu(menu, shape, normalizePixelPoint(e.pos));						
 			}
+			e.consume(this);
 		}
 	}
-	e.consume(this);
 }
 
 
@@ -502,48 +544,8 @@ void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
 		shape->makeLinear(-hoverPtSelect - 1);// remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
 		hoverPtSelect = MAX_PTS;// this is needed after makeLinear() or else an instant hover brings the ctrl point back to where it was
 	}
-	e.consume(this);
 }
 
-
-float ShapeMasterDisplay::findXWithGivenCvI(int shaI, float givenCv) {
-	// returns -1.0f if givenCv is not within [shaY[shaI] ; shaY[shaI + 1]], else returns the interpolated x
-	if ( (givenCv <= shaY[shaI] && givenCv >= shaY[shaI + 1]) || (givenCv >= shaY[shaI] && givenCv <= shaY[shaI + 1]) ) {
-		float dY = shaY[shaI + 1] - shaY[shaI];
-		if (std::fabs(dY) < 1e-5) {
-			return -1.0f;
-		}
-		float dX = 1.0f / (float)ShapeMasterDisplayLight::SHAPE_PTS;
-		return (givenCv - shaY[shaI]) * dX / dY + shaI / (float)ShapeMasterDisplayLight::SHAPE_PTS;
-	}
-	return -1.0f;
-}
-
-float ShapeMasterDisplay::findXWithGivenCv(float startX, float givenCv) {
-	static const int NUM_SEGMENTS = 3;
-	const float MAX_DIST = (float)NUM_SEGMENTS / (float)ShapeMasterDisplayLight::SHAPE_PTS;
-	
-	// find within +-MAX_DIST of startX only, if not found, return original startX
-	int startI = std::round(startX * (float)ShapeMasterDisplayLight::SHAPE_PTS); 
-	int leftI = std::max(0, startI - NUM_SEGMENTS);
-	int rightI = std::min(ShapeMasterDisplayLight::SHAPE_PTS - 1, (startI + 1) + NUM_SEGMENTS);
-	float distXBest = 10.0f;
-	float xBest = 0.0f;// invalid while distXBest == 10.0f;
-	for (int i = leftI; i <= rightI; i++) {
-		float interpX = findXWithGivenCvI(i, givenCv);
-		if (interpX != -1.0f) {
-			float newDist = std::fabs(interpX - startX);
-			if (newDist <= MAX_DIST && newDist < distXBest) {
-				distXBest = newDist;
-				xBest = interpX;
-			}
-		}
-	}
-	if (distXBest == 10.0f) {
-		return startX;
-	}
-	return xBest;
-}
 
 
 void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
@@ -577,14 +579,6 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 		}
 		else if (altSelect != 0) {
 			// clicked alternate object (loop points, etc.)
-			// if (altSelect == 1) {
-				// loopEndSustain will start moving
-				//   channels[*currChan].setLoopEndAndSustain();
-			// }
-			// else {//if (altSelect == 2) {
-				// loopStart will start moving
-				//   channels[*currChan].setLoopStart();
-			// }
 			// Push DragMiscChange history action (rest is done in onDragEnd())
 			dragHistoryMisc = new DragMiscChange;
 			dragHistoryMisc->channelSrc = &(channels[*currChan]);
@@ -604,75 +598,77 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 			}
 		}
 	}
-	e.consume(this);
 }
 
 
 void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
-	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
-		Shape* shape = channels[*currChan].getShape();
-		Vec dragMovePos = APP->scene->rack->mousePos;
-		Vec posToSet = dragMovePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
-		int mods = APP->window->getMods();
-		if (hoverPtSelect != MAX_PTS) {
-			if (hoverPtSelect >= 0) {// if normal point
-				int xQuant;
-				int yQuant;
-				calcQuants(&xQuant, &yQuant, mods);
-				channels[*currChan].setPointWithSafety(hoverPtSelect, normalizePixelPoint(posToSet), xQuant, yQuant);
-			}
-			else {// else is a ctrl point
-				int cpt = -hoverPtSelect - 1;
-				float dy = shape->getPointY(cpt + 1) - shape->getPointY(cpt);
-				if (std::fabs(dy) > 1e-5f) {
-					float deltaY = (dragStartPosY - dragMovePos.y) / canvas.y / dy;// deltaY is +1 when mouse moves up by dy and is -1 when mouse moves down by dy
-					
-					float newCtrl = onButtonOrigCtrl;
-					if (shape->getType(cpt) == 0) {
-						newCtrl += deltaY * 0.7f;
-						newCtrl = Shape::applyScalingToCtrl(newCtrl, 3.0f);
-					}
-					else {
-						newCtrl += deltaY * 2.0f;
-					}
-					
-					shape->setCtrlWithSafety(cpt, newCtrl);
-				}
-			}
+	if (e.button != GLFW_MOUSE_BUTTON_LEFT) {
+		return;
+	}
+	
+	Shape* shape = channels[*currChan].getShape();
+	Vec dragMovePos = APP->scene->rack->mousePos;
+	Vec posToSet = dragMovePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
+	int mods = APP->window->getMods();
+	if (hoverPtSelect != MAX_PTS) {
+		if (hoverPtSelect >= 0) {// if normal point
+			int xQuant;
+			int yQuant;
+			calcQuants(&xQuant, &yQuant, mods);
+			channels[*currChan].setPointWithSafety(hoverPtSelect, normalizePixelPoint(posToSet), xQuant, yQuant);
 		}
-		else if (altSelect != 0) {
-			// clicked alternate object (loop points, etc.)
-			float posToSetX = clamp((posToSet.x - margins.x) / canvas.x, 0.0f, 1.0f);
-			bool wantSnapToOtherCursor = ((mods & RACK_MOD_CTRL) != 0) && loopSnapTargetCV != -1.0f;
-			if (wantSnapToOtherCursor) {// && altSelect <= 2) { 
-				// look from posToSetX and find nearest PosToSetX within reasonabe grab that has CV of loopSnapTargetCV
-				posToSetX = findXWithGivenCv(posToSetX, loopSnapTargetCV);
-			}
-			if (altSelect == 1) {
-				if (channels[*currChan].isSustain() && (mods & RACK_MOD_CTRL) != 0) {
-					float gridX = (float)channels[*currChan].getGridX();
-					posToSetX = std::round(posToSetX * gridX) / gridX;
+		else {// else is a ctrl point
+			int cpt = -hoverPtSelect - 1;
+			float dy = shape->getPointY(cpt + 1) - shape->getPointY(cpt);
+			if (std::fabs(dy) > 1e-5f) {
+				float deltaY = (dragStartPosY - dragMovePos.y) / canvas.y / dy;// deltaY is +1 when mouse moves up by dy and is -1 when mouse moves down by dy
+				
+				float newCtrl = onButtonOrigCtrl;
+				if (shape->getType(cpt) == 0) {
+					newCtrl += deltaY * 0.7f;
+					newCtrl = Shape::applyScalingToCtrl(newCtrl, 3.0f);
 				}
-				channels[*currChan].setLoopEndAndSustain(posToSetX);
-			}
-			else {//if (altSelect == 2) {
-				channels[*currChan].setLoopStart(posToSetX);
-			}
-		}
-		else {
-			// clicked display background
-			if ((mods & GLFW_MOD_SHIFT) != 0) {// if step
-				int xQuant;
-				int yQuant;
-				calcQuants(&xQuant, &yQuant, mods | GLFW_MOD_ALT);// force calc of xQuant since step is forcibly horizontally quantized	
-				Vec normPos = normalizePixelPoint(posToSet);
-				int gp = std::min(mouseStepP, shape->getNumPts() - 2);
-				mouseStepP = shape->calcPointFromX<float>(normPos.x, gp);
-				shape->makeStep(mouseStepP, normPos, xQuant, yQuant);
+				else {
+					newCtrl += deltaY * 2.0f;
+				}
+				
+				shape->setCtrlWithSafety(cpt, newCtrl);
 			}
 		}
 	}
-	e.consume(this);
+	else if (altSelect != 0) {
+		// clicked alternate object (loop points, etc.)
+		float posToSetX = clamp((posToSet.x - margins.x) / canvas.x, 0.0f, 1.0f);
+		bool wantSnapToOtherCursor = ((mods & RACK_MOD_CTRL) != 0) && loopSnapTargetCV != -1.0f;
+		if (wantSnapToOtherCursor) {// && altSelect <= 2) { 
+			// look from posToSetX and find nearest PosToSetX within reasonabe grab that has CV of loopSnapTargetCV
+			posToSetX = findXWithGivenCv(posToSetX, loopSnapTargetCV);
+		}
+		if (altSelect == 1) {
+			if (channels[*currChan].isSustain() && (mods & RACK_MOD_CTRL) != 0) {
+				float gridX = (float)channels[*currChan].getGridX();
+				posToSetX = std::round(posToSetX * gridX) / gridX;
+			}
+			channels[*currChan].setLoopEndAndSustain(posToSetX);
+		}
+		else {//if (altSelect == 2) {
+			channels[*currChan].setLoopStart(posToSetX);
+		}
+	}
+	else {
+		// clicked display background
+		if ((mods & GLFW_MOD_SHIFT) != 0) {// if step
+			int xQuant;
+			int yQuant;
+			calcQuants(&xQuant, &yQuant, mods | GLFW_MOD_ALT);// force calc of xQuant since step is forcibly horizontally quantized	
+			Vec normPos = normalizePixelPoint(posToSet);
+			int gp = std::min(mouseStepP, shape->getNumPts() - 2);
+			mouseStepP = shape->calcPointFromX<float>(normPos.x, gp);
+			shape->makeStep(mouseStepP, normPos, xQuant, yQuant);
+		}
+	}
+	
+	OpaqueWidget::onDragMove(e);
 }// onDragMove
 	
 	
@@ -702,7 +698,6 @@ void ShapeMasterDisplay::onDragEnd(const event::DragEnd& e) {
 		APP->history->push(dragHistoryMisc);
 		dragHistoryMisc = NULL;
 	}
-	e.consume(this);
 }
 
 	
@@ -758,5 +753,5 @@ void ShapeMasterDisplay::onHover(const event::Hover& e) {
 			}	
 		}	
 	}
-	e.consume(this);
+	OpaqueWidget::onHover(e);
 }
