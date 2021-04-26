@@ -54,8 +54,6 @@ float ShapeMasterDisplay::findXWithGivenCv(float startX, float givenCv) {
 void ShapeMasterDisplay::onButton(const event::Button& e) {
 	OpaqueWidget::onButton(e);
 	
-	if (e.action == GLFW_PRESS) DEBUG("onButton press at %g, %g", e.pos.x, e.pos.y);
-	
 	onButtonPos = e.pos;// used only for onDoubleClick() and onDragStart
 	if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
 		Shape* shape = channels[*currChan].getShape();
@@ -84,9 +82,8 @@ void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
 	// happens after the the second click's GLFW_PRESS, but before its GLFW_RELEASE
 	// happens after the the second click's onDragStart, but before its onDragEnd
 	// this happens only for double click of GLFW_MOUSE_BUTTON_LEFT
-	DEBUG("onDoubleClick");
-	dragHistoryStep = NULL;
-	dragHistoryMisc = NULL;
+	if (dragHistoryStep != NULL) delete dragHistoryStep;
+	else if (dragHistoryMisc != NULL) delete dragHistoryMisc;
 
 	Shape* shape = channels[*currChan].getShape();
 	if (dragPtSelect == MAX_PTS) {
@@ -118,7 +115,6 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 	
 	Vec dragStartPos = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);
 	dragStartPosY = dragStartPos.y;// used only when dragging control points
-	DEBUG("onDragStart at %g, %g", dragStartPos.x, dragStartPos.y);
 	
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
 		Shape* shape = channels[*currChan].getShape();
@@ -210,7 +206,6 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	
 	Shape* shape = channels[*currChan].getShape();
 	Vec posToSet = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
-	DEBUG("onDragMove at %g, %g", posToSet.x, posToSet.y);
 	
 	int mods = APP->window->getMods();
 	if (dragPtSelect != MAX_PTS) {
@@ -276,7 +271,6 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	
 	
 void ShapeMasterDisplay::onDragEnd(const event::DragEnd& e) {
-	DEBUG("onDragEnd");
 	Shape* shape = channels[*currChan].getShape();
 	
 	dragPtSelect = MAX_PTS;
@@ -355,18 +349,13 @@ int ShapeMasterDisplay::matchPtExtra(Vec normalizedPos, Shape* shape) {	// will 
 
 	
 void ShapeMasterDisplay::onHover(const event::Hover& e) {
-	DEBUG("onHover at %g, %g", e.pos.x, e.pos.y);
-	// find closest node 
-	
 	hoverPtSelect = MAX_PTS;
-	
 	int mods = APP->window->getMods();
+	
 	if ((mods & GLFW_MOD_SHIFT) == 0 && (dragPtSelect == MAX_PTS) ) {// disallow hovering when making steps, much easier, and when dragging
-		Shape* shape = channels[*currChan].getShape();
-		
-		Vec normalizedPos = normalizePixelPoint(e.pos);
-						
-		hoverPtSelect = matchPtExtra(normalizedPos, shape);
+		// find closest node 
+		Shape* shape = channels[*currChan].getShape();						
+		hoverPtSelect = matchPtExtra(normalizePixelPoint(e.pos), shape);
 	}
 	OpaqueWidget::onHover(e);
 }
