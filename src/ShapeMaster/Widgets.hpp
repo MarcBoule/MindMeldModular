@@ -225,20 +225,46 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 			leftX += textWidthsPx[0];
 			// click PASTE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[1]) {
-				channels[*currChan].pasteShapeFrom(&shapeCpBuffer, true);
+				// Push ShapeCompleteChange history action (rest is done further below)
+				ShapeCompleteChange* h = new ShapeCompleteChange;
+				h->shapeSrc = channels[*currChan].getShape();
+				h->oldShape = new Shape();
+				h->shapeSrc->copyShapeTo(h->oldShape);
+
+				channels[*currChan].pasteShapeFrom(&shapeCpBuffer);
 				buttonPressed = 1;
+				
+				h->newShape = new Shape();
+				h->shapeSrc->copyShapeTo(h->newShape);
+				h->name = "paste shape";
+				APP->history->push(h);
 			}
 			leftX += textWidthsPx[1];
 			// click REVERSE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[2]) {
-				channels[*currChan].reverseShape(true);
+				channels[*currChan].reverseShape();
 				buttonPressed = 2;
+				
+				// Push InvertOrReverseChange history action (rest is done further below)
+				InvertOrReverseChange* h = new InvertOrReverseChange;
+				h->shapeSrc = channels[*currChan].getShape();
+				h->isReverse = true;
+				h->name = "reverse shape";
+				APP->history->push(h);
+
 			}
 			leftX += textWidthsPx[2];
 			// click INVERSE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[3]) {
-				channels[*currChan].invertShape(true);
+				channels[*currChan].invertShape();
 				buttonPressed = 3;
+				
+				// Push InvertOrReverseChange history action (rest is done further below)
+				InvertOrReverseChange* h = new InvertOrReverseChange;
+				h->shapeSrc = channels[*currChan].getShape();
+				h->isReverse = false;
+				h->name = "invert shape";
+				APP->history->push(h);
 			}
 			leftX += textWidthsPx[3];
 			// click RANDOM

@@ -164,8 +164,21 @@ struct ShapeCompleteChange : ModuleAction {
 	void redo() override;
 	ShapeCompleteChange() {
 		name = "change shape";// provisional
+		oldShape = NULL;
+		newShape = NULL;
 	}
 	~ShapeCompleteChange();
+};
+
+
+struct InvertOrReverseChange : ModuleAction {
+	Shape* shapeSrc;
+	bool isReverse;
+	void undo() override;
+	void redo() override;
+	InvertOrReverseChange() {
+		name = "reverse or invert shape";// provisional
+	}
 };
 
 

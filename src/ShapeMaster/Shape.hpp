@@ -411,13 +411,13 @@ class Shape {
 	
 	void copyShapeTo(Shape* destShape);
 
-	void pasteShapeFrom(Shape* srcShape, bool withHistory);
+	void pasteShapeFrom(Shape* srcShape);
 	
-	void reverseShape(int8_t decoupledFirstLast, bool withHistory);
+	void reverseShape();
 	
-	void invertShape(bool withHistory);
+	void invertShape();
 	
-	void randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool withHistory);
+	void randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex);
 	
 	bool isDirty(Shape* refShape);
 };

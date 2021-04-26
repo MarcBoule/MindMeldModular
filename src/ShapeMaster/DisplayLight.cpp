@@ -183,7 +183,6 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		sx += dsx;
 	}
 	shaY[SHAPE_PTS] = channels[*currChan].evalShapeForShadow(1.0f, &epc);// [SHAPE_PTS] not an error since the array was declared with room for last point
-	// DEBUG("%g", shaY[SHAPE_PTS]);
 	float sy = 1.0f - shaY[SHAPE_PTS];
 	sy = margins.y + sy * canvas.y;
 	nvgLineTo(args.vg, margins.x + canvas.x, sy);

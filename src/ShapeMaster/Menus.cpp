@@ -299,7 +299,7 @@ struct ResetCtrlItem : MenuItem {
 	int pt;
 
 	void onAction(const event::Action &e) override {
-		shape->makeLinear(pt);
+		shape->makeLinear(pt);// has implicit history
 	}
 };
 

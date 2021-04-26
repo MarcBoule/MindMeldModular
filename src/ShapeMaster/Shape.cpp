@@ -269,7 +269,7 @@ void Shape::makeStep(int p, Vec vecStepPt, int xQuant, int yQuant) {
 
 
 void Shape::makeLinear(int p) {
-	// Push TypeAndCtrlChange history action (rest is done in onDragEnd())
+	// Push TypeAndCtrlChange history action
 	TypeAndCtrlChange* h = new TypeAndCtrlChange;
 	h->shapeSrc = this;
 	h->pt = p;
@@ -362,16 +362,7 @@ void Shape::copyShapeTo(Shape* destShape) {
 }
 
 
-void Shape::pasteShapeFrom(Shape* srcShape, bool withHistory) {
-	ShapeCompleteChange* h = NULL;
-	if (withHistory) {
-		// Push ShapeCompleteChange history action (rest is done further below)
-		h = new ShapeCompleteChange;
-		h->shapeSrc = this;
-		h->oldShape = new Shape();
-		copyShapeTo(h->oldShape);
-	}
-	
+void Shape::pasteShapeFrom(Shape* srcShape) {
 	lockShapeBlocking();
 	memcpy(points, srcShape->points, sizeof(Vec) * srcShape->numPts);
 	memcpy(ctrl, srcShape->ctrl, sizeof(float) * srcShape->numPts);
@@ -379,36 +370,18 @@ void Shape::pasteShapeFrom(Shape* srcShape, bool withHistory) {
 	numPts = srcShape->numPts;
 	pc = 0;
 	unlockShape();
-	
-	if (withHistory) {
-		h->newShape = new Shape();
-		copyShapeTo(h->newShape);
-		h->name = "paste shape";
-		APP->history->push(h);
-	}
 }
 
 
-void Shape::reverseShape(int8_t decoupledFirstLast, bool withHistory) {
-	// Push ShapeCompleteChange history action (rest is done further below)
-	ShapeCompleteChange* h = NULL;
-	if (withHistory) {
-		h = new ShapeCompleteChange;
-		h->shapeSrc = this;
-		h->oldShape = new Shape();
-		copyShapeTo(h->oldShape);
-	}
-	
+void Shape::reverseShape() {	
 	lockShapeBlocking();
 	
-	int p = 1;// skip first/last reversal since symetrical, except when decoupledFirstLast
-	if (decoupledFirstLast != 0) {
-		float tmpY = points[0].y;
-		points[0].y = points[numPts - 1].y;
-		points[numPts - 1].y = tmpY;
-	}
+	// do first and last if ever decoupledFirstLast is on
+	float tmpY = points[0].y;
+	points[0].y = points[numPts - 1].y;
+	points[numPts - 1].y = tmpY;
 	
-	// reverse points (all but first and last have to be reversed)
+	int p = 1;// skip first/last reversal since done above 
 	for (; p < (numPts >> 1); p++) {			
 		// copy 2nd into tmp while reversing
 		Vec tmpPt = getPointVectFlipX(numPts - 1 - p);
@@ -450,40 +423,17 @@ void Shape::reverseShape(int8_t decoupledFirstLast, bool withHistory) {
 	
 	pc = (numPts - 1) >> 1;
 	unlockShape();
-	
-	if (withHistory) {
-		h->newShape = new Shape();
-		copyShapeTo(h->newShape);
-		h->name = "reverse shape";
-		APP->history->push(h);
-	}
 }
 
 
-void Shape::invertShape(bool withHistory) {
-	// Push ShapeCompleteChange history action (rest is done further below)
-	ShapeCompleteChange* h = NULL;
-	if (withHistory) {
-		h = new ShapeCompleteChange;
-		h->shapeSrc = this;
-		h->oldShape = new Shape();
-		copyShapeTo(h->oldShape);
-	}
-
+void Shape::invertShape() {
 	lockShapeBlocking();
 	
 	for (int i = 0; i < numPts; i++) {
 		points[i].y = 1.0f - points[i].y;
 	}
 	
-	unlockShape();
-	
-	if (withHistory) {
-		h->newShape = new Shape();
-		copyShapeTo(h->newShape);
-		h->name = "invert shape";
-		APP->history->push(h);
-	}
+	unlockShape();	
 }
 
 
@@ -527,16 +477,7 @@ float calcRandCv(RandomSettings* randomSettings, float restCv, int rangeValue) {
 }
 
 
-void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool withHistory) {
-	// Push ShapeCompleteChange history action (rest is done further below)
-	ShapeCompleteChange* h = NULL;
-	if (withHistory) {
-		h = new ShapeCompleteChange;
-		h->shapeSrc = this;
-		h->oldShape = new Shape();
-		copyShapeTo(h->oldShape);
-	}
-
+void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex) {
 	Bjorklund bjorklund;
 	initMinPts();
 	
@@ -658,13 +599,6 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 			points[0].y = restCv;
 			points[numPts - 1].y = restCv;
 		}
-	}
-	
-	if (withHistory) {
-		h->newShape = new Shape();
-		copyShapeTo(h->newShape);
-		h->name = "randomise shape";
-		APP->history->push(h);
 	}
 }
 

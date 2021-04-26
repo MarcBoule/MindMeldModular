@@ -104,14 +104,36 @@ void ChannelChange::redo() {
 // ----------------------------------------------------------------------------
 
 void ShapeCompleteChange::undo() {
-	shapeSrc->pasteShapeFrom(oldShape, false);// without history
+	shapeSrc->pasteShapeFrom(oldShape);
 }
 void ShapeCompleteChange::redo() {
-	shapeSrc->pasteShapeFrom(newShape, false);// without history
+	shapeSrc->pasteShapeFrom(newShape);
 }
 ShapeCompleteChange::~ShapeCompleteChange() {
-	delete oldShape;
-	delete newShape;
+	if (oldShape != NULL) {
+		delete oldShape;
+	}
+	if (newShape != NULL) {
+		delete newShape;
+	}
+}
+
+
+void InvertOrReverseChange::undo() {
+	if (isReverse) {
+		shapeSrc->reverseShape();
+	}
+	else {
+		shapeSrc->invertShape();
+	}
+}
+void InvertOrReverseChange::redo() {
+	if (isReverse) {
+		shapeSrc->reverseShape();
+	}
+	else {
+		shapeSrc->invertShape();
+	}
 }
 
 

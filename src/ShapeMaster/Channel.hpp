@@ -178,23 +178,39 @@ class Channel {
 		shape.copyShapeTo(destShape);
 	}
 
-	void pasteShapeFrom(Shape* srcShape, bool withHistory) {
-		shape.pasteShapeFrom(srcShape, withHistory);
+	void pasteShapeFrom(Shape* srcShape) {
+		shape.pasteShapeFrom(srcShape);
 	}
 	
-	void reverseShape(bool withHistory) {
-		shape.reverseShape(isDecoupledFirstAndLast(), withHistory);
+	void reverseShape() {
+		shape.reverseShape();
 	}
 	void setPointWithSafety(int p, Vec newPt, int xQuant, int yQuant) {
 		shape.setPointWithSafety(p, newPt, xQuant, yQuant, isDecoupledFirstAndLast());
 	}
 	
-	void invertShape(bool withHistory) {
-		shape.invertShape(withHistory);
+	void invertShape() {
+		shape.invertShape();
 	}
 	
 	void randomizeShape(bool withHistory) {
-		shape.randomizeShape(&randomSettings, getGridX(), getRangeIndex(), withHistory);
+		// Push ShapeCompleteChange history action (rest is done further below)
+		ShapeCompleteChange* h = NULL;
+		if (withHistory) {
+			h = new ShapeCompleteChange;
+			h->shapeSrc = &shape;
+			h->oldShape = new Shape();
+			shape.copyShapeTo(h->oldShape);
+		}
+		
+		shape.randomizeShape(&randomSettings, getGridX(), getRangeIndex());
+		
+		if (withHistory) {
+			h->newShape = new Shape();
+			shape.copyShapeTo(h->newShape);
+			h->name = "randomise shape";
+			APP->history->push(h);
+		}	
 	}
 
 

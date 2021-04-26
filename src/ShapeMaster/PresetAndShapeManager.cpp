@@ -258,10 +258,10 @@ void PresetAndShapeManager::file_worker() {
 				else {
 					// other operation (reverse, inverse, random)
 					if (workType[chan] == WT_REVERSE) {
-						channel->reverseShape(false);
+						channel->reverseShape();
 					}
 					else if (workType[chan] == WT_INVERT) {
-						channel->invertShape(false);
+						channel->invertShape();
 					}
 					else if (workType[chan] == WT_RANDOM) {
 						channel->randomizeShape(false);

@@ -82,9 +82,15 @@ void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
 	// happens after the the second click's GLFW_PRESS, but before its GLFW_RELEASE
 	// happens after the the second click's onDragStart, but before its onDragEnd
 	// this happens only for double click of GLFW_MOUSE_BUTTON_LEFT
-	if (dragHistoryStep != NULL) delete dragHistoryStep;
-	else if (dragHistoryMisc != NULL) delete dragHistoryMisc;
-
+	if (dragHistoryStep != NULL) {
+		delete dragHistoryStep;
+		dragHistoryStep = NULL;
+	}
+	else if (dragHistoryMisc != NULL) {
+		delete dragHistoryMisc;
+		dragHistoryMisc = NULL;
+	}
+	
 	Shape* shape = channels[*currChan].getShape();
 	if (dragPtSelect == MAX_PTS) {
 		// double clicked empty (so create new node)
@@ -101,7 +107,7 @@ void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
 	}
 	else {
 		// double clicked on a ctrl node 
-		shape->makeLinear(-dragPtSelect - 1);// remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
+		shape->makeLinear(-dragPtSelect - 1);// has implicit history, remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
 		dragPtSelect = MAX_PTS;// this is needed after makeLinear() or else an instant hover brings the ctrl point back to where it was
 		altSelect = 0;
 	}
@@ -195,7 +201,7 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 				shape->copyShapeTo(dragHistoryStep->oldShape);
 			}
 		}
-	}
+	}// if left button
 }
 
 
