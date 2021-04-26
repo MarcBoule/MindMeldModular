@@ -1263,7 +1263,7 @@ struct RandomizeSubItem : MenuItem {
 	Channel* channel;
 	
 	void onAction(const event::Action &e) override {
-		channel->randomizeShape();
+		channel->randomizeShape(true);
 	}
 };
 

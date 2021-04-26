@@ -225,26 +225,26 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 			leftX += textWidthsPx[0];
 			// click PASTE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[1]) {
-				channels[*currChan].pasteShapeFrom(&shapeCpBuffer);
+				channels[*currChan].pasteShapeFrom(&shapeCpBuffer, true);
 				buttonPressed = 1;
 			}
 			leftX += textWidthsPx[1];
 			// click REVERSE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[2]) {
-				channels[*currChan].reverseShape();
+				channels[*currChan].reverseShape(true);
 				buttonPressed = 2;
 			}
 			leftX += textWidthsPx[2];
 			// click INVERSE
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[3]) {
-				channels[*currChan].invertShape();
+				channels[*currChan].invertShape(true);
 				buttonPressed = 3;
 			}
 			leftX += textWidthsPx[3];
 			// click RANDOM
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[4]) {
 				if ((APP->window->getMods() & GLFW_MOD_ALT) != 0) {
-					channels[*currChan].randomizeShape();
+					channels[*currChan].randomizeShape(true);
 				}
 				else {
 					ui::Menu *menu = createMenu();

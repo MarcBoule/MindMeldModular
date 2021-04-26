@@ -363,7 +363,7 @@ void Shape::copyShapeTo(Shape* destShape) {
 
 
 void Shape::pasteShapeFrom(Shape* srcShape, bool withHistory) {
-	ShapeCompleteChange* h;
+	ShapeCompleteChange* h = NULL;
 	if (withHistory) {
 		// Push ShapeCompleteChange history action (rest is done further below)
 		h = new ShapeCompleteChange;
@@ -389,12 +389,15 @@ void Shape::pasteShapeFrom(Shape* srcShape, bool withHistory) {
 }
 
 
-void Shape::reverseShape(int8_t decoupledFirstLast) {
+void Shape::reverseShape(int8_t decoupledFirstLast, bool withHistory) {
 	// Push ShapeCompleteChange history action (rest is done further below)
-	ShapeCompleteChange* h = new ShapeCompleteChange;
-	h->shapeSrc = this;
-	h->oldShape = new Shape();
-	copyShapeTo(h->oldShape);
+	ShapeCompleteChange* h = NULL;
+	if (withHistory) {
+		h = new ShapeCompleteChange;
+		h->shapeSrc = this;
+		h->oldShape = new Shape();
+		copyShapeTo(h->oldShape);
+	}
 	
 	lockShapeBlocking();
 	
@@ -448,19 +451,24 @@ void Shape::reverseShape(int8_t decoupledFirstLast) {
 	pc = (numPts - 1) >> 1;
 	unlockShape();
 	
-	h->newShape = new Shape();
-	copyShapeTo(h->newShape);
-	h->name = "reverse shape";
-	APP->history->push(h);
+	if (withHistory) {
+		h->newShape = new Shape();
+		copyShapeTo(h->newShape);
+		h->name = "reverse shape";
+		APP->history->push(h);
+	}
 }
 
 
-void Shape::invertShape() {
+void Shape::invertShape(bool withHistory) {
 	// Push ShapeCompleteChange history action (rest is done further below)
-	ShapeCompleteChange* h = new ShapeCompleteChange;
-	h->shapeSrc = this;
-	h->oldShape = new Shape();
-	copyShapeTo(h->oldShape);
+	ShapeCompleteChange* h = NULL;
+	if (withHistory) {
+		h = new ShapeCompleteChange;
+		h->shapeSrc = this;
+		h->oldShape = new Shape();
+		copyShapeTo(h->oldShape);
+	}
 
 	lockShapeBlocking();
 	
@@ -470,10 +478,12 @@ void Shape::invertShape() {
 	
 	unlockShape();
 	
-	h->newShape = new Shape();
-	copyShapeTo(h->newShape);
-	h->name = "invert shape";
-	APP->history->push(h);
+	if (withHistory) {
+		h->newShape = new Shape();
+		copyShapeTo(h->newShape);
+		h->name = "invert shape";
+		APP->history->push(h);
+	}
 }
 
 
@@ -517,12 +527,15 @@ float calcRandCv(RandomSettings* randomSettings, float restCv, int rangeValue) {
 }
 
 
-void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex) {
+void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool withHistory) {
 	// Push ShapeCompleteChange history action (rest is done further below)
-	ShapeCompleteChange* h = new ShapeCompleteChange;
-	h->shapeSrc = this;
-	h->oldShape = new Shape();
-	copyShapeTo(h->oldShape);
+	ShapeCompleteChange* h = NULL;
+	if (withHistory) {
+		h = new ShapeCompleteChange;
+		h->shapeSrc = this;
+		h->oldShape = new Shape();
+		copyShapeTo(h->oldShape);
+	}
 
 	Bjorklund bjorklund;
 	initMinPts();
@@ -647,10 +660,12 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 		}
 	}
 	
-	h->newShape = new Shape();
-	copyShapeTo(h->newShape);
-	h->name = "randomise shape";
-	APP->history->push(h);
+	if (withHistory) {
+		h->newShape = new Shape();
+		copyShapeTo(h->newShape);
+		h->name = "randomise shape";
+		APP->history->push(h);
+	}
 }
 
 
