@@ -482,33 +482,39 @@ struct Allow1BarLocksItem : MenuItem {
 };
 #endif
 
-/*
-struct SlewBehaviorItem : MenuItem {
+struct ShowTooltipVoltsAsItem : MenuItem {
 	Channel* channel;
-
-	struct SlewBehaviorSubItem : MenuItem {
+	
+	struct ShowTooltipVoltsAsSubItem : MenuItem {
 		Channel* channel;
+		int8_t setVal;
 
 		void onAction(const event::Action &e) override {
-			channel->toggleRelativeSlew();
+			channel->setShowTooltipVoltsAs(setVal);
 		}
 	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
-		SlewBehaviorSubItem *slewBeh0Item = createMenuItem<SlewBehaviorSubItem>("Constant (default)", CHECKMARK(channel->getRelativeSlew() == 0));
-		slewBeh0Item->channel = channel;
-		menu->addChild(slewBeh0Item);
-		
-		SlewBehaviorSubItem *slewBeh1Item = createMenuItem<SlewBehaviorSubItem>("Relative", CHECKMARK(channel->getRelativeSlew() != 0));
-		slewBeh1Item->channel = channel;
-		menu->addChild(slewBeh1Item);
-		
+		ShowTooltipVoltsAsSubItem *showT1Item = createMenuItem<ShowTooltipVoltsAsSubItem>("Volts (default)", CHECKMARK(channel->getShowTooltipVoltsAs() == 1));
+		showT1Item->channel = channel;
+		showT1Item->setVal = 1;
+		menu->addChild(showT1Item);
+
+		ShowTooltipVoltsAsSubItem *showT0Item = createMenuItem<ShowTooltipVoltsAsSubItem>("Frequency", CHECKMARK(channel->getShowTooltipVoltsAs() == 0));
+		showT0Item->channel = channel;
+		showT0Item->setVal = 0;
+		menu->addChild(showT0Item);
+
+		ShowTooltipVoltsAsSubItem *showT2Item = createMenuItem<ShowTooltipVoltsAsSubItem>("Note", CHECKMARK(channel->getShowTooltipVoltsAs() == 2));
+		showT2Item->channel = channel;
+		showT2Item->setVal = 2;
+		menu->addChild(showT2Item);
+
 		return menu;
 	}
 };
-*/
 
 struct DecoupledFirstAndLastItem : MenuItem {
 	Channel* channel;
@@ -764,6 +770,10 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 		menu->addChild(smTrigItem);
 	}
 	#endif
+
+	ShowTooltipVoltsAsItem *tthItem = createMenuItem<ShowTooltipVoltsAsItem>("Node tooltip when shown", RIGHT_ARROW);
+	tthItem->channel = &(channels[chan]);
+	menu->addChild(tthItem);
 
 	ChanColorItem *chanColItem = createMenuItem<ChanColorItem>("Channel colour", RIGHT_ARROW);
 	chanColItem->srcChanColor = &(channels[chan].channelSettings.cc4[1]);

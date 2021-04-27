@@ -75,7 +75,7 @@ void Channel::onReset(bool withParams) {
 	channelSettings.cc4[3] = 0x0;// sidechain uses VCA in
 	channelSettings2.cc4[0] = 16;// scopeVcaPolySel: 0 to 15 val is poly chan select, 16 is (polychan0+polychan1)/2; for all options, if not enough chans in cable, else defaults to chan 0
 	channelSettings2.cc4[1] = 0x0;// show unsynced length in: 0 = seconds, 1 = Hz, 2 = note; must use setShowUnsyncLengthAs() to change, do not access directly
-	channelSettings2.cc4[2] = 0x1;// relative slew (no longer used!!!)
+	channelSettings2.cc4[2] = 0x1;// tooltip Y mode (1 is default volts, 0 is freq, 2 is notes)
 	channelSettings2.cc4[3] = 0x0;// decoupledFirstLast
 	presetPath = "";
 	shapePath = "";

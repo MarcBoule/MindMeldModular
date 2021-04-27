@@ -358,9 +358,34 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		float time = length * ptVec.x;	
 		std::string timeText = timeToString(time, true).append("s");
 
+		std::string voltRangedText;
 		float voltRanged = channels[*currChan].applyRange(ptVec.y);
-		std::string voltRangedText = string::f("%.3gV", voltRanged);
-		
+		int8_t tooltipVoltMode = channels[*currChan].getShowTooltipVoltsAs();
+		if (tooltipVoltMode == 1) {// show volts
+			voltRangedText = string::f("%.3gV", voltRanged);
+		}
+		else if (tooltipVoltMode == 0) {// show volts as voct freq
+			float freq = dsp::FREQ_C4 * std::pow(2.0f, voltRanged);
+			if (freq >= 1000.0f) {
+				voltRangedText = string::f("%.3gkHz", freq / 1000.0f);
+			}
+			else if (freq >= 1.0f) {
+				voltRangedText = string::f("%.4gHz", freq);
+			}
+			else if (freq >= 0.001f) {
+				voltRangedText = string::f("%.3gmHz", freq * 1000.0f);
+			}
+			else {
+				voltRangedText = string::f("%.2gmHz", freq * 1000.0f);
+			}
+		}
+		else {// show volts as note
+			char note[8];
+			printNote(voltRanged, note, true);
+			voltRangedText = note;
+		}
+
+	
 		// auto position
 		int textAlign = NVG_ALIGN_MIDDLE | (ptVec.x <= 0.5f ? NVG_ALIGN_LEFT : NVG_ALIGN_RIGHT);
 		float toolOffsetX = margins.x;

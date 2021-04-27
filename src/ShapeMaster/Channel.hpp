@@ -477,6 +477,9 @@ class Channel {
 	int8_t getShowUnsyncedLengthAs() {
 		return channelSettings2.cc4[1];
 	}
+	int8_t getShowTooltipVoltsAs() {
+		return channelSettings2.cc4[2];
+	}
 	bool isDecoupledFirstAndLast() {
 		return channelSettings2.cc4[3] != 0;
 	}
@@ -702,9 +705,9 @@ class Channel {
 		channelSettings2.cc4[1] = valShow;
 		lengthUnsyncOld = 1e6f;// force recalc of length unsync text
 	}
-	// void toggleRelativeSlew() {
-		// channelSettings2.cc4[2] ^= 0x1;
-	// }
+	void setShowTooltipVoltsAs(int8_t valShow) {
+		channelSettings2.cc4[2] = valShow;
+	}
 	void toggleDecoupledFirstAndLast() {
 		channelSettings2.cc4[3] ^= 0x1;
 		if (!isDecoupledFirstAndLast()) {
@@ -819,19 +822,12 @@ class Channel {
 	
 	
 	float applySlewAndSmooth(float cvVal) {
-		// slew (original)
-		// float riseFall = slewLimiter.riseFall;
-		// if (playHead.isSlowSlew()) {
-			// riseFall = std::fmin(PlayHead::SLOW_SLEW_RISE_FALL, slewLimiter.riseFall);
-		// }
-		// cvVal = slewLimiter.process(sampleTime, cvVal , riseFall);
-
-		// slew (new version without constant slew option)
+		// slew
 		float riseFall;// = slewLimiter.riseFall;
 		if (playHead.isSlowSlew()) {
 			riseFall = std::fmin(PlayHead::SLOW_SLEW_RISE_FALL, slewLimiter.riseFall);
 		}
-		else if (xoverSlewWithCv[3] >= 0.001f) {// && channelSettings2.cc4[2] != 0) {
+		else if (xoverSlewWithCv[3] >= 0.001f) {
 			// if is relative slew && slew is on
 			riseFall = 1.0f / (xoverSlewWithCv[3] * playHead.getCoreLength());
 		}
@@ -839,20 +835,7 @@ class Channel {
 			riseFall = 10.0f / sampleTime;// effectively turns off the slew limiter, 10.0f is used in case it's applied to a voltage, but in this case here it's applied to a normalized value right below
 		}
 		cvVal = slewLimiter.process(sampleTime, cvVal , riseFall);
-		
-		
-		// slew (old version with constant slew option - other code to uncomment near L227)
-		/*float riseFall = slewLimiter.riseFall;
-		if (playHead.isSlowSlew()) {
-			riseFall = std::fmin(PlayHead::SLOW_SLEW_RISE_FALL, slewLimiter.riseFall);
-		}
-		else if (channelSettings2.cc4[2] != 0 && lastSlewParamWithCv >= 0.001f) {
-			// if is relative slew && slew is on
-			riseFall = 1.0f / (lastSlewParamWithCv * playHead.getCoreLength());
-		}
-		cvVal = slewLimiter.process(sampleTime, cvVal , riseFall);
-		*/
-		
+				
 		// smooth
 		if (lastSmoothParam > 0.001f) {// don't compare with 0.0f because of Rack parameter smoothing, it will take time to get to 0.0f
 			return smoothFilter.process(cvVal);
