@@ -74,7 +74,7 @@ void Channel::onReset(bool withParams) {
 	channelSettings.cc4[2] = POLY_NONE;// poly sum mode (see util.hpp for enum)
 	channelSettings.cc4[3] = 0x0;// sidechain uses VCA in
 	channelSettings2.cc4[0] = 16;// scopeVcaPolySel: 0 to 15 val is poly chan select, 16 is (polychan0+polychan1)/2; for all options, if not enough chans in cable, else defaults to chan 0
-	channelSettings2.cc4[1] = 0x0;// show unsynced length in: 0 = seconds, 1 = Hz, 2 = note; must use setShowUnsyncLengthAs() to change, do not access directly
+	setShowUnsyncLengthAs(0x0);// show unsynced length in: 0 = seconds, 1 = Hz, 2 = note; must use setShowUnsyncLengthAs() to change, do not write to channelSettings2.cc4[1] directly
 	channelSettings2.cc4[2] = 0x1;// tooltip Y mode (1 is default volts, 0 is freq, 2 is notes)
 	channelSettings2.cc4[3] = 0x0;// decoupledFirstLast
 	presetPath = "";
@@ -218,6 +218,7 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 		PackedBytes4 newSettings;
 		newSettings.cc1 = json_integer_value(channelSettingsJ);
 		if (withFullSettings) {
+			// not saved with preset
 			channelSettings.cc4[0] = newSettings.cc4[0];
 			channelSettings.cc4[1] = newSettings.cc4[1];
 			channelSettings.cc4[2] = newSettings.cc4[2];
@@ -230,11 +231,12 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 		PackedBytes4 newSettings2;
 		newSettings2.cc1 = json_integer_value(channelSettings2J);
 		if (withFullSettings) {
+			// not saved with preset
 			channelSettings2.cc4[0] = newSettings2.cc4[0];
+			channelSettings2.cc4[2] = newSettings2.cc4[2];
 			channelSettings2.cc4[3] = newSettings2.cc4[3];
 		}
-		channelSettings2.cc4[1] = newSettings2.cc4[1];
-		channelSettings2.cc4[2] = newSettings2.cc4[2];
+		setShowUnsyncLengthAs(newSettings2.cc4[1]);
 	}
 
 	json_t *presetPathJ = json_object_get(channelJ, "presetPath");
