@@ -1,3 +1,15 @@
+### 1.1.14 (in development)
+
+- Improved the mouse behavior in the main display to fix a bug on Arch Linux
+- Improved history (undo) management
+- Added a channel option to make node tooltips show V/Oct frequency or Note instead of volts
+
+
+### 1.1.13 (2021-04-20)
+
+- Added the ShapeMaster module (free version)
+
+
 ### 1.1.12 (2020-11-15)
 
 - Fixed DC-blocker init bug in MixMasters
