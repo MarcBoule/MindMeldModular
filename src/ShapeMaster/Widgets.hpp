@@ -798,7 +798,7 @@ struct KnobLabelLength : SmLabelBase {
 	void draw(const DrawArgs &args) override {
 		SmLabelBase::draw(args);
 		// draw downward triangle size-permitting
-		if (text.size() <= 4 && channels[*currChan].isSync()) {
+		if (text.size() <= 4 && currChan != NULL && channels[*currChan].isSync()) {
 			nvgBeginPath(args.vg);
 			nvgMoveTo(args.vg, box.size.x - triMarginX - triSize.x, box.size.y * 0.55f - triSize.y * 0.5f);
 			nvgLineTo(args.vg, box.size.x - triMarginX, box.size.y * 0.55f - triSize.y * 0.5f);
