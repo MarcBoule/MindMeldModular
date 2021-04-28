@@ -698,12 +698,14 @@ struct ChanNameField : ui::TextField {
 
 	void onSelectKey(const event::SelectKey& e) override {
 		if (e.action == GLFW_PRESS) {
-			channel->setChanName(text);
 			if (e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER) {
 				ui::MenuOverlay* overlay = getAncestorOfType<ui::MenuOverlay>();
 				overlay->requestDelete();
 				e.consume(this);
 			}
+		}
+		else if (e.action == GLFW_RELEASE) {
+			channel->setChanName(text);
 		}
 
 		if (!e.getTarget())
