@@ -1,5 +1,6 @@
 ### 1.1.14 (2021-04-29)
 
+- Made shape copy/paste use clipboard for inter-module copy-pasting of shape
 - Improved the mouse behavior in the main display to fix a bug on Arch Linux
 - Improved history (undo) management
 - Added a channel option to make node tooltips show V/Oct frequency or Note instead of volts

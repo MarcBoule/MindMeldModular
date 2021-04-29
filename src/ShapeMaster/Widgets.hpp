@@ -160,7 +160,7 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 	NVGcolor colorOff;
 	int buttonPressed;// -1 when nothing pressed, button index when a button is pressed
 	float textWidthsPx[5];
-	Shape shapeCpBuffer;
+	// Shape shapeCpBuffer;
 	
 	
 	ShapeCommandsButtons() {
@@ -219,7 +219,18 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 			float leftX = 0;
 			// click COPY
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[0]) {
-				channels[*currChan].copyShapeTo(&shapeCpBuffer);
+				// Internal memory version:
+				// channels[*currChan].copyShapeTo(&shapeCpBuffer);
+				
+				// Clipboard version: 
+				json_t* shapeJ = channels[*currChan].getShape()->dataToJsonShape();
+				json_t* clipboardJ = json_object();		
+				json_object_set_new(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Shape", shapeJ);
+				char* shapeClip = json_dumps(clipboardJ, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
+				json_decref(clipboardJ);
+				glfwSetClipboardString(APP->window->win, shapeClip);
+				free(shapeClip);
+				
 				buttonPressed = 0;
 			}
 			leftX += textWidthsPx[0];
@@ -231,13 +242,46 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 				h->oldShape = new Shape();
 				h->shapeSrc->copyShapeTo(h->oldShape);
 
-				channels[*currChan].pasteShapeFrom(&shapeCpBuffer);
+				// Internal memory version:
+				// channels[*currChan].pasteShapeFrom(&shapeCpBuffer);
+				
+				// Clipboard version:
+				bool successPaste = false;
+				const char* shapeClip = glfwGetClipboardString(APP->window->win);
+				if (!shapeClip) {
+					WARN("IOP error getting clipboard string");
+				}
+				else {
+					json_error_t error;
+					json_t* clipboardJ = json_loads(shapeClip, 0, &error);
+					if (!clipboardJ) {
+						WARN("IOP error json parsing clipboard");
+					}
+					else {
+						DEFER({json_decref(clipboardJ);});
+						// MindMeld-ShapeMaster-Clipboard-Shape
+						json_t* shapeJ = json_object_get(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Shape");
+						if (!shapeJ) {
+							WARN("IOP error no MindMeld-ShapeMaster-Clipboard-Shape present in clipboard");
+						}
+						else {
+							channels[*currChan].getShape()->dataFromJsonShape(shapeJ);
+							successPaste = true;
+						}
+					}	
+				}
+				
 				buttonPressed = 1;
 				
-				h->newShape = new Shape();
-				h->shapeSrc->copyShapeTo(h->newShape);
-				h->name = "paste shape";
-				APP->history->push(h);
+				if (successPaste) {
+					h->newShape = new Shape();
+					h->shapeSrc->copyShapeTo(h->newShape);
+					h->name = "paste shape";
+					APP->history->push(h);
+				}
+				else {
+					delete h;// h->oldShape will be automatically deleted by desctructor
+				}
 			}
 			leftX += textWidthsPx[1];
 			// click REVERSE
