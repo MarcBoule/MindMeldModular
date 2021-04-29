@@ -1,8 +1,10 @@
-### 1.1.14 (in development)
+### 1.1.14 (2021-04-29)
 
 - Improved the mouse behavior in the main display to fix a bug on Arch Linux
 - Improved history (undo) management
 - Added a channel option to make node tooltips show V/Oct frequency or Note instead of volts
+- Never show triangle in unsynced length knob label
+- Fix last char entry bug in channel name (menu)
 
 
 ### 1.1.13 (2021-04-20)
