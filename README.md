@@ -173,7 +173,7 @@ The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](htt
 * Omri Cohen, [The Many Things You Can Do With ShapeMaster Pro from MindMeld](https://www.youtube.com/watch?v=GL6e4Mqqp2Y)
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
 * Artem Leonov, [Mixing mini patches in VCV RACK with new MINDMELD EQMASTER module](https://www.youtube.com/watch?v=wW1UREZQQXU)
-* Jakub Ciupinski, ShapeMaster [Ep.1](https://www.youtube.com/watch?v=dq87VzR-37I), [Ep.2](https://www.youtube.com/watch?v=rI9GSK90Tio), [Ep.3](https://www.youtube.com/watch?v=X92K5c9NAh4)
+* Jakub Ciupinski, ShapeMaster [Ep.1](https://www.youtube.com/watch?v=dq87VzR-37I), [Ep.2](https://www.youtube.com/watch?v=rI9GSK90Tio), [Ep.3](https://www.youtube.com/watch?v=X92K5c9NAh4), [Ep.4](https://www.youtube.com/watch?v=x-azB2iyjfY)
 
 ### In the wild
 * Wouter Spekkink, [Street lights](https://www.youtube.com/watch?v=QpDp3RGGcBg)
