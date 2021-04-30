@@ -429,11 +429,23 @@ void ShapeMasterDisplayLight::drawMessages(const DrawArgs &args) {
 		text = channels[*currChan].getChanName();
 	}
 	if (font->handle >= 0 && text.compare("") != 0) {
-		nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+		nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		nvgFontFaceId(args.vg, font->handle);
 		nvgTextLetterSpacing(args.vg, 0.0);
-		nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		nvgFontSize(args.vg, 12.0f);
-		nvgText(args.vg, margins.x + 0.5f * canvas.x, margins.y + 0.95f * canvas.y, text.c_str(), NULL);
+		
+		float textXc = margins.x + 0.5f * canvas.x;
+		float textYc = margins.y + 0.95f * canvas.y;
+		float bounds[4];// [xmin,ymin, xmax,ymax]
+		nvgTextBounds(args.vg, textXc, textYc, text.c_str(), NULL, bounds);
+		// DEBUG("%g, %g, %g, %g", bounds[0], bounds[1], bounds[2], bounds[3]);
+		
+		nvgBeginPath(args.vg);
+		nvgFillColor(args.vg, nvgRGBA(39, 39, 39, 175));// alpha, low = transparent, high = opaque
+		nvgRect(args.vg, bounds[0] - 1.0f, bounds[1] - 1.0f, bounds[2] - bounds[0] + 2.0f, bounds[3] - bounds[1] + 2.0f);// xmin, ymin, w, h
+		nvgFill(args.vg);
+		
+		nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+		nvgText(args.vg, textXc, textYc, text.c_str(), NULL);
 	}
 }

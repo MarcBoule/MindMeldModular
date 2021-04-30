@@ -15,7 +15,7 @@
 
 struct ShapeMasterDisplayLight : LightWidget {	
 	// constants
-	const NVGcolor DARKER_GRAY = nvgRGB(39, 39, 0x27);// grid and center of control points
+	const NVGcolor DARKER_GRAY = nvgRGB(39, 39, 39);// grid and center of control points
 	const NVGcolor DARK_GRAY = nvgRGB(55, 55, 55);// major grid when applicable
 	static constexpr float MINI_SHAPES_Y = 6.8f;// can be set to 0.0f
 	static const int SHAPE_PTS = 300;// shadow memory, divide into this many segments
