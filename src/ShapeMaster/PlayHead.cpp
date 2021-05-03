@@ -66,7 +66,7 @@ void PlayHead::onReset(bool withParams) {
 	playHeadSettings2.cc4[2] = 0x1;// allow 1 bar locks (PRO only)
 	playHeadSettings2.cc4[3] = 0x0;// Exclude EOC from OR (PRO only)
 	playHeadSettings3.cc4[0] = 0x0;// Bipol CV mode
-	playHeadSettings3.cc4[1] = 0x0;// (unused)
+	playHeadSettings3.cc4[1] = 0x0;// Channel reset on sustain
 	playHeadSettings3.cc4[2] = 0x0;// (unused)
 	playHeadSettings3.cc4[3] = 0x0;// (unused)
 	setRepetitions(setAndRetDefaultReps());// always have to do this since when the rep param itself was reset by Rack, the default value has not been updated yet, and only now the value is known
@@ -532,7 +532,11 @@ double PlayHead::process(ChanCvs *chanCvs) {
 						setEos();
 					}		
 					#endif
-					loopingOrSustaining = false;						
+					loopingOrSustaining = false;
+					if (isChannelResetOnSustain()) {						
+						initRun();
+						newXt = xt;
+					}
 				}
 			}	
 		}

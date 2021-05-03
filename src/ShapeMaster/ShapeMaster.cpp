@@ -411,7 +411,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		channelButton->currChan = &(module->currChan);
 		channelButton->miscSettings2GlobalSrc = &(module->miscSettings2);
 		channelButton->trigExpPresentSrc = &(module->expPresentRight);
-		channelButton->channelCopyPasteCache = &(module->channelCopyPasteCache);
+		// channelButton->channelCopyPasteCache = &(module->channelCopyPasteCache);
 		channelButton->running = &(module->running);
 	}
 	

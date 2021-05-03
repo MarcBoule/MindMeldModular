@@ -76,17 +76,17 @@ struct ShapeMaster : Module {
 	dsp::SchmittTrigger resetTrigger;
 	PresetAndShapeManager presetAndShapeManager;
 	Channel channelDirtyCache;
-	json_t* channelCopyPasteCache = NULL;
+	// json_t* channelCopyPasteCache = NULL;
 	Param channelDirtyCacheParams[NUM_CHAN_PARAMS] = {};
 
 
 	ShapeMaster(); 
 
-	~ShapeMaster() {
-		if (channelCopyPasteCache != NULL) {
-			json_decref(channelCopyPasteCache);
-		}
-	}
+	// ~ShapeMaster() {
+		// if (channelCopyPasteCache != NULL) {
+			// json_decref(channelCopyPasteCache);
+		// }
+	// }
 	
 	
 	void onReset() override;

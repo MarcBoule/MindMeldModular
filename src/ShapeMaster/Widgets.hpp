@@ -1017,7 +1017,7 @@ struct SmChannelButton : OpaqueWidget {
 	PackedBytes4* miscSettings2GlobalSrc = NULL;
 	bool* trigExpPresentSrc = NULL;
 	int lastChan = -1;
-	json_t** channelCopyPasteCache;
+	// json_t** channelCopyPasteCache;
 	bool* running;
 
 	widget::FramebufferWidget* fb;
@@ -1069,7 +1069,7 @@ struct SmChannelButton : OpaqueWidget {
 	
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT) {
 			ui::Menu *menu = createMenu();
-			createChannelMenu(menu, channels, chan, miscSettings2GlobalSrc, *trigExpPresentSrc, channelCopyPasteCache, running);
+			createChannelMenu(menu, channels, chan, miscSettings2GlobalSrc, *trigExpPresentSrc, running);
 		}
 		else if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
 			ChannelNumChange* h = new ChannelNumChange;

@@ -177,6 +177,9 @@ class PlayHead {
 	void setBipolCvMode(int8_t _bipolMode) {
 		playHeadSettings3.cc4[0] = _bipolMode;
 	}
+	void setChannelResetOnSustain(int8_t _rstSus) {
+		playHeadSettings3.cc4[1] = _rstSus;
+	}
 	
 	void setTrigMode(int8_t _trigMode) {
 		trigMode = _trigMode;
@@ -368,6 +371,9 @@ class PlayHead {
 	bool isBipolCvMode() {
 		return playHeadSettings3.cc4[0] != 0;
 	}
+	bool isChannelResetOnSustain() {
+		return playHeadSettings3.cc4[1] != 0;
+	}
 	#ifdef SM_PRO
 	bool getPlayheadNeverJumps() {
 		return playHeadSettings.cc4[3] != 0;
@@ -396,6 +402,9 @@ class PlayHead {
 	}
 	void toggleBipolCvMode() {
 		playHeadSettings3.cc4[0] ^= 0x1;
+	}
+	void toggleChannelResetOnSustain() {
+		playHeadSettings3.cc4[1] ^= 0x1;
 	}
 	#ifdef SM_PRO
 	void togglePlayheadNeverJumps() {

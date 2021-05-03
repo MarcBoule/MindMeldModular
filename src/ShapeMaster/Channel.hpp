@@ -332,6 +332,9 @@ class Channel {
 	void toggleBipolCvMode() {
 		playHead.toggleBipolCvMode();
 	}
+	void toggleChannelResetOnSustain() {
+		playHead.toggleChannelResetOnSustain();
+	}
 	#ifdef SM_PRO
 	void togglePlayheadNeverJumps() {
 		playHead.togglePlayheadNeverJumps();
@@ -420,6 +423,9 @@ class Channel {
 	}
 	int8_t getBipolCvMode() {
 		return playHead.getBipolCvMode();
+	}
+	bool isChannelResetOnSustain() {
+		return playHead.isChannelResetOnSustain();
 	}
 	int8_t getTrigMode() {
 		return playHead.getTrigMode();

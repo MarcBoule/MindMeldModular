@@ -571,32 +571,85 @@ struct PolySumItem : MenuItem {
 
 struct CopyChanelItem : MenuItem {
 	Channel* channelSource;
-	json_t** channelCopyPasteCache;
+	// json_t** channelCopyPasteCache;
 	
 	void onAction(const event::Action &e) override {
-		if (*channelCopyPasteCache != NULL) {
-			json_decref(*channelCopyPasteCache);
-		}
-		(*channelCopyPasteCache) = channelSource->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
+		// old version with json memory
+		// if (*channelCopyPasteCache != NULL) {
+			// json_decref(*channelCopyPasteCache);
+		// }
+		// (*channelCopyPasteCache) = channelSource->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
+		
+		// new version with clipboard
+		json_t* channelJ = channelSource->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
+		json_t* clipboardJ = json_object();		
+		json_object_set_new(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Channel", channelJ);
+		char* channelClip = json_dumps(clipboardJ, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
+		json_decref(clipboardJ);
+		glfwSetClipboardString(APP->window->win, channelClip);
+		free(channelClip);
+
 	}
 };
 
 struct PasteChanelItem : MenuItem {
 	Channel* channelDestination;
-	json_t** channelCopyPasteCache;
+	// json_t** channelCopyPasteCache;
 
 	void onAction(const event::Action &e) override {
-		if (*channelCopyPasteCache != NULL) {
-			// Push ChannelChange history action (rest is done in onDragEnd())
-			ChannelChange* h = new ChannelChange;
-			h->channelSrc = channelDestination;
-			h->oldJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
+		// old version with json memory
+		// if (*channelCopyPasteCache != NULL) {
+			// // Push ChannelChange history action (rest is done below)
+			// ChannelChange* h = new ChannelChange;
+			// h->channelSrc = channelDestination;
+			// h->oldJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
 			
-			channelDestination->dataFromJsonChannel(*channelCopyPasteCache, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS);
+			// channelDestination->dataFromJsonChannel(*channelCopyPasteCache, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS);
 		
+			// h->newJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
+			// h->name = "paste channel";
+			// APP->history->push(h);
+		// }
+		
+		// new version with clipboard
+		// Push ChannelChange history action (rest is done below)
+		ChannelChange* h = new ChannelChange;
+		h->channelSrc = channelDestination;
+		h->oldJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
+		
+
+		bool successPaste = false;
+		const char* channelClip = glfwGetClipboardString(APP->window->win);
+		if (!channelClip) {
+			WARN("IOP error getting clipboard string");
+		}
+		else {
+			json_error_t error;
+			json_t* clipboardJ = json_loads(channelClip, 0, &error);
+			if (!clipboardJ) {
+				WARN("IOP error json parsing clipboard");
+			}
+			else {
+				DEFER({json_decref(clipboardJ);});
+				// MindMeld-ShapeMaster-Clipboard-Channel
+				json_t* channelJ = json_object_get(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Channel");
+				if (!channelJ) {
+					WARN("IOP error no MindMeld-ShapeMaster-Clipboard-Channel present in clipboard");
+				}
+				else {
+					channelDestination->dataFromJsonChannel(channelJ, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS);
+					successPaste = true;
+				}
+			}	
+		}
+
+		if (successPaste) {
 			h->newJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
 			h->name = "paste channel";
 			APP->history->push(h);
+		}
+		else {
+			delete h;// h->oldJson will be automatically json_decref'ed by desctructor
 		}
 	}
 };
@@ -713,8 +766,16 @@ struct ChanNameField : ui::TextField {
 	}
 };
 
+struct ChannelResetOnSustainItem : MenuItem {
+	Channel* channel;
 
-void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, json_t** channelCopyPasteCache, bool* running) {
+	void onAction(const event::Action &e) override {
+		channel->toggleChannelResetOnSustain();
+	}
+};
+
+
+void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, bool* running) {
 	ChanNameField* chanNameField = new ChanNameField;
 	chanNameField->box.size.x = 100;
 	chanNameField->setChannel(&(channels[chan]));
@@ -761,9 +822,9 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	polyVcaItem->channel = &(channels[chan]);
 	menu->addChild(polyVcaItem);
 
-	// SlewBehaviorItem *slewBehaviorItem = createMenuItem<SlewBehaviorItem>("Slew behavior", RIGHT_ARROW);
-	// slewBehaviorItem->channel = &(channels[chan]);
-	// menu->addChild(slewBehaviorItem);
+	ChannelResetOnSustainItem *rstSusItem = createMenuItem<ChannelResetOnSustainItem>("Channel reset on sustain", CHECKMARK(channels[chan].isChannelResetOnSustain()));
+	rstSusItem->channel = &(channels[chan]);
+	menu->addChild(rstSusItem);
 
 	#ifdef SM_PRO
 	if (trigExpPresent) {
@@ -796,12 +857,12 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 
 	CopyChanelItem *copyChanItem = createMenuItem<CopyChanelItem>("Copy channel", "");
 	copyChanItem->channelSource = &(channels[chan]);
-	copyChanItem->channelCopyPasteCache = channelCopyPasteCache;
+	// copyChanItem->channelCopyPasteCache = channelCopyPasteCache;
 	menu->addChild(copyChanItem);
 	
 	PasteChanelItem *pasteChanItem = createMenuItem<PasteChanelItem>("Paste channel", "");
 	pasteChanItem->channelDestination = &(channels[chan]);
-	pasteChanItem->channelCopyPasteCache = channelCopyPasteCache;
+	// pasteChanItem->channelCopyPasteCache = channelCopyPasteCache;
 	menu->addChild(pasteChanItem);
 	
 	InitializeChanelItem *initChanItem = createMenuItem<InitializeChanelItem>("Initialize channel", "");
