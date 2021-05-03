@@ -1,11 +1,17 @@
-### 1.1.14 (2021-04-29)
+### 1.1.15 (in development)
+
+- Added channel-reset-on-sustain option in channel menu
+- Made channel copy/paste use clipboard for inter-module copy-pasting of channel
+
+
+### 1.1.14 (2021-04-30)
 
 - Made shape copy/paste use clipboard for inter-module copy-pasting of shape
+- Never show triangle in unsynced length knob label
+- Fix last char entry bug in channel name (menu)
 - Improved the mouse behavior in the main display to fix a bug on Arch Linux
 - Improved history (undo) management
 - Added a channel option to make node tooltips show V/Oct frequency or Note instead of volts
-- Never show triangle in unsynced length knob label
-- Fix last char entry bug in channel name (menu)
 
 
 ### 1.1.13 (2021-04-20)
