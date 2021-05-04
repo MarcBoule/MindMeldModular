@@ -578,6 +578,10 @@ struct KnobLabelRepetitions : SmLabelBase {
 
 struct GridXLabel : SmLabelBase {
 	NVGcolor labelColor = nvgRGB(204, 204, 204);
+	clock_t lastTimes[3] = {CLOCKS_PER_SEC, CLOCKS_PER_SEC, CLOCKS_PER_SEC};
+	int lastNums[3] = {0, 0, 0};
+	int lastIndex = 0;// points location of next key to store
+
 	
 	GridXLabel() {
 		box.size = mm2px(Vec(22.62f, 5.0f));
@@ -625,13 +629,56 @@ struct GridXLabel : SmLabelBase {
 	void onButton(const event::Button& e) override {
 		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT) {
 			ui::Menu *menu = createMenu();
-			addSnapMenu(menu, &channels[*currChan]);
+			addGridXMenu(menu, &channels[*currChan]);
 			event::Action eAction;
 			onAction(eAction);
 			e.consume(this);
 		}
 		else {
 			SmLabelBase::onButton(e);
+		}
+	}
+	
+	void onHoverKey(const event::HoverKey& e) override {
+		if (e.action == GLFW_PRESS) {
+			int num = -1;
+			if (e.key >= GLFW_KEY_0 && e.key <= GLFW_KEY_9) {
+				num = e.key - GLFW_KEY_0;
+			}
+			else if (e.key >= GLFW_KEY_KP_0 && e.key <= GLFW_KEY_KP_9) {
+				num = e.key - GLFW_KEY_KP_0;
+			}
+
+			if (num != -1) {
+				// enter into ring buffer
+				lastTimes[lastIndex] = clock();
+				lastNums[lastIndex] = num;
+				int im2 = (lastIndex - 2 + 3) % 3;
+				int im1 = (lastIndex - 1 + 3) % 3;
+				int im0 = lastIndex;
+				lastIndex = (lastIndex + 1) % 3;
+				
+				// test three-digit number
+				if (((float)(lastTimes[im0] - lastTimes[im2]))/(float)CLOCKS_PER_SEC < 2.0f ) {
+					num = lastNums[im2] * 100 + lastNums[im1] * 10 + lastNums[im0]; 
+					lastTimes[0] = CLOCKS_PER_SEC; 
+					lastTimes[1] = CLOCKS_PER_SEC; 
+					lastTimes[2] = CLOCKS_PER_SEC; 
+					// DEBUG("3: %i (%i*100+%i*10+%i)", num, lastNums[im2], lastNums[im1], lastNums[im0]);
+				}
+				// test two-digit number
+				else if (((float)(lastTimes[im0] - lastTimes[im1]))/(float)CLOCKS_PER_SEC < 1.0f ) {
+					num = lastNums[im1] * 10 + lastNums[im0];
+					// DEBUG("2: %i (%i * 10 + %i)", num, lastNums[im1], lastNums[im0]);
+				}
+				// else it's a one-digit number, and it's in "num"
+				// else DEBUG("1: %i", num);
+
+				// if withing 2-128 range, then grab it
+				if (num >= 2 && num <= 128) {
+					channels[*currChan].setGridX(num, true);					
+				}
+			}
 		}
 	}
 };

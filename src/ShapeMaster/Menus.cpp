@@ -813,6 +813,10 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	decFlItem->channel = &(channels[chan]);
 	menu->addChild(decFlItem);
 
+	ChannelResetOnSustainItem *rstSusItem = createMenuItem<ChannelResetOnSustainItem>("Use sustain as channel reset", CHECKMARK(channels[chan].isChannelResetOnSustain()));
+	rstSusItem->channel = &(channels[chan]);
+	menu->addChild(rstSusItem);
+
 	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", RIGHT_ARROW);
 	sumSteItem->channel = &(channels[chan]);
 	menu->addChild(sumSteItem);
@@ -821,10 +825,6 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	polyVcaItem->srcScopeVcaPolySelItem = &(channels[chan].channelSettings2.cc4[0]);
 	polyVcaItem->channel = &(channels[chan]);
 	menu->addChild(polyVcaItem);
-
-	ChannelResetOnSustainItem *rstSusItem = createMenuItem<ChannelResetOnSustainItem>("Channel reset on sustain", CHECKMARK(channels[chan].isChannelResetOnSustain()));
-	rstSusItem->channel = &(channels[chan]);
-	menu->addChild(rstSusItem);
 
 	#ifdef SM_PRO
 	if (trigExpPresent) {
@@ -1481,7 +1481,7 @@ struct SnapSubItem : MenuItem {
 };
 
 
-void addSnapMenu(Menu* menu, Channel* channel) {
+void addGridXMenu(Menu* menu, Channel* channel) {
 	for (int p = 0; p < NUM_SNAP_OPTIONS; p++) {
 		SnapSubItem *snapChoice = createMenuItem<SnapSubItem>(string::f("%i", snapValues[p]), CHECKMARK(channel->getGridX() == snapValues[p]));
 		snapChoice->channel = channel;

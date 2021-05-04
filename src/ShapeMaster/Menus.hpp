@@ -344,7 +344,7 @@ void createSidechainSettingsMenu(Channel* channel);
 
 void addRandomMenu(Menu* menu, Channel* channel);
 
-void addSnapMenu(Menu* menu, Channel* channel);
+void addGridXMenu(Menu* menu, Channel* channel);
 
 void addRangeMenu(Menu* menu, Channel* channel);
 
