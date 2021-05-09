@@ -1,5 +1,6 @@
 ### 1.1.15 (in development)
 
+- Added cloaked mode
 - Added keyboard hover entry for grid-x
 - Added channel-reset-on-sustain option in channel menu
 - Made channel copy/paste use clipboard for inter-module copy-pasting of channel

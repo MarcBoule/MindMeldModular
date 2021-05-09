@@ -419,7 +419,10 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 
 void ShapeMasterDisplayLight::drawMessages(const DrawArgs &args) {
 	std::string text = "";
-	if (currChan && !channels[*currChan].getChannelActive()) {
+	if (setting3Src->cc4[2] != 0) {// if cloaked
+		text = "Cloaked";
+	}
+	else if (currChan && !channels[*currChan].getChannelActive()) {
 		text = "Inactive channel (connect output)";
 	}
 	else if (time(0) < displayInfo->displayMessageTimeOff) {
@@ -428,7 +431,7 @@ void ShapeMasterDisplayLight::drawMessages(const DrawArgs &args) {
 	else if (currChan && setting2Src->cc4[2] != 0) {
 		text = channels[*currChan].getChanName();
 	}
-	if (font->handle >= 0 && text.compare("") != 0) {
+	if (font->handle >= 0 && !text.empty()) {
 		nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 		nvgFontFaceId(args.vg, font->handle);
 		nvgTextLetterSpacing(args.vg, 0.0);

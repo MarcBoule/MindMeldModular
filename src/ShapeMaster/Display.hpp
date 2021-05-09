@@ -26,6 +26,7 @@ struct ShapeMasterDisplayLight : LightWidget {
 	DisplayInfo* displayInfo;
 	PackedBytes4 *settingSrc;// cc4[2] is scope settings, cc4[3] is show points
 	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
+	PackedBytes4 *setting3Src;// cc4[2] is cloaked
 	float* lineWidthSrc;
 	int* dragPtSelect;// from ShapeMasterDisplay
 	int* hoverPtSelect;// from ShapeMasterDisplay
@@ -61,12 +62,12 @@ struct ShapeMasterDisplayLight : LightWidget {
 					
 			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 
-			drawGrid(args);
-
-			drawScope(args);
-
-			drawShape(args);
-
+			if (setting3Src->cc4[2] == 0) {// if not cloaked
+				drawGrid(args);
+				drawScope(args);
+				drawShape(args);
+			}
+			
 			drawMessages(args);
 			
 			// nvgResetScissor(args.vg);					
@@ -122,6 +123,7 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	Channel* channels;
 	float* lineWidthSrc;
 	float* shaY;// from ShapeMasterDisplayLight
+	PackedBytes4 *setting3Src;// cc4[2] is cloaked
 	
 	// internal
 	float dragStartPosY;// used only when dragging control points

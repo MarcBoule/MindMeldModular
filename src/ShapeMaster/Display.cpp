@@ -55,7 +55,7 @@ void ShapeMasterDisplay::onButton(const event::Button& e) {
 	OpaqueWidget::onButton(e);
 	
 	onButtonPos = e.pos;// used only for onDoubleClick() and onDragStart
-	if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT) {
+	if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_RIGHT && setting3Src->cc4[2] == 0) {// if not cloaked)
 		Shape* shape = channels[*currChan].getShape();
 		Vec normalizedPos = normalizePixelPoint(e.pos);
 		
@@ -91,26 +91,28 @@ void ShapeMasterDisplay::onDoubleClick(const event::DoubleClick &e) {
 		dragHistoryMisc = NULL;
 	}
 	
-	Shape* shape = channels[*currChan].getShape();
-	if (dragPtSelect == MAX_PTS) {
-		// double clicked empty (so create new node)
-		int retPt = shape->insertPointWithSafetyAndBlock(normalizePixelPoint(onButtonPos), true);// with history
-		if (retPt >= 0) {
-			dragPtSelect = retPt;
+	if (setting3Src->cc4[2] == 0) {// if not cloaked
+		Shape* shape = channels[*currChan].getShape();
+		if (dragPtSelect == MAX_PTS) {
+			// double clicked empty (so create new node)
+			int retPt = shape->insertPointWithSafetyAndBlock(normalizePixelPoint(onButtonPos), true);// with history
+			if (retPt >= 0) {
+				dragPtSelect = retPt;
+			}
 		}
-	}
-	else if (dragPtSelect >= 0) {
-		// double clicked a normal node (so delete node)
-		shape->deletePointWithBlock(dragPtSelect, true);// with history
-		dragPtSelect = MAX_PTS;
-		altSelect = 0;
-	}
-	else {
-		// double clicked on a ctrl node 
-		shape->makeLinear(-dragPtSelect - 1);// has implicit history, remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
-		dragPtSelect = MAX_PTS;// this is needed after makeLinear() or else an instant hover brings the ctrl point back to where it was
-		altSelect = 0;
-	}
+		else if (dragPtSelect >= 0) {
+			// double clicked a normal node (so delete node)
+			shape->deletePointWithBlock(dragPtSelect, true);// with history
+			dragPtSelect = MAX_PTS;
+			altSelect = 0;
+		}
+		else {
+			// double clicked on a ctrl node 
+			shape->makeLinear(-dragPtSelect - 1);// has implicit history, remove if ever don't want to reset when adding nodes close to existing ctrl points and we accidentally hit the control point
+			dragPtSelect = MAX_PTS;// this is needed after makeLinear() or else an instant hover brings the ctrl point back to where it was
+			altSelect = 0;
+		}
+	}// if not cloaked
 }
 
 
@@ -122,7 +124,7 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 	Vec dragStartPos = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);
 	dragStartPosY = dragStartPos.y;// used only when dragging control points
 	
-	if (e.button == GLFW_MOUSE_BUTTON_LEFT) {
+	if (e.button == GLFW_MOUSE_BUTTON_LEFT && setting3Src->cc4[2] == 0) {// if not cloaked
 		Shape* shape = channels[*currChan].getShape();
 		int mods = APP->window->getMods();
 		
@@ -201,12 +203,12 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 				shape->copyShapeTo(dragHistoryStep->oldShape);
 			}
 		}
-	}// if left button
+	}// if left button && not cloaked
 }
 
 
 void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
-	if (e.button != GLFW_MOUSE_BUTTON_LEFT) {
+	if (e.button != GLFW_MOUSE_BUTTON_LEFT || setting3Src->cc4[2] != 0) {// if  cloaked)
 		return;
 	}
 	
@@ -358,7 +360,8 @@ void ShapeMasterDisplay::onHover(const event::Hover& e) {
 	hoverPtSelect = MAX_PTS;
 	int mods = APP->window->getMods();
 	
-	if ((mods & GLFW_MOD_SHIFT) == 0 && (dragPtSelect == MAX_PTS) ) {// disallow hovering when making steps, much easier, and when dragging
+	if ((mods & GLFW_MOD_SHIFT) == 0 && (dragPtSelect == MAX_PTS) && // disallow hovering when making steps, much easier, and when dragging
+			(setting3Src->cc4[2] == 0) ) {// disallow hovering also when cloaked
 		// find closest node 
 		Shape* shape = channels[*currChan].getShape();						
 		hoverPtSelect = matchPtExtra(normalizePixelPoint(e.pos), shape);

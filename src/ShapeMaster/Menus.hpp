@@ -94,6 +94,13 @@ struct ShowPointTooltipItem : MenuItem {
 	}
 };
 
+struct CloakedItem : MenuItem {
+	int8_t *srcCloaked;
+	void onAction(const event::Action &e) override {
+		*srcCloaked ^= 0x1;
+	}
+};
+
 
 struct RunOffSettingItem : MenuItem {
 	int8_t *srcRunOffSetting;

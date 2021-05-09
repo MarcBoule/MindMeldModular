@@ -81,7 +81,7 @@ void ShapeMaster::onReset() {
 	miscSettings2.cc4[3] = 0x0;// point tooltip
 	miscSettings3.cc4[0] = 0x0;// preset EOC deferral
 	miscSettings3.cc4[1] = 0x0;// shape EOC deferral
-	miscSettings3.cc4[2] = 0x0;// unused
+	miscSettings3.cc4[2] = 0x0;// cloaked mode
 	miscSettings3.cc4[3] = 0x0;// unused
 	lineWidth = 1.0f;
 	for (int c = 0; c < NUM_CHAN; c++) {
@@ -355,7 +355,11 @@ void ShapeMasterWidget::appendContextMenu(Menu *menu) {
 
 	KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
 	knobArcShowItem->srcDetailsShow = &(module->miscSettings.cc4[0]);
-	menu->addChild(knobArcShowItem);		
+	menu->addChild(knobArcShowItem);	
+
+	CloakedItem *cloakItem = createMenuItem<CloakedItem>("Cloaked mode", CHECKMARK(module->miscSettings3.cc4[2] != 0));
+	cloakItem->srcCloaked = &(module->miscSettings3.cc4[2]);
+	menu->addChild(cloakItem);
 }
 
 
@@ -482,12 +486,14 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		smDisplay->currChan = &(module->currChan);
 		smDisplay->channels = module->channels;
 		smDisplay->lineWidthSrc = &(module->lineWidth);
+		smDisplay->setting3Src = &(module->miscSettings3);
 
 		smDisplayLight->currChan = &(module->currChan);
 		smDisplayLight->channels = module->channels;
 		smDisplayLight->displayInfo = &displayInfo;
 		smDisplayLight->settingSrc = &(module->miscSettings);
 		smDisplayLight->setting2Src = &(module->miscSettings2);
+		smDisplayLight->setting3Src = &(module->miscSettings3);
 		smDisplayLight->lineWidthSrc = &(module->lineWidth);
 		smDisplayLight->scopeBuffers = &(module->scopeBuffers);
 	}
