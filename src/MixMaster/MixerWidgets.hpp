@@ -752,6 +752,10 @@ struct GroupDisplay : EditableDisplayBase {
 			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
 			menu->addChild(grpSetLabel);
 			
+			GainAdjustSlider *groupGainAdjustSlider = new GainAdjustSlider(&(srcGroup->gainAdjust), -20.0f, 20.0f);
+			groupGainAdjustSlider->box.size.x = 200.0f;
+			menu->addChild(groupGainAdjustSlider);
+			
 			HPFCutoffSlider2 *trackHPFAdjustSlider = new HPFCutoffSlider2(hpfParamQuantity);
 			trackHPFAdjustSlider->box.size.x = 200.0f;  
 			menu->addChild(trackHPFAdjustSlider);

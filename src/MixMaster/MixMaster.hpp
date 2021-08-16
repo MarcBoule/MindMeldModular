@@ -793,6 +793,7 @@ struct MixerGroup {
 	
 	// need to save, with reset
 	char  *groupName;// write 4 chars always (space when needed), no null termination since all tracks names are concat and just one null at end of all
+	float gainAdjust;// this is a gain here (not dB)
 	float* fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
 	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t directOutsMode;// when per track
@@ -879,6 +880,7 @@ struct MixerGroup {
 
 	void onReset() {
 		snprintf(groupName, 4, "GRP"); groupName[3] = 0x30 + (char)groupNum + 1;		
+		gainAdjust = 1.0f;
 		*fadeRate = 0.0f;
 		fadeProfile = 0.0f;
 		directOutsMode = 3;// post-solo should be default
@@ -925,6 +927,9 @@ struct MixerGroup {
 		// groupName
 		// saved elsewhere
 		
+		// gainAdjust
+		json_object_set_new(rootJ, (ids + "gainAdjust").c_str(), json_real(gainAdjust));
+		
 		// fadeRate
 		json_object_set_new(rootJ, (ids + "fadeRate").c_str(), json_real(*fadeRate));
 		
@@ -961,6 +966,11 @@ struct MixerGroup {
 		// groupName 
 		// loaded elsewhere
 
+		// gainAdjust
+		json_t *gainAdjustJ = json_object_get(rootJ, (ids + "gainAdjust").c_str());
+		if (gainAdjustJ)
+			gainAdjust = json_number_value(gainAdjustJ);
+		
 		// fadeRate
 		json_t *fadeRateJ = json_object_get(rootJ, (ids + "fadeRate").c_str());
 		if (fadeRateJ)
@@ -1216,7 +1226,7 @@ struct MixerGroup {
 			}
 			// calc ** gainMatrix **
 			fader = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
-			gainMatrix = panMatrix * fader;
+			gainMatrix = panMatrix * fader * gainAdjust;
 		}
 	
 		// Calc group gains with slewer and apply it
