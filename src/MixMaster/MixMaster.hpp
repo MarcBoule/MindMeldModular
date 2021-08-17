@@ -807,6 +807,7 @@ struct MixerGroup {
 
 	// no need to save, with reset
 	TSlewLimiterSingle<simd::float_4> gainMatrixSlewers;
+	SlewLimiterSingle gainAdjustSlewer;
 	SlewLimiterSingle stereoWidthSlewer;
 	SlewLimiterSingle muteSoloGainSlewer;
 	private:
@@ -869,6 +870,7 @@ struct MixerGroup {
 		insertOuts = _insertOuts;
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
+		gainAdjustSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		stereoWidthSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		for (int i = 0; i < 2; i++) {
@@ -1085,7 +1087,15 @@ struct MixerGroup {
 		if (stereoWidthSlewer.out != 1.0f) {
 			applyStereoWidth(stereoWidthSlewer.out, &taps[0], &taps[1]);
 		}
-
+		
+		// Gain adjust
+		if (gainAdjust != gainAdjustSlewer.out) {
+			gainAdjustSlewer.process(gInfo->sampleTime, gainAdjust);
+		}
+		if (gainAdjustSlewer.out != 1.0f) {
+			taps[0] *= gainAdjustSlewer.out;
+			taps[1] *= gainAdjustSlewer.out;
+		}
 		
 		// Tap[8],[9]: pre-fader (inserts and filters)
 		// NEW VERSION
@@ -1226,7 +1236,7 @@ struct MixerGroup {
 			}
 			// calc ** gainMatrix **
 			fader = std::pow(fader, GlobalConst::trkAndGrpFaderScalingExponent);// scaling
-			gainMatrix = panMatrix * fader * gainAdjust;
+			gainMatrix = panMatrix * fader;
 		}
 	
 		// Calc group gains with slewer and apply it
