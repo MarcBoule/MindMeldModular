@@ -260,7 +260,8 @@ struct BandLabelQ : BandLabelBase {
 		else {
 			BandLabelBase::onButton(e);
 		}
-	}};
+	}
+};
 
 
 

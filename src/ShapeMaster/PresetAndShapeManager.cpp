@@ -7,7 +7,6 @@
 
 
 #include "PresetAndShapeManager.hpp"
-#include "OsdialogTemp.h"
 
 
 static const std::string factoryPrefix = "res/ShapeMaster/";
@@ -314,12 +313,7 @@ struct SaveUserSubItem : MenuItem {
 			osdialog_filters_free(filters);
 		});
 
-		#ifdef ARCH_WIN 
-		// temporary until RackV2, see ../OsdialogTemp.h (when removing, don't forget to remove additions to makefile, which are listed in comments at the top of ../OsdialogTemp.h
-		char* pathC = osdialog_file_win(OSDIALOG_SAVE, dir.c_str(), filename.c_str(), filters);
-		#else
 		char* pathC = osdialog_file(OSDIALOG_SAVE, dir.c_str(), filename.c_str(), filters);
-		#endif
 		if (!pathC) {
 			// Fail silently
 			return;
