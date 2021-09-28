@@ -17,11 +17,11 @@ struct FilterCutWidget : ParamWidget {
 	FilterCutWidget() {
 		box.size = Vec(6.0f, 6.0f);
 	};
-	void reset() override {
-		if (paramQuantity) {
-			paramQuantity->reset();
-		}
-	}
+	// void reset() override {
+		// if (paramQuantity) {
+			// paramQuantity->reset();
+		// }
+	// }
 };
 
 struct HPFCutoffParamQuantity : ParamQuantity {
@@ -225,6 +225,7 @@ struct GroupSelectDisplay : ParamWidget {
 	
 	void draw(const DrawArgs &args) override {
 		int grp = 0;
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			grp = (int)(paramQuantity->getValue() + 0.5f);
 		}
@@ -242,6 +243,7 @@ struct GroupSelectDisplay : ParamWidget {
 	};
 
 	void onHoverKey(const event::HoverKey &e) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			if (e.action == GLFW_PRESS) {
 				if (e.key >= GLFW_KEY_1 && e.key <= (GLFW_KEY_0 + numGroups)) {
@@ -262,18 +264,18 @@ struct GroupSelectDisplay : ParamWidget {
 		}
 	}
 	
-	void reset() override {
-		if (paramQuantity) {
-			paramQuantity->reset();
-		}
-	}
+	// void reset() override {
+		// if (paramQuantity) {
+			// paramQuantity->reset();
+		// }
+	// }
 
-	void randomize() override {
-		if (paramQuantity) {
-			float value = paramQuantity->getMinValue() + std::floor(random::uniform() * (paramQuantity->getRange() + 1));
-			paramQuantity->setValue(value);
-		}
-	}
+	// void randomize() override {
+		// if (paramQuantity) {
+			// float value = paramQuantity->getMinValue() + std::floor(random::uniform() * (paramQuantity->getRange() + 1));
+			// paramQuantity->setValue(value);
+		// }
+	// }
 };
 
 
@@ -428,16 +430,19 @@ struct EditableDisplayBase : LedDisplayTextField {
 		
 		// the code below is LedDisplayTextField.draw() without the background rect
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
+		std::shared_ptr<window::Font> font = APP->window->loadFont(fontPath);
+		nvgGlobalAlpha(args.vg, 1.0);
+		if (font && font->handle >= 0) {
 			bndSetFont(font->handle);
 
 			NVGcolor highlightColor = color;
 			highlightColor.a = 0.5;
 			int begin = std::min(cursor, selection);
 			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y,
-				box.size.x * 2, box.size.y,// allow overlap so no CR-LF
-				-1, color, textSize, text.c_str(), highlightColor, begin, end);
+			bndIconLabelCaret(args.vg,
+				textOffset.x, textOffset.y,
+				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
+				-1, color, 12, text.c_str(), highlightColor, begin, end);
 
 			bndSetFont(APP->window->uiFont->handle);
 		}
@@ -446,7 +451,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 
 	void onSelectKey(const event::SelectKey& e) override {
 		if (e.action == GLFW_PRESS && e.key == GLFW_KEY_TAB && tabNextFocus != NULL) {
-			APP->event->setSelected(tabNextFocus);
+			APP->event->setSelectedWidget(tabNextFocus);
 			e.consume(this);
 			return;			
 		}
@@ -499,7 +504,7 @@ struct MasterDisplay : EditableDisplayBase {
 	float* dimGain;
 	char* masterLabel;
 	float* dimGainIntegerDB;
-	int* idSrc;
+	int64_t* idSrc;
 	int8_t* masterFaderScalesSendsSrc;
 	
 	MasterDisplay() {
@@ -515,7 +520,7 @@ struct MasterDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Master settings: " + std::string(masterLabel) + string::f("  (id %d)", *idSrc + 1);
+			mastSetLabel->text = "Master settings: " + std::string(masterLabel) + string::f("  (id %lli)", *idSrc + 1);
 			menu->addChild(mastSetLabel);
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);
@@ -985,6 +990,7 @@ struct MmSoloButtonMutex : MmSoloButton {
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if (((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL)) {
+				ParamQuantity* paramQuantity = getParamQuantity();
 				int soloParamId = paramQuantity->paramId - baseSoloParamId;
 				bool isTrack = (soloParamId < numTracks);
 				int end = numTracks + (isTrack ? 0 : numGroups);
@@ -1026,6 +1032,7 @@ struct MmSoloButtonMutex : MmSoloButton {
 			else {
 				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
 				if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+					ParamQuantity* paramQuantity = getParamQuantity();
 					for (int i = 0; i < (numTracks + numGroups); i++) {
 						if (i != paramQuantity->paramId - baseSoloParamId) {
 							soloParams[i].setValue(0.0f);
@@ -1051,6 +1058,7 @@ struct MmMuteFadeButtonWithClear : MmMuteFadeButton {
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+				ParamQuantity* paramQuantity = getParamQuantity();
 				for (int i = 0; i < (numTracksAndGroups); i++) {
 					if (i != paramQuantity->paramId - baseMuteParamId) {
 						muteParams[i].setValue(0.0f);
@@ -1074,6 +1082,7 @@ struct MmSmallFaderWithLink : MmSmallFader {
 	int baseFaderParamId;
 	
 	void onButton(const event::Button &e) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
 		int faderIndex = paramQuantity->paramId - baseFaderParamId;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
@@ -1092,6 +1101,7 @@ struct MmSmallFaderWithLink : MmSmallFader {
 
 	void draw(const DrawArgs &args) override {
 		MmSmallFader::draw(args);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int faderIndex = paramQuantity->paramId - baseFaderParamId;
 			if (isLinked(linkBitMaskSrc, faderIndex)) {

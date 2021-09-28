@@ -377,17 +377,17 @@ struct MeldWidget : ModuleWidget {
 				// update bypass led-buttons' tooltips
 				for (int i = 0; i < 8; i++) {
 					if (facePlate == 0) {
-						module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass %i", i + 1);
+						module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass %i", i + 1);
 					}
 					else if (facePlate == 1) {
-						module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass %i", i + 1 + 8);
+						module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass %i", i + 1 + 8);
 					}
 					else {
 						if (i < 4) {
-							module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass G%i", i + 1);
+							module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass G%i", i + 1);
 						}
 						else {
-							module->paramQuantities[Meld::BYPASS_PARAMS + i]->label = string::f("Bypass A%i", i + 1 - 4);
+							module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass A%i", i + 1 - 4);
 						}
 					}
 				}

@@ -766,7 +766,7 @@ struct PresetLabel : SmLabelBase {
 				text = defaultLabelText;
 			}
 			else {
-				text = string::filenameBase(string::filename(text));
+				text = system::getFilename(text);// string::filenameBase(string::filename(text));
 				if (presetOrShapeDirty != NULL && *presetOrShapeDirty) {
 					text.insert(0, "*");
 				}
@@ -811,7 +811,7 @@ struct ShapeLabel : SmLabelBase {
 				text = defaultLabelText;
 			}
 			else {
-				text = string::filenameBase(string::filename(text));
+				text = system::getFilename(text);// string::filenameBase(string::filename(text));
 				if (presetOrShapeDirty != NULL && *presetOrShapeDirty) {
 					text.insert(0, "*");
 				}
@@ -1155,6 +1155,7 @@ struct SmPlayButton : MmPlayButton {
 	Channel* channels;
 
 	void onDragStart(const event::DragStart& e) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity && paramQuantity->getValue() > 0.5f && (APP->window->getMods() & GLFW_MOD_ALT) != 0) {
 			paramQuantity->setValue(0.0f);
 			channels[*currChan].initRun(true);
@@ -1181,6 +1182,7 @@ struct SmRunButton : LedButton2 {
 	ShapeMaster* shapeMasterSrc;
 	void onDragStart(const event::DragStart& e) override {
 		LedButton2::onDragStart(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			if (paramQuantity->getValue() >= 0.5f) {
 				// Push RunningChange history action
@@ -1198,6 +1200,7 @@ struct SmLoopButton : MmLoopButton {
 	
 	void onDragStart(const event::DragStart& e) override {		
 		bool maxChanged = false;
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {			
 			if (paramQuantity->getValue() >= 0.5f && paramQuantity->getValue() < 1.5f && !channels[*currChan].currTrigModeAllowsLoop()) {
 				maxChanged = true;
@@ -1230,6 +1233,7 @@ struct SmSyncButton : MmSyncButton {
 	
 	void onDragStart(const event::DragStart& e) override {		
 		#ifdef SM_PRO
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (inClock->isConnected() || (paramQuantity && paramQuantity->getValue() >= 0.5f) ) {
 			MmSyncButton::onDragStart(e);
 		}
@@ -1283,6 +1287,7 @@ struct SmKnob : Mm8mmKnobGrayWithArc {
 	
 	void onDragMove(const event::DragMove& e) override {
 		MmKnobWithArc::onDragMove(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			displayInfo->lastMovedKnobId = paramQuantity->paramId % NUM_CHAN_PARAMS;
 			displayInfo->lastMovedKnobTime = time(0);

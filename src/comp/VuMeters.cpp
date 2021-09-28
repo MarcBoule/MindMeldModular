@@ -31,7 +31,7 @@ void VuMeterBase::prepareYellowAndRedThresholds(float yellowMinDb, float redMinD
 
 
 void VuMeterBase::processPeakHold() {// use APP->window->getLastFrameRate()
-	holdTimeRemainBeforeReset -= 1.0f / APP->window->getLastFrameRate();
+	holdTimeRemainBeforeReset -= APP->window->getLastFrameDuration();
 	if ( holdTimeRemainBeforeReset < 0.0f ) {
 		holdTimeRemainBeforeReset = 2.0f;// in seconds
 		peakHold[0] = 0.0f;

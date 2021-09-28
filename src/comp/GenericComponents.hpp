@@ -224,7 +224,6 @@ struct MmBypassButton : SvgSwitch {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-on.svg")));
 		shadow->opacity = 0.0;
 	}
-	void randomize() override {}
 };
 
 struct MmGroupMinusButtonNoParam : MomentarySvgSwitchNoParam {

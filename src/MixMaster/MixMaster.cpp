@@ -1027,7 +1027,9 @@ struct MixMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/mixmaster.svg")));
-		panelBorder = findBorder(panel);		
+		Widget* pw = getPanel();
+		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
+		panelBorder = findBorder(panel->fb);
 		
 		// Inserts and CVs
 		static const float xIns = 13.8;
@@ -1332,7 +1334,9 @@ struct MixMasterJrWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/mixmaster-jr.svg")));
-		panelBorder = findBorder(panel);		
+		Widget* pw = getPanel();
+		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
+		panelBorder = findBorder(panel->fb);
 		
 		// Inserts and CVs
 		static const float xIns = 13.8;

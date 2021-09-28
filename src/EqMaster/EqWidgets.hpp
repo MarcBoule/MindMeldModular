@@ -19,7 +19,7 @@
 struct TrackLabel : LedDisplayChoice {
 	int8_t *trackLabelColorsSrc = NULL;
 	int8_t *bandLabelColorsSrc;
-	int *mappedId;
+	int64_t *mappedId;
 	char *trackLabelsSrc;
 	Param *trackParamSrc;
 	TrackEq *trackEqsSrc;
@@ -854,9 +854,7 @@ struct TrackKnob : MmBigKnobWhite {
 		cVec = box.size.div(2.0f);
 		totAng = maxAngle - minAngle;
 	}
-	
-	void randomize() override {}
-	
+		
 	void fillDotPosAndDefState() {
 		// requires numTracks to be up to date
 		float deltAng = totAng / ((float)numTracks - 1.0f);
@@ -880,6 +878,7 @@ struct TrackKnob : MmBigKnobWhite {
 	
 	void draw(const DrawArgs &args) override {
 		MmBigKnobWhite::draw(args);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int newNumTracks = (int)(paramQuantity->getMaxValue() + 1.5f);
 			if (newNumTracks != numTracks) {
@@ -919,6 +918,7 @@ struct TrackGainKnob : Mm8mmKnobGrayWithArcTopCentered {
 	
 	void onChange(const event::Change& e) override {
 		Mm8mmKnobGrayWithArcTopCentered::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue());
@@ -959,6 +959,7 @@ struct BandKnob : MmKnobWithArc {
 	
 	void onDragMove(const event::DragMove& e) override {
 		MmKnobWithArc::onDragMove(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			*lastMovedKnobIdSrc = paramQuantity->paramId;
 			*lastMovedKnobTimeSrc = time(0);
@@ -974,6 +975,7 @@ struct EqFreqKnob : BandKnob {
 		
 	void onChange(const event::Change& e) override {
 		BandKnob::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setFreq(BAND, paramQuantity->getValue());
@@ -990,6 +992,7 @@ struct EqGainKnob : BandKnob {
 
 	void onChange(const event::Change& e) override {
 		BandKnob::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setGain(BAND, paramQuantity->getValue());
@@ -1005,6 +1008,7 @@ struct EqQKnob : BandKnob {
 	
 	void onChange(const event::Change& e) override {
 		BandKnob::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setQ(BAND, paramQuantity->getValue());
@@ -1023,12 +1027,12 @@ struct ActiveSwitch : MmSwitch {
 
 	void onChange(const event::Change& e) override {
 		MmSwitch::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setTrackActive(paramQuantity->getValue() >= 0.5f);
 		}
 	}
-	void randomize() override {}
 };
 
 struct BandSwitch : app::SvgSwitch {
@@ -1064,6 +1068,7 @@ struct BandActiveSwitch : BandSwitch {
 	}
 	void onChange(const event::Change& e) override {
 		BandSwitch::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			trackEqsSrc[currTrk].setBandActive(BAND, paramQuantity->getValue());
@@ -1113,6 +1118,7 @@ struct PeakSwitch : PeakShelfBase {
 	}
 	void onChange(const event::Change& e) override {
 		SvgSwitch::onChange(e);
+		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
 			bool state = paramQuantity->getValue() >= 0.5f;

@@ -113,11 +113,11 @@ std::string timeToString(float timeVal, bool lowPrecision) {
 	
 	std::string timeText("");
 	if (timeMins != 0) {
-		timeText.append(string::f("%i:", timeMins));
+		timeText.append(string::f("%li:", timeMins));
 	}
-	timeText.append(string::f("%i", timeSecs));
+	timeText.append(string::f("%li", timeSecs));
 	if (timeUsecs != 0) {
-		timeText.append(string::f(".%.*i", resi, timeUsecs));
+		timeText.append(string::f(".%.*li", resi, timeUsecs));
 		if (timeText[timeText.size() - 1] == '0') {
 			timeText.erase(timeText.size() - 1);
 			if (timeText[timeText.size() - 1] == '0') {

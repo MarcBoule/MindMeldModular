@@ -123,11 +123,11 @@ struct MomentaryCvItem : MenuItem {
 
 
 struct FetchLabelsItem : MenuItem {
-	int *mappedIdSrc;
+	int64_t *mappedIdSrc;
 	
 	struct FetchLabelsSubItem : MenuItem {
-		int *mappedIdSrc;
-		int setId;
+		int64_t *mappedIdSrc;
+		int64_t setId;
 		void onAction(const event::Action &e) override {
 			*mappedIdSrc = setId;
 		}
@@ -148,7 +148,7 @@ struct FetchLabelsItem : MenuItem {
 			if (*mappedIdSrc == pl.id) {
 				sawMappedId = true;
 			}
-			std::string mixerName = std::string(pl.name) + string::f("  (id %d)", pl.id);
+			std::string mixerName = std::string(pl.name) + string::f("  (id %lli)", pl.id);
 			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(*mappedIdSrc == pl.id));
 			idItem->mappedIdSrc = mappedIdSrc;
 			idItem->setId = pl.id;
@@ -157,7 +157,7 @@ struct FetchLabelsItem : MenuItem {
 		delete mixerMessageSurvey;
 		
 		if (!sawMappedId) {
-			std::string mixerName = std::string("[deleted]") + string::f("  (id %d)", *mappedIdSrc);
+			std::string mixerName = std::string("[deleted]") + string::f("  (id %lli)", *mappedIdSrc);
 			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(true));
 			idItem->mappedIdSrc = mappedIdSrc;
 			idItem->setId = *mappedIdSrc;

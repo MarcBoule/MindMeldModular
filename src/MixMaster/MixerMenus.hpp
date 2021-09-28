@@ -942,9 +942,13 @@ struct TrackReorderItem : MenuItem {
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
 				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * numTracks]);// only top needed since inputs have at most one cable
 				if (cwRip != NULL) {
-					APP->scene->rack->removeCable(cwRip);
-					cwRip->setInput(inputWidgets[destTrk + i * numTracks]);
-					APP->scene->rack->addCable(cwRip);
+					// v1:
+					// APP->scene->rack->removeCable(cwRip);
+					// cwRip->setInput(inputWidgets[destTrk + i * numTracks]);
+					// APP->scene->rack->addCable(cwRip);
+					// v2:
+					cwRip->inputPort = inputWidgets[destTrk + i * numTracks];
+					cwRip->updateCable();
 				}
 			}
 		}
@@ -959,8 +963,12 @@ struct TrackReorderItem : MenuItem {
 		void reconnectTrackInputs(int trk) {
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
 				if (cwClr[i] != NULL) {
-					cwClr[i]->setInput(inputWidgets[trk + i * numTracks]);
-					APP->scene->rack->addCable(cwClr[i]);
+					// v1:
+					// cwClr[i]->setInput(inputWidgets[trk + i * numTracks]);
+					// APP->scene->rack->addCable(cwClr[i]);
+					// v2: 
+					cwClr[i]->inputPort = inputWidgets[trk + i * numTracks];
+					cwClr[i]->updateCable();
 				}
 			}
 		}

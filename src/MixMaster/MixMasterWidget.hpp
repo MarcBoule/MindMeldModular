@@ -191,7 +191,8 @@ void step() override {
 		int newSizeAdd = (module->auxExpanderPresent ? 3 : 0);
 		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 			panelBorder->box.size.x = (box.size.x + newSizeAdd);
-			((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			Widget* panel = getPanel();
+			((FramebufferWidget*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 		}
 		
 		// Update param tooltips and message bus at 1Hz
@@ -203,10 +204,10 @@ void step() override {
 				std::string trackLabel = std::string(&(module->trackLabels[i * 4]), 4);
 				// Pan
 				snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
-				module->paramQuantities[TMixMaster::TRACK_PAN_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::TRACK_PAN_PARAMS + i]->name = strBuf;
 				// Fader
 				snprintf(strBuf, 32, "%s: level", trackLabel.c_str());
-				module->paramQuantities[TMixMaster::TRACK_FADER_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::TRACK_FADER_PARAMS + i]->name = strBuf;
 				// Mute/fade
 				if (module->tracks[i].isFadeMode()) {
 					snprintf(strBuf, 32, "%s: fade", trackLabel.c_str());
@@ -214,20 +215,20 @@ void step() override {
 				else {
 					snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
 				}
-				module->paramQuantities[TMixMaster::TRACK_MUTE_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::TRACK_MUTE_PARAMS + i]->name = strBuf;
 				// Solo
 				snprintf(strBuf, 32, "%s: solo", trackLabel.c_str());
-				module->paramQuantities[TMixMaster::TRACK_SOLO_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::TRACK_SOLO_PARAMS + i]->name = strBuf;
 				// Group select
 				snprintf(strBuf, 32, "%s: group", trackLabel.c_str());
-				module->paramQuantities[TMixMaster::GROUP_SELECT_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_SELECT_PARAMS + i]->name = strBuf;
 				
 				// HPF cutoff
 				snprintf(strBuf, 32, "%s: HPF cutoff", trackLabel.c_str());
-				module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i]->name = strBuf;
 				// LPF cutoff
 				snprintf(strBuf, 32, "%s: LPF cutoff", trackLabel.c_str());
-				module->paramQuantities[TMixMaster::TRACK_LPCUT_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::TRACK_LPCUT_PARAMS + i]->name = strBuf;
 
 			}
 			// Group
@@ -235,10 +236,10 @@ void step() override {
 				std::string groupLabel = std::string(&(module->trackLabels[(N_TRK + i) * 4]), 4);
 				// Pan
 				snprintf(strBuf, 32, "%s: pan", groupLabel.c_str());
-				module->paramQuantities[TMixMaster::GROUP_PAN_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_PAN_PARAMS + i]->name = strBuf;
 				// Fader
 				snprintf(strBuf, 32, "%s: level", groupLabel.c_str());
-				module->paramQuantities[TMixMaster::GROUP_FADER_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_FADER_PARAMS + i]->name = strBuf;
 				// Mute/fade
 				if (module->groups[i].isFadeMode()) {
 					snprintf(strBuf, 32, "%s: fade", groupLabel.c_str());
@@ -246,22 +247,22 @@ void step() override {
 				else {
 					snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
 				}
-				module->paramQuantities[TMixMaster::GROUP_MUTE_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_MUTE_PARAMS + i]->name = strBuf;
 				// Solo
 				snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
-				module->paramQuantities[TMixMaster::GROUP_SOLO_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_SOLO_PARAMS + i]->name = strBuf;
 				
 				// HPF cutoff
 				snprintf(strBuf, 32, "%s: HPF cutoff", groupLabel.c_str());
-				module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i]->name = strBuf;
 				// LPF cutoff
 				snprintf(strBuf, 32, "%s: LPF cutoff", groupLabel.c_str());
-				module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i]->name = strBuf;
 			}
 			std::string masterLabel = std::string(module->master.masterLabel, 6);
 			// Fader
 			snprintf(strBuf, 32, "%s: level", masterLabel.c_str());
-			module->paramQuantities[TMixMaster::MAIN_FADER_PARAM]->label = strBuf;
+			module->paramQuantities[TMixMaster::MAIN_FADER_PARAM]->name = strBuf;
 			// Mute/fade
 			if (module->master.isFadeMode()) {
 				snprintf(strBuf, 32, "%s: fade", masterLabel.c_str());
@@ -269,13 +270,13 @@ void step() override {
 			else {
 				snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
 			}
-			module->paramQuantities[TMixMaster::MAIN_MUTE_PARAM]->label = strBuf;
+			module->paramQuantities[TMixMaster::MAIN_MUTE_PARAM]->name = strBuf;
 			// Dim
 			snprintf(strBuf, 32, "%s: dim", masterLabel.c_str());
-			module->paramQuantities[TMixMaster::MAIN_DIM_PARAM]->label = strBuf;
+			module->paramQuantities[TMixMaster::MAIN_DIM_PARAM]->name = strBuf;
 			// Mono
 			snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
-			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->label = strBuf;
+			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->name = strBuf;
 
 			// Mixer Message Bus (for EQ and others)
 			module->sendToMessageBus();

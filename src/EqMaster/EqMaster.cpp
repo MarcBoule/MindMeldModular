@@ -40,7 +40,7 @@ struct EqMaster : Module {
 	// none
 	
 	// Need to save, with reset
-	int mappedId;// 0 means manual
+	int64_t mappedId;// 0 means manual
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
 	int8_t trackLabelColors[24];
 	int8_t trackVuColors[24];
@@ -132,6 +132,10 @@ struct EqMaster : Module {
 		configParam(LOW_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_lowPeak ? 1.0f : 0.0f, "LF peak/shelf");
 		configParam(HIGH_PEAK_PARAM, 0.0f, 1.0f, DEFAULT_highPeak ? 1.0f : 0.0f, "HF peak/shelf");
 		configParam(GLOBAL_BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Global bypass");
+		
+		getParamQuantity(GLOBAL_BYPASS_PARAM)->randomizeEnabled = false;
+		getParamQuantity(TRACK_PARAM)->randomizeEnabled = false;
+		getParamQuantity(TRACK_ACTIVE_PARAM)->randomizeEnabled = false;
 		
 		onReset();
 		
@@ -804,7 +808,7 @@ struct EqMaster : Module {
 
 struct EqMasterWidget : ModuleWidget {
 	time_t oldTime = 0;
-	int oldMappedId = 0;
+	int64_t oldMappedId = 0;
 	int oldSelectedTrack = -1;
 	TrackLabel* trackLabel;
 	int lastMovedKnobId = -1;
@@ -866,7 +870,9 @@ struct EqMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/eqmaster.svg")));
-		panelBorder = findBorder(panel);
+		Widget* pw = getPanel();
+		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
+		panelBorder = findBorder(panel->fb);
 		
 		
 		// Left side controls and inputs
@@ -1191,7 +1197,9 @@ struct EqMasterWidget : ModuleWidget {
 			if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 				panelBorder->box.pos.x = (newSizeAdd == 3 ? -3 : 0);
 				panelBorder->box.size.x = (box.size.x + newSizeAdd);
-				((SvgPanel*)panel)->dirty = true;
+				Widget* panel = getPanel();
+				// SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
+				((FramebufferWidget*)panel)->dirty = true;
 			}
 		}
 		Widget::step();

@@ -121,7 +121,7 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 	dragHistoryStep = NULL;
 	dragHistoryMisc = NULL;
 	
-	Vec dragStartPos = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);
+	Vec dragStartPos = APP->scene->rack->getMousePos().minus(parent->box.pos).minus(box.pos);
 	dragStartPosY = dragStartPos.y;// used only when dragging control points
 	
 	if (e.button == GLFW_MOUSE_BUTTON_LEFT && setting3Src->cc4[2] == 0) {// if not cloaked
@@ -213,7 +213,7 @@ void ShapeMasterDisplay::onDragMove(const event::DragMove& e) {
 	}
 	
 	Shape* shape = channels[*currChan].getShape();
-	Vec posToSet = APP->scene->rack->mousePos.minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
+	Vec posToSet = APP->scene->rack->getMousePos().minus(parent->box.pos).minus(box.pos);// posToSet is in pixel space
 	
 	int mods = APP->window->getMods();
 	if (dragPtSelect != MAX_PTS) {

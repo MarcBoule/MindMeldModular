@@ -122,7 +122,7 @@ void savePresetOrShape(const std::string path, Channel* channel, bool isPreset, 
 
 	json_dumpf(presetOrShapeFileJ, file, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
 	std::fclose(file);
-	system::moveFile(tmpPath, path);
+	system::copy(tmpPath, path); system::remove(tmpPath);// system::moveFile(tmpPath, path);
 
 	if (isPreset) {
 		channel->setPresetPath(path);
@@ -146,15 +146,15 @@ void PresetAndShapeManager::construct(Channel* _channels, Channel* _channelDirty
 	miscSettings3 = _miscSettings3;
 	std::string factoryPath = asset::plugin(pluginInstance, factoryPrefix);
 	factoryPath.resize(factoryPath.size() - 1);// remove trailing "/"
-	std::list<std::string> factoryEntries = system::getEntriesRecursive(factoryPath, 3);// 3 is max depth (1 = current path)
+	std::vector<std::string> factoryEntries = system::getEntries(factoryPath, 3);// system::getEntriesRecursive(factoryPath, 3);// 3 is max depth (1 = current path)
 	
 	// create vector while ignoring anything that is not an .smpr file
 	for (auto it = factoryEntries.begin(); it != factoryEntries.end(); it++) {
 		if (system::isFile(*it)) {
-			if (string::filenameExtension(*it) == "smpr") {
+			if (system::getExtension(*it) == ".smpr") {// string::filenameExtension(*it)
 				factoryPresetVector.push_back(*it);
 			}
-			else if (string::filenameExtension(*it) == "smsh") {
+			else if (system::getExtension(*it) == ".smsh") {// string::filenameExtension(*it)
 				factoryShapeVector.push_back(*it);
 			}
 		} 
@@ -194,10 +194,13 @@ void PresetAndShapeManager::executeOrStageWorkload(int c, int _workType, bool _w
 }
 
 
-PresetAndShapeManager::PresetAndShapeManager() : worker(&PresetAndShapeManager::file_worker, this) {}
+PresetAndShapeManager::PresetAndShapeManager() : worker(&PresetAndShapeManager::file_worker, this) {
+	context = contextGet();
+}
 
 
 void PresetAndShapeManager::file_worker() {
+	contextSet(context);
 	random::init();// Rack doc says to call once per thread, or else random::u32() etc will always return 0
 	while (true) {
 		std::unique_lock<std::mutex> lk(mtx);
@@ -234,12 +237,12 @@ void PresetAndShapeManager::file_worker() {
 						}
 						else {
 							// user
-							std::list<std::string> userEntries = system::getEntries(string::directory(path));
+							std::vector<std::string> userEntries = system::getEntries(system::getDirectory(path));// string::directory(path)
 							std::vector<std::string> userVector;
 							int pathIndex = -1;
-							std::string presetOrShapeExt = (isPreset ? "smpr" : "smsh");
+							std::string presetOrShapeExt = (isPreset ? ".smpr" : ".smsh");
 							for (std::string entry : userEntries) {
-								if (!(system::isFile(entry) && string::filenameExtension(entry) == presetOrShapeExt)) {
+								if (!(system::isFile(entry) && system::getExtension(entry) == presetOrShapeExt)) {
 									continue;
 								}
 								if (path == entry) {
@@ -302,8 +305,8 @@ struct SaveUserSubItem : MenuItem {
 			filename = "Untitled";
 		}
 		else {
-			dir = string::directory(presetOrShapePath);
-			filename = string::filename(presetOrShapePath);
+			dir = system::getDirectory(presetOrShapePath);// string::directory(presetOrShapePath);
+			filename = system::getFilename(presetOrShapePath);// string::filename(presetOrShapePath);
 		}
 
 		osdialog_filters* filters = osdialog_filters_parse(isPreset ? PRESET_FILTER : SHAPE_FILTER);
@@ -328,7 +331,7 @@ struct SaveUserSubItem : MenuItem {
 		// Append .smpr or .smsh extension if no extension was given.
 		std::string pathStr = pathC;
 		std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
-		if (string::filenameExtension(string::filename(pathStr)) == "") {
+		if (system::getExtension(pathStr) == "") {
 			pathStr += isPreset ? ".smpr" : ".smsh";
 		}
 
@@ -492,15 +495,15 @@ struct DirectoryItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 
-		std::list<std::string> entries = system::getEntries(pathToScan);
-		std::string presetOrShapeExt = (isPreset ? "smpr" : "smsh");
+		std::vector<std::string> entries = system::getEntries(pathToScan);
+		std::string presetOrShapeExt = (isPreset ? ".smpr" : ".smsh");
 		
 		for (std::string entry : entries) {
 			if (system::isFile(entry)) {
-				if (!(string::filenameExtension(entry) == presetOrShapeExt)) {
+				if (!(system::getExtension(entry) == presetOrShapeExt)) {
 					continue;
 				}
-				std::string presetOrShapeBase = string::filenameBase(string::filename(entry));
+				std::string presetOrShapeBase = system::getFilename(entry);// string::filenameBase(string::filename(entry));
 				PresetOrShapeItem *prstOrShpItem = createMenuItem<PresetOrShapeItem>(presetOrShapeBase.c_str(), "");
 				prstOrShpItem->path = entry;
 				prstOrShpItem->channel = channel;
@@ -517,7 +520,7 @@ struct DirectoryItem : MenuItem {
 };
 
 void appendDirMenu(std::string dirPath, Menu* menu, Channel* channel, bool isPreset) {
-	std::string dirName = string::filenameBase(string::filename(dirPath));
+	std::string dirName = system::getFilename(dirPath);// string::filenameBase(string::filename(dirPath));
 	DirectoryItem *dirItem = createMenuItem<DirectoryItem>(dirName, RIGHT_ARROW);
 	dirItem->pathToScan = dirPath;
 	dirItem->channel = channel;

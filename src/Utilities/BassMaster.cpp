@@ -308,9 +308,6 @@ struct BassMasterWidget : ModuleWidget {
 		};
 		
 		void draw(const DrawArgs &args) override {
-			if (!(font = APP->window->loadFont(fontPath))) {// TODO remove this if(){} if LedDisplayChoice::draw() has it in new v2
-				return;
-			}
 			if (dispColorPtr) {
 				color = DISP_COLORS[*dispColorPtr];
 			}	

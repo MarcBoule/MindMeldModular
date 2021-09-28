@@ -18,7 +18,7 @@
 
 
 struct MessageBase {
-	int id;
+	int64_t id;
 	char name[7] = {0};
 };
 
@@ -32,10 +32,10 @@ struct MixerMessage : MessageBase {
 
 struct MixerMessageBus {
 	std::mutex memberMutex;
-	std::unordered_map<int, MixerMessage> memberData;// first value is a "Module::id + 1" (so that 0 = deregistered, instead of -1)
+	std::unordered_map<int64_t, MixerMessage> memberData;// first value is a "Module::id + 1" (so that 0 = deregistered, instead of -1)
 
 
-	void send(int id, char* masterLabel, char* trackLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {
+	void send(int64_t id, char* masterLabel, char* trackLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
@@ -51,7 +51,7 @@ struct MixerMessageBus {
 			memcpy(&memberData[id].dispColors[1], &_dispColors[1], 16 + 4 + 4);
 		}
 	}
-	void sendJr(int id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {// does not write to tracks 9-16 and groups 3-4 when jr.
+	void sendJr(int64_t id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {// does not write to tracks 9-16 and groups 3-4 when jr.
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
@@ -76,7 +76,7 @@ struct MixerMessageBus {
 
 	void receive(MixerMessage* message) {// id of sender we want to receive from must be in message->id, other fields will be filled by this method as the receive mechanism. If non-existing sender is requested, a blank message with an id of 0 will be returned
 		std::lock_guard<std::mutex> lock(memberMutex);
-		int id = message->id;
+		int64_t id = message->id;
 		*message = memberData[id];
 	}
 
@@ -97,7 +97,7 @@ struct MixerMessageBus {
 		return data;
 	}
 
-	void deregisterMember(int id) {
+	void deregisterMember(int64_t id) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData.erase(id);
 	}

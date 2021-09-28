@@ -43,6 +43,7 @@ void MmKnobWithArc::drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* 
 
 void MmKnobWithArc::draw(const DrawArgs &args) {
 	MmKnob::draw(args);
+	ParamQuantity* paramQuantity = getParamQuantity();
 	if (paramQuantity) {
 		float aParam = -10000.0f;
 		float aBase = TOP_ANGLE;

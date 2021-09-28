@@ -90,7 +90,8 @@ void step() override {
 		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 			panelBorder->box.pos.x = -newSizeAdd;
 			panelBorder->box.size.x = (box.size.x + newSizeAdd);
-			((SvgPanel*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			Widget* panel = getPanel();
+			((FramebufferWidget*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
 		}
 		
 		// Update param tooltips at 1Hz
@@ -109,23 +110,23 @@ void step() override {
 				// Aux A-D
 				for (int auxi = 0; auxi < 4; auxi++) {
 					snprintf(strBuf, 32, "%s: send %s", trackLabel.c_str(), auxLabels[auxi].c_str());
-					module->paramQuantities[TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + auxi]->label = strBuf;
+					module->paramQuantities[TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + auxi]->name = strBuf;
 				}
 				// Mutes
 				snprintf(strBuf, 32, "%s: send mute", trackLabel.c_str());
-				module->paramQuantities[TAuxExpander::TRACK_AUXMUTE_PARAMS + i]->label = strBuf;
+				module->paramQuantities[TAuxExpander::TRACK_AUXMUTE_PARAMS + i]->name = strBuf;
 			}
 
 			for (int auxi = 0; auxi < 4; auxi++) {
 				// Global send aux A-D
 				snprintf(strBuf, 32, "%s: global send", auxLabels[auxi].c_str());
-				module->paramQuantities[TAuxExpander::GLOBAL_AUXSEND_PARAMS + auxi]->label = strBuf;
+				module->paramQuantities[TAuxExpander::GLOBAL_AUXSEND_PARAMS + auxi]->name = strBuf;
 				// Global pan return aux A-D
 				snprintf(strBuf, 32, "%s: return pan", auxLabels[auxi].c_str());
-				module->paramQuantities[TAuxExpander::GLOBAL_AUXPAN_PARAMS + auxi]->label = strBuf;
+				module->paramQuantities[TAuxExpander::GLOBAL_AUXPAN_PARAMS + auxi]->name = strBuf;
 				// Global return aux A-D
 				snprintf(strBuf, 32, "%s: return level", auxLabels[auxi].c_str());
-				module->paramQuantities[TAuxExpander::GLOBAL_AUXRETURN_PARAMS + auxi]->label = strBuf;
+				module->paramQuantities[TAuxExpander::GLOBAL_AUXRETURN_PARAMS + auxi]->name = strBuf;
 				// Global mute/fade
 				if (module->auxFadeRatesAndProfiles[auxi] >= GlobalConst::minFadeRate) {
 					snprintf(strBuf, 32, "%s: return fade", auxLabels[auxi].c_str());
@@ -133,13 +134,13 @@ void step() override {
 				else {
 					snprintf(strBuf, 32, "%s: return mute", auxLabels[auxi].c_str());
 				}
-				module->paramQuantities[TAuxExpander::GLOBAL_AUXMUTE_PARAMS + auxi]->label = strBuf;
+				module->paramQuantities[TAuxExpander::GLOBAL_AUXMUTE_PARAMS + auxi]->name = strBuf;
 				// Global solo
 				snprintf(strBuf, 32, "%s: return solo", auxLabels[auxi].c_str());
-				module->paramQuantities[TAuxExpander::GLOBAL_AUXSOLO_PARAMS + auxi]->label = strBuf;
+				module->paramQuantities[TAuxExpander::GLOBAL_AUXSOLO_PARAMS + auxi]->name = strBuf;
 				// Global return group select
 				snprintf(strBuf, 32, "%s: return group", auxLabels[auxi].c_str());
-				module->paramQuantities[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + auxi]->label = strBuf;
+				module->paramQuantities[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + auxi]->name = strBuf;
 			}
 		}
 	}

@@ -117,7 +117,7 @@ struct TimeValueField : ui::TextField {
 
 	void step() override {
 		// Keep selected
-		// APP->event->setSelected(this);
+		// APP->event->setSelectedWidget(this);
 		// TextField::step();
 	}
 
@@ -168,7 +168,7 @@ struct VoltValueField : ui::TextField {
 
 	void step() override {
 		// Keep selected
-		// APP->event->setSelected(this);
+		// APP->event->setSelectedWidget(this);
 		// TextField::step();
 	}
 
@@ -739,7 +739,7 @@ struct ChanNameField : ui::TextField {
 
 	void step() override {
 		// Keep selected
-		APP->event->setSelected(this);
+		APP->event->setSelectedWidget(this);
 		TextField::step();
 	}
 
@@ -1444,7 +1444,7 @@ struct SnapValueField : ui::TextField {
 
 	void step() override {
 		// Keep selected
-		APP->event->setSelected(this);
+		APP->event->setSelectedWidget(this);
 		TextField::step();
 	}
 
@@ -1747,7 +1747,7 @@ struct UnsyncedLengthValueField : ui::TextField {
 
 	void step() override {
 		// Keep selected
-		APP->event->setSelected(this);
+		APP->event->setSelectedWidget(this);
 		TextField::step();
 	}
 

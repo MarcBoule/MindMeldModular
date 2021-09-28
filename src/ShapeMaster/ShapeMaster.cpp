@@ -369,7 +369,9 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 
 	// Main panels from Inkscape
 	setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/ShapeMaster.svg")));
-	panelBorder = findBorder(panel);
+	Widget* pw = getPanel();
+	SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
+	panelBorder = findBorder(panel->fb);
 
 	// Left side (audio, trig, clock, reset, run inputs)
 
@@ -744,6 +746,7 @@ void ShapeMasterWidget::step() {
 	ShapeMaster* module = (ShapeMaster*)(this->module);
 
 	if (module) {
+		Widget* panel = getPanel();
 		int chan = module->currChan;
 
 		bool syncedLengthVisible = module->params[SYNC_PARAM + chan * NUM_CHAN_PARAMS].getValue() >= 0.5f;
@@ -815,10 +818,10 @@ void ShapeMasterWidget::step() {
 		if (module->expPresentRight) {
 			newSizeAdd += 4;// needs to be different than left so triggers dirty and no zoom bug
 		}
-		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
+		if (panelBorder && panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 			panelBorder->box.pos.x = (module->expPresentLeft ? -3 : 0);
 			panelBorder->box.size.x = (box.size.x + newSizeAdd);
-			((SvgPanel*)panel)->dirty = true;
+			((FramebufferWidget*)panel)->dirty = true;
 		}
 	}
 	

@@ -42,6 +42,7 @@ class PresetAndShapeManager {
 	std::mutex mtx;
 	std::thread worker;// http://www.cplusplus.com/reference/thread/thread/thread/
 	bool requestStop = false;
+	Context* context;
 		
 	// other
 	PackedBytes4* miscSettings3;
