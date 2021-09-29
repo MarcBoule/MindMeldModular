@@ -13,7 +13,7 @@
 
 
 
-struct ShapeMasterDisplayLight : LightWidget {	
+struct ShapeMasterDisplayLight : TransparentWidget {	
 	// constants
 	const NVGcolor DARKER_GRAY = nvgRGB(39, 39, 39);// grid and center of control points
 	const NVGcolor DARK_GRAY = nvgRGB(55, 55, 55);// major grid when applicable
@@ -59,7 +59,7 @@ struct ShapeMasterDisplayLight : LightWidget {
 		nvgLineCap(args.vg, NVG_ROUND);
 		
 		if (currChan != NULL) {
-					
+			nvgGlobalTint(args.vg, color::WHITE);					
 			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 
 			if (setting3Src->cc4[2] == 0) {// if not cloaked

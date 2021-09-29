@@ -76,6 +76,8 @@ struct ScopeSettingsButtons : OpaqueWidget {
 			return;
 		}
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
+			
 			NVGcolor colorOn = currChan ? CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]] : SCHEME_YELLOW;
 			
 			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
@@ -178,6 +180,8 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 			return;
 		}
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
+			
 			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
 			// nvgStrokeWidth(args.vg, 0.7f);
 			NVGcolor colorOn = currChan ? CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]] : SCHEME_YELLOW;
@@ -345,7 +349,7 @@ struct ProSvgWithMessage : ProSvg {
 #endif
 
 
-struct BigNumbers : LightWidget {
+struct BigNumbers : TransparentWidget {
 	// user must set up
 	int* currChan = NULL;
 	Channel* channels;
@@ -427,6 +431,7 @@ struct BigNumbers : LightWidget {
 				if (inactive) text = "";	
 				
 				if (font->handle >= 0 && text.compare("") != 0) {
+					nvgGlobalTint(args.vg, color::WHITE);
 					nvgFillColor(args.vg, color);
 					nvgFontFaceId(args.vg, font->handle);
 					nvgTextLetterSpacing(args.vg, 0.0);
@@ -488,6 +493,7 @@ struct SmLabelBase : widget::OpaqueWidget {
 
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
 			nvgFillColor(args.vg, color);
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
@@ -606,6 +612,8 @@ struct GridXLabel : SmLabelBase {
 
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
+			
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgFontSize(args.vg, 10.5f);
@@ -710,6 +718,8 @@ struct RangeLabel : SmLabelBase {
 
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
+			
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgFontSize(args.vg, 10.5f);

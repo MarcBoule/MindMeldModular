@@ -72,7 +72,7 @@ struct LPFCutoffParamQuantity : ParamQuantity {
 // --------------------
 
 
-struct CvAndFadePointerBase : LightWidget {
+struct CvAndFadePointerBase : TransparentWidget {
 	// instantiator must setup:
 	Param *srcParam;// to know where the fader is
 	float *srcParamWithCV = NULL;// for cv pointer, NULL indicates when cv pointers are not used (no cases so far)
@@ -82,7 +82,7 @@ struct CvAndFadePointerBase : LightWidget {
 	int8_t* dispColorLocalPtr;
 	
 	// derived class must setup:
-	// box.size // inherited from LightWidget, no need to declare
+	// box.size // inherited from TransparentWidget, no need to declare
 	float faderMaxLinearGain;
 	int faderScalingExponent;
 	
@@ -97,6 +97,7 @@ struct CvAndFadePointerBase : LightWidget {
 
 	void draw(const DrawArgs &args) override {
 	static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
+		nvgGlobalTint(args.vg, color::WHITE);
 		// cv pointer (draw only when cv has en effect)
 		if (srcParamWithCV != NULL && *srcParamWithCV != -100.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
 			float cvPosNormalized = *srcParamWithCV / maxTFader;
@@ -431,7 +432,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 		// the code below is LedDisplayTextField.draw() without the background rect
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		std::shared_ptr<window::Font> font = APP->window->loadFont(fontPath);
-		nvgGlobalAlpha(args.vg, 1.0);
+		nvgGlobalTint(args.vg, color::WHITE);
 		if (font && font->handle >= 0) {
 			bndSetFont(font->handle);
 

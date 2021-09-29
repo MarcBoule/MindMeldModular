@@ -45,6 +45,7 @@ void MmKnobWithArc::draw(const DrawArgs &args) {
 	MmKnob::draw(args);
 	ParamQuantity* paramQuantity = getParamQuantity();
 	if (paramQuantity) {
+		nvgGlobalTint(args.vg, color::WHITE);
 		float aParam = -10000.0f;
 		float aBase = TOP_ANGLE;
 		if (!topCentered) {

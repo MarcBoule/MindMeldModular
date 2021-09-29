@@ -49,6 +49,7 @@ void VuMeterBase::draw(const DrawArgs &args) {
 	processPeakHold();
 	
 	setColor();
+	nvgGlobalTint(args.vg, color::WHITE);
 	
 	if (isMasterTypeSrc != NULL && *isMasterTypeSrc == 1) {
 		// PEAK
@@ -75,7 +76,8 @@ void VuMeterBase::draw(const DrawArgs &args) {
 		
 		// PEAK_HOLD
 		drawPeakHold(args, peakHold[0], 0);
-		drawPeakHold(args, peakHold[1], barX + gapX);	}
+		drawPeakHold(args, peakHold[1], barX + gapX);	
+	}
 	
 	Widget::draw(args);
 }

@@ -131,6 +131,7 @@ struct BandLabelBase : widget::OpaqueWidget {
 
 		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
 			nvgFillColor(args.vg, color);
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
@@ -301,6 +302,7 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 			return;
 		}
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
@@ -399,6 +401,7 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 			return;
 		}
 		if (font->handle >= 0) {
+			nvgGlobalTint(args.vg, color::WHITE);
 			nvgFontFaceId(args.vg, font->handle);
 			nvgTextLetterSpacing(args.vg, 0.0);
 			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
@@ -432,7 +435,7 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 };
 
 
-struct BigNumbersEq : LightWidget {// TransparentWidget {
+struct BigNumbersEq : TransparentWidget {
 	// user must set up
 	Param* trackParamSrc = NULL;
 	TrackEq* trackEqsSrc;
@@ -491,6 +494,7 @@ struct BigNumbersEq : LightWidget {// TransparentWidget {
 
 			
 				if (font->handle >= 0 && text.compare("") != 0) {
+					nvgGlobalTint(args.vg, color::WHITE);
 					nvgFillColor(args.vg, color);
 					nvgFontFaceId(args.vg, font->handle);
 					nvgTextLetterSpacing(args.vg, 0.0);
@@ -504,7 +508,7 @@ struct BigNumbersEq : LightWidget {// TransparentWidget {
 };
 
 
-struct EqCurveAndGrid : LightWidget {// TransparentWidget {
+struct EqCurveAndGrid : TransparentWidget {
 	static constexpr float minDb = -20.0f;
 	static constexpr float maxDb = 20.0f;
 	static const int numDrawSteps = 200;
@@ -543,6 +547,7 @@ struct EqCurveAndGrid : LightWidget {// TransparentWidget {
 			return;
 		}
 		nvgSave(args.vg);
+		nvgGlobalTint(args.vg, color::WHITE);
 		
 		// grid
 		drawGrid(args);
@@ -881,6 +886,7 @@ struct TrackKnob : MmBigKnobWhite {
 		MmBigKnobWhite::draw(args);
 		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
+			nvgGlobalTint(args.vg, color::WHITE);
 			int newNumTracks = (int)(paramQuantity->getMaxValue() + 1.5f);
 			if (newNumTracks != numTracks) {
 				numTracks = newNumTracks;
