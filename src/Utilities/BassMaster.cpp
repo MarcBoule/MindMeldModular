@@ -297,7 +297,6 @@ template<bool IS_JR>
 struct BassMasterWidget : ModuleWidget {	
 	struct BassMasterLabel : LedDisplayChoice {
 		int8_t* dispColorPtr = NULL;
-		std::string fontPath;
 		
 		BassMasterLabel() {
 			box.size = mm2px(Vec(10.6f, 5.0f));

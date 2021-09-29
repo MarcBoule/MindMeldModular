@@ -411,8 +411,8 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int8_t* dispColorLocal;
 
 	EditableDisplayBase() {
-		box.size = mm2px(Vec(10.6f, 5.0f));
-		textOffset = Vec(0.2f, -2.7f);
+		box.size = mm2px(Vec(14.6f, 5.0f));// svg is 10.6
+		textOffset = Vec(6.0f, -2.7f);
 		text = "-00-";
 	};
 	
@@ -439,9 +439,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 			highlightColor.a = 0.5;
 			int begin = std::min(cursor, selection);
 			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg,
-				textOffset.x, textOffset.y,
-				box.size.x - 2 * textOffset.x, box.size.y - 2 * textOffset.y,
+			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y, box.size.x, box.size.y,
 				-1, color, 12, text.c_str(), highlightColor, begin, end);
 
 			bndSetFont(APP->window->uiFont->handle);
@@ -510,8 +508,8 @@ struct MasterDisplay : EditableDisplayBase {
 	MasterDisplay() {
 		numChars = 6;
 		textSize = 13;
-		box.size = mm2px(Vec(16.0f, 5.3f));
-		textOffset = Vec(0.9f, -2.0f);
+		box.size = mm2px(Vec(20.6f, 5.3f));
+		textOffset = Vec(9.0f, -2.0f);
 		text = "-0000-";
 	}
 	
