@@ -90,8 +90,8 @@ void step() override {
 		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 			panelBorder->box.pos.x = -newSizeAdd;
 			panelBorder->box.size.x = (box.size.x + newSizeAdd);
-			Widget* panel = getPanel();
-			((FramebufferWidget*)panel)->dirty = true;// weird zoom bug: if the if/else above is commented, zoom bug when this executes
+			SvgPanel* svgPanel = (SvgPanel*)getPanel();
+			svgPanel->fb->dirty = true;
 		}
 		
 		// Update param tooltips at 1Hz

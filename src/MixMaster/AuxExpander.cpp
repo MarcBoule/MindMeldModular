@@ -860,9 +860,8 @@ struct AuxExpanderWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/auxspander.svg")));
-		Widget* pw = getPanel();
-		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
-		panelBorder = findBorder(panel->fb);
+		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		panelBorder = findBorder(svgPanel->fb);
 
 
 		// Left side (globals)
@@ -1215,9 +1214,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/auxspander-jr.svg")));
-		Widget* pw = getPanel();
-		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
-		panelBorder = findBorder(panel->fb);
+		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		panelBorder = findBorder(svgPanel->fb);
 
 
 		// Left side (globals)
