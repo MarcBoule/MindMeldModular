@@ -160,8 +160,8 @@ struct AuxspanderAux {
 		
 		// get inputs
 		stereo = inSig[1].isConnected();
-		mix[0] = clamp20V(inSig[0].getVoltage());
-		mix[1] = stereo ? clamp20V(inSig[1].getVoltage()) : mix[0];
+		mix[0] = clampNothing(inSig[0].getVoltage());
+		mix[1] = stereo ? clampNothing(inSig[1].getVoltage()) : mix[0];
 		
 		// Stereo width
 		if (stereoWidth != stereoWidthSlewer.out) {

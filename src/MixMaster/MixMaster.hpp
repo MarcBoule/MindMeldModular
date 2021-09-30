@@ -1106,8 +1106,8 @@ struct MixerGroup {
 			
 			// Insert inputs
 			if (inInsert->isConnected()) {
-				taps[N_GRP * 2 + 0] = clamp20V(inInsert->getVoltage((groupNum << 1) + 0));
-				taps[N_GRP * 2 + 1] = clamp20V(inInsert->getVoltage((groupNum << 1) + 1));
+				taps[N_GRP * 2 + 0] = clampNothing(inInsert->getVoltage((groupNum << 1) + 0));
+				taps[N_GRP * 2 + 1] = clampNothing(inInsert->getVoltage((groupNum << 1) + 1));
 			}
 			else {
 				taps[N_GRP * 2 + 0] = taps[0];
@@ -1147,8 +1147,8 @@ struct MixerGroup {
 			
 			// Insert inputs
 			if (inInsert->isConnected()) {
-				taps[N_GRP * 2 + 0] = clamp20V(inInsert->getVoltage((groupNum << 1) + 0));
-				taps[N_GRP * 2 + 1] = clamp20V(inInsert->getVoltage((groupNum << 1) + 1));
+				taps[N_GRP * 2 + 0] = clampNothing(inInsert->getVoltage((groupNum << 1) + 0));
+				taps[N_GRP * 2 + 1] = clampNothing(inInsert->getVoltage((groupNum << 1) + 1));
 			}
 		}// filterPos
 
@@ -1846,11 +1846,11 @@ struct MixerTrack {
 					}
 				}
 			}
-			taps[0] = clamp20V(taps[0] * inGainSlewer.out);
-			taps[1] = clamp20V(taps[1] * inGainSlewer.out);
+			taps[0] = clampNothing(taps[0] * inGainSlewer.out);
+			taps[1] = clampNothing(taps[1] * inGainSlewer.out);
 		}
 		else {
-			taps[0] = clamp20V(inSig[0].getVoltageSum() * inGainSlewer.out);
+			taps[0] = clampNothing(inSig[0].getVoltageSum() * inGainSlewer.out);
 			taps[1] = taps[0];
 		}
 		
@@ -1873,8 +1873,8 @@ struct MixerTrack {
 			
 			// Insert inputs
 			if (inInsert[insertPortIndex].isConnected()) {
-				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
-				taps[N_TRK * 2 + 1] = stereo ? clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
+				taps[N_TRK * 2 + 0] = clampNothing(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
+				taps[N_TRK * 2 + 1] = stereo ? clampNothing(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
 			}
 			else {
 				taps[N_TRK * 2 + 0] = taps[0];
@@ -1914,8 +1914,8 @@ struct MixerTrack {
 			
 			// Insert inputs
 			if (inInsert[insertPortIndex].isConnected()) {
-				taps[N_TRK * 2 + 0] = clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
-				taps[N_TRK * 2 + 1] = stereo ? clamp20V(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
+				taps[N_TRK * 2 + 0] = clampNothing(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 0));
+				taps[N_TRK * 2 + 1] = stereo ? clampNothing(inInsert[insertPortIndex].getVoltage(((trackNum & 0x7) << 1) + 1)) : taps[N_TRK * 2 + 0];// don't receive from R of insert outs when mono, just normal L into R (need this for aux sends)
 			}
 		}// filterPos
 		
@@ -2161,8 +2161,8 @@ struct MixerAux {
 		
 		// Tap[8],[9]: pre-fader (post insert)
 		if (inInsert->isConnected()) {
-			taps[8] = clamp20V(inInsert->getVoltage((auxNum << 1) + 8));
-			taps[9] = clamp20V(inInsert->getVoltage((auxNum << 1) + 9));
+			taps[8] = clampNothing(inInsert->getVoltage((auxNum << 1) + 8));
+			taps[9] = clampNothing(inInsert->getVoltage((auxNum << 1) + 9));
 		}
 		else {
 			taps[8] = taps[0];

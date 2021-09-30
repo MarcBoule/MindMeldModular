@@ -344,12 +344,12 @@ static inline void applyStereoWidth(float width, float* left, float* right) {
 }
 
 
-static inline float clamp20V(float in) {// meant to catch invalid values like -inf, +inf, strong overvoltage only.
-	//return in;
-	if (in >= -20.0f && in <= 20.0f) {
-		return in;
-	}
-	return in > 20.0f ? 20.0f : -20.0f;
+static inline float clampNothing(float in) {// meant to catch invalid values like -inf, +inf, strong overvoltage only. Not needed anymore since Rack2 has invalid value protection on outputs
+	return in;
+	// if (in >= -20.0f && in <= 20.0f) {
+		// return in;
+	// }
+	// return in > 20.0f ? 20.0f : -20.0f;
 }
 
 

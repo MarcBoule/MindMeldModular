@@ -206,7 +206,7 @@ struct BassMaster : Module {
 			inRight = inputs[IN_INPUTS + 1].getVoltageSum();
 		}
 		
-		simd::float_4 outs = xover.process(clamp20V(inLeft), clamp20V(inRight));
+		simd::float_4 outs = xover.process(clampNothing(inLeft), clampNothing(inRight));
 		// outs: [0] = left low, left high, right low, [3] = right high
 		float dryLeft;
 		float dryRight;
