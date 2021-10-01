@@ -870,9 +870,8 @@ struct EqMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/eqmaster.svg")));
-		Widget* pw = getPanel();
-		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
-		panelBorder = findBorder(panel->fb);
+		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		panelBorder = findBorder(svgPanel->fb);
 		
 		
 		// Left side controls and inputs
@@ -1197,9 +1196,8 @@ struct EqMasterWidget : ModuleWidget {
 			if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 				panelBorder->box.pos.x = (newSizeAdd == 3 ? -3 : 0);
 				panelBorder->box.size.x = (box.size.x + newSizeAdd);
-				Widget* panel = getPanel();
-				// SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
-				((FramebufferWidget*)panel)->dirty = true;
+				SvgPanel* svgPanel = (SvgPanel*)getPanel();
+				svgPanel->fb->dirty = true;
 			}
 		}
 		Widget::step();

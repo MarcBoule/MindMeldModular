@@ -177,11 +177,10 @@ struct UnmeldWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-1-8.svg")));
-		Widget* pw = getPanel();
-		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
+		SvgPanel* svgPanel = (SvgPanel*)getPanel();
 		
         if (module) {
-			facePlates[0] = (SvgPanel*)panel;
+			facePlates[0] = svgPanel;
 			facePlates[1] = new SvgPanel();
 			facePlates[1]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-9-16.svg")));
 			facePlates[1]->visible = false;

@@ -137,9 +137,8 @@ struct EqExpanderWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EqSpander.svg")));
-		Widget* pw = getPanel();
-		SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
-		panelBorder = findBorder(panel->fb);
+		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		panelBorder = findBorder(svgPanel->fb);
 		
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(12.87f, 17.75f)), module, EqExpander::ACTIVE_CV_INPUTS + 0));		
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(22.69f, 17.75f)), module, EqExpander::ACTIVE_CV_INPUTS + 1));		
@@ -174,9 +173,8 @@ struct EqExpanderWidget : ModuleWidget {
 			if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 				panelBorder->box.pos.x = (newSizeAdd == 3 ? -3 : 0);
 				panelBorder->box.size.x = (box.size.x + newSizeAdd);
-				Widget* panel = getPanel();
-				// SvgPanel* panel = dynamic_cast<SvgPanel*>(pw);
-				((FramebufferWidget*)panel)->dirty = true;
+				SvgPanel* svgPanel = (SvgPanel*)getPanel();
+				svgPanel->fb->dirty = true;
 			}
 		}
 		ModuleWidget::step();
