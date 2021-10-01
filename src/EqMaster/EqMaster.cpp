@@ -119,6 +119,7 @@ struct EqMaster : Module {
 
 		// Track knob
 		configParam(TRACK_PARAM, 0.0f, 23.0f, 0.0f, "Track", "", 0.0f, 1.0f, 1.0f);//min, max, default, label = "", unit = "", displayBase = 0.f, displayMultiplier = 1.f, displayOffset = 0.f
+		paramQuantities[TRACK_PARAM]->snapEnabled = true;
 		
 		// Track settings
 		configParam(TRACK_ACTIVE_PARAM, 0.0f, 1.0f, DEFAULT_trackActive ? 1.0f : 0.0f, "Track EQ active");

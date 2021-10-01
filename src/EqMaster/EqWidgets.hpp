@@ -853,8 +853,6 @@ struct TrackKnob : MmBigKnobWhite {
 	
 	
 	TrackKnob() {
-		snap = true;
-		
 		refresh = 0;
 		numTracks = -1;// force fillDotPosAndDefState() in first pass in draw() where paramQuantity is non null
 		cVec = box.size.div(2.0f);
