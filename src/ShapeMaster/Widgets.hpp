@@ -1317,26 +1317,22 @@ struct SmKnobRight : SmKnob {
 		rightWhenNottopCentered = true;
 	}
 };
-struct SmKnobLeftSnap : SmKnobLeft {
-	SmKnobLeftSnap() {
-		snap = true;
-	}
-};
+
 
 
 // Block 1
 
-typedef SmKnobLeftSnap SmRepetitionsKnob;
+typedef SmKnobLeft SmRepetitionsKnob;
 
 
 
 // Block 2
 
-typedef SmKnobLeftSnap SmLengthSyncKnob;
+typedef SmKnobLeft SmLengthSyncKnob;
 
 typedef SmKnobTop SmLengthUnsyncKnob;
 
-typedef SmKnobLeftSnap SmOffsetKnob;
+typedef SmKnobLeft SmOffsetKnob;
 
 typedef SmKnobTop SmSwingKnob;
 

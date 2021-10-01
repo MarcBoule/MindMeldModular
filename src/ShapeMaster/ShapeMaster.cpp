@@ -21,9 +21,12 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	for (int c = 0; c < 8; c++) {
 		int cp = c * NUM_CHAN_PARAMS;
 		configParam(LENGTH_SYNC_PARAM + cp, 0.0f, (float)(NUM_RATIOS - 1), PlayHead::DEFAULT_LENGTH_SYNC, string::f("Length -%c-", c + 0x31), " index", 0.0f, 1.0f, 1.0f);
+		paramQuantities[LENGTH_SYNC_PARAM + cp]->snapEnabled = true;
 		configParam(LENGTH_UNSYNC_PARAM + cp, -1.0f, 1.0f, PlayHead::DEFAULT_LENGTH_UNSYNC, string::f("Length -%c-", c + 0x31), " s", PlayHead::LENGTH_UNSYNC_BASE, PlayHead::LENGTH_UNSYNC_MULT, 0.0f);
 		configParam<RepetitionsParamQuantity>(REPETITIONS_PARAM + cp, 1.0f, 100.0f, PlayHead::DEFAULT_REPETITIONS, string::f("Repetitions -%c-", c + 0x31));
+		paramQuantities[REPETITIONS_PARAM + cp]->snapEnabled = true;
 		configParam(OFFSET_PARAM + cp, 0.0f, PlayHead::MAX_OFFSET, PlayHead::DEFAULT_OFFSET, string::f("Offset -%c-", c + 0x31), " samples");
+		paramQuantities[OFFSET_PARAM + cp]->snapEnabled = true;
 		configParam(SWING_PARAM + cp, -PlayHead::MAX_SWING, PlayHead::MAX_SWING, PlayHead::DEFAULT_SWING, string::f("Swing -%c-", c + 0x31), " %", 0.0f, 100.0f, 0.0f);
 		configParam(PHASE_PARAM + cp, 0.0f, 1.0f, Channel::DEFAULT_PHASE, string::f("Phase -%c-", c + 0x31), " degrees", 0.0f, 360.0f, 0.0f);
 		configParam(RESPONSE_PARAM + cp, -Channel::MAX_RESPONSE, Channel::MAX_RESPONSE, Channel::DEFAULT_RESPONSE, string::f("Response -%c-", c + 0x31), " %", 0.0f, 100.0f, 0.0f);
@@ -56,7 +59,7 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	configParam(RESET_PARAM, 0.0f, 1.0f, 0.0f, "Reset");
 	configParam(RUN_PARAM, 0.0f, 1.0f, 0.0f, "Run");
 	configParam(GEAR_PARAM, 0.0f, 1.0f, 0.0f, "Sidechain settings");// controls channel-specific values though
-
+	
 	for (int c = 0; c < 8; c++) {
 		channels[c].construct(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], &paramQuantities, &presetAndShapeManager);
 	}
