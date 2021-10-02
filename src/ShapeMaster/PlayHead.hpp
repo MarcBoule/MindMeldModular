@@ -226,7 +226,7 @@ class PlayHead {
 		int _lengthSyncIndex = (int)paLengthSync->getValue();
 		if (withInadmissibleFilter) {
 			_lengthSyncIndex = filterLengthForPpqnSync(_lengthSyncIndex);
-			// paLengthSync->setValue((float)_lengthSyncIndex);// this is buggy in Rack v2
+			paLengthSync->setValue((float)_lengthSyncIndex);// this is buggy in Rack v2
 		}
 		return _lengthSyncIndex;
 	}
@@ -239,7 +239,7 @@ class PlayHead {
 			// but also do the same filter-and-set as in getLengthSync() with the param
 			int _lengthSyncIndex = (int)paLengthSync->getValue();
 			_lengthSyncIndex = filterLengthForPpqnSync(_lengthSyncIndex);
-			// paLengthSync->setValue((float)_lengthSyncIndex);// this is buggy in Rack v2
+			paLengthSync->setValue((float)_lengthSyncIndex);// this is buggy in Rack v2
 		}
 		return _lengthSyncIndexWithCv;
 	}
