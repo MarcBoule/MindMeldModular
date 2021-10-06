@@ -146,8 +146,9 @@ void PresetAndShapeManager::construct(Channel* _channels, Channel* _channelDirty
 	std::string factoryPath = asset::plugin(pluginInstance, factoryPrefix);
 	factoryPath.resize(factoryPath.size() - 1);// remove trailing "/"
 	std::vector<std::string> factoryEntries = system::getEntries(factoryPath, 3);// system::getEntriesRecursive(factoryPath, 3);// 3 is max depth (1 = current path)
+	std::sort(factoryEntries.begin(), factoryEntries.end());
 	
-	// create vector while ignoring anything that is not an .smpr file
+	// create vector while ignoring anything that is not an .smpr or .smsh file
 	for (auto it = factoryEntries.begin(); it != factoryEntries.end(); it++) {
 		if (system::isFile(*it)) {
 			if (system::getExtension(*it) == ".smpr") {// string::filenameExtension(*it)
@@ -237,6 +238,7 @@ void PresetAndShapeManager::file_worker() {
 						else {
 							// user
 							std::vector<std::string> userEntries = system::getEntries(system::getDirectory(path));// string::directory(path)
+							std::sort(userEntries.begin(), userEntries.end());
 							std::vector<std::string> userVector;
 							int pathIndex = -1;
 							std::string presetOrShapeExt = (isPreset ? ".smpr" : ".smsh");
@@ -490,6 +492,7 @@ struct DirectoryItem : MenuItem {
 		Menu *menu = new Menu;
 
 		std::vector<std::string> entries = system::getEntries(pathToScan);
+		std::sort(entries.begin(), entries.end());
 		std::string presetOrShapeExt = (isPreset ? ".smpr" : ".smsh");
 		
 		for (std::string entry : entries) {
@@ -498,6 +501,7 @@ struct DirectoryItem : MenuItem {
 					continue;
 				}
 				std::string presetOrShapeBase = system::getFilename(entry);// string::filenameBase(string::filename(entry));
+				presetOrShapeBase.erase(presetOrShapeBase.end() - 5, presetOrShapeBase.end());// remove extension
 				PresetOrShapeItem *prstOrShpItem = createMenuItem<PresetOrShapeItem>(presetOrShapeBase.c_str(), "");
 				prstOrShpItem->path = entry;
 				prstOrShpItem->channel = channel;

@@ -777,6 +777,7 @@ struct PresetLabel : SmLabelBase {
 			}
 			else {
 				text = system::getFilename(text);// string::filenameBase(string::filename(text));
+				text.erase(text.end() - 5, text.end());// remove extension
 				if (presetOrShapeDirty != NULL && *presetOrShapeDirty) {
 					text.insert(0, "*");
 				}
@@ -822,6 +823,7 @@ struct ShapeLabel : SmLabelBase {
 			}
 			else {
 				text = system::getFilename(text);// string::filenameBase(string::filename(text));
+				text.erase(text.end() - 5, text.end());// remove extension
 				if (presetOrShapeDirty != NULL && *presetOrShapeDirty) {
 					text.insert(0, "*");
 				}
