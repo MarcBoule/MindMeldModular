@@ -394,8 +394,8 @@ struct MeldWidget : ModuleWidget {
 				
 				// update bypass led-buttons' visibilities
 				for (int i = 0; i < 8; i++) {
-					ledButtons[i]->visible = facePlate < 3;
-					smallLights[i]->visible = facePlate < 3;
+					ledButtons[i]->setVisible(facePlate < 3);
+					smallLights[i]->setVisible(facePlate < 3);
 				}
 			}
 		}

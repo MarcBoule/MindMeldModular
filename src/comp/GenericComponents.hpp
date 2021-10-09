@@ -359,7 +359,7 @@ struct MmSlider : SvgSlider {
 		float offsetY = handle->box.size.y / 2.0f;
 		background->box.pos.y = offsetY;
 		box.size.y = background->box.size.y + offsetY * 2.0f;
-		background->visible = false;
+		background->setVisible(false);
 	}
 };
 

@@ -711,16 +711,16 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 				smKnobs[c][i]->detailsShowSrc = &(module->miscSettings.cc4[0]);
 				smKnobs[c][i]->cloakedModeSrc = &(module->cloakedMode);
 				smKnobs[c][i]->displayInfo = &displayInfo;
-				smKnobs[c][i]->visible = ((c == 0) && (i != 1));
+				smKnobs[c][i]->setVisible((c == 0) && (i != 1));
 			}
 		}
 		// all buttons common
 		for (int c = 0; c < 8; c++) {
 			for (int i = 0; i < NUM_BUTTON_PARAMS; i++) {
-				smButtons[c][i]->visible = (c == 0);
+				smButtons[c][i]->setVisible(c == 0);
 			}
 			for (int i = 0; i < NUM_ARROW_PARAMS; i++) {
-				arrowButtons[c][i]->visible = (c == 0);
+				arrowButtons[c][i]->setVisible(c == 0);
 			}
 		}
 		// all labels common
@@ -750,32 +750,35 @@ void ShapeMasterWidget::step() {
 	if (module) {
 		int chan = module->currChan;
 
-		bool syncedLengthVisible = module->params[SYNC_PARAM + chan * NUM_CHAN_PARAMS].getValue() >= 0.5f;
-		smKnobs[chan][0]->visible = syncedLengthVisible;
-		smKnobs[chan][1]->visible = !syncedLengthVisible;
-		smButtons[chan][0]->visible = syncedLengthVisible;// lock button
+		bool syncedLengthVisible = module->params[SYNC_PARAM + chan * NUM_CHAN_PARAMS].getValue() >= 0.5f;// 1 for pro, 0 for non-pro
+		if (oldSyncedLengthVisible != syncedLengthVisible) {
+			oldSyncedLengthVisible = syncedLengthVisible;
+			smKnobs[chan][0]->setVisible(syncedLengthVisible);
+			smKnobs[chan][1]->setVisible(!syncedLengthVisible);
+			smButtons[chan][0]->setVisible(syncedLengthVisible);// lock button
+		}
 		
 		// update visibility for multi controls when user selects another channel
 		if (oldVisibleChannel != chan) {
 			// make new chan's knobs and buttons visible (length knobs done outside of guard since sync button can change)
 			for (int i = 2; i < NUM_KNOB_PARAMS; i++) {
-				smKnobs[chan][i]->visible = true;
+				smKnobs[chan][i]->setVisible(true);
 			}
 			for (int i = 1; i < NUM_BUTTON_PARAMS; i++) {
-				smButtons[chan][i]->visible = true;
+				smButtons[chan][i]->setVisible(true);
 			}
 			for (int i = 0; i < NUM_ARROW_PARAMS; i++) {
-				arrowButtons[chan][i]->visible = true;
+				arrowButtons[chan][i]->setVisible(true);
 			}
 			// make old chan's knobs and buttons invisible
 			for (int i = 0; i < NUM_KNOB_PARAMS; i++) {
-				smKnobs[oldVisibleChannel][i]->visible = false;
+				smKnobs[oldVisibleChannel][i]->setVisible(false);
 			}
 			for (int i = 0; i < NUM_BUTTON_PARAMS; i++) {
-				smButtons[oldVisibleChannel][i]->visible = false;
+				smButtons[oldVisibleChannel][i]->setVisible(false);
 			}
 			for (int i = 0; i < NUM_ARROW_PARAMS; i++) {
-				arrowButtons[oldVisibleChannel][i]->visible = false;
+				arrowButtons[oldVisibleChannel][i]->setVisible(false);
 			}
 			oldVisibleChannel = chan;
 		}

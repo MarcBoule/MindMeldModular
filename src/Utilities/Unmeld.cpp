@@ -183,11 +183,11 @@ struct UnmeldWidget : ModuleWidget {
 			facePlates[0] = svgPanel;
 			facePlates[1] = new SvgPanel();
 			facePlates[1]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-9-16.svg")));
-			facePlates[1]->visible = false;
+			facePlates[1]->setVisible(false);
 			addChild(facePlates[1]);
 			facePlates[2] = new SvgPanel();
 			facePlates[2]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-grp-aux.svg")));
-			facePlates[2]->visible = false;
+			facePlates[2]->setVisible(false);
 			addChild(facePlates[2]);
 		}		
 		
@@ -212,8 +212,8 @@ struct UnmeldWidget : ModuleWidget {
 		if (module) {
 			int facePlate = (((Unmeld*)module)->facePlate);
 			if (facePlate != lastFacePlate) {
-				facePlates[lastFacePlate]->visible = false;
-				facePlates[facePlate]->visible = true;
+				facePlates[lastFacePlate]->setVisible(false);
+				facePlates[facePlate]->setVisible(true);
 				lastFacePlate = facePlate;
 			}
 		}
