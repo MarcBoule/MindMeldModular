@@ -289,7 +289,7 @@ struct MmKnobWithArc : MmKnob {
 
 	
 	void drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color);
-	void draw(const DrawArgs &args) override;
+	void drawLayer(const DrawArgs &args, int layer) override;
 };
 
 struct MmSmallKnobRedWithArc : MmKnobWithArc {

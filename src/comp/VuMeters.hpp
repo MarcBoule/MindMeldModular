@@ -144,7 +144,7 @@ struct VuMeterBase : OpaqueWidget {
 	virtual void setColor() {// used by all MixMaster and AuxSpander VUs, EQ will override for its own color index mechanism
 		colorTheme = (*colorThemeGlobal >= numVuThemes) ? *colorThemeLocal : *colorThemeGlobal;
 	}
-	void draw(const DrawArgs &args) override;
+	void drawLayer(const DrawArgs &args, int layer) override;
 	
 	
 	// track-like

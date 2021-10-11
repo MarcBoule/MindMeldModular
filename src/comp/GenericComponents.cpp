@@ -41,35 +41,37 @@ void MmKnobWithArc::drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* 
 	nvgStroke(args.vg);		
 }
 
-void MmKnobWithArc::draw(const DrawArgs &args) {
-	MmKnob::draw(args);
-	ParamQuantity* paramQuantity = getParamQuantity();
-	if (paramQuantity) {
-		nvgGlobalTint(args.vg, color::WHITE);
-		float aParam = -10000.0f;
-		float aBase = TOP_ANGLE;
-		if (!topCentered) {
-			if (rightWhenNottopCentered) {
-				aBase -= minAngle;
+void MmKnobWithArc::drawLayer(const DrawArgs &args, int layer) {
+	MmKnob::drawLayer(args, layer);
+	
+	if (layer == 1) {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (paramQuantity) {
+			float aParam = -10000.0f;
+			float aBase = TOP_ANGLE;
+			if (!topCentered) {
+				if (rightWhenNottopCentered) {
+					aBase -= minAngle;
+				}
+				else {
+					aBase += minAngle;
+				}
 			}
-			else {
-				aBase += minAngle;
-			}
-		}
-		int8_t showMask = (*detailsShowSrc & ~*cloakedModeSrc & 0x3); // 0 = off, 0x1 = cv_only, 0x3 = cv+param
-		// param
-		float param = paramQuantity->getValue();
-		if (showMask == 0x3) {
-			aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
-			drawArc(args, aBase, aParam, &arcColorDarker);
-		}
-		// cv
-		if (paramWithCV && (*paramCvConnected) && showMask != 0) {
-			if (aParam == -10000.0f) {
+			int8_t showMask = (*detailsShowSrc & ~*cloakedModeSrc & 0x3); // 0 = off, 0x1 = cv_only, 0x3 = cv+param
+			// param
+			float param = paramQuantity->getValue();
+			if (showMask == 0x3) {
 				aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
+				drawArc(args, aBase, aParam, &arcColorDarker);
 			}
-			float aCv = TOP_ANGLE + math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
-			drawArc(args, aParam, aCv, &arcColor);
+			// cv
+			if (paramWithCV && (*paramCvConnected) && showMask != 0) {
+				if (aParam == -10000.0f) {
+					aParam = TOP_ANGLE + math::rescale(param, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
+				}
+				float aCv = TOP_ANGLE + math::rescale(*paramWithCV, paramQuantity->getMinValue(), paramQuantity->getMaxValue(), minAngle, maxAngle);
+				drawArc(args, aParam, aCv, &arcColor);
+			}
 		}
 	}
 }

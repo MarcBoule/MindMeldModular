@@ -71,50 +71,50 @@ struct ScopeSettingsButtons : OpaqueWidget {
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			
-			NVGcolor colorOn = currChan ? CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]] : SCHEME_YELLOW;
-			
-			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
-			// nvgStrokeWidth(args.vg, 0.7f);
-			
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
-			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-			nvgFontSize(args.vg, 10.0f);
-			
-			bool scopeOn = false;
-			bool scopeVca = false;
-			if (settingSrc) {
-				scopeOn  = ((*settingSrc & SCOPE_MASK_ON) != 0);
-				scopeVca = ((*settingSrc & SCOPE_MASK_VCA_nSC) != 0);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
 			}
-			
-			// ANALYSER
-			float posx = 0.0f;
-			nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);// 0xE6,0xE6,0xE6
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
-			posx += textWidthsPx[0];
-			
-			// OFF
-			nvgFillColor(args.vg, (!scopeOn) ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
-			posx += textWidthsPx[1];
-			
-			// VCA
-			nvgFillColor(args.vg, (scopeOn && scopeVca) ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
-			posx += textWidthsPx[2];
-			
-			// SIDECHAIN
-			nvgFillColor(args.vg, (scopeOn && !scopeVca) ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
-			// posx += textWidthsPx[3];
+			if (font->handle >= 0) {
+				NVGcolor colorOn = currChan ? CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]] : SCHEME_YELLOW;
+				
+				// nvgStrokeColor(args.vg, SCHEME_YELLOW);
+				// nvgStrokeWidth(args.vg, 0.7f);
+				
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
+				nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+				nvgFontSize(args.vg, 10.0f);
+				
+				bool scopeOn = false;
+				bool scopeVca = false;
+				if (settingSrc) {
+					scopeOn  = ((*settingSrc & SCOPE_MASK_ON) != 0);
+					scopeVca = ((*settingSrc & SCOPE_MASK_VCA_nSC) != 0);
+				}
+				
+				// ANALYSER
+				float posx = 0.0f;
+				nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);// 0xE6,0xE6,0xE6
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
+				posx += textWidthsPx[0];
+				
+				// OFF
+				nvgFillColor(args.vg, (!scopeOn) ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
+				posx += textWidthsPx[1];
+				
+				// VCA
+				nvgFillColor(args.vg, (scopeOn && scopeVca) ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
+				posx += textWidthsPx[2];
+				
+				// SIDECHAIN
+				nvgFillColor(args.vg, (scopeOn && !scopeVca) ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
+				// posx += textWidthsPx[3];
+			}
 		}
 	}
 	
@@ -175,46 +175,46 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			
-			// nvgStrokeColor(args.vg, SCHEME_YELLOW);
-			// nvgStrokeWidth(args.vg, 0.7f);
-			NVGcolor colorOn = currChan ? CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]] : SCHEME_YELLOW;
-			
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
-			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-			nvgFontSize(args.vg, 10.0f);
-					
-			// COPY
-			float posx = 0.0f;
-			nvgFillColor(args.vg, buttonPressed == 0 ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
-			posx += textWidthsPx[0];
-			
-			// PASTE
-			nvgFillColor(args.vg, buttonPressed == 1 ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
-			posx += textWidthsPx[1];
-			
-			// REVERSE
-			nvgFillColor(args.vg, buttonPressed == 2 ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
-			posx += textWidthsPx[2];
-			
-			// INVERT
-			nvgFillColor(args.vg, buttonPressed == 3? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
-			posx += textWidthsPx[3];
-			
-			// RANDOM
-			nvgFillColor(args.vg, buttonPressed == 4 ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[4].c_str(), NULL);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (font->handle >= 0) {
+				// nvgStrokeColor(args.vg, SCHEME_YELLOW);
+				// nvgStrokeWidth(args.vg, 0.7f);
+				NVGcolor colorOn = currChan ? CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]] : SCHEME_YELLOW;
+				
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
+				nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+				nvgFontSize(args.vg, 10.0f);
+						
+				// COPY
+				float posx = 0.0f;
+				nvgFillColor(args.vg, buttonPressed == 0 ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
+				posx += textWidthsPx[0];
+				
+				// PASTE
+				nvgFillColor(args.vg, buttonPressed == 1 ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
+				posx += textWidthsPx[1];
+				
+				// REVERSE
+				nvgFillColor(args.vg, buttonPressed == 2 ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
+				posx += textWidthsPx[2];
+				
+				// INVERT
+				nvgFillColor(args.vg, buttonPressed == 3? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
+				posx += textWidthsPx[3];
+				
+				// RANDOM
+				nvgFillColor(args.vg, buttonPressed == 4 ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[4].c_str(), NULL);
+			}
 		}
 	}
 	
@@ -371,73 +371,74 @@ struct BigNumbers : TransparentWidget {
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 		
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (currChan != NULL) {
-			time_t currTime = time(0);
-			if (currTime - displayInfo->lastMovedKnobTime < 4) {
-				int srcId = displayInfo->lastMovedKnobId;
-				int chan = *currChan;
-				bool inactive = false;// not all controls will use this
-				switch (srcId) {
-					case (LENGTH_SYNC_PARAM):
-					case (LENGTH_UNSYNC_PARAM):
-						text = channels[chan].getLengthText(&inactive);
-						break;
-					case (REPETITIONS_PARAM):
-						text = channels[chan].getRepetitionsText(&inactive);
-						break;
-					case (OFFSET_PARAM):
-						text = channels[chan].getOffsetText(&inactive);
-						break;
-					case (SWING_PARAM):
-						text = channels[chan].getSwingText(&inactive);
-						break;
-					case (PHASE_PARAM):
-						text = channels[chan].getPhaseText();
-						break;
-					case (RESPONSE_PARAM):
-						text = channels[chan].getResponseText();
-						break;
-					case (WARP_PARAM):
-						text = channels[chan].getWarpText();
-						break;
-					case (AMOUNT_PARAM):
-						text = channels[chan].getAmountText();
-						break;
-					case (SLEW_PARAM):
-						text = channels[chan].getSlewText();
-						break;
-					case (SMOOTH_PARAM):
-						text = channels[chan].getSmoothText();
-						break;
-					case (CROSSOVER_PARAM):
-						text = channels[chan].getCrossoverText(&inactive);
-						break;
-					case (HIGH_PARAM):
-						text = channels[chan].getHighText(&inactive);
-						break;
-					case (LOW_PARAM):
-						text = channels[chan].getLowText(&inactive);
-						break;
-					case (TRIGLEV_PARAM):
-						text = channels[chan].getTrigLevelText(&inactive);
-						break;					
-					default:
-						text = "";
-				}
-				if (inactive) text = "";	
-				
-				if (font->handle >= 0 && text.compare("") != 0) {
-					nvgGlobalTint(args.vg, color::WHITE);
-					nvgFillColor(args.vg, color);
-					nvgFontFaceId(args.vg, font->handle);
-					nvgTextLetterSpacing(args.vg, 0.0);
-					nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-					nvgFontSize(args.vg, 24.0f);
-					nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (currChan != NULL) {
+				time_t currTime = time(0);
+				if (currTime - displayInfo->lastMovedKnobTime < 4) {
+					int srcId = displayInfo->lastMovedKnobId;
+					int chan = *currChan;
+					bool inactive = false;// not all controls will use this
+					switch (srcId) {
+						case (LENGTH_SYNC_PARAM):
+						case (LENGTH_UNSYNC_PARAM):
+							text = channels[chan].getLengthText(&inactive);
+							break;
+						case (REPETITIONS_PARAM):
+							text = channels[chan].getRepetitionsText(&inactive);
+							break;
+						case (OFFSET_PARAM):
+							text = channels[chan].getOffsetText(&inactive);
+							break;
+						case (SWING_PARAM):
+							text = channels[chan].getSwingText(&inactive);
+							break;
+						case (PHASE_PARAM):
+							text = channels[chan].getPhaseText();
+							break;
+						case (RESPONSE_PARAM):
+							text = channels[chan].getResponseText();
+							break;
+						case (WARP_PARAM):
+							text = channels[chan].getWarpText();
+							break;
+						case (AMOUNT_PARAM):
+							text = channels[chan].getAmountText();
+							break;
+						case (SLEW_PARAM):
+							text = channels[chan].getSlewText();
+							break;
+						case (SMOOTH_PARAM):
+							text = channels[chan].getSmoothText();
+							break;
+						case (CROSSOVER_PARAM):
+							text = channels[chan].getCrossoverText(&inactive);
+							break;
+						case (HIGH_PARAM):
+							text = channels[chan].getHighText(&inactive);
+							break;
+						case (LOW_PARAM):
+							text = channels[chan].getLowText(&inactive);
+							break;
+						case (TRIGLEV_PARAM):
+							text = channels[chan].getTrigLevelText(&inactive);
+							break;					
+						default:
+							text = "";
+					}
+					if (inactive) text = "";	
+					
+					if (font->handle >= 0 && text.compare("") != 0) {
+						nvgFillColor(args.vg, color);
+						nvgFontFaceId(args.vg, font->handle);
+						nvgTextLetterSpacing(args.vg, 0.0);
+						nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+						nvgFontSize(args.vg, 24.0f);
+						nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+					}
 				}
 			}
 		}
@@ -473,35 +474,36 @@ struct SmLabelBase : widget::OpaqueWidget {
 
 	virtual void prepareText() {}
 
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		prepareText();// may set inactive = true if control can be inactive in some cases
-		
-		if (inactive) {
-			color = MID_GRAY;
-		}
-		else if (knobLabelColorsSrc) {
-			if (*knobLabelColorsSrc < 2) {
-				color = CHAN_COLORS[*knobLabelColorsSrc == 0 ? 0 : 8];
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
 			}
-			else if (currChan) {
-				color = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
+			prepareText();// may set inactive = true if control can be inactive in some cases
+			
+			if (inactive) {
+				color = MID_GRAY;
 			}
-		}
+			else if (knobLabelColorsSrc) {
+				if (*knobLabelColorsSrc < 2) {
+					color = CHAN_COLORS[*knobLabelColorsSrc == 0 ? 0 : 8];
+				}
+				else if (currChan) {
+					color = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
+				}
+			}
 
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			nvgFillColor(args.vg, color);
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			if (font->handle >= 0) {
+				nvgFillColor(args.vg, color);
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
 
-			nvgFontSize(args.vg, 10.5f);
-			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+				nvgFontSize(args.vg, 10.5f);
+				nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+			}
+			nvgResetScissor(args.vg);
 		}
-		nvgResetScissor(args.vg);
 	}
 
 	void onButton(const event::Button& e) override {
@@ -602,38 +604,39 @@ struct GridXLabel : SmLabelBase {
 			text = "16";
 		}
 	}
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (currChan) {
-			color = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
-		}
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (currChan) {
+				color = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
+			}
 
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
-			nvgFontSize(args.vg, 10.5f);
-			
-			nvgFillColor(args.vg, labelColor);
-			text = std::string("GRID-X: [ ");
-			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
-			float width1 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
-						
-			nvgFillColor(args.vg, color);
-			prepareText();
-			nvgText(args.vg, textOffset.x + width1, textOffset.y, text.c_str(), NULL);
-			float width2 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
-			
-			nvgFillColor(args.vg, labelColor);
-			text = std::string(" ]");
-			nvgText(args.vg, textOffset.x + width1 + width2 + 0.2f, textOffset.y, text.c_str(), NULL);
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			if (font->handle >= 0) {
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
+				nvgFontSize(args.vg, 10.5f);
+				
+				nvgFillColor(args.vg, labelColor);
+				text = std::string("GRID-X: [ ");
+				nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+				float width1 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
+							
+				nvgFillColor(args.vg, color);
+				prepareText();
+				nvgText(args.vg, textOffset.x + width1, textOffset.y, text.c_str(), NULL);
+				float width2 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
+				
+				nvgFillColor(args.vg, labelColor);
+				text = std::string(" ]");
+				nvgText(args.vg, textOffset.x + width1 + width2 + 0.2f, textOffset.y, text.c_str(), NULL);
+			}
+			nvgResetScissor(args.vg);
 		}
-		nvgResetScissor(args.vg);
 	}		
+	
 	void onButton(const event::Button& e) override {
 		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT) {
 			ui::Menu *menu = createMenu();
@@ -708,37 +711,37 @@ struct RangeLabel : SmLabelBase {
 			text = "0-10V";
 		}
 	}
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (currChan) {
-			color = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
-		}
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (currChan) {
+				color = CHAN_COLORS[channels[*currChan].channelSettings.cc4[1]];
+			}
 
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
-			nvgFontSize(args.vg, 10.5f);
-			
-			nvgFillColor(args.vg, labelColor);
-			text = std::string("RANGE: [ ");
-			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
-			float width1 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
-						
-			nvgFillColor(args.vg, color);
-			prepareText();
-			nvgText(args.vg, textOffset.x + width1, textOffset.y, text.c_str(), NULL);
-			float width2 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
-			
-			nvgFillColor(args.vg, labelColor);
-			text = std::string(" ]");
-			nvgText(args.vg, textOffset.x + width1 + width2 + 0.2f, textOffset.y, text.c_str(), NULL);
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			if (font->handle >= 0) {
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
+				nvgFontSize(args.vg, 10.5f);
+				
+				nvgFillColor(args.vg, labelColor);
+				text = std::string("RANGE: [ ");
+				nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+				float width1 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
+							
+				nvgFillColor(args.vg, color);
+				prepareText();
+				nvgText(args.vg, textOffset.x + width1, textOffset.y, text.c_str(), NULL);
+				float width2 = nvgTextBounds(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL, NULL);
+				
+				nvgFillColor(args.vg, labelColor);
+				text = std::string(" ]");
+				nvgText(args.vg, textOffset.x + width1 + width2 + 0.2f, textOffset.y, text.c_str(), NULL);
+			}
+			nvgResetScissor(args.vg);
 		}
-		nvgResetScissor(args.vg);
 	}	
 	void onButton(const event::Button& e) override {
 		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT) {

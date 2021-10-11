@@ -119,27 +119,28 @@ struct BandLabelBase : widget::OpaqueWidget {
 	
 	virtual void prepareText() {}
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		prepareText();
-		
-		if (bandLabelColorsSrc) {
-			color = DISP_COLORS[*bandLabelColorsSrc];
-		}	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			prepareText();
+			
+			if (bandLabelColorsSrc) {
+				color = DISP_COLORS[*bandLabelColorsSrc];
+			}	
 
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			nvgFillColor(args.vg, color);
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
+			nvgScissor(args.vg, RECT_ARGS(args.clipBox));
+			if (font->handle >= 0) {
+				nvgFillColor(args.vg, color);
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
 
-			nvgFontSize(args.vg, 10.5f);
-			nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
-		}
-		nvgResetScissor(args.vg);		
+				nvgFontSize(args.vg, 10.5f);
+				nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+			}
+			nvgResetScissor(args.vg);	
+		}			
 	}
 	
 	void onButton(const event::Button& e) override {
@@ -297,46 +298,47 @@ struct SpectrumSettingsButtons : OpaqueWidget {
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
-			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-			nvgFontSize(args.vg, 10.0f);
-			
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (font->handle >= 0) {
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
+				nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+				nvgFontSize(args.vg, 10.0f);
+				
 
-			bool specOn = (settingSrc && *settingSrc & SPEC_MASK_ON) != 0;
-			bool specPost = (settingSrc && *settingSrc & SPEC_MASK_POST) != 0;
-			bool specFreeze = (settingSrc && *settingSrc & SPEC_MASK_FREEZE) != 0;
-			
-			// ANALYSER
-			float posx = 0.0f;
-			nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
-			posx += textWidthsPx[0];
-			
-			// OFF
-			nvgFillColor(args.vg, (!specOn) ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
-			posx += textWidthsPx[1];
-			
-			// PRE
-			nvgFillColor(args.vg, (specOn && !specPost) ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
-			posx += textWidthsPx[2];
-			
-			// POST
-			nvgFillColor(args.vg, (specOn && specPost) ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
-			posx += textWidthsPx[3];
-			
-			// FREEZE
-			nvgFillColor(args.vg, specFreeze ? colorOn : colorOff);
-			nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[4].c_str(), NULL);
+				bool specOn = (settingSrc && *settingSrc & SPEC_MASK_ON) != 0;
+				bool specPost = (settingSrc && *settingSrc & SPEC_MASK_POST) != 0;
+				bool specFreeze = (settingSrc && *settingSrc & SPEC_MASK_FREEZE) != 0;
+				
+				// ANALYSER
+				float posx = 0.0f;
+				nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[0].c_str(), NULL);
+				posx += textWidthsPx[0];
+				
+				// OFF
+				nvgFillColor(args.vg, (!specOn) ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[1].c_str(), NULL);
+				posx += textWidthsPx[1];
+				
+				// PRE
+				nvgFillColor(args.vg, (specOn && !specPost) ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[2].c_str(), NULL);
+				posx += textWidthsPx[2];
+				
+				// POST
+				nvgFillColor(args.vg, (specOn && specPost) ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[3].c_str(), NULL);
+				posx += textWidthsPx[3];
+				
+				// FREEZE
+				nvgFillColor(args.vg, specFreeze ? colorOn : colorOff);
+				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[4].c_str(), NULL);
+			}
 		}
 	}
 	
@@ -396,30 +398,31 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (font->handle >= 0) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			nvgFontFaceId(args.vg, font->handle);
-			nvgTextLetterSpacing(args.vg, 0.0);
-			nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-			nvgFontSize(args.vg, 10.0f);
-			
-			float posx = 0.0f;
-			for (int l = 0; l < 3; l++) {
-				if (l == 0) {
-					nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (font->handle >= 0) {
+				nvgFontFaceId(args.vg, font->handle);
+				nvgTextLetterSpacing(args.vg, 0.0);
+				nvgTextAlign(args.vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+				nvgFontSize(args.vg, 10.0f);
+				
+				float posx = 0.0f;
+				for (int l = 0; l < 3; l++) {
+					if (l == 0) {
+						nvgFillColor(args.vg, SCHEME_LIGHT_GRAY);
+					}
+					else if (settingSrc != NULL && (*settingSrc == l - 1)) {
+						nvgFillColor(args.vg, colorOn);
+					}
+					else {
+						nvgFillColor(args.vg, colorOff);
+					}
+					nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[l].c_str(), NULL);
+					posx += textWidthsPx[l];
 				}
-				else if (settingSrc != NULL && (*settingSrc == l - 1)) {
-					nvgFillColor(args.vg, colorOn);
-				}
-				else {
-					nvgFillColor(args.vg, colorOff);
-				}
-				nvgText(args.vg, posx + 3.0f, box.size.y / 2.0f, textStrings[l].c_str(), NULL);
-				posx += textWidthsPx[l];
 			}
 		}
 	}
@@ -458,49 +461,50 @@ struct BigNumbersEq : TransparentWidget {
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 		
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		if (trackParamSrc != NULL) {
-			time_t currTime = time(0);
-			if (currTime - *lastMovedKnobTimeSrc < 4) {
-				text = "";
-				int srcId = *lastMovedKnobIdSrc;
-				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-				if (srcId >= FREQ_PARAMS && srcId < FREQ_PARAMS + 4) {
-					float freq = std::pow(10.0f, trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS));
-					if (freq < 10000.0f) {
-						text = string::f("%i Hz", (int)(freq + 0.5f));
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			if (trackParamSrc != NULL) {
+				time_t currTime = time(0);
+				if (currTime - *lastMovedKnobTimeSrc < 4) {
+					text = "";
+					int srcId = *lastMovedKnobIdSrc;
+					int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+					if (srcId >= FREQ_PARAMS && srcId < FREQ_PARAMS + 4) {
+						float freq = std::pow(10.0f, trackEqsSrc[currTrk].getFreq(srcId - FREQ_PARAMS));
+						if (freq < 10000.0f) {
+							text = string::f("%i Hz", (int)(freq + 0.5f));
+						}
+						else {
+							text = string::f("%.2f kHz", freq / 1000.0f);
+						}
+					}				
+					else if (srcId >= GAIN_PARAMS && srcId < GAIN_PARAMS + 4) {
+						float gain = trackEqsSrc[currTrk].getGain(srcId - GAIN_PARAMS);
+						if (std::fabs(gain) < 10.0f) {
+							text = string::f("%.2f dB", math::normalizeZero(gain));
+						}
+						else {
+							text = string::f("%.1f dB", math::normalizeZero(gain));
+						}
 					}
-					else {
-						text = string::f("%.2f kHz", freq / 1000.0f);
+					else if (srcId >= Q_PARAMS && srcId < Q_PARAMS + 4) {
+						int band = srcId - Q_PARAMS;
+						float q = trackEqsSrc[currTrk].getQ(band);
+						text = string::f("%.2f", math::normalizeZero(q));
 					}
-				}				
-				else if (srcId >= GAIN_PARAMS && srcId < GAIN_PARAMS + 4) {
-					float gain = trackEqsSrc[currTrk].getGain(srcId - GAIN_PARAMS);
-					if (std::fabs(gain) < 10.0f) {
-						text = string::f("%.2f dB", math::normalizeZero(gain));
-					}
-					else {
-						text = string::f("%.1f dB", math::normalizeZero(gain));
-					}
-				}
-				else if (srcId >= Q_PARAMS && srcId < Q_PARAMS + 4) {
-					int band = srcId - Q_PARAMS;
-					float q = trackEqsSrc[currTrk].getQ(band);
-					text = string::f("%.2f", math::normalizeZero(q));
-				}
 
-			
-				if (font->handle >= 0 && text.compare("") != 0) {
-					nvgGlobalTint(args.vg, color::WHITE);
-					nvgFillColor(args.vg, color);
-					nvgFontFaceId(args.vg, font->handle);
-					nvgTextLetterSpacing(args.vg, 0.0);
-					nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-					nvgFontSize(args.vg, 24.0f);
-					nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+				
+					if (font->handle >= 0 && text.compare("") != 0) {
+						nvgFillColor(args.vg, color);
+						nvgFontFaceId(args.vg, font->handle);
+						nvgTextLetterSpacing(args.vg, 0.0);
+						nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+						nvgFontSize(args.vg, 24.0f);
+						nvgText(args.vg, textOffset.x, textOffset.y, text.c_str(), NULL);
+					}
 				}
 			}
 		}
@@ -542,41 +546,42 @@ struct EqCurveAndGrid : TransparentWidget {
 	}
 	
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		nvgSave(args.vg);
-		nvgGlobalTint(args.vg, color::WHITE);
-		
-		// grid
-		drawGrid(args);
-		
-		if (trackParamSrc != NULL) {
-			currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			sampleRate = trackEqsSrc[0].getSampleRate();
-		
-			nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
+			}
+			nvgSave(args.vg);
 			
-			// spectrum
-			if (*drawBufSize > 0) {
-				drawSpectrum(args);
+			// grid
+			drawGrid(args);
+			
+			if (trackParamSrc != NULL) {
+				currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+				sampleRate = trackEqsSrc[0].getSampleRate();
+			
+				nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
+				
+				// spectrum
+				if (*drawBufSize > 0) {
+					drawSpectrum(args);
+				}
+
+				bool hideEqCurves = miscSettings2Src->cc4[2] != 0 && (!trackEqsSrc[currTrk].getTrackActive() || globalBypassParamSrc->getValue() >= 0.5f);
+
+				drawGridtext(args, hideEqCurves);
+				
+				// EQ curves
+				if (!hideEqCurves) {
+					calcCurveData();
+					drawAllEqCurves(args);
+				}		
+				
+				nvgResetScissor(args.vg);					
 			}
 
-			bool hideEqCurves = miscSettings2Src->cc4[2] != 0 && (!trackEqsSrc[currTrk].getTrackActive() || globalBypassParamSrc->getValue() >= 0.5f);
-
-			drawGridtext(args, hideEqCurves);
-			
-			// EQ curves
-			if (!hideEqCurves) {
-				calcCurveData();
-				drawAllEqCurves(args);
-			}		
-			
-			nvgResetScissor(args.vg);					
+			nvgRestore(args.vg);
 		}
-
-		nvgRestore(args.vg);
 	}
 	
 	
@@ -880,40 +885,41 @@ struct TrackKnob : MmBigKnobWhite {
 	}
 	
 	
-	void draw(const DrawArgs &args) override {
-		MmBigKnobWhite::draw(args);
-		ParamQuantity* paramQuantity = getParamQuantity();
-		if (paramQuantity) {
-			nvgGlobalTint(args.vg, color::WHITE);
-			int newNumTracks = (int)(paramQuantity->getMaxValue() + 1.5f);
-			if (newNumTracks != numTracks) {
-				numTracks = newNumTracks;
-				fillDotPosAndDefState();
+	void drawLayer(const DrawArgs &args, int layer) override {
+		MmBigKnobWhite::drawLayer(args, layer);
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (paramQuantity) {
+				int newNumTracks = (int)(paramQuantity->getMaxValue() + 1.5f);
+				if (newNumTracks != numTracks) {
+					numTracks = newNumTracks;
+					fillDotPosAndDefState();
+				}
+				int selectedTrack = (int)(paramQuantity->getValue() + 0.5f);
+				for (int trk = 0; trk < numTracks; trk++) {
+					if (trk == refresh) {
+						nonDefaultState[trk] = trackEqsSrc[trk].isNonDefaultState();
+					}
+					nvgBeginPath(args.vg);
+					nvgCircle(args.vg, px[trk], py[trk], dotSize);
+					if (trk == selectedTrack) {
+						nvgFillColor(args.vg, SCHEME_WHITE);
+					}
+					else if (!polyInputs[trk >> 3].isConnected() || !nonDefaultState[trk]) {// if unconnected or in default state
+						nvgFillColor(args.vg, COL_GRAY);
+					}
+					else if (trackEqsSrc[trk].getTrackActive()) {// here we are connected and not in default state
+						nvgFillColor(args.vg, COL_GREEN);
+					}
+					else {
+						nvgFillColor(args.vg, COL_RED);
+					}
+					nvgFill(args.vg);		
+				}
 			}
-			int selectedTrack = (int)(paramQuantity->getValue() + 0.5f);
-			for (int trk = 0; trk < numTracks; trk++) {
-				if (trk == refresh) {
-					nonDefaultState[trk] = trackEqsSrc[trk].isNonDefaultState();
-				}
-				nvgBeginPath(args.vg);
-				nvgCircle(args.vg, px[trk], py[trk], dotSize);
-				if (trk == selectedTrack) {
-					nvgFillColor(args.vg, SCHEME_WHITE);
-				}
-				else if (!polyInputs[trk >> 3].isConnected() || !nonDefaultState[trk]) {// if unconnected or in default state
-					nvgFillColor(args.vg, COL_GRAY);
-				}
-				else if (trackEqsSrc[trk].getTrackActive()) {// here we are connected and not in default state
-					nvgFillColor(args.vg, COL_GREEN);
-				}
-				else {
-					nvgFillColor(args.vg, COL_RED);
-				}
-				nvgFill(args.vg);		
-			}
+			refresh++;
+			if (refresh > 23) refresh = 0;
 		}
-		refresh++;
-		if (refresh > 23) refresh = 0;
 	}	
 };
 

@@ -95,46 +95,47 @@ struct CvAndFadePointerBase : TransparentWidget {
 	}
 
 
-	void draw(const DrawArgs &args) override {
-	static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
-		nvgGlobalTint(args.vg, color::WHITE);
-		// cv pointer (draw only when cv has en effect)
-		if (srcParamWithCV != NULL && *srcParamWithCV != -100.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
-			float cvPosNormalized = *srcParamWithCV / maxTFader;
-			float vertPos = box.size.y - box.size.y * cvPosNormalized;// in px
-			nvgBeginPath(args.vg);
-			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
-			nvgLineTo(args.vg, box.size.x, vertPos);
-			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
-			nvgClosePath(args.vg);
-			int colorIndex = (colorAndCloak->cc4[dispColorGlobal] < 7) ? colorAndCloak->cc4[dispColorGlobal] : (*dispColorLocalPtr);
-			nvgFillColor(args.vg, DISP_COLORS[colorIndex]);
-			nvgFill(args.vg);
-			nvgStrokeColor(args.vg, SCHEME_BLACK);
-			nvgStrokeWidth(args.vg, mm2px(0.11f));
-			nvgStroke(args.vg);
-		}
-		// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
-		if (srcFadeGain != NULL && *srcFadeRate >= GlobalConst::minFadeRate && *srcFadeGain < 1.0f  && colorAndCloak->cc4[cloakedMode] == 0) {
-			float fadePosNormalized;
-			if (srcParamWithCV == NULL || *srcParamWithCV == -100.0f) {
-				fadePosNormalized = srcParam->getValue();
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			static const float prtHeight = 2.72f  * SVG_DPI / MM_PER_IN;// height of pointer, width is determined by box.size.x in derived struct
+			// cv pointer (draw only when cv has en effect)
+			if (srcParamWithCV != NULL && *srcParamWithCV != -100.0f && (colorAndCloak->cc4[detailsShow] & ~colorAndCloak->cc4[cloakedMode] & 0x4) != 0) {// -1.0f indicates not to show cv pointer
+				float cvPosNormalized = *srcParamWithCV / maxTFader;
+				float vertPos = box.size.y - box.size.y * cvPosNormalized;// in px
+				nvgBeginPath(args.vg);
+				nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
+				nvgLineTo(args.vg, box.size.x, vertPos);
+				nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
+				nvgClosePath(args.vg);
+				int colorIndex = (colorAndCloak->cc4[dispColorGlobal] < 7) ? colorAndCloak->cc4[dispColorGlobal] : (*dispColorLocalPtr);
+				nvgFillColor(args.vg, DISP_COLORS[colorIndex]);
+				nvgFill(args.vg);
+				nvgStrokeColor(args.vg, SCHEME_BLACK);
+				nvgStrokeWidth(args.vg, mm2px(0.11f));
+				nvgStroke(args.vg);
 			}
-			else {
-				fadePosNormalized = *srcParamWithCV;
+			// fade pointer (draw only when in mute mode, or when in fade mode and less than unity gain)
+			if (srcFadeGain != NULL && *srcFadeRate >= GlobalConst::minFadeRate && *srcFadeGain < 1.0f  && colorAndCloak->cc4[cloakedMode] == 0) {
+				float fadePosNormalized;
+				if (srcParamWithCV == NULL || *srcParamWithCV == -100.0f) {
+					fadePosNormalized = srcParam->getValue();
+				}
+				else {
+					fadePosNormalized = *srcParamWithCV;
+				}
+				fadePosNormalized /= maxTFader;
+				float vertPos = box.size.y - box.size.y * fadePosNormalized * (*srcFadeGain);// in px
+				nvgBeginPath(args.vg);
+				nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
+				nvgLineTo(args.vg, box.size.x, vertPos);
+				nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
+				nvgClosePath(args.vg);
+				nvgFillColor(args.vg, FADE_POINTER_FILL);
+				nvgFill(args.vg);
+				nvgStrokeColor(args.vg, SCHEME_BLACK);
+				nvgStrokeWidth(args.vg, mm2px(0.11f));
+				nvgStroke(args.vg);
 			}
-			fadePosNormalized /= maxTFader;
-			float vertPos = box.size.y - box.size.y * fadePosNormalized * (*srcFadeGain);// in px
-			nvgBeginPath(args.vg);
-			nvgMoveTo(args.vg, 0, vertPos - prtHeight / 2.0f);
-			nvgLineTo(args.vg, box.size.x, vertPos);
-			nvgLineTo(args.vg, 0, vertPos + prtHeight / 2.0f);
-			nvgClosePath(args.vg);
-			nvgFillColor(args.vg, FADE_POINTER_FILL);
-			nvgFill(args.vg);
-			nvgStrokeColor(args.vg, SCHEME_BLACK);
-			nvgStrokeWidth(args.vg, mm2px(0.11f));
-			nvgStroke(args.vg);
 		}
 	}	
 };
@@ -417,35 +418,21 @@ struct EditableDisplayBase : LedDisplayTextField {
 		text = "-00-";
 	};
 	
-	// don't want background so implement adapted version here
-	void draw(const DrawArgs &args) override {
-		if (colorAndCloak) {
-			int colorIndex = colorAndCloak->cc4[dispColorGlobal] < 7 ? colorAndCloak->cc4[dispColorGlobal] : *dispColorLocal;
-			color = DISP_COLORS[colorIndex];
+	void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (colorAndCloak) {
+				int colorIndex = colorAndCloak->cc4[dispColorGlobal] < 7 ? colorAndCloak->cc4[dispColorGlobal] : *dispColorLocal;
+				color = DISP_COLORS[colorIndex];
+			}
+			if (cursor > numChars) {
+				text.resize(numChars);
+				cursor = numChars;
+				selection = numChars;
+			}
 		}
-		if (cursor > numChars) {
-			text.resize(numChars);
-			cursor = numChars;
-			selection = numChars;
-		}
-		
-		// the code below is LedDisplayTextField.draw() without the background rect
-		nvgScissor(args.vg, RECT_ARGS(args.clipBox));
-		std::shared_ptr<window::Font> font = APP->window->loadFont(fontPath);
-		nvgGlobalTint(args.vg, color::WHITE);
-		if (font && font->handle >= 0) {
-			bndSetFont(font->handle);
-
-			NVGcolor highlightColor = color;
-			highlightColor.a = 0.5;
-			int begin = std::min(cursor, selection);
-			int end = (this == APP->event->selectedWidget) ? std::max(cursor, selection) : -1;
-			bndIconLabelCaret(args.vg, textOffset.x, textOffset.y, box.size.x, box.size.y,
-				-1, color, 12, text.c_str(), highlightColor, begin, end);
-
-			bndSetFont(APP->window->uiFont->handle);
-		}
-		nvgResetScissor(args.vg);
+		LedDisplayTextField::drawLayer(args, layer);
 	}
 
 	void onSelectKey(const event::SelectKey& e) override {

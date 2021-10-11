@@ -51,29 +51,30 @@ struct ShapeMasterDisplayLight : TransparentWidget {
 		fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 	}
 	
-	void draw(const DrawArgs &args) override {
-		if (!(font = APP->window->loadFont(fontPath))) {
-			return;
-		}
-		nvgSave(args.vg);
-		nvgLineCap(args.vg, NVG_ROUND);
-		
-		if (currChan != NULL) {
-			nvgGlobalTint(args.vg, color::WHITE);					
-			// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
-
-			if (setting3Src->cc4[2] == 0) {// if not cloaked
-				drawGrid(args);
-				drawScope(args);
-				drawShape(args);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (!(font = APP->window->loadFont(fontPath))) {
+				return;
 			}
+			nvgSave(args.vg);
+			nvgLineCap(args.vg, NVG_ROUND);
 			
-			drawMessages(args);
-			
-			// nvgResetScissor(args.vg);					
-		}
+			if (currChan != NULL) {
+				// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
 
-		nvgRestore(args.vg);
+				if (setting3Src->cc4[2] == 0) {// if not cloaked
+					drawGrid(args);
+					drawScope(args);
+					drawShape(args);
+				}
+				
+				drawMessages(args);
+				
+				// nvgResetScissor(args.vg);					
+			}
+
+			nvgRestore(args.vg);
+		}
 	}
 
 

@@ -45,41 +45,40 @@ void VuMeterBase::processPeakHold() {// use APP->window->getLastFrameRate()
 }
 
 
-void VuMeterBase::draw(const DrawArgs &args) {
-	processPeakHold();
-	
-	setColor();
-	nvgGlobalTint(args.vg, color::WHITE);
-	
-	if (isMasterTypeSrc != NULL && *isMasterTypeSrc == 1) {
-		// PEAK
-		drawVuMaster(args, VuMeterAllDual::getPeak(srcLevels, 0), 0, 0);
-		drawVuMaster(args, VuMeterAllDual::getPeak(srcLevels, 1), barX + gapX, 0);
-
-		// RMS
-		drawVuMaster(args, VuMeterAllDual::getRms(srcLevels, 0), 0, 1);
-		drawVuMaster(args, VuMeterAllDual::getRms(srcLevels, 1), barX + gapX, 1);
+void VuMeterBase::drawLayer(const DrawArgs &args, int layer) {
+	if (layer == 1) {
+		processPeakHold();
 		
-		// PEAK_HOLD
-		drawPeakHoldMaster(args, peakHold[0], 0);
-		drawPeakHoldMaster(args, peakHold[1], barX + gapX);
-
-	}
-	else {
-		// PEAK
-		drawVu(args, VuMeterAllDual::getPeak(srcLevels, 0), 0, 0);
-		drawVu(args, VuMeterAllDual::getPeak(srcLevels, 1), barX + gapX, 0);
-
-		// RMS
-		drawVu(args, VuMeterAllDual::getRms(srcLevels, 0), 0, 1);
-		drawVu(args, VuMeterAllDual::getRms(srcLevels, 1), barX + gapX, 1);
+		setColor();
 		
-		// PEAK_HOLD
-		drawPeakHold(args, peakHold[0], 0);
-		drawPeakHold(args, peakHold[1], barX + gapX);	
+		if (isMasterTypeSrc != NULL && *isMasterTypeSrc == 1) {
+			// PEAK
+			drawVuMaster(args, VuMeterAllDual::getPeak(srcLevels, 0), 0, 0);
+			drawVuMaster(args, VuMeterAllDual::getPeak(srcLevels, 1), barX + gapX, 0);
+
+			// RMS
+			drawVuMaster(args, VuMeterAllDual::getRms(srcLevels, 0), 0, 1);
+			drawVuMaster(args, VuMeterAllDual::getRms(srcLevels, 1), barX + gapX, 1);
+			
+			// PEAK_HOLD
+			drawPeakHoldMaster(args, peakHold[0], 0);
+			drawPeakHoldMaster(args, peakHold[1], barX + gapX);
+
+		}
+		else {
+			// PEAK
+			drawVu(args, VuMeterAllDual::getPeak(srcLevels, 0), 0, 0);
+			drawVu(args, VuMeterAllDual::getPeak(srcLevels, 1), barX + gapX, 0);
+
+			// RMS
+			drawVu(args, VuMeterAllDual::getRms(srcLevels, 0), 0, 1);
+			drawVu(args, VuMeterAllDual::getRms(srcLevels, 1), barX + gapX, 1);
+			
+			// PEAK_HOLD
+			drawPeakHold(args, peakHold[0], 0);
+			drawPeakHold(args, peakHold[1], barX + gapX);	
+		}
 	}
-	
-	Widget::draw(args);
 }
 
 
