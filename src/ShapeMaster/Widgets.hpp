@@ -1171,7 +1171,7 @@ struct SmPlayButton : MmPlayButton {
 
 	void onDragStart(const event::DragStart& e) override {
 		ParamQuantity* paramQuantity = getParamQuantity();
-		if (paramQuantity && paramQuantity->getValue() > 0.5f && (APP->window->getMods() & GLFW_MOD_ALT) != 0) {
+		if (paramQuantity && paramQuantity->getValue() > 0.5f && (APP->window->getMods() & RACK_MOD_CTRL) != 0) {
 			paramQuantity->setValue(0.0f);
 			channels[*currChan].initRun(true);
 		}
