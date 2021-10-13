@@ -317,7 +317,7 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 			leftX += textWidthsPx[3];
 			// click RANDOM
 			if (e.pos.x > leftX && e.pos.x < leftX + textWidthsPx[4]) {
-				if ((APP->window->getMods() & GLFW_MOD_ALT) != 0) {
+				if ((APP->window->getMods() & RACK_MOD_CTRL) != 0) {
 					channels[*currChan].randomizeShape(true);
 				}
 				else {
@@ -1180,7 +1180,7 @@ struct SmPlayButton : MmPlayButton {
 
 	// void onButton(const event::Button& e) override {
 		// if (e.action == GLFW_PRESS && (e.button == GLFW_MOUSE_BUTTON_LEFT) && 
-				// (APP->window->getMods() & GLFW_MOD_ALT) != 0) {			
+				// (APP->window->getMods() & RACK_MOD_CTRL) != 0) {			
 			// channels[*currChan].initRun(true);
 			// event::Action eAction;
 			// onAction(eAction);

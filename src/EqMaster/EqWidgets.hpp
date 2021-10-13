@@ -1087,7 +1087,7 @@ struct BandActiveSwitch : BandSwitch {
 	}
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
+			if ((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 				// solo
 				if ((soloedBand == -1) || (soloedBand != -1 && soloedBand != BAND)) {// entering solo
 					soloedBand = BAND;

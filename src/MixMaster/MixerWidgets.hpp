@@ -1071,12 +1071,12 @@ struct MmSmallFaderWithLink : MmSmallFader {
 		ParamQuantity* paramQuantity = getParamQuantity();
 		int faderIndex = paramQuantity->paramId - baseFaderParamId;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
-			if ((APP->window->getMods() & RACK_MOD_MASK) == GLFW_MOD_ALT) {
+			if ((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 				toggleLinked(linkBitMaskSrc, faderIndex);
 				e.consume(this);
 				return;
 			}
-			else if ((APP->window->getMods() & RACK_MOD_MASK) == (GLFW_MOD_ALT | GLFW_MOD_SHIFT)) {
+			else if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 				*linkBitMaskSrc = 0;
 				e.consume(this);
 				return;
