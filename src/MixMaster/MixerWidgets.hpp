@@ -506,7 +506,7 @@ struct MasterDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 
 			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Master settings: " + std::string(masterLabel) + string::f("  (id %lli)", *idSrc + 1);
+			mastSetLabel->text = "Master settings: " + std::string(masterLabel) + string::f("  (id %" PRId64 ")", *idSrc + 1);
 			menu->addChild(mastSetLabel);
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);

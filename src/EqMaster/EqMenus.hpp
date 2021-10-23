@@ -148,7 +148,7 @@ struct FetchLabelsItem : MenuItem {
 			if (*mappedIdSrc == pl.id) {
 				sawMappedId = true;
 			}
-			std::string mixerName = std::string(pl.name) + string::f("  (id %lli)", pl.id);
+			std::string mixerName = std::string(pl.name) + string::f("  (id %" PRId64 ")", pl.id);
 			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(*mappedIdSrc == pl.id));
 			idItem->mappedIdSrc = mappedIdSrc;
 			idItem->setId = pl.id;
@@ -157,7 +157,7 @@ struct FetchLabelsItem : MenuItem {
 		delete mixerMessageSurvey;
 		
 		if (!sawMappedId) {
-			std::string mixerName = std::string("[deleted]") + string::f("  (id %lli)", *mappedIdSrc);
+			std::string mixerName = std::string("[deleted]") + string::f("  (id %" PRId64 ")", *mappedIdSrc);
 			FetchLabelsSubItem *idItem = createMenuItem<FetchLabelsSubItem>(mixerName, CHECKMARK(true));
 			idItem->mappedIdSrc = mappedIdSrc;
 			idItem->setId = *mappedIdSrc;
