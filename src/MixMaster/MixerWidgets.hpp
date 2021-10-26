@@ -395,15 +395,17 @@ struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 		topCentered = true;
 	}
 	
-	void draw(const DrawArgs &args) override {
-		if (dispColorGlobalSrc) {
-			int colorIndex = *dispColorGlobalSrc < 7 ? *dispColorGlobalSrc : *dispColorLocalSrc;
-			if (colorIndex != oldDispColor) {
-				arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
-				oldDispColor = colorIndex;
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (dispColorGlobalSrc) {
+				int colorIndex = *dispColorGlobalSrc < 7 ? *dispColorGlobalSrc : *dispColorLocalSrc;
+				if (colorIndex != oldDispColor) {
+					arcColor = DISP_COLORS[colorIndex];// arc color, same as displays
+					oldDispColor = colorIndex;
+				}
 			}
 		}
-		MmKnobWithArc::draw(args);
+		MmKnobWithArc::drawLayer(args, layer);
 	}
 };
 
@@ -1093,24 +1095,26 @@ struct MmSmallFaderWithLink : MmSmallFader {
 		MmSmallFader::onButton(e);		
 	}
 
-	void draw(const DrawArgs &args) override {
-		MmSmallFader::draw(args);
-		ParamQuantity* paramQuantity = getParamQuantity();
-		if (paramQuantity) {
-			int faderIndex = paramQuantity->paramId - baseFaderParamId;
-			if (isLinked(linkBitMaskSrc, faderIndex)) {
-				float v = paramQuantity->getScaledValue();
-				float offsetY = handle->box.size.y / 2.0f;
-				float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
-				
-				nvgBeginPath(args.vg);
-				nvgMoveTo(args.vg, 0, ypos);
-				nvgLineTo(args.vg, box.size.x, ypos);
-				nvgClosePath(args.vg);
-				nvgStrokeColor(args.vg, SCHEME_RED);
-				nvgStrokeWidth(args.vg, mm2px(0.4f));
-				nvgStroke(args.vg);
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (paramQuantity) {
+				int faderIndex = paramQuantity->paramId - baseFaderParamId;
+				if (isLinked(linkBitMaskSrc, faderIndex)) {
+					float v = paramQuantity->getScaledValue();
+					float offsetY = handle->box.size.y / 2.0f;
+					float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
+					
+					nvgBeginPath(args.vg);
+					nvgMoveTo(args.vg, 0, ypos);
+					nvgLineTo(args.vg, box.size.x, ypos);
+					nvgClosePath(args.vg);
+					nvgStrokeColor(args.vg, SCHEME_RED);
+					nvgStrokeWidth(args.vg, mm2px(0.4f));
+					nvgStroke(args.vg);
+				}
 			}
 		}
+		MmSmallFader::drawLayer(args, layer);
 	}
 };
