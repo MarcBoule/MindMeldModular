@@ -306,11 +306,15 @@ struct BassMasterWidget : ModuleWidget {
 			fontPath = std::string(asset::plugin(pluginInstance, "res/fonts/RobotoCondensed-Regular.ttf"));
 		};
 		
-		void draw(const DrawArgs &args) override {
-			if (dispColorPtr) {
-				color = DISP_COLORS[*dispColorPtr];
-			}	
-			LedDisplayChoice::draw(args);
+		void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
+		
+		void drawLayer(const DrawArgs &args, int layer) override {
+			if (layer == 1) {
+				if (dispColorPtr) {
+					color = DISP_COLORS[*dispColorPtr];
+				}
+			}
+			LedDisplayChoice::drawLayer(args, layer);
 		}
 	};	
 	BassMasterLabel* bassMasterLabels[5];// xover, width high, gain high, width low, gain low

@@ -31,17 +31,21 @@ struct TrackLabel : LedDisplayChoice {
 		text = "-00-";
 	};
 	
-	void draw(const DrawArgs &args) override {
-		if (trackLabelColorsSrc) {
-			if (*mappedId == 0) {
-				color = DISP_COLORS[*bandLabelColorsSrc];
-			}
-			else {
-				int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-				color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
-			}
-		}	
-		LedDisplayChoice::draw(args);
+	void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (trackLabelColorsSrc) {
+				if (*mappedId == 0) {
+					color = DISP_COLORS[*bandLabelColorsSrc];
+				}
+				else {
+					int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+					color = DISP_COLORS[trackLabelColorsSrc[currTrk]];
+				}
+			}	
+		}
+		LedDisplayChoice::drawLayer(args, layer);
 	}
 	
 	struct TrackSelectItem : MenuItem {
