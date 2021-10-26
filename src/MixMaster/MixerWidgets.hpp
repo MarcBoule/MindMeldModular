@@ -191,17 +191,21 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	int8_t* dispColorLocalPtr;
 	
 	TrackAndGroupLabel() {
-		box.size = mm2px(Vec(10.6f, 5.0f));
+		box.size = mm2px(Vec(14.6f, 5.0f));
 		textOffset = Vec(4.2f, 11.3f);
 		text = "-00-";
 	};
 	
-	void draw(const DrawArgs &args) override {
-		if (dispColorPtr) {
-			int colorIndex = *dispColorPtr < 7 ? *dispColorPtr : *dispColorLocalPtr;
-			color = DISP_COLORS[colorIndex];
-		}	
-		LedDisplayChoice::draw(args);
+	void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (dispColorPtr) {
+				int colorIndex = *dispColorPtr < 7 ? *dispColorPtr : *dispColorLocalPtr;
+				color = DISP_COLORS[colorIndex];
+			}	
+		}
+		LedDisplayChoice::drawLayer(args, layer);
 	}
 };
 
@@ -225,23 +229,27 @@ struct GroupSelectDisplay : ParamWidget {
 		ldc.text = "-";
 	};
 	
-	void draw(const DrawArgs &args) override {
-		int grp = 0;
-		ParamQuantity* paramQuantity = getParamQuantity();
-		if (paramQuantity) {
-			grp = (int)(paramQuantity->getValue() + 0.5f);
-		}
-		ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
-		ldc.text[1] = 0;
-		if (srcColor) {
-			int colorIndex = srcColor->cc4[dispColorGlobal] < 7 ? srcColor->cc4[dispColorGlobal] : *srcColorLocal;
-			if (colorIndex != oldDispColor) {
-				ldc.color = DISP_COLORS[colorIndex];
-				oldDispColor = colorIndex;
+	void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			int grp = 0;
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (paramQuantity) {
+				grp = (int)(paramQuantity->getValue() + 0.5f);
+			}
+			ldc.text[0] = (char)(grp >= 1 &&  grp <= 4 ? grp + 0x30 : '-');
+			ldc.text[1] = 0;
+			if (srcColor) {
+				int colorIndex = srcColor->cc4[dispColorGlobal] < 7 ? srcColor->cc4[dispColorGlobal] : *srcColorLocal;
+				if (colorIndex != oldDispColor) {
+					ldc.color = DISP_COLORS[colorIndex];
+					oldDispColor = colorIndex;
+				}
 			}
 		}
-		ldc.draw(args);
-		ParamWidget::draw(args);
+		ldc.drawLayer(args, layer);
+		ParamWidget::drawLayer(args, layer);
 	};
 
 	void onHoverKey(const event::HoverKey &e) override {
@@ -413,7 +421,7 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int8_t* dispColorLocal;
 
 	EditableDisplayBase() {
-		box.size = mm2px(Vec(14.6f, 5.0f));// svg is 10.6
+		box.size = mm2px(Vec(18.6f, 5.0f));// svg is 10.6
 		textOffset = Vec(6.0f, -2.7f);
 		text = "-00-";
 	};
@@ -496,7 +504,7 @@ struct MasterDisplay : EditableDisplayBase {
 	MasterDisplay() {
 		numChars = 6;
 		textSize = 13;
-		box.size = mm2px(Vec(20.6f, 5.3f));
+		box.size = mm2px(Vec(24.6f, 5.3f));
 		textOffset = Vec(9.0f, -2.0f);
 		text = "-0000-";
 	}

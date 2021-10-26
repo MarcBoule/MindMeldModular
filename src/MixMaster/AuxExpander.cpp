@@ -867,7 +867,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
 			// Labels
-			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
+			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i + 2, 4.7))));
 			if (module) {
 				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
@@ -988,7 +988,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		MmKnobWithArc* newArcKnob;
 		for (int i = 0; i < 8; i++) {
 			// Labels for tracks 1 to 8
-			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 4.7))));
+			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 4.7))));
 			if (module) {
 				trackAndGroupLabels[i]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
@@ -1030,7 +1030,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			
 			
 			// Labels for tracks 9 to 16
-			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 65.08))));
+			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 65.08))));
 			if (module) {
 				trackAndGroupLabels[i + 8]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 8]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 8) >> 2].cc4[i & 0x3]);
@@ -1077,7 +1077,7 @@ struct AuxExpanderWidget : ModuleWidget {
 		static constexpr float redOx = 0.58f;
 		for (int i = 0; i < 2; i++) {
 			// Labels for groups 1 to 2
-			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 4.7))));
+			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 2 + 12.7 * i, 4.7))));
 			if (module) {
 				trackAndGroupLabels[i + 16]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 16]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 16) >> 2].cc4[i & 0x3]);			
@@ -1124,7 +1124,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			
 			
 			// Labels for groups 3 to 4
-			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 12.7 * i, 65.08))));
+			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 2 + 12.7 * i, 65.08))));
 			if (module) {
 				trackAndGroupLabels[i + 18]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 18]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 18) >> 2].cc4[(i + 18) & 0x3]);
@@ -1221,7 +1221,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		// Left side (globals)
 		for (int i = 0; i < 4; i++) {
 			// Labels
-			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i, 4.7))));
+			addChild(auxDisplays[i] = createWidgetCentered<AuxDisplay<TAuxExpander::AuxspanderAux>>(mm2px(Vec(6.35 + 12.7 * i + 2, 4.7))));
 			if (module) {
 				// auxDisplays[i]->tabNextFocus = // done after the for loop
 				auxDisplays[i]->colorAndCloak = &(module->colorAndCloak);
@@ -1342,7 +1342,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		MmKnobWithArc* newArcKnob;
 		for (int i = 0; i < 4; i++) {
 			// Labels for tracks 1 to 4
-			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 4.7))));
+			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 4.7))));
 			if (module) {
 				trackAndGroupLabels[i]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
@@ -1385,7 +1385,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 
 
 			// Labels for tracks 5 to 8
-			addChild(trackAndGroupLabels[i + 4] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 12.7 * i, 65.08))));
+			addChild(trackAndGroupLabels[i + 4] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 65.08))));
 			if (module) {
 				trackAndGroupLabels[i + 4]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 4]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 4) >> 2].cc4[i & 0x3]);
@@ -1433,7 +1433,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		static const float xGrp1 = 171.45 + 12.7 - 12.7 * 5;
 		
 		// Labels for group 1
-		addChild(trackAndGroupLabels[8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(xGrp1, 4.7))));
+		addChild(trackAndGroupLabels[8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(xGrp1 + 2, 4.7))));
 		if (module) {
 			trackAndGroupLabels[8]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 			trackAndGroupLabels[8]->dispColorLocalPtr = &(module->trackDispColsLocal[(8) >> 2].cc4[0]);			
@@ -1480,7 +1480,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			
 			
 		// Labels for group 2
-		addChild(trackAndGroupLabels[9] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(xGrp1, 65.08))));
+		addChild(trackAndGroupLabels[9] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(xGrp1 + 2, 65.08))));
 		if (module) {
 			trackAndGroupLabels[9]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 			trackAndGroupLabels[9]->dispColorLocalPtr = &(module->trackDispColsLocal[(9) >> 2].cc4[1]);
