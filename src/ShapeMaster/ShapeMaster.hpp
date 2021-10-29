@@ -127,7 +127,6 @@ struct ShapeMaster : Module {
 
 struct ShapeMasterWidget : ModuleWidget {
 	int oldVisibleChannel = 0;// corresponds to what constructor will show
-	bool oldSyncedLengthVisible = true;
 	SmKnob* smKnobs[8][NUM_KNOB_PARAMS];// index [0][0] is chan 0 length knob synced, index [0][1] is chan 0 length knob unsync
 	SvgSwitch* smButtons[8][NUM_BUTTON_PARAMS];// index [0][0] is chan 0 play, index [0][1] is chan 0 freeze
 	PresetOrShapeArrowButton* arrowButtons[8][NUM_ARROW_PARAMS];

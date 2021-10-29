@@ -751,12 +751,9 @@ void ShapeMasterWidget::step() {
 		int chan = module->currChan;
 
 		bool syncedLengthVisible = module->params[SYNC_PARAM + chan * NUM_CHAN_PARAMS].getValue() >= 0.5f;// 1 for pro, 0 for non-pro
-		if (oldSyncedLengthVisible != syncedLengthVisible) {
-			oldSyncedLengthVisible = syncedLengthVisible;
-			smKnobs[chan][0]->setVisible(syncedLengthVisible);
-			smKnobs[chan][1]->setVisible(!syncedLengthVisible);
-			smButtons[chan][0]->setVisible(syncedLengthVisible);// lock button
-		}
+		smKnobs[chan][0]->setVisible(syncedLengthVisible);
+		smKnobs[chan][1]->setVisible(!syncedLengthVisible);
+		smButtons[chan][0]->setVisible(syncedLengthVisible);// lock button
 		
 		// update visibility for multi controls when user selects another channel
 		if (oldVisibleChannel != chan) {
