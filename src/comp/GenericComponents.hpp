@@ -265,7 +265,10 @@ struct MmBiggerKnobWhite : MmKnob {
 
 struct MmSmallKnobGrey8mm : MmKnob {
 	MmSmallKnobGrey8mm() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey8mm.svg")));
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey-8.svg")));
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-8.svg")));
 	}
 };
 
@@ -354,7 +357,10 @@ struct MmSmallKnobPurpleWithArcTopCentered : MmSmallKnobPurpleWithArc {
 
 struct Mm8mmKnobGrayWithArc : MmKnobWithArc {
 	Mm8mmKnobGrayWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey8mm.svg")));
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey-8.svg")));
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-8.svg")));
 		arcColor = DISP_COLORS[1];// yellow knob by default
 	}
 };
