@@ -297,7 +297,7 @@ struct MmSmallKnobRedWithArc : MmKnobWithArc {
 		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-red-7.5.svg")));
 		SvgWidget* bg = new SvgWidget;
 		fb->addChildBelow(bg, tw);
-		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-7.5.svg")));
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-7.5-255.svg")));
 		arcColor = nvgRGB(219, 65, 85);
 	}
 };
