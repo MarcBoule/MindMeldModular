@@ -294,7 +294,6 @@ struct MmKnobWithArc : MmKnob {
 
 struct MmSmallKnobRedWithArc : MmKnobWithArc {
 	MmSmallKnobRedWithArc() {
-		// setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-red.svg")));// TODO remove from repo if no use
 		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-red-7.5.svg")));
 		SvgWidget* bg = new SvgWidget;
 		fb->addChildBelow(bg, tw);
@@ -310,7 +309,10 @@ struct MmSmallKnobRedWithArcTopCentered : MmSmallKnobRedWithArc {
 
 struct MmSmallKnobOrangeWithArc : MmKnobWithArc {
 	MmSmallKnobOrangeWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-orange.svg")));
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-orange-7.5.svg")));
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-7.5.svg")));
 		arcColor = nvgRGB(255, 127, 42);
 	}
 };
@@ -322,7 +324,10 @@ struct MmSmallKnobOrangeWithArcTopCentered : MmSmallKnobOrangeWithArc {
 
 struct MmSmallKnobBlueWithArc : MmKnobWithArc {
 	MmSmallKnobBlueWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-blue.svg")));
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-blue-7.5.svg")));
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-7.5.svg")));
 		arcColor = nvgRGB(113, 160, 255);
 	}
 };
@@ -334,7 +339,10 @@ struct MmSmallKnobBlueWithArcTopCentered : MmSmallKnobBlueWithArc {
 
 struct MmSmallKnobPurpleWithArc : MmKnobWithArc {
 	MmSmallKnobPurpleWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/knob-purple.svg")));
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-purple-7.5.svg")));
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-7.5.svg")));
 		arcColor = nvgRGB(163, 93, 209);
 	}
 };
