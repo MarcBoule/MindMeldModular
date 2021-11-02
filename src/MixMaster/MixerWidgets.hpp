@@ -391,7 +391,10 @@ struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 	
 	
 	MmSmallKnobGreyWithArc() {
-		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey.svg")));
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-grey-7.5.svg")));
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-7.5.svg")));
 		topCentered = true;
 	}
 	

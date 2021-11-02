@@ -955,21 +955,24 @@ struct BandKnob : MmKnobWithArc {
 	void loadGraphics(int _band) {
 		band = _band;
 		if (band == 0) {
-			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-red-8.svg")));
 			arcColor = nvgRGB(222, 61, 46);
 		}
 		else if (band == 1) {
-			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/lmf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-green-8.svg")));// green
 			arcColor = nvgRGB(0, 155, 137);
 		}
 		else if (band == 2) {
-			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hmf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-blue-8.svg")));// blue
 			arcColor = nvgRGB(58, 115, 171);
 		}
 		else {
-			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/hf-knob.svg")));
+			setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-purple-8.svg")));// purple
 			arcColor = nvgRGB(134, 99, 137);
 		}
+		SvgWidget* bg = new SvgWidget;
+		fb->addChildBelow(bg, tw);
+		bg->setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/knob-bg-8.svg")));
 	}
 	
 	void onDragMove(const event::DragMove& e) override {
