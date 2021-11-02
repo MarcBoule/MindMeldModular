@@ -298,17 +298,21 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		nvgFillColor(args.vg, MID_GRAY);
 		nvgMoveTo(args.vg, loopRight, margins.y);
 		nvgLineTo(args.vg, loopRight, margins.y + canvas.y);
-		nvgRect(args.vg, loopRight, margins.y + canvas.y * 0.49f, canvas.y * 0.02f, canvas.y * 0.02f);
 		nvgStroke(args.vg);
+		nvgBeginPath(args.vg);
+		nvgRect(args.vg, loopRight, margins.y + canvas.y * 0.49f, canvas.y * 0.02f, canvas.y * 0.02f);
 		nvgFill(args.vg);
+		nvgStroke(args.vg);
 		// LoopStart
 		if (channels[*currChan].isLoopWithModeGuard()) {
 			nvgBeginPath(args.vg);
 			nvgMoveTo(args.vg, loopLeft, margins.y);
 			nvgLineTo(args.vg, loopLeft, margins.y + canvas.y);
-			nvgRect(args.vg, loopLeft, margins.y + canvas.y * 0.49f, canvas.y * -0.02f, canvas.y * 0.02f);
 			nvgStroke(args.vg);
+			nvgBeginPath(args.vg);
+			nvgRect(args.vg, loopLeft, margins.y + canvas.y * 0.49f, canvas.y * -0.02f, canvas.y * 0.02f);
 			nvgFill(args.vg);
+			nvgStroke(args.vg);
 			// H line between cursors, at level of right cursor's CV
 			// nvgStrokeWidth(args.vg, 0.5f);
 			// epc = 0;
@@ -329,7 +333,6 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		// vertical line
 		nvgBeginPath(args.vg);
 		nvgStrokeColor(args.vg, SCHEME_WHITE);
-		nvgFillColor(args.vg, SCHEME_WHITE);
 		nvgMoveTo(args.vg, margins.x + playHead * canvas.x, margins.y);
 		nvgLineTo(args.vg, margins.x + playHead * canvas.x, margins.y + canvas.y);
 		nvgStroke(args.vg);
@@ -337,6 +340,7 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		float cvs = channels[*currChan].evalShapeForShadow(playHead, &epc);
 		cvs = margins.y + (1.0f - cvs) * canvas.y;
 		nvgBeginPath(args.vg);
+		nvgFillColor(args.vg, SCHEME_WHITE);
 		nvgCircle(args.vg, margins.x + playHead * canvas.x, cvs, 3.0f);
 		nvgFill(args.vg);
 	}
