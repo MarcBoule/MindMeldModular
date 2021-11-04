@@ -1321,10 +1321,7 @@ struct RandomBoolSubItem : MenuItem {
 				*ctrlMaxPtr = 100.0f;
 			}
 		}
-		// unconsume event:
-		e.context->propagating = false;
-		e.context->consumed = false;
-		e.context->target = NULL;
+		e.unconsume();
 	}
 	void step() override {
 		rightText = CHECKMARK(*setting != 0);
@@ -1350,10 +1347,7 @@ struct RandomNoteItem : MenuItem {
 		
 		void onAction(const event::Action &e) override {
 			randomSettings->toggleScaleKey(key);
-			// unconsume event:
-			e.context->propagating = false;
-			e.context->consumed = false;
-			e.context->target = NULL;
+			e.unconsume();
 		}
 		void step() override {
 			rightText = CHECKMARK(randomSettings->getScaleKey(key));
