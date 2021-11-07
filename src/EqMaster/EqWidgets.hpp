@@ -1053,7 +1053,7 @@ struct ActiveSwitch : MmSwitch {
 	}
 };
 
-struct BandSwitch : app::SvgSwitch {
+struct BandSwitch : SvgSwitch {
 	Param* trackParamSrc;
 	Param* freqActiveParamsSrc;
 	TrackEq* trackEqsSrc;

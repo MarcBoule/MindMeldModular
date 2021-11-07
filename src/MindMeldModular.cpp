@@ -159,27 +159,3 @@ float stringToVoct(std::string* noteText) {
 
 	return newVolts;
 }
-
-
-void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor) {
-	// some of the code in this block is adapted from LightWidget::drawHalo() and the composite call is from LightWidget::drawLayer()
-	
-	nvgGlobalCompositeBlendFunc(args.vg, NVG_ONE_MINUS_DST_COLOR, NVG_ONE);
-
-	const float brightness = 0.8f;
-	NVGcolor color = nvgRGBAf(0, 0, 0, 0);
-	NVGcolor c = haloColor;
-	c.a *= math::clamp(brightness, 0.f, 1.f);
-	color = color::screen(color, c);
-	color = color::clamp(color);
-	
-	nvgBeginPath(args.vg);
-	nvgRect(args.vg, -12, -12, boxSize.x + 24, boxSize.y + 24);
-	
-	NVGcolor icol = color::mult(color, settings::haloBrightness);
-	NVGcolor ocol = nvgRGBA(0, 0, 0, 0);
-	NVGpaint paint = nvgBoxGradient(args.vg, -6, -6, boxSize.x + 12, boxSize.y + 12, 8, 12, icol, ocol);// tlx, tly, w, h, radius, feather, icol, ocol
-	
-	nvgFillPaint(args.vg, paint);
-	nvgFill(args.vg);
-}
