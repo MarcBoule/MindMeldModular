@@ -328,12 +328,17 @@ struct MmGroupPlusButtonNotify : MmGroupPlusButtonNoParam {
 
 // switch with dual display types (for Mute/Fade buttons)
 // --------------------
+static const NVGcolor muteFadeOnCols[2] = {nvgRGB(0xD4, 0x13, 0X08), nvgRGB(0xFF, 0x6A, 0x1F)};// this should match the color of fill of mute-on/fade-on buttons
 
 struct SvgSwitchDual : SvgSwitch {
-    float* type = NULL;// mute when < minFadeRate, fade when >= minFadeRate
+
+	float* type = NULL;// mute when < minFadeRate, fade when >= minFadeRate
     float oldType = -1.0f;
 	std::vector<std::shared_ptr<Svg>> framesAll;
 	std::vector<std::string> frameAltNames;
+	bool manualDrawTopOverride = false;
+	NVGcolor haloColor = muteFadeOnCols[0];
+
 	
 	void addFrameAll(std::shared_ptr<Svg> svg) {
 		framesAll.push_back(svg);
@@ -354,6 +359,7 @@ struct SvgSwitchDual : SvgSwitch {
 			int typeOffset = (*type < GlobalConst::minFadeRate ? 0 : 2);
 			frames[0]=framesAll[typeOffset + 0];
 			frames[1]=framesAll[typeOffset + 1];
+			haloColor = muteFadeOnCols[typeOffset >> 1];
 			oldType = *type;
 			onChange(*(new event::Change()));// required because of the way SVGSwitch changes images, we only change the frames above.
 			fb->dirty = true;// dirty is not sufficient when changing via frames assignments above (i.e. onChange() is required)
@@ -361,55 +367,27 @@ struct SvgSwitchDual : SvgSwitch {
 		SvgSwitch::step();
 	}
 	
+	void draw(const DrawArgs &args) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (!paramQuantity || paramQuantity->getValue() < 0.5f || manualDrawTopOverride) {
+			SvgSwitch::draw(args);
+		}
+	}	
 	
 	void drawLayer(const DrawArgs &args, int layer) override {
 		if (layer == 1) {
-			// code in this block is adapted from LightWidget::drawHalo() and the composite call is from LightWidget::drawLayer()
-			
-			// Don't draw halo if rendering in a framebuffer, e.g. screenshots or Module Browser
-			if (args.fb)
-				return;
-
-			const float halo = settings::haloBrightness;
-			if (halo == 0.f)
-				return;
-
-			// If light is off, rendering the halo gives no effect.
-			// if (color.r == 0.f && color.g == 0.f && color.b == 0.f)
-				// return;
-			
 			ParamQuantity* paramQuantity = getParamQuantity();
-			if (!paramQuantity || paramQuantity->getValue() < 0.5f)
+			if (!paramQuantity || paramQuantity->getValue() < 0.5f) {
+				// if no module or if switch is off, no need to do anything in layer 1
 				return;
+			}
 
-
-			NVGcolor baseColor = (type != NULL && *type >= GlobalConst::minFadeRate) ? nvgRGB(0xFF, 0x6A, 0x1F) : nvgRGB(212, 19, 8);
-			nvgBeginPath(args.vg);
-			nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 2);			
-			nvgFillColor(args.vg, baseColor);
-			nvgFill(args.vg);
-			
-			nvgGlobalCompositeBlendFunc(args.vg, NVG_ONE_MINUS_DST_COLOR, NVG_ONE);
-
-
-			nvgBeginPath(args.vg);
-	
-			const float brightness = 0.8f;
-			NVGcolor color = nvgRGBAf(0, 0, 0, 0);
-			NVGcolor c = baseColor;
-			c.a *= math::clamp(brightness, 0.f, 1.f);
-			color = color::screen(color, c);
-			color = color::clamp(color);
-			
-			nvgRect(args.vg, -12, -12, box.size.x + 24, box.size.y + 24);
-			
-			NVGcolor icol = color::mult(color, halo);
-			NVGcolor ocol = nvgRGBA(0, 0, 0, 0);
-			NVGpaint paint = nvgBoxGradient(args.vg, -6, -6, box.size.x + 12, box.size.y + 12, 8, 6, icol, ocol);// tlx, tly, w, h, radius, feather, icol, ocol
-			
-			nvgFillPaint(args.vg, paint);
-			nvgFill(args.vg);
+			if (settings::haloBrightness != 0.f) {
+				drawRectHalo(args, box.size, haloColor);
+			}
+			manualDrawTopOverride = true;
 			draw(args);
+			manualDrawTopOverride = false;
 		}
 		SvgSwitch::drawLayer(args, layer);
 	}		

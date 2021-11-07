@@ -362,3 +362,7 @@ void printNote(float cvVal, char* text, bool sharp);
 std::string timeToString(float timeVal, bool lowPrecision);
 
 float stringToVoct(std::string* noteText);
+
+
+void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor);
+

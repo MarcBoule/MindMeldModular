@@ -26,7 +26,6 @@
 // none
 
 
-
 // Knobs and sliders
 
 void MmKnobWithArc::drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color) {

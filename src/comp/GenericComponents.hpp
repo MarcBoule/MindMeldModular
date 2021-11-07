@@ -13,7 +13,7 @@
 using namespace rack;
 
 extern Plugin *pluginInstance;
-
+extern void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor);
 
 
 // Display (label) colors
@@ -181,40 +181,152 @@ struct MmBypassRoundButton : SvgSwitch {
 };
 
 struct MmMuteButton : SvgSwitch {
+	bool manualDrawTopOverride = false;
+	NVGcolor haloColor = nvgRGB(0xD4, 0x13, 0X08);// used in MixerWidgets also for special mute/fade button. this should match the color of fill of the on button
+
 	MmMuteButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
 		shadow->opacity = 0.0;
 	}
+	
+	void draw(const DrawArgs &args) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (!paramQuantity || paramQuantity->getValue() < 0.5f || manualDrawTopOverride) {
+			SvgSwitch::draw(args);
+		}
+	}	
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (!paramQuantity || paramQuantity->getValue() < 0.5f) {
+				// if no module or if switch is off, no need to do anything in layer 1
+				return;
+			}
+
+			if (settings::haloBrightness != 0.f) {
+				drawRectHalo(args, box.size, haloColor);
+			}
+			manualDrawTopOverride = true;
+			draw(args);
+			manualDrawTopOverride = false;
+		}
+		SvgSwitch::drawLayer(args, layer);
+	}	
 };
 
 struct MmSoloButton : SvgSwitch {
+	bool manualDrawTopOverride = false;
+	NVGcolor haloColor = nvgRGB(0x37, 0xA2, 0x2B);// this should match the color of fill of the on button
+
 	MmSoloButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-on.svg")));
 		shadow->opacity = 0.0;
 	}
+	
+	void draw(const DrawArgs &args) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (!paramQuantity || paramQuantity->getValue() < 0.5f || manualDrawTopOverride) {
+			SvgSwitch::draw(args);
+		}
+	}	
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (!paramQuantity || paramQuantity->getValue() < 0.5f) {
+				// if no module or if switch is off, no need to do anything in layer 1
+				return;
+			}
+
+			if (settings::haloBrightness != 0.f) {
+				drawRectHalo(args, box.size, haloColor);
+			}
+			manualDrawTopOverride = true;
+			draw(args);
+			manualDrawTopOverride = false;
+		}
+		SvgSwitch::drawLayer(args, layer);
+	}			
 };
 
 
 struct MmDimButton : SvgSwitch {
+	bool manualDrawTopOverride = false;
+	NVGcolor haloColor = nvgRGB(0x72, 0x3A, 0x93);// this should match the color of fill of the on button
+
 	MmDimButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-on.svg")));
 		shadow->opacity = 0.0;
 	}
+	
+	void draw(const DrawArgs &args) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (!paramQuantity || paramQuantity->getValue() < 0.5f || manualDrawTopOverride) {
+			SvgSwitch::draw(args);
+		}
+	}	
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (!paramQuantity || paramQuantity->getValue() < 0.5f) {
+				// if no module or if switch is off, no need to do anything in layer 1
+				return;
+			}
+
+			if (settings::haloBrightness != 0.f) {
+				drawRectHalo(args, box.size, haloColor);
+			}
+			manualDrawTopOverride = true;
+			draw(args);
+			manualDrawTopOverride = false;
+		}
+		SvgSwitch::drawLayer(args, layer);
+	}	
 };
 
 struct MmMonoButton : SvgSwitch {
+	bool manualDrawTopOverride = false;
+	NVGcolor haloColor = nvgRGB(0x40, 0x9A, 0xA8);// this should match the color of fill of the on button
+
 	MmMonoButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-on.svg")));
 		shadow->opacity = 0.0;
 	}
+	
+	void draw(const DrawArgs &args) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (!paramQuantity || paramQuantity->getValue() < 0.5f || manualDrawTopOverride) {
+			SvgSwitch::draw(args);
+		}
+	}	
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (!paramQuantity || paramQuantity->getValue() < 0.5f) {
+				// if no module or if switch is off, no need to do anything in layer 1
+				return;
+			}
+
+			if (settings::haloBrightness != 0.f) {
+				drawRectHalo(args, box.size, haloColor);
+			}
+			manualDrawTopOverride = true;
+			draw(args);
+			manualDrawTopOverride = false;
+		}
+		SvgSwitch::drawLayer(args, layer);
+	}	
 };
 
 struct MmBypassButton : SvgSwitch {
