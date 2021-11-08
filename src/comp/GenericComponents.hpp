@@ -241,7 +241,7 @@ struct MmSoloButton : SvgSwitchWithHalo {
 		haloColor = nvgRGB(0x37, 0xA2, 0x2B);// this should match the color of fill of the on button
 		isRect = true;
 		shadow->opacity = 0.0;
-	}		
+	}	
 };
 
 

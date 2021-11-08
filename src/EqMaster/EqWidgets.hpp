@@ -1053,7 +1053,7 @@ struct ActiveSwitch : MmSwitch {
 	}
 };
 
-struct BandSwitch : SvgSwitch {
+struct BandSwitch : SvgSwitchWithHalo {
 	Param* trackParamSrc;
 	Param* freqActiveParamsSrc;
 	TrackEq* trackEqsSrc;
@@ -1061,21 +1061,26 @@ struct BandSwitch : SvgSwitch {
 	int soloedBand = -1;
 
 	void loadGraphics(int band) {
+		isRect = true;
 		if (band == 0) {
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band1-off.svg")));
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band1-on.svg")));
+			haloColor = nvgRGB(0xDE, 0x3D, 0x2F);// this should match the color of fill of the on button
 		}
 		else if (band == 1) {
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band2-off.svg")));
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band2-on.svg")));
+			haloColor = nvgRGB(0x04, 0x9B, 0x8A);// this should match the color of fill of the on button
 		}
 		else if (band == 2) {
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band3-off.svg")));
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band3-on.svg")));
+			haloColor = nvgRGB(0x3D, 0x75, 0xAD);// this should match the color of fill of the on button
 		}
 		else {
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band4-off.svg")));
 			addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/band4-on.svg")));
+			haloColor = nvgRGB(0x80, 0x5B, 0x83);// this should match the color of fill of the on button
 		}
 	}
 };
