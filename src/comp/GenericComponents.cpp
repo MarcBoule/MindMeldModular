@@ -44,6 +44,8 @@ void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor)
 	
 	nvgFillPaint(args.vg, paint);
 	nvgFill(args.vg);
+	
+	nvgGlobalCompositeOperation(args.vg, NVG_SOURCE_OVER);
 }
 
 
@@ -70,6 +72,8 @@ void drawRoundHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor
 	NVGpaint paint = nvgRadialGradient(args.vg, c.x, c.y, radius, oradius, icol, ocol);
 	nvgFillPaint(args.vg, paint);
 	nvgFill(args.vg);
+	
+	nvgGlobalCompositeOperation(args.vg, NVG_SOURCE_OVER);
 }
 
 
