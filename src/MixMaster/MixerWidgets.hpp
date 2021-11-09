@@ -229,8 +229,6 @@ struct GroupSelectDisplay : ParamWidget {
 		ldc.text = "-";
 	};
 	
-	void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
-	
 	void drawLayer(const DrawArgs &args, int layer) override {
 		if (layer == 1) {
 			int grp = 0;
