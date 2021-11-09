@@ -77,6 +77,10 @@ std::string timeToString(float timeVal, bool lowPrecision) {
 	int resi;
 	float lp = lowPrecision ? 1.0f : 10.0f;
 	if (timeVal < 1e-3 * lp) {
+		res = 10000000l;
+		resi = 7;
+	}
+	else if (timeVal < 1e-3 * lp) {
 		res = 1000000l;
 		resi = 6;
 	}
