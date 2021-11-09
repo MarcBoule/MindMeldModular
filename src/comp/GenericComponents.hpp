@@ -15,7 +15,6 @@ using namespace rack;
 extern Plugin *pluginInstance;
 
 
-
 // Display (label) colors
 static const int numDispThemes = 7;
 static const NVGcolor DISP_COLORS[numDispThemes] = {
@@ -42,15 +41,6 @@ static const std::string dispColorNames[numDispThemes + 1] = {
 
 // Variations on existing knobs, lights, etc
 
-struct MmSwitch : app::SvgSwitch {
-	MmSwitch() {
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-bypass.svg")));
-		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/switch-active.svg")));
-	}
-};
-
-
-
 // Ports
 
 struct MmPort : SvgPort {
@@ -71,7 +61,57 @@ struct MmPortGold : SvgPort {
 
 // Buttons and switches
 
-struct LedButton : app::SvgSwitch {
+void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor);
+void drawRoundHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor);
+
+
+struct SvgSwitchWithHalo : SvgSwitch {
+	// internal
+	bool manualDrawTopOverride = false;
+	
+	// derived classes must set up
+	NVGcolor haloColor = nvgRGB(0xFF, 0xFF, 0xFF);// this should match the color of fill of the on button
+	bool isRect = false;
+
+	void draw(const DrawArgs &args) override {
+		ParamQuantity* paramQuantity = getParamQuantity();
+		if (!paramQuantity || paramQuantity->getValue() < 0.5f || manualDrawTopOverride) {
+			SvgSwitch::draw(args);
+		}
+	}	
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			ParamQuantity* paramQuantity = getParamQuantity();
+			if (!paramQuantity || paramQuantity->getValue() < 0.5f) {
+				// if no module or if switch is off, no need to do anything in layer 1
+				return;
+			}
+
+			if (settings::haloBrightness != 0.f) {
+				if (isRect) {
+					drawRectHalo(args, box.size, haloColor);
+				}
+				else {
+					drawRoundHalo(args, box.size, haloColor);
+				}
+			}
+			manualDrawTopOverride = true;
+			draw(args);
+			manualDrawTopOverride = false;
+		}
+		SvgSwitch::drawLayer(args, layer);
+	}
+};
+
+struct MmSwitch : SvgSwitch {
+	MmSwitch() {
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/switch-off.svg")));
+		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/switch-on.svg")));
+	}
+};
+
+struct LedButton : SvgSwitch {
 	LedButton() {
 		momentary = true;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/led-button.svg")));
@@ -164,64 +204,76 @@ struct MomentarySvgSwitchNoParam : OpaqueWidget {
 	}	
 };
 
-struct MmSoloRoundButton : SvgSwitch {
+struct MmSoloRoundButton : SvgSwitchWithHalo {
 	MmSoloRoundButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-on.svg")));
+		haloColor = nvgRGB(0x7A, 0xC9, 0x43);// this should match the color of fill of the on button
 		shadow->opacity = 0.0;
 	}
 };
 
-struct MmBypassRoundButton : SvgSwitch {
+struct MmBypassRoundButton : SvgSwitchWithHalo {
 	MmBypassRoundButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-on.svg")));
+		haloColor = nvgRGB(0xFF, 0x1D, 0x25);// this should match the color of fill of the on button
 		shadow->opacity = 0.0;
 	}
 };
 
-struct MmMuteButton : SvgSwitch {
+struct MmMuteButton : SvgSwitchWithHalo {
 	MmMuteButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
+		haloColor = nvgRGB(0xD4, 0x13, 0X08);// used in MixerWidgets also for special mute/fade button. this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
 	}
 };
 
-struct MmSoloButton : SvgSwitch {
+struct MmSoloButton : SvgSwitchWithHalo {
 	MmSoloButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-on.svg")));
+		haloColor = nvgRGB(0x37, 0xA2, 0x2B);// this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
-	}
+	}	
 };
 
 
-struct MmDimButton : SvgSwitch {
+struct MmDimButton : SvgSwitchWithHalo {
 	MmDimButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-on.svg")));
+		haloColor = nvgRGB(0x72, 0x3A, 0x93);// this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
 	}
 };
 
-struct MmMonoButton : SvgSwitch {
+struct MmMonoButton : SvgSwitchWithHalo {
 	MmMonoButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-on.svg")));
+		haloColor = nvgRGB(0x40, 0x9A, 0xA8);// this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
 	}
 };
 
-struct MmBypassButton : SvgSwitch {
+struct MmBypassButton : SvgSwitchWithHalo {
 	MmBypassButton() {
 		momentary = false;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-on.svg")));
+		haloColor = nvgRGB(0xFB, 0xB2, 0x40);// this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
 	}
 };
