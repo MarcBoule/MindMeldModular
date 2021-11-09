@@ -75,18 +75,22 @@ struct LedButton2 : SvgSwitch {
 };
 
 
-struct MmSyncButton : SvgSwitch {
+struct MmSyncButton : SvgSwitchWithHalo {
 	MmSyncButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/shape/sync-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/shape/sync-on.svg")));
+		haloColor = nvgRGB(0xE7, 0xC1, 0x63);// this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
 	}
 };
 
-struct MmLockButton : SvgSwitch {
+struct MmLockButton : SvgSwitchWithHalo {
 	MmLockButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/shape/lock-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/shape/lock-on.svg")));
+		haloColor = nvgRGB(0xE7, 0xC1, 0x63);// this should match the color of fill of the on button
+		isRect = true;
 		shadow->opacity = 0.0;
 	}
 };

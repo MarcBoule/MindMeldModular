@@ -1079,12 +1079,13 @@ struct SmChannelButton : OpaqueWidget {
 	PackedBytes4* miscSettings2GlobalSrc = NULL;
 	bool* trigExpPresentSrc = NULL;
 	int lastChan = -1;
-	// json_t** channelCopyPasteCache;
 	bool* running;
 
 	widget::FramebufferWidget* fb;
 	widget::SvgWidget* sw;
 	std::vector<std::shared_ptr<Svg>> frames;
+	bool manualDrawTopOverride = false;
+	const NVGcolor haloColor = nvgRGB(0xE5, 0xB8, 0x4E);// this should match the color of fill of the on button
 	
 	// procedure to make from tight button svgs:
 	// 1- make width (W) = 53.792
@@ -1111,6 +1112,24 @@ struct SmChannelButton : OpaqueWidget {
 			box.size = sw->box.size;
 			fb->box.size = sw->box.size;
 		}
+	}
+	
+	void draw(const DrawArgs &args) override {
+		if (manualDrawTopOverride) {
+			OpaqueWidget::draw(args);
+		}
+	}
+	
+	void drawLayer(const DrawArgs &args, int layer) override {
+		if (layer == 1) {
+			if (settings::haloBrightness != 0.f && currChan) {
+				drawRectHalo(args, Vec(box.size.y, box.size.y), haloColor, mm2px((6.001 + 0.8262857) * (*currChan)));
+			}
+			manualDrawTopOverride = true;
+			draw(args);
+			manualDrawTopOverride = false;
+		}
+		OpaqueWidget::drawLayer(args, layer);
 	}
 	
 	void onButton(const event::Button& e) override {

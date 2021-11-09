@@ -383,7 +383,7 @@ struct SvgSwitchDual : SvgSwitch {
 			}
 
 			if (settings::haloBrightness != 0.f) {
-				drawRectHalo(args, box.size, haloColor);
+				drawRectHalo(args, box.size, haloColor, 0.0f);
 			}
 			manualDrawTopOverride = true;
 			draw(args);

@@ -23,7 +23,7 @@
 
 // Buttons and switches
 
-void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor) {
+void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor, float posX) {
 	// some of the code in this block is adapted from LightWidget::drawHalo() and the composite call is from LightWidget::drawLayer()
 	
 	nvgGlobalCompositeBlendFunc(args.vg, NVG_ONE_MINUS_DST_COLOR, NVG_ONE);
@@ -36,11 +36,11 @@ void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor)
 	color = color::clamp(color);
 	
 	nvgBeginPath(args.vg);
-	nvgRect(args.vg, -12, -12, boxSize.x + 24, boxSize.y + 24);
+	nvgRect(args.vg, -12 + posX, -12, boxSize.x + 24, boxSize.y + 24);
 	
 	NVGcolor icol = color::mult(color, settings::haloBrightness);
 	NVGcolor ocol = nvgRGBA(0, 0, 0, 0);
-	NVGpaint paint = nvgBoxGradient(args.vg, -6, -6, boxSize.x + 12, boxSize.y + 12, 8, 12, icol, ocol);// tlx, tly, w, h, radius, feather, icol, ocol
+	NVGpaint paint = nvgBoxGradient(args.vg, -6 + posX, -6, boxSize.x + 12, boxSize.y + 12, 8, 12, icol, ocol);// tlx, tly, w, h, radius, feather, icol, ocol
 	
 	nvgFillPaint(args.vg, paint);
 	nvgFill(args.vg);

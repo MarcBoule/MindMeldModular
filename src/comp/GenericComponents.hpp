@@ -61,7 +61,7 @@ struct MmPortGold : SvgPort {
 
 // Buttons and switches
 
-void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor);
+void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor, float posX);
 void drawRoundHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor);
 
 
@@ -90,7 +90,7 @@ struct SvgSwitchWithHalo : SvgSwitch {
 
 			if (settings::haloBrightness != 0.f) {
 				if (isRect) {
-					drawRectHalo(args, box.size, haloColor);
+					drawRectHalo(args, box.size, haloColor, 0.0f);
 				}
 				else {
 					drawRoundHalo(args, box.size, haloColor);
