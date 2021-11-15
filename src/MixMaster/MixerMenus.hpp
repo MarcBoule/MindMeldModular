@@ -939,6 +939,7 @@ struct TrackReorderItem : MenuItem {
 		
 		void transferTrackInputs(int srcTrk, int destTrk) {
 			// use same strategy as in PortWidget::onDragStart/onDragEnd to make sure it's safely implemented (simulate manual dragging of the cables)
+			DEBUG("S transferTrackInputs s=%i, d=%i", srcTrk, destTrk);
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
 				CableWidget* cwRip = APP->scene->rack->getTopCable(inputWidgets[srcTrk + i * numTracks]);// only top needed since inputs have at most one cable
 				if (cwRip != NULL) {
@@ -951,16 +952,20 @@ struct TrackReorderItem : MenuItem {
 					cwRip->updateCable();
 				}
 			}
+			DEBUG("F transferTrackInputs");
 		}
 		void clearTrackInputs(int trk) {
+			DEBUG("S clearTrackInputs t=%i", trk);
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
 				cwClr[i] = APP->scene->rack->getTopCable(inputWidgets[trk + i * numTracks]);// only top needed since inputs have at most one cable
 				if (cwClr[i] != NULL) {
 					APP->scene->rack->removeCable(cwClr[i]);
 				}
 			}
+			DEBUG("F clearTrackInputs");
 		}
 		void reconnectTrackInputs(int trk) {
+			DEBUG("S reconnectTrackInputs t=%i", trk);
 			for (int i = 0; i < 4; i++) {// scan Left, Right, Volume, Pan
 				if (cwClr[i] != NULL) {
 					// v1:
@@ -971,6 +976,7 @@ struct TrackReorderItem : MenuItem {
 					cwClr[i]->updateCable();
 				}
 			}
+			DEBUG("F reconnectTrackInputs");
 		}
 
 		void onAction(const event::Action &e) override {
