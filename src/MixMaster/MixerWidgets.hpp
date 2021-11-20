@@ -337,6 +337,9 @@ struct SvgSwitchDual : SvgSwitch {
 	bool manualDrawTopOverride = false;
 	NVGcolor haloColor = muteFadeOnCols[0];
 
+	SvgSwitchDual() {
+		shadow->opacity = 0.0f;// Turn off shadows
+	}
 	
 	void addFrameAll(std::shared_ptr<Svg> svg) {
 		framesAll.push_back(svg);

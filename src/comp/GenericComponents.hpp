@@ -46,14 +46,12 @@ static const std::string dispColorNames[numDispThemes + 1] = {
 struct MmPort : SvgPort {
 	MmPort() {
 		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack.svg")));
-		shadow->blurRadius = 1.0f;
 		shadow->opacity = 0.0f;// Turn off shadows
 	}
 };
 struct MmPortGold : SvgPort {
 	MmPortGold() {
 		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/jack-poly.svg")));
-		shadow->blurRadius = 1.0f;
 		shadow->opacity = 0.0f;// Turn off shadows
 	}
 };
@@ -72,6 +70,10 @@ struct SvgSwitchWithHalo : SvgSwitch {
 	// derived classes must set up
 	NVGcolor haloColor = nvgRGB(0xFF, 0xFF, 0xFF);// this should match the color of fill of the on button
 	bool isRect = false;
+
+	SvgSwitchWithHalo() {
+		shadow->opacity = 0.0f;// Turn off shadows
+	}
 
 	void draw(const DrawArgs &args) override {
 		ParamQuantity* paramQuantity = getParamQuantity();
@@ -108,6 +110,7 @@ struct MmSwitch : SvgSwitch {
 	MmSwitch() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/switch-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/switch-on.svg")));
+		shadow->opacity = 0.0f;// Turn off shadows
 	}
 };
 
@@ -115,6 +118,7 @@ struct LedButton : SvgSwitch {
 	LedButton() {
 		momentary = true;
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/led-button.svg")));
+		shadow->opacity = 0.0f;// Turn off shadows
 	}
 };
 
@@ -209,7 +213,6 @@ struct MmSoloRoundButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/solo-round-on.svg")));
 		haloColor = nvgRGB(0x7A, 0xC9, 0x43);// this should match the color of fill of the on button
-		shadow->opacity = 0.0;
 	}
 };
 
@@ -218,7 +221,6 @@ struct MmBypassRoundButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-off.svg")));
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/bass/bypass-round-on.svg")));
 		haloColor = nvgRGB(0xFF, 0x1D, 0x25);// this should match the color of fill of the on button
-		shadow->opacity = 0.0;
 	}
 };
 
@@ -229,7 +231,6 @@ struct MmMuteButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mute-on.svg")));
 		haloColor = nvgRGB(0xD4, 0x13, 0X08);// used in MixerWidgets also for special mute/fade button. this should match the color of fill of the on button
 		isRect = true;
-		shadow->opacity = 0.0;
 	}
 };
 
@@ -240,7 +241,6 @@ struct MmSoloButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/solo-on.svg")));
 		haloColor = nvgRGB(0x37, 0xA2, 0x2B);// this should match the color of fill of the on button
 		isRect = true;
-		shadow->opacity = 0.0;
 	}	
 };
 
@@ -252,7 +252,6 @@ struct MmDimButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/dim-on.svg")));
 		haloColor = nvgRGB(0x72, 0x3A, 0x93);// this should match the color of fill of the on button
 		isRect = true;
-		shadow->opacity = 0.0;
 	}
 };
 
@@ -263,7 +262,6 @@ struct MmMonoButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/mixer/mono-on.svg")));
 		haloColor = nvgRGB(0x40, 0x9A, 0xA8);// this should match the color of fill of the on button
 		isRect = true;
-		shadow->opacity = 0.0;
 	}
 };
 
@@ -274,7 +272,6 @@ struct MmBypassButton : SvgSwitchWithHalo {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/eq/global-bypass-on.svg")));
 		haloColor = nvgRGB(0xFB, 0xB2, 0x40);// this should match the color of fill of the on button
 		isRect = true;
-		shadow->opacity = 0.0;
 	}
 };
 
