@@ -36,11 +36,11 @@ void drawRectHalo(const Widget::DrawArgs &args, Vec boxSize, NVGcolor haloColor,
 	color = color::clamp(color);
 	
 	nvgBeginPath(args.vg);
-	nvgRect(args.vg, -10 + posX, -10, boxSize.x + 20, boxSize.y + 20);
+	nvgRect(args.vg, -9 + posX, -9, boxSize.x + 18, boxSize.y + 18);
 	
 	NVGcolor icol = color::mult(color, settings::haloBrightness);
 	NVGcolor ocol = nvgRGBA(0, 0, 0, 0);
-	NVGpaint paint = nvgBoxGradient(args.vg, -5 + posX, -5, boxSize.x + 10, boxSize.y + 10, 6, 7, icol, ocol);// tlx, tly, w, h, radius, feather, icol, ocol
+	NVGpaint paint = nvgBoxGradient(args.vg, -4.5f + posX, -4.5f, boxSize.x + 9, boxSize.y + 9, 6, 8, icol, ocol);// tlx, tly, w, h, radius, feather, icol, ocol
 	
 	nvgFillPaint(args.vg, paint);
 	nvgFill(args.vg);
