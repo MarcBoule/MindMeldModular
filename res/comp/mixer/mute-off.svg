@@ -1,62 +1,42 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Generator: Adobe Illustrator 23.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   version="1.1"
-   id="Layer_1"
-   x="0px"
-   y="0px"
-   viewBox="0 0 36.47244 18.897639"
-   xml:space="preserve"
-   sodipodi:docname="mute-off.svg"
-   width="9.6499996mm"
-   height="5mm"
-   inkscape:version="0.92.2 5c3e80d, 2017-08-06"><metadata
-     id="metadata18"><rdf:RDF><cc:Work
-         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title>polyAsset 1</dc:title></cc:Work></rdf:RDF></metadata><defs
-     id="defs16" /><sodipodi:namedview
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1"
-     objecttolerance="10"
-     gridtolerance="10"
-     guidetolerance="10"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:window-width="1587"
-     inkscape:window-height="1024"
-     id="namedview14"
-     showgrid="false"
-     inkscape:document-units="mm"
-     units="mm"
-     inkscape:zoom="14.864727"
-     inkscape:cx="13.792792"
-     inkscape:cy="16.91494"
-     inkscape:window-x="44"
-     inkscape:window-y="13"
-     inkscape:window-maximized="0"
-     inkscape:current-layer="Layer_1" /><style
-     type="text/css"
-     id="style2">
-	.st0{fill:#606060;stroke:#000000;stroke-width:0.5;}
-	.st1{fill:#FFFFFF;}
-</style><title
-     id="title4">polyAsset 1</title><path
-     class="st0"
-     d="M 1.7969661,0.332741 H 34.675474 c 0.798669,0 1.464226,0.66540715 1.464226,1.4638957 V 17.101001 c 0,0.798489 -0.665557,1.463896 -1.464226,1.463896 H 1.7969661 c -0.79866826,0 -1.46422511,-0.665407 -1.46422511,-1.463896 V 1.6635553 c 0,-0.79848858 0.66555685,-1.3308143 1.46422511,-1.3308143 z"
-     id="path6"
-     inkscape:connector-curvature="0"
-     style="fill:#606060;stroke:#000000;stroke-width:0.66499999;stroke-miterlimit:4;stroke-dasharray:none" /><path
-     class="st1"
-     d="M 22.163006,5.3898353 V 13.773965 H 20.831892 V 7.9183825 L 18.435887,12.043907 H 18.302776 L 15.906771,7.7853011 V 13.773965 H 14.575658 V 5.3898353 h 1.464225 l 2.396004,4.2586058 2.396005,-4.2586058 z"
-     id="path8"
-     inkscape:connector-curvature="0"
-     style="fill:#ffffff;stroke-width:1.33096397" /></svg>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.0 (4035a4f, 2020-05-01)" sodipodi:docname="mute-off.svg" id="svg5429" version="1.1" viewBox="0 0 36.472441 18.897638" height="5mm" width="9.6499996mm">
+  <metadata id="metadata5433">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview inkscape:current-layer="svg5429" inkscape:window-maximized="0" inkscape:window-y="23" inkscape:window-x="0" inkscape:cy="7.0727248" inkscape:cx="13.654325" inkscape:zoom="12.054786" units="mm" inkscape:document-units="mm" showgrid="false" id="namedview5431" inkscape:window-height="937" inkscape:window-width="1662" inkscape:pageshadow="2" inkscape:pageopacity="0" guidetolerance="10" gridtolerance="10" objecttolerance="10" borderopacity="1" bordercolor="#666666" pagecolor="#ffffff" />
+  <defs id="defs5413">
+    <linearGradient gradientUnits="userSpaceOnUse" y2="13.8565" x2="13.65414" y1="0.28911" x1="13.65414" id="linear-gradient">
+      <stop id="stop5398" stop-color="#212121" offset="0" />
+      <stop id="stop5400" stop-color="#161616" offset="1" />
+    </linearGradient>
+    <linearGradient gradientUnits="userSpaceOnUse" y2="13.09308" x2="13.6538" y1="0.92113" x1="13.6538" id="linear-gradient-2">
+      <stop id="stop5403" stop-color="#747474" offset="0" />
+      <stop id="stop5405" stop-color="#5a5a5a" offset="1" />
+    </linearGradient>
+    <linearGradient gradientUnits="userSpaceOnUse" y2="12.79293" x2="13.65432" y1="1.9645801" x1="13.65432" id="linear-gradient-3">
+      <stop id="stop5408" stop-color="#606060" offset="0" />
+      <stop id="stop5410" stop-color="#505050" offset="1" />
+    </linearGradient>
+  </defs>
+  <g transform="matrix(1.3355631,0,0,1.3355631,0,9.213824e-4)" data-name="Layer 2" id="Layer_2">
+    <g data-name="Layer 1" id="Layer_1-2">
+      <g id="path6">
+        <path id="path5415" style="fill:url(#linear-gradient)" d="m 1.64682,13.8565 a 1.34619,1.34619 0 0 1 -1.3584,-1.33106 v -11 A 1.27284,1.27284 0 0 1 1.64682,0.28911 H 25.662 a 1.34607,1.34607 0 0 1 1.35791,1.33106 V 12.52544 A 1.34607,1.34607 0 0 1 25.662,13.8565 Z" />
+        <path id="path5417" d="m 25.662,0.57713 a 1.06593,1.06593 0 0 1 1.06952,1.04309 v 10.905 A 1.06594,1.06594 0 0 1 25.662,13.56831 H 1.64667 A 1.06593,1.06593 0 0 1 0.57715,12.52522 V 1.52539 A 0.98977,0.98977 0 0 1 1.64667,0.57713 H 25.662 M 25.662,0 H 1.64667 A 1.55454,1.55454 0 0 0 0,1.52539 v 10.99983 a 1.63547,1.63547 0 0 0 1.64667,1.62023 H 25.662 a 1.63546,1.63546 0 0 0 1.64666,-1.62023 V 1.62022 A 1.63545,1.63545 0 0 0 25.662,0 Z" />
+      </g>
+    </g>
+    <g data-name="Layer 2" id="Layer_2-2">
+      <rect id="rect5421" style="fill:url(#linear-gradient-2)" rx="0.89332998" height="12.17195" width="25.3512" y="0.92113" x="0.97820002" />
+      <rect id="rect5423" style="fill:url(#linear-gradient-3)" rx="0.82160002" height="10.82835" width="24.10442" y="1.9645801" x="1.60211" />
+    </g>
+    <g id="M">
+      <path style="fill:#ffffff" d="m 16.49888,4.362 v 6.2881 H 15.50054 V 6.25836 l -1.797,3.09415 H 13.6037 l -1.797,-3.194 v 4.4915 H 10.80837 V 4.362 h 1.09816 l 1.797,3.194 1.797,-3.194 z" id="path8" />
+    </g>
+  </g>
+</svg>
