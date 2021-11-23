@@ -790,8 +790,8 @@ struct MixMaster : Module {
 		else {
 			for (int grp = 0; grp < N_GRP; grp++) {
 				int tapIndex = (groups[grp].auxSendsMode << (1 + N_GRP / 2));
-				auxSends[(grp << 1) + N_TRK * 2] = groupTaps[tapIndex + (grp << 1) + 0] * masterGain;
-				auxSends[(grp << 1) + N_TRK * 2] = groupTaps[tapIndex + (grp << 1) + 1] * masterGain;
+				auxSends[(grp << 1) + N_TRK * 2 + 0] = groupTaps[tapIndex + (grp << 1) + 0] * masterGain;
+				auxSends[(grp << 1) + N_TRK * 2 + 1] = groupTaps[tapIndex + (grp << 1) + 1] * masterGain;
 			}
 		}
 
