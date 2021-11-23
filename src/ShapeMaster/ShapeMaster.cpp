@@ -181,6 +181,7 @@ void ShapeMaster::process(const ProcessArgs &args) {
 	expPresentRight = (rightExpander.module && rightExpander.module->model == modelShapeMasterTriggerExpander);
 	expPresentLeft = (leftExpander.module && leftExpander.module->model == modelShapeMasterCvExpander);	
 	CvExpInterface *cvExp = expPresentLeft ? (CvExpInterface*)leftExpander.consumerMessage : NULL;
+	#include "../Pro1.hpp"
 	#else
 	expPresentRight = false;
 	expPresentLeft = false;
@@ -740,6 +741,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		addChild(createWidgetCentered<SyncSvg>(syncPosVec));
 		addChild(createWidgetCentered<LockSvg>(lockPosVec));
 	}
+	#include "../Pro2.hpp"
 	#endif
 }
 
