@@ -95,7 +95,10 @@ struct BassMaster : Module {
 		configParam(BYPASS_PARAM, 0.0f, 1.0f, 0.0f, "Bypass");
 		configParam(GAIN_PARAM, -1.0f, 1.0f, 0.0f, "Master gain", " dB", 0.0f, 20.0f);// diplay params are: base, mult, offset
 		configParam(MIX_PARAM, 0.0f, 1.0f, 1.0f, "Mix", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
-					
+				
+		configBypass(IN_INPUTS + 0, OUT_OUTPUTS + 0);
+		configBypass(IN_INPUTS + 1, OUT_OUTPUTS + 1);
+				
 		widthAndGainSlewers.setRiseFall(simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)		
 		solosAndBypassSlewers.setRiseFall(simd::float_4(SLEW_RATE)); // slew rate is in input-units per second (ex: V/s)	
 		mixSlewer.setRiseFall(SLEW_RATE);

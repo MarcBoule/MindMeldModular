@@ -138,6 +138,10 @@ struct EqMaster : Module {
 		getParamQuantity(TRACK_PARAM)->randomizeEnabled = false;
 		getParamQuantity(TRACK_ACTIVE_PARAM)->randomizeEnabled = false;
 		
+		for (int i = 0; i < 3; i++) {
+			configBypass(SIG_INPUTS + i, SIG_OUTPUTS + i);
+		}
+		
 		onReset();
 		
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
