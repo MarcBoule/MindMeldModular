@@ -16,7 +16,6 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	leftExpander.producerMessage = &expMessages[0];
 	leftExpander.consumerMessage = &expMessages[1];
 
-
 	// channel-specific params (extra fields are base, mult, offset)
 	for (int c = 0; c < 8; c++) {
 		int cp = c * NUM_CHAN_PARAMS;
@@ -59,6 +58,18 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	configParam(RESET_PARAM, 0.0f, 1.0f, 0.0f, "Reset");
 	configParam(RUN_PARAM, 0.0f, 1.0f, 0.0f, "Run");
 	configParam(GEAR_PARAM, 0.0f, 1.0f, 0.0f, "Sidechain settings");// controls channel-specific values though
+	
+	for (int c = 0; c < 8; c++) {
+		configInput(TRIG_INPUTS + c, string::f("Channel %i trigger", c + 1));
+		configInput(IN_INPUTS + c, string::f("Channel %i VCA", c + 1));
+		configOutput(OUT_OUTPUTS + c, string::f("Channel %i VCA", c + 1));
+		configOutput(CV_OUTPUTS + c, string::f("Channel %i CV", c + 1));
+	}
+	configInput(CLOCK_INPUT, "Clock");
+	configInput(RESET_INPUT, "Reset");
+	configInput(RUN_INPUT, "Run");
+	configInput(SIDECHAIN_INPUT, "Sidechain");
+	
 	
 	for (int c = 0; c < 8; c++) {
 		channels[c].construct(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], &paramQuantities, &presetAndShapeManager);

@@ -20,11 +20,11 @@
 
 struct ShapeMaster : Module {
 
-	// see ShapeMasterUtil.hpp for param ids
+	// see Util.hpp for param ids
 
-	// see ShapeMasterUtil.hpp for input ids
+	// see Util.hpp for input ids
 	
-	// see ShapeMasterUtil.hpp for output ids
+	// see Util.hpp for output ids
 
 	enum LightIds {
 		RESET_LIGHT,
