@@ -285,6 +285,7 @@ struct MeldWidget : ModuleWidget {
 	int lastFacePlate = 0;
 	LedButton *ledButtons[8];
 	SmallLight<GreenRedLight> *smallLights[8];
+	PortWidget* pwPolyOut;
 		
 	struct PanelsItem : MenuItem {
 		Meld *module;
@@ -356,7 +357,7 @@ struct MeldWidget : ModuleWidget {
 
 		// poly in/thru
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Meld::POLY_INPUT));
-		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(23.64, 18.35)), module, Meld::OUT_OUTPUT));
+		addOutput(pwPolyOut = createOutputCentered<MmPortGold>(mm2px(Vec(23.64, 18.35)), module, Meld::OUT_OUTPUT));
 		
 		// leds
 		for (int i = 0; i < 8; i++) {
@@ -377,7 +378,67 @@ struct MeldWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			int facePlate = (((Meld*)module)->facePlate);
+			Meld* meldModule = (Meld*)module;
+			int facePlate = meldModule->facePlate;
+			
+			// test output cable to see where it's connected, if to a MM mixer/auxspander, then auto-set the faceplate
+			std::vector<CableWidget*> cablesOnPolyOut = APP->scene->rack->getCablesOnPort(pwPolyOut);
+			for (CableWidget* cw : cablesOnPolyOut) {
+				Cable* cable = cw->getCable();
+				if (cable) {
+					Module* destModule = cable->inputModule;
+					if (destModule) {
+						if (destModule->model == modelMixMaster) {
+							if (cable->inputId >= 74 && cable->inputId <= 76) {
+								meldModule->facePlate = 0 + cable->inputId - 74;// facePlate 0 to 2
+							}
+							else if (cable->inputId >= 77 && cable->inputId <= 79) {
+								meldModule->facePlate = 3 + cable->inputId - 77;// facePlate 3 to 5
+							}
+						}
+						else if (destModule->model == modelMixMasterJr) {
+							if (cable->inputId == 38) {
+								meldModule->facePlate = 0;
+							}
+							else if (cable->inputId == 39) {
+								meldModule->facePlate = 2;
+							}
+							else if (cable->inputId == 40) {
+								meldModule->facePlate = 15;
+							}
+							else if (cable->inputId == 42) {
+								meldModule->facePlate = 16;
+							}
+						}
+						else if (destModule->model == modelAuxExpander) {
+							if (cable->inputId >= 8 && cable->inputId <= 16) {
+								meldModule->facePlate = 0 + cable->inputId - 2;// facePlate 6 to 14
+							}
+						}
+						else if (destModule->model == modelAuxExpanderJr) {
+							if (cable->inputId == 8) {
+								meldModule->facePlate = 17;
+							}
+							else if (cable->inputId == 9) {
+								meldModule->facePlate = 18;
+							}
+							else if (cable->inputId == 11) {
+								meldModule->facePlate = 19;
+							}
+							else if (cable->inputId == 10) {
+								meldModule->facePlate = 20;
+							}
+							else if (cable->inputId == 13) {
+								meldModule->facePlate = 21;
+							}
+							else if (cable->inputId == 14) {
+								meldModule->facePlate = 22;
+							}
+						}
+					}
+				}					
+			}
+			
 			if (facePlate != lastFacePlate) {
 				// change main panel
 				setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate])));

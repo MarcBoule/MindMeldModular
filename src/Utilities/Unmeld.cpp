@@ -146,6 +146,7 @@ struct Unmeld : Module {
 struct UnmeldWidget : ModuleWidget {
 	SvgPanel* facePlates[3];
 	int lastFacePlate = 0;
+	PortWidget* pwPolyIn;
 		
 	struct FacePlateItem : MenuItem {
 		Unmeld *module;
@@ -202,7 +203,7 @@ struct UnmeldWidget : ModuleWidget {
 		}		
 		
 		// poly in/thru
-		addInput(createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Unmeld::POLY_INPUT));
+		addInput(pwPolyIn = createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Unmeld::POLY_INPUT));
 		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(23.64, 18.35)), module, Unmeld::THRU_OUTPUT));
 		
 		// leds
@@ -220,7 +221,36 @@ struct UnmeldWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			int facePlate = (((Unmeld*)module)->facePlate);
+			Unmeld* unmeldModule = (Unmeld*)module;
+			int facePlate = unmeldModule->facePlate;
+			
+			// test input cable to see where it's connected, if to a MM mixer/auxspander, then auto-set the faceplate
+			std::vector<CableWidget*> cablesOnPolyIn = APP->scene->rack->getCablesOnPort(pwPolyIn);
+			for (CableWidget* cw : cablesOnPolyIn) {
+				Cable* cable = cw->getCable();
+				if (cable) {
+					Module* srcModule = cable->outputModule;
+					if (srcModule) {
+						if (srcModule->model == modelMixMaster) {
+							if (cable->outputId >= 5 && cable->outputId <= 7) {
+								unmeldModule->facePlate = 0 + cable->outputId - 5;// facePlate 0 to 2
+							}
+							else if (cable->outputId >= 0 && cable->outputId <= 2) {
+								unmeldModule->facePlate = cable->outputId ;// facePlate 0 to 2
+							}
+						}
+						else if (srcModule->model == modelMixMasterJr) {
+							if (cable->outputId == 4 || cable->outputId == 0) {
+								unmeldModule->facePlate = 0;
+							}
+							else if (cable->outputId == 5 || cable->outputId == 1) {
+								unmeldModule->facePlate = 2;
+							}
+						}
+					}
+				}					
+			}
+
 			if (facePlate != lastFacePlate) {
 				facePlates[lastFacePlate]->setVisible(false);
 				facePlates[facePlate]->setVisible(true);
