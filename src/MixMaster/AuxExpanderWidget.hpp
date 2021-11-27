@@ -94,7 +94,7 @@ void step() override {
 			svgPanel->fb->dirty = true;
 		}
 		
-		// Update param tooltips at 1Hz
+		// Update param and port tooltips at 1Hz
 		time_t currentTime = time(0);
 		if (currentTime != oldTime) {
 			oldTime = currentTime;
@@ -102,6 +102,10 @@ void step() override {
 			std::string auxLabels[4];
 			for (int i = 0; i < 4; i++) {
 				auxLabels[i] = std::string(&(module->auxLabels[i * 4]), 4);
+				module->inputInfos[TAuxExpander::RETURN_INPUTS + 2 * i + 0]->name = string::f("%s return left", auxLabels[i].c_str());
+				module->inputInfos[TAuxExpander::RETURN_INPUTS + 2 * i + 1]->name = string::f("%s return right", auxLabels[i].c_str());
+				module->outputInfos[TAuxExpander::SEND_OUTPUTS + i]->name = string::f("%s send left", auxLabels[i].c_str());
+				module->outputInfos[TAuxExpander::SEND_OUTPUTS + i + 4]->name = string::f("%s send right", auxLabels[i].c_str());
 			}
 			
 			// Track and group indiv sends
@@ -142,6 +146,24 @@ void step() override {
 				snprintf(strBuf, 32, "%s: return group", auxLabels[auxi].c_str());
 				module->paramQuantities[TAuxExpander::GLOBAL_AUXGROUP_PARAMS + auxi]->name = strBuf;
 			}
+			
+			// more port labels
+			if (N_TRK > 8) {
+				module->inputInfos[TAuxExpander::POLY_AUX_AD_CV_INPUTS + 0]->name = "Track aux A sends";
+				module->inputInfos[TAuxExpander::POLY_AUX_AD_CV_INPUTS + 1]->name = "Track aux B sends";
+				module->inputInfos[TAuxExpander::POLY_AUX_AD_CV_INPUTS + 2]->name = "Track aux C sends";
+				module->inputInfos[TAuxExpander::POLY_AUX_AD_CV_INPUTS + 3]->name = "Track aux D sends";
+				module->inputInfos[TAuxExpander::POLY_AUX_M_CV_INPUT]->name = "Track aux send mutes";
+				module->inputInfos[TAuxExpander::POLY_GRPS_M_CV_INPUT]->name = "Group aux send mutes";
+			}
+			else {
+				module->inputInfos[TAuxExpander::POLY_AUX_AD_CV_INPUTS + 0]->name = "Track aux A/B sends";
+				module->inputInfos[TAuxExpander::POLY_AUX_AD_CV_INPUTS + 1]->name = "Track aux C/D sends";
+				module->inputInfos[TAuxExpander::POLY_AUX_M_CV_INPUT]->name = "Track and group aux send mutes";
+			}
+			module->inputInfos[TAuxExpander::POLY_GRPS_AD_CV_INPUT]->name = "Group aux sends";
+			module->inputInfos[TAuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT]->name = "Global bus send/pan/return";
+			module->inputInfos[TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT]->name = "Return mute/solo";
 		}
 	}
 	ModuleWidget::step();

@@ -195,39 +195,43 @@ void step() override {
 			svgPanel->fb->dirty = true;
 		}
 		
-		// Update param tooltips and message bus at 1Hz
+		// Update param and port tooltips and message bus at 1Hz
 		time_t currentTime = time(0);
 		if (currentTime != oldTime) {
 			oldTime = currentTime;
 			char strBuf[32];
 			for (int i = 0; i < N_TRK; i++) {
 				std::string trackLabel = std::string(&(module->trackLabels[i * 4]), 4);
+				module->inputInfos[TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 0]->name = string::f("%s left", trackLabel.c_str());
+				module->inputInfos[TMixMaster::TRACK_SIGNAL_INPUTS + 2 * i + 1]->name = string::f("%s right", trackLabel.c_str());
 				// Pan
-				snprintf(strBuf, 32, "%s: pan", trackLabel.c_str());
+				snprintf(strBuf, 32, "%s pan", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::TRACK_PAN_PARAMS + i]->name = strBuf;
+				module->inputInfos[TMixMaster::TRACK_PAN_INPUTS + i]->name = strBuf;
 				// Fader
-				snprintf(strBuf, 32, "%s: level", trackLabel.c_str());
+				snprintf(strBuf, 32, "%s level", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::TRACK_FADER_PARAMS + i]->name = strBuf;
+				module->inputInfos[TMixMaster::TRACK_VOL_INPUTS + i]->name = strBuf;
 				// Mute/fade
 				if (module->tracks[i].isFadeMode()) {
-					snprintf(strBuf, 32, "%s: fade", trackLabel.c_str());
+					snprintf(strBuf, 32, "%s fade", trackLabel.c_str());
 				}
 				else {
-					snprintf(strBuf, 32, "%s: mute", trackLabel.c_str());
+					snprintf(strBuf, 32, "%s mute", trackLabel.c_str());
 				}
 				module->paramQuantities[TMixMaster::TRACK_MUTE_PARAMS + i]->name = strBuf;
 				// Solo
-				snprintf(strBuf, 32, "%s: solo", trackLabel.c_str());
+				snprintf(strBuf, 32, "%s solo", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::TRACK_SOLO_PARAMS + i]->name = strBuf;
 				// Group select
-				snprintf(strBuf, 32, "%s: group", trackLabel.c_str());
+				snprintf(strBuf, 32, "%s group", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_SELECT_PARAMS + i]->name = strBuf;
 				
 				// HPF cutoff
-				snprintf(strBuf, 32, "%s: HPF cutoff", trackLabel.c_str());
+				snprintf(strBuf, 32, "%s HPF cutoff", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i]->name = strBuf;
 				// LPF cutoff
-				snprintf(strBuf, 32, "%s: LPF cutoff", trackLabel.c_str());
+				snprintf(strBuf, 32, "%s LPF cutoff", trackLabel.c_str());
 				module->paramQuantities[TMixMaster::TRACK_LPCUT_PARAMS + i]->name = strBuf;
 
 			}
@@ -235,49 +239,87 @@ void step() override {
 			for (int i = 0; i < N_GRP; i++) {
 				std::string groupLabel = std::string(&(module->trackLabels[(N_TRK + i) * 4]), 4);
 				// Pan
-				snprintf(strBuf, 32, "%s: pan", groupLabel.c_str());
+				snprintf(strBuf, 32, "%s pan", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_PAN_PARAMS + i]->name = strBuf;
+				module->inputInfos[TMixMaster::GROUP_PAN_INPUTS + i]->name = strBuf;
 				// Fader
-				snprintf(strBuf, 32, "%s: level", groupLabel.c_str());
+				snprintf(strBuf, 32, "%s level", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_FADER_PARAMS + i]->name = strBuf;
+				module->inputInfos[TMixMaster::GROUP_VOL_INPUTS + i]->name = strBuf;
 				// Mute/fade
 				if (module->groups[i].isFadeMode()) {
-					snprintf(strBuf, 32, "%s: fade", groupLabel.c_str());
+					snprintf(strBuf, 32, "%s fade", groupLabel.c_str());
 				}
 				else {
-					snprintf(strBuf, 32, "%s: mute", groupLabel.c_str());
+					snprintf(strBuf, 32, "%s mute", groupLabel.c_str());
 				}
 				module->paramQuantities[TMixMaster::GROUP_MUTE_PARAMS + i]->name = strBuf;
 				// Solo
-				snprintf(strBuf, 32, "%s: solo", groupLabel.c_str());
+				snprintf(strBuf, 32, "%s solo", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_SOLO_PARAMS + i]->name = strBuf;
 				
 				// HPF cutoff
-				snprintf(strBuf, 32, "%s: HPF cutoff", groupLabel.c_str());
+				snprintf(strBuf, 32, "%s HPF cutoff", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_HPCUT_PARAMS + i]->name = strBuf;
 				// LPF cutoff
-				snprintf(strBuf, 32, "%s: LPF cutoff", groupLabel.c_str());
+				snprintf(strBuf, 32, "%s LPF cutoff", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i]->name = strBuf;
 			}
 			std::string masterLabel = std::string(module->master.masterLabel, 6);
 			// Fader
-			snprintf(strBuf, 32, "%s: level", masterLabel.c_str());
+			snprintf(strBuf, 32, "%s level", masterLabel.c_str());
 			module->paramQuantities[TMixMaster::MAIN_FADER_PARAM]->name = strBuf;
 			// Mute/fade
 			if (module->master.isFadeMode()) {
-				snprintf(strBuf, 32, "%s: fade", masterLabel.c_str());
+				snprintf(strBuf, 32, "%s fade", masterLabel.c_str());
 			}
 			else {
-				snprintf(strBuf, 32, "%s: mute", masterLabel.c_str());
+				snprintf(strBuf, 32, "%s mute", masterLabel.c_str());
 			}
 			module->paramQuantities[TMixMaster::MAIN_MUTE_PARAM]->name = strBuf;
 			// Dim
-			snprintf(strBuf, 32, "%s: dim", masterLabel.c_str());
+			snprintf(strBuf, 32, "%s dim", masterLabel.c_str());
 			module->paramQuantities[TMixMaster::MAIN_DIM_PARAM]->name = strBuf;
 			// Mono
-			snprintf(strBuf, 32, "%s: mono", masterLabel.c_str());
+			snprintf(strBuf, 32, "%s mono", masterLabel.c_str());
 			module->paramQuantities[TMixMaster::MAIN_MONO_PARAM]->name = strBuf;
 
+			// more input port tooltips
+			module->inputInfos[TMixMaster::CHAIN_INPUTS + 0]->name = "Chain left";
+			module->inputInfos[TMixMaster::CHAIN_INPUTS + 1]->name = "Chain right";
+			module->inputInfos[TMixMaster::INSERT_TRACK_INPUTS + 0]->name = "Insert 1-8";
+			if (N_TRK > 8) {
+				module->inputInfos[TMixMaster::INSERT_TRACK_INPUTS + 1]->name = "Insert 9-16";
+			}
+			module->inputInfos[TMixMaster::INSERT_GRP_AUX_INPUT]->name = "Insert group/aux";
+			if (N_TRK > 8) {
+				module->inputInfos[TMixMaster::TRACK_MUTESOLO_INPUTS + 0]->name = "Track mute";
+				module->inputInfos[TMixMaster::TRACK_MUTESOLO_INPUTS + 1]->name = "Track solo";
+			}
+			else {
+				module->inputInfos[TMixMaster::TRACK_MUTESOLO_INPUTS + 0]->name = "Track mute/solo";
+			}
+			module->inputInfos[TMixMaster::GRPM_MUTESOLO_INPUT]->name = "Mute/solo group, CV master";
+			
+			//output port tooltips
+			module->outputInfos[TMixMaster::DIRECT_OUTPUTS + 0]->name = "Direct 1-8";
+			if (N_TRK > 8) {
+				module->outputInfos[TMixMaster::DIRECT_OUTPUTS + 1]->name = "Direct 9-16";
+				module->outputInfos[TMixMaster::DIRECT_OUTPUTS + 2]->name = "Direct group/aux";
+			}
+			else {
+				module->outputInfos[TMixMaster::DIRECT_OUTPUTS + 1]->name = "Direct group/aux";
+			}
+			module->outputInfos[TMixMaster::MAIN_OUTPUTS + 0]->name = "Main left";
+			module->outputInfos[TMixMaster::MAIN_OUTPUTS + 1]->name = "Main right";
+			module->outputInfos[TMixMaster::INSERT_TRACK_OUTPUTS + 0]->name = "Insert 1-8";
+			if (N_TRK > 8) {		
+				module->outputInfos[TMixMaster::INSERT_TRACK_OUTPUTS + 1]->name = "Insert 9-16";
+			}
+			module->outputInfos[TMixMaster::INSERT_GRP_AUX_OUTPUT]->name = "Insert group/aux";
+			module->outputInfos[TMixMaster::FADE_CV_OUTPUT]->name = "Fade CV";
+			
+			
 			// Mixer Message Bus (for EQ and others)
 			module->sendToMessageBus();
 		}
