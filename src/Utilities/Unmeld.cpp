@@ -142,9 +142,23 @@ struct Unmeld : Module {
 
 //-----------------------------------------------------------------------------
 
+static const int NUM_PANELS = 3;
+
+std::string facePlateNames[3] = {
+	"1-8",
+	"9-16",
+	"Group/Aux"
+};
+
+static const std::string facePlateFileNames[NUM_PANELS] = {
+	"res/dark/unmeld-1-8.svg",
+	"res/dark/unmeld-9-16.svg",
+	"res/dark/unmeld-grp-aux.svg"
+};
+
 
 struct UnmeldWidget : ModuleWidget {
-	SvgPanel* facePlates[3];
+	std::shared_ptr<window::Svg> svgs[NUM_PANELS] = {};
 	int lastFacePlate = 0;
 	PortWidget* pwPolyIn;
 		
@@ -156,12 +170,6 @@ struct UnmeldWidget : ModuleWidget {
 		}
 	};
 	
-	std::string facePlateNames[3] = {
-		"1-8",
-		"9-16",
-		"Group/Aux"
-	};
-
 	void appendContextMenu(Menu *menu) override {
 		Unmeld *module = (Unmeld*)(this->module);
 		assert(module);
@@ -172,7 +180,7 @@ struct UnmeldWidget : ModuleWidget {
 		themeLabel->text = "Panel";
 		menu->addChild(themeLabel);
 
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < NUM_PANELS; i++) {
 			FacePlateItem *aItem = new FacePlateItem();
 			aItem->text = facePlateNames[i];
 			aItem->rightText = CHECKMARK(module->facePlate == i);
@@ -187,20 +195,8 @@ struct UnmeldWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-1-8.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
-		
-        if (module) {
-			facePlates[0] = svgPanel;
-			facePlates[1] = new SvgPanel();
-			facePlates[1]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-9-16.svg")));
-			facePlates[1]->setVisible(false);
-			addChild(facePlates[1]);
-			facePlates[2] = new SvgPanel();
-			facePlates[2]->setBackground(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/unmeld-grp-aux.svg")));
-			facePlates[2]->setVisible(false);
-			addChild(facePlates[2]);
-		}		
+        svgs[0] = APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[0]));
+		setPanel(svgs[0]);
 		
 		// poly in/thru
 		addInput(pwPolyIn = createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Unmeld::POLY_INPUT));
@@ -252,9 +248,15 @@ struct UnmeldWidget : ModuleWidget {
 			}
 
 			if (facePlate != lastFacePlate) {
-				facePlates[lastFacePlate]->setVisible(false);
-				facePlates[facePlate]->setVisible(true);
 				lastFacePlate = facePlate;
+				
+				// change main panel
+				if (svgs[facePlate] == NULL) {
+					svgs[facePlate] = APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate]));
+				}
+				SvgPanel* panel = (SvgPanel*)getPanel();
+				panel->setBackground(svgs[facePlate]);
+				panel->fb->dirty = true;
 				
 				// Update port tooltips
 				if (facePlate == 0) {// "1-8"

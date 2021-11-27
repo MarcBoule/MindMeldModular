@@ -223,8 +223,9 @@ struct Meld : Module {
 static const int NUM_M = 3;// num panels in menu of Audio panels
 static const int NUM_16 = 12;// num panels in menu of CV panels for Jr
 static const int NUM_8 = 8;// num panels in menu of CV panels for Sr
+static const int NUM_PANELS = NUM_M + NUM_16 + NUM_8;
 
-static const std::string facePlateNames[NUM_M + NUM_16 + NUM_8] = {
+static const std::string facePlateNames[NUM_PANELS] = {
 	"1-8",
 	"9-16",
 	"Group/Aux",
@@ -252,7 +253,7 @@ static const std::string facePlateNames[NUM_M + NUM_16 + NUM_8] = {
 	"Aux Bus M_S",
 };
 
-static const std::string facePlateFileNames[NUM_M + NUM_16 + NUM_8] = {
+static const std::string facePlateFileNames[NUM_PANELS] = {
 	"res/dark/meld/meld-1-8.svg",
 	"res/dark/meld/meld-9-16.svg",
 	"res/dark/meld/meld-grp-aux.svg",
@@ -282,6 +283,7 @@ static const std::string facePlateFileNames[NUM_M + NUM_16 + NUM_8] = {
 	
 	
 struct MeldWidget : ModuleWidget {
+	std::shared_ptr<window::Svg> svgs[NUM_PANELS] = {};
 	int lastFacePlate = 0;
 	LedButton *ledButtons[8];
 	SmallLight<GreenRedLight> *smallLights[8];
@@ -353,7 +355,8 @@ struct MeldWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-        setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[lastFacePlate])));
+        svgs[0] = APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[0]));
+		setPanel(svgs[0]);
 
 		// poly in/thru
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(6.84, 18.35)), module, Meld::POLY_INPUT));
@@ -440,9 +443,16 @@ struct MeldWidget : ModuleWidget {
 			}
 			
 			if (facePlate != lastFacePlate) {
-				// change main panel
-				setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate])));
 				lastFacePlate = facePlate;
+				
+				// change main panel
+				if (svgs[facePlate] == NULL) {
+					svgs[facePlate] = APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate]));
+				}
+				SvgPanel* panel = (SvgPanel*)getPanel();
+				panel->setBackground(svgs[facePlate]);
+				panel->fb->dirty = true;
+				
 				
 				// update bypass led-buttons' tooltips
 				for (int i = 0; i < 8; i++) {
