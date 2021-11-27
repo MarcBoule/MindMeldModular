@@ -64,6 +64,7 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 		configInput(IN_INPUTS + c, string::f("Channel %i VCA", c + 1));
 		configOutput(OUT_OUTPUTS + c, string::f("Channel %i VCA", c + 1));
 		configOutput(CV_OUTPUTS + c, string::f("Channel %i CV", c + 1));
+		configBypass(IN_INPUTS + c, OUT_OUTPUTS + c);
 	}
 	configInput(CLOCK_INPUT, "Clock");
 	configInput(RESET_INPUT, "Reset");

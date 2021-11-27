@@ -75,10 +75,19 @@ struct Meld : Module {
 		facePlate = 0;
 		
 		for (int i = 0; i < 8; i++) {
-			// bypass
 			configParam(BYPASS_PARAMS + i, 0.0f, 1.0f, 0.0f, string::f("Bypass %i", i + 1));
 		}
 		
+		configInput(POLY_INPUT, "Polyphonic");
+		for (int i = 0; i < 8; i++) {
+			configInput(MERGE_INPUTS + 2 * i + 0, string::f("Track %i left", i + 1));
+			configInput(MERGE_INPUTS + 2 * i + 1, string::f("Track %i right", i + 1));
+		}
+
+		configOutput(OUT_OUTPUT, "Polyphonic");
+		
+		configBypass(POLY_INPUT, OUT_OUTPUT);
+
 		for (int i = 0; i < 4; i++) {
 			bypassSlewersVect[i].setRiseFall(simd::float_4(100.0f)); // slew rate is in input-units per second (ex: V/s)			
 		}
@@ -377,17 +386,17 @@ struct MeldWidget : ModuleWidget {
 				// update bypass led-buttons' tooltips
 				for (int i = 0; i < 8; i++) {
 					if (facePlate == 0) {
-						module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass %i", i + 1);
+						module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass track %i", i + 1);
 					}
 					else if (facePlate == 1) {
-						module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass %i", i + 1 + 8);
+						module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass track %i", i + 1 + 8);
 					}
 					else {
 						if (i < 4) {
-							module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass G%i", i + 1);
+							module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass group %i", i + 1);
 						}
 						else {
-							module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass A%i", i + 1 - 4);
+							module->paramQuantities[Meld::BYPASS_PARAMS + i]->name = string::f("Bypass aux %i", i + 1 - 4);
 						}
 					}
 				}
@@ -397,6 +406,162 @@ struct MeldWidget : ModuleWidget {
 					ledButtons[i]->setVisible(facePlate < 3);
 					smallLights[i]->setVisible(facePlate < 3);
 				}
+				
+				// Update port tooltips				
+				if (facePlate == 0) {// "1-8"
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 0]->name = string::f("Track %i left", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 1]->name = string::f("Track %i right", i + 1);
+					}
+				}
+				else if (facePlate == 1) {// "9-16"
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 0]->name = string::f("Track %i left", i + 1 + 8);
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 1]->name = string::f("Track %i right", i + 1 + 8);
+					}
+				}
+				else if (facePlate == 2) {// "Group/Aux"
+					for (int i = 0; i < 4; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 0]->name = string::f("Group %i left", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 1]->name = string::f("Group %i right", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 0 + 8]->name = string::f("Aux %i left", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + 2 * i + 1 + 8]->name = string::f("Aux %i right", i + 1);
+					}
+				}
+				else if (facePlate == 3) {// "Mute 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i mute", i + 1);
+					}
+				}
+				else if (facePlate == 4) {// "Solo 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i solo", i + 1);
+					}
+				}
+				else if (facePlate == 5) {// "M/S Grp Mstr"
+					for (int i = 0; i < 4; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i    ]->name = string::f("Group %i mute", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 4]->name = string::f("Group %i solo", i + 1 + 4);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 12]->name = string::f("Unused %i", i + 1);
+					}
+					module->inputInfos[Meld::MERGE_INPUTS + 8]->name = "Master mute";
+					module->inputInfos[Meld::MERGE_INPUTS + 9]->name = "Master dim";
+					module->inputInfos[Meld::MERGE_INPUTS + 10]->name = "Master mono";
+					module->inputInfos[Meld::MERGE_INPUTS + 11]->name = "Master volume";
+				}
+				else if (facePlate == 6) {// "Aux A 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i aux A send", i + 1);
+					}
+				}
+				else if (facePlate == 7) {// "Aux B 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i aux B send", i + 1);
+					}
+				}
+				else if (facePlate == 8) {// "Aux C 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i aux C send", i + 1);
+					}
+				}
+				else if (facePlate == 9) {// "Aux D 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i aux D send", i + 1);
+					}
+				}
+				else if (facePlate == 10) {// "Aux Mute 1-16"
+					for (int i = 0; i < 16; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i aux mute", i + 1);
+					}
+				}
+				else if (facePlate == 11) {// "Aux A-D Grps"
+					for (int i = 0; i < 4; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i     ]->name = string::f("Group %i aux A send", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 4 ]->name = string::f("Group %i aux B send", i + 1 + 4);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8 ]->name = string::f("Unused %i aux C send", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 12]->name = string::f("Unused %i aux D send", i + 1 + 4);
+					}
+				}
+				else if (facePlate == 12) {// "Aux Mute Grps"
+					for (int i = 0; i < 4; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Group %i aux mute", i + 1);
+					}
+					for (int i = 0; i < 12; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i + 4]->name = string::f("Unused %i", i + 1);
+					}
+				}
+				else if (facePlate == 13 || facePlate == 21) {// "Aux Bus Snd Pan Rtn"
+					for (int i = 0; i < 4; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i     ]->name = string::f("Aux %c global send", i + 'A');
+						module->inputInfos[Meld::MERGE_INPUTS + i + 4 ]->name = string::f("Aux %c return pan", i + 'A');
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8 ]->name = string::f("Aux %c return level", i + 'A');
+						module->inputInfos[Meld::MERGE_INPUTS + i + 12]->name = string::f("Unused %i", i + 1);
+					}					
+				}
+				else if (facePlate == 14 || facePlate == 22) {// "Aux Bus M_S"
+					for (int i = 0; i < 4; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i     ]->name = string::f("Aux %c return mute", i + 'A');
+						module->inputInfos[Meld::MERGE_INPUTS + i + 4 ]->name = string::f("Aux %c return solo", i + 'A');
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8 ]->name = string::f("Unused %i", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 12]->name = string::f("Unused %i", i + 1 + 4);
+					}					
+				}
+				else if (facePlate == 15) {// "Mute/Solo 1-8"
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i    ]->name = string::f("Track %i mute", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8]->name = string::f("Track %i solo", i + 1);
+					}
+				}
+				else if (facePlate == 16) {// "M/S Grp Mstr"
+					module->inputInfos[Meld::MERGE_INPUTS + 0]->name = "Group 1 mute";
+					module->inputInfos[Meld::MERGE_INPUTS + 1]->name = "Group 2 mute";
+					module->inputInfos[Meld::MERGE_INPUTS + 2]->name = "Group 1 solo";
+					module->inputInfos[Meld::MERGE_INPUTS + 3]->name = "Group 2 solo";
+					module->inputInfos[Meld::MERGE_INPUTS + 4]->name = "Master mute";
+					module->inputInfos[Meld::MERGE_INPUTS + 5]->name = "Master dim";
+					module->inputInfos[Meld::MERGE_INPUTS + 6]->name = "Master mono";
+					module->inputInfos[Meld::MERGE_INPUTS + 7]->name = "Master volume";
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8]->name = string::f("Unused %i", i + 1);
+					}
+				}
+				else if (facePlate == 17) {// "Aux A/B 1-8"
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i    ]->name = string::f("Track %i aux A send", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8]->name = string::f("Track %i aux B send", i + 1);
+					}
+				}
+				else if (facePlate == 18) {// "Aux C/D 1-8"
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i    ]->name = string::f("Track %i aux C send", i + 1);
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8]->name = string::f("Track %i aux D send", i + 1);
+					}
+				}
+				else if (facePlate == 19) {// "Aux A-D Grps"
+					module->inputInfos[Meld::MERGE_INPUTS + 0]->name = "Group 1 aux A send";
+					module->inputInfos[Meld::MERGE_INPUTS + 1]->name = "Group 2 aux A send";
+					module->inputInfos[Meld::MERGE_INPUTS + 2]->name = "Group 1 aux B send";
+					module->inputInfos[Meld::MERGE_INPUTS + 3]->name = "Group 2 aux B send";
+					module->inputInfos[Meld::MERGE_INPUTS + 4]->name = "Group 1 aux C send";
+					module->inputInfos[Meld::MERGE_INPUTS + 5]->name = "Group 2 aux C send";
+					module->inputInfos[Meld::MERGE_INPUTS + 6]->name = "Group 1 aux D send";
+					module->inputInfos[Meld::MERGE_INPUTS + 7]->name = "Group 2 aux D send";
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i + 8]->name = string::f("Unused %i", i + 1);
+					}
+				}
+				else {// if (facePlate == 20) {// "Aux Mute 1-8 Grps"
+					for (int i = 0; i < 8; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i]->name = string::f("Track %i aux mute", i + 1);
+					}
+					module->inputInfos[Meld::MERGE_INPUTS + 8]->name = "Group 1 aux mute";
+					module->inputInfos[Meld::MERGE_INPUTS + 9]->name = "Group 2 aux mute";
+					for (int i = 0; i < 6; i++) {
+						module->inputInfos[Meld::MERGE_INPUTS + i + 10]->name = string::f("Unused %i", i + 1);
+					}
+				}
+				// else if (facePlate == 21) {// "Aux Bus Snd Pan Rtn"  (Same as faceplate 13, done there)
+				// else if (facePlate == 22) {// "Aux Bus M_S"          (Same as faceplate 14, done there)
 			}
 		}
 		Widget::step();

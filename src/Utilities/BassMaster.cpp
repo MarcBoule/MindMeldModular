@@ -96,6 +96,14 @@ struct BassMaster : Module {
 		configParam(GAIN_PARAM, -1.0f, 1.0f, 0.0f, "Master gain", " dB", 0.0f, 20.0f);// diplay params are: base, mult, offset
 		configParam(MIX_PARAM, 0.0f, 1.0f, 1.0f, "Mix", "%", 0.0f, 100.0f);// diplay params are: base, mult, offset
 				
+		configInput(IN_INPUTS + 0, "Left");
+		configInput(IN_INPUTS + 1, "Right");
+		configInput(LOW_WIDTH_INPUT, "Low width");
+		configInput(HIGH_WIDTH_INPUT, "High width");
+
+		configOutput(OUT_OUTPUTS + 0, "Left");
+		configOutput(OUT_OUTPUTS + 1, "Right");
+
 		configBypass(IN_INPUTS + 0, OUT_OUTPUTS + 0);
 		configBypass(IN_INPUTS + 1, OUT_OUTPUTS + 1);
 				

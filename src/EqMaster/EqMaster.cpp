@@ -138,6 +138,13 @@ struct EqMaster : Module {
 		getParamQuantity(TRACK_PARAM)->randomizeEnabled = false;
 		getParamQuantity(TRACK_ACTIVE_PARAM)->randomizeEnabled = false;
 		
+		configInput(SIG_INPUTS + 0, "Tracks 1-8");
+		configInput(SIG_INPUTS + 1, "Tracks 9-16");
+		configInput(SIG_INPUTS + 2, "Groups and Auxs");
+		configInput(SIG_OUTPUTS + 0, "Tracks 1-8");
+		configInput(SIG_OUTPUTS + 1, "Tracks 9-16");
+		configInput(SIG_OUTPUTS + 2, "Groups and Auxs");
+		
 		for (int i = 0; i < 3; i++) {
 			configBypass(SIG_INPUTS + i, SIG_OUTPUTS + i);
 		}

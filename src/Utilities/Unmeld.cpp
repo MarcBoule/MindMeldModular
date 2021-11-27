@@ -52,6 +52,16 @@ struct Unmeld : Module {
 	Unmeld() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
+		configInput(POLY_INPUT, "Polyphonic");
+		for (int i = 0; i < 8; i++) {
+			configOutput(SPLIT_OUTPUTS + 2 * i + 0, string::f("Track %i left", i + 1));
+			configOutput(SPLIT_OUTPUTS + 2 * i + 1, string::f("Track %i right", i + 1));
+		}
+
+		configOutput(THRU_OUTPUT, "Polyphonic");
+		
+		configBypass(POLY_INPUT, THRU_OUTPUT);		
+		
 		onReset();
 		
 		facePlate = 0;
@@ -215,6 +225,28 @@ struct UnmeldWidget : ModuleWidget {
 				facePlates[lastFacePlate]->setVisible(false);
 				facePlates[facePlate]->setVisible(true);
 				lastFacePlate = facePlate;
+				
+				// Update port tooltips
+				if (facePlate == 0) {// "1-8"
+					for (int i = 0; i < 8; i++) {
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 0]->name = string::f("Track %i left", i + 1);
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 1]->name = string::f("Track %i right", i + 1);
+					}
+				}
+				else if (facePlate == 1) {// "9-16"
+					for (int i = 0; i < 8; i++) {
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 0]->name = string::f("Track %i left", i + 1 + 8);
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 1]->name = string::f("Track %i right", i + 1 + 8);
+					}
+				}
+				else {// if (facePlate == 2) {// "Group/Aux"
+					for (int i = 0; i < 4; i++) {
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 0]->name = string::f("Group %i left", i + 1);
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 1]->name = string::f("Group %i right", i + 1);
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 0 + 8]->name = string::f("Aux %i left", i + 1);
+						module->outputInfos[Unmeld::SPLIT_OUTPUTS + 2 * i + 1 + 8]->name = string::f("Aux %i right", i + 1);
+					}
+				}
 			}
 		}
 		Widget::step();
