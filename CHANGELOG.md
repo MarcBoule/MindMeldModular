@@ -1,4 +1,10 @@
-### 1.1.15 (in development)
+### 2.0.8 (2021-11-27)
+
+- First v2 library candidate
+- Many changes that are not listed here
+
+
+### 1.1.15 (2021-x-x)
 
 - MixMaster: Added gain adjust to groups
 - ShapeMaster: Added cloaked mode

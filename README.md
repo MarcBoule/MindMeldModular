@@ -2,7 +2,7 @@ Modules for [VCV Rack](https://vcvrack.com), available in the [plugin library](h
 
 Mind Meld is a designer / developer collaboration for VCV Rack between Marc '_Spock_' Boulé (coding and development) and Steve '_Make it so_' Baker (concept and design). 
 
-Version 2.0.6
+Version 2.0.8
 
 [//]: # (!!!!!UPDATE VERSION NUMBER IN PLUGIN.JSON ALSO!!!!!   140% Zoom for pngs, all size of MixMaster.png, use transparency)
 
