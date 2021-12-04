@@ -22,14 +22,14 @@ void ShapeMasterDisplayLight::drawGrid(const DrawArgs &args) {
 	nvgStrokeColor(args.vg, DARKER_GRAY);
 	
 	// horizontal lines (range lines)
-	int rangeIndex = channels[*currChan].getRangeIndex();
+	int rangeIndex = currChan ? channels[*currChan].getRangeIndex() : 0;
 	int numHLines;
 	int numHLinesWithOct = calcNumHLinesAndWithOct(rangeIndex, &numHLines);
 	float yDelta = canvas.y / numHLinesWithOct;
 	loopHLines(args, margins.y, yDelta, numHLinesWithOct);
 
 	// vertical lines (gridX lines)
-	int numVLines = channels[*currChan].getGridX();
+	int numVLines = currChan ? channels[*currChan].getGridX() : 16;
 	float xDelta = canvas.x / numVLines;
 	numGridXmajorX = 0;// used in loopVLines() and also in major gridX lines further below
 	loopVLines(args, margins.x, xDelta, numVLines);
@@ -137,6 +137,57 @@ void ShapeMasterDisplayLight::drawScope(const DrawArgs &args) {
 }
 
 
+void ShapeMasterDisplayLight::drawShapeWhenModuleIsVoid(const DrawArgs &args) {
+	NVGcolor chanColor = CHAN_COLORS[0];
+
+	nvgFillColor(args.vg, chanColor);
+	nvgStrokeColor(args.vg, chanColor);
+	nvgStrokeWidth(args.vg, 1.0f);
+	nvgMiterLimit(args.vg, 1.0f);
+
+	// shadow
+	NVGcolor shadowColBright = chanColor;
+	NVGcolor shadowColDark = chanColor;
+	shadowColBright.a = 0.25f;
+	shadowColDark.a = 0.03f;
+	NVGpaint grad = nvgLinearGradient(args.vg, 0.0f, canvas.y / 2.3f + margins.y, 0.0f, canvas.y + margins.y, shadowColBright, shadowColDark);
+	float homeY = margins.y + canvas.y;
+	nvgFillColor(args.vg, shadowColBright);
+	nvgBeginPath(args.vg);
+	nvgMoveTo(args.vg, margins.x, homeY);
+	nvgLineTo(args.vg, margins.x + 0.5f * canvas.x, margins.y + 0.0f * canvas.y);
+	nvgLineTo(args.vg, margins.x + 1.0f * canvas.x, homeY);
+	nvgClosePath(args.vg);
+	nvgFillPaint(args.vg, grad);
+	nvgFill(args.vg);	
+	
+	// lines
+	nvgStrokeColor(args.vg, chanColor);
+	nvgFillColor(args.vg, chanColor);
+	nvgBeginPath(args.vg);
+	nvgMoveTo(args.vg, margins.x, homeY);
+	nvgLineTo(args.vg, margins.x + 0.5f * canvas.x, margins.y + 0.0f * canvas.y);
+	nvgLineTo(args.vg, margins.x + 1.0f * canvas.x, homeY);
+	nvgStroke(args.vg);	
+	
+	// control points (empty)
+	nvgFillColor(args.vg, DARKER_GRAY);
+	nvgBeginPath(args.vg);		
+	float ctrlSizeUnselected = 1.6f * 1.0f;
+	nvgCircle(args.vg, margins.x + 0.25f * canvas.x, margins.y + 0.5f * canvas.y, ctrlSizeUnselected);
+	nvgCircle(args.vg, margins.x + 0.75f * canvas.x, margins.y + 0.5f * canvas.y, ctrlSizeUnselected);
+	nvgFill(args.vg);
+	nvgStroke(args.vg);
+
+	// normal points (full)
+	nvgFillColor(args.vg, chanColor);
+	nvgBeginPath(args.vg);
+	float ptSizeUnselected = 2.1f * 1.0f;
+	nvgCircle(args.vg, margins.x + 0.0f * canvas.x, homeY, ptSizeUnselected);
+	nvgCircle(args.vg, margins.x + 0.5f * canvas.x, margins.y + 0.0f * canvas.y, ptSizeUnselected);
+	nvgCircle(args.vg, margins.x + 1.0f * canvas.x, homeY, ptSizeUnselected);
+	nvgFill(args.vg);	
+}
 
 void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	Shape* shape = channels[*currChan].getShape();

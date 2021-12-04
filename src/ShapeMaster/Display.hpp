@@ -61,16 +61,17 @@ struct ShapeMasterDisplayLight : TransparentWidget {
 			
 			if (currChan != NULL) {
 				// nvgScissor(args.vg, 0, 0, box.size.x, box.size.y);
-
 				if (setting3Src->cc4[2] == 0) {// if not cloaked
 					drawGrid(args);
 					drawScope(args);
 					drawShape(args);
 				}
-				
 				drawMessages(args);
-				
 				// nvgResetScissor(args.vg);					
+			}
+			else {
+				drawGrid(args);
+				drawShapeWhenModuleIsVoid(args);
 			}
 
 			nvgRestore(args.vg);
@@ -107,6 +108,7 @@ struct ShapeMasterDisplayLight : TransparentWidget {
 	void drawScopeWaveform(const DrawArgs &args, bool isFront);
 	void drawScope(const DrawArgs &args);
 
+	void drawShapeWhenModuleIsVoid(const DrawArgs &args);
 	void drawShape(const DrawArgs &args);
 
 	void drawMessages(const DrawArgs &args);
