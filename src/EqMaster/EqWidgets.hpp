@@ -542,6 +542,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	std::string fontPath;
 	float sampleRate;// use only in scope of it being set in draw()
 	int currTrk;// use only in scope of it being set in draw()
+	NVGcolor bandColors[4] = {nvgRGB(146, 32, 22), nvgRGB(0, 155, 137), nvgRGB(50, 99, 148),nvgRGB(111, 81, 113)};
 		
 	
 	EqCurveAndGrid() {
@@ -582,6 +583,9 @@ struct EqCurveAndGrid : TransparentWidget {
 				}		
 				
 				nvgResetScissor(args.vg);					
+			}
+			else {
+				drawEqCurveTotalWhenModuleIsNull(args);
 			}
 
 			nvgRestore(args.vg);
@@ -747,7 +751,6 @@ struct EqCurveAndGrid : TransparentWidget {
 		// draw frequency response curve
 		nvgLineCap(args.vg, NVG_ROUND);
 		nvgMiterLimit(args.vg, 1.0f);
-		NVGcolor bandColors[4] = {nvgRGB(146, 32, 22), nvgRGB(0, 155, 137), nvgRGB(50, 99, 148),nvgRGB(111, 81, 113)};
 		if (miscSettingsSrc->cc4[0] != 0) {
 			for (int b = 0; b < 4; b++) {
 				if (trackEqsSrc[currTrk].getBandActive(b) >= 0.5f) {
@@ -766,6 +769,25 @@ struct EqCurveAndGrid : TransparentWidget {
 		float pX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
 		float pY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
 		nvgMoveTo(args.vg, pX, pY);
+	}
+	void drawEqCurveTotalWhenModuleIsNull(const DrawArgs &args) {
+		// cursor circles
+		for (int b = 0; b < 4; b++) {
+			nvgBeginPath(args.vg);
+			float cursorPX = math::rescale(DEFAULT_logFreq[b], minLogFreq, maxLogFreq, 0.0f, box.size.x);
+			nvgCircle(args.vg, cursorPX, box.size.y * 0.5f, 3.0f);
+			nvgClosePath(args.vg);
+			nvgFillColor(args.vg, bandColors[b]);
+			nvgFill(args.vg);
+		}
+
+		// flat eq curve total when no module present (for module browser)
+		nvgStrokeColor(args.vg, SCHEME_LIGHT_GRAY);
+		nvgStrokeWidth(args.vg, 1.25f);	
+		nvgBeginPath(args.vg);
+		nvgMoveTo(args.vg, 0.0f, box.size.y * 0.5f);
+		nvgLineTo(args.vg, box.size.x, box.size.y * 0.5f);
+		nvgStroke(args.vg);
 	}
 	void drawEqCurveTotal(const DrawArgs &args) {
 		if (trackEqsSrc[currTrk].getTrackActive() && globalBypassParamSrc->getValue() < 0.5f) {
