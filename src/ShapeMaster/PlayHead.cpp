@@ -316,7 +316,7 @@ void PlayHead::processSlow(ChanCvs *chanCvs) {
 		localSyncButton = newSync;
 		if (localSyncButton) {
 			// sync turned on
-			paLock->setValue(1.0f);
+			// paLock->setValue(1.0f);
 			localLockButton = true;// avoid lock toggle detection below, since there's already a start() in here
 		}
 		else {
