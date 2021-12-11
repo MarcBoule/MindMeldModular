@@ -334,27 +334,16 @@ struct BassMasterWidget : ModuleWidget {
 	struct SlopeItem : MenuItem {
 		Param* srcParam;
 
-		struct SlopeSubItem : MenuItem {
-			Param *srcParam;
-			float setVal;
-			void onAction(const event::Action &e) override {
-				srcParam->setValue(setVal);
-			}
-		};
-
 		Menu *createChildMenu() override {
-			Menu *menu = new Menu;
-			
-			SlopeSubItem *slope0Item = createMenuItem<SlopeSubItem>("12 db/oct", CHECKMARK(srcParam->getValue() < 0.5f));
-			slope0Item->srcParam = srcParam;
-			slope0Item->setVal = 0.0f;
-			menu->addChild(slope0Item);
-
-			SlopeSubItem *slope1Item = createMenuItem<SlopeSubItem>("24 db/oct", CHECKMARK(srcParam->getValue() >= 0.5f));
-			slope1Item->srcParam = srcParam;
-			slope1Item->setVal = 1.0f;
-			menu->addChild(slope1Item);
-
+			Menu *menu = new Menu;			
+			menu->addChild(createCheckMenuItem("12 db/oct", "",
+				[=]() {return srcParam->getValue() < 0.5f;},
+				[=]() {srcParam->setValue(0.0f);}
+			));			
+			menu->addChild(createCheckMenuItem("24 db/oct", "",
+				[=]() {return srcParam->getValue() >= 0.5f;},
+				[=]() {srcParam->setValue(1.0f);}
+			));	
 			return menu;
 		}
 	};	
@@ -362,24 +351,16 @@ struct BassMasterWidget : ModuleWidget {
 	struct VuTypeItem : MenuItem {
 		int8_t* isMasterTypeSrc;
 
-		struct VuTypeSubItem : MenuItem {
-			int8_t* isMasterTypeSrc;
-			void onAction(const event::Action &e) override {
-				*isMasterTypeSrc ^= 0x1;
-			}
-		};
-
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
-			
-			VuTypeSubItem *vu0Item = createMenuItem<VuTypeSubItem>("Scale as track", CHECKMARK(*isMasterTypeSrc == 0));
-			vu0Item->isMasterTypeSrc = isMasterTypeSrc;
-			menu->addChild(vu0Item);
-
-			VuTypeSubItem *vu1Item = createMenuItem<VuTypeSubItem>("Scale as master", CHECKMARK(*isMasterTypeSrc != 0));
-			vu1Item->isMasterTypeSrc = isMasterTypeSrc;
-			menu->addChild(vu1Item);
-
+			menu->addChild(createCheckMenuItem("Scale as track", "",
+				[=]() {return *isMasterTypeSrc == 0;},
+				[=]() {*isMasterTypeSrc = 0;}
+			));	
+			menu->addChild(createCheckMenuItem("Scale as master", "",
+				[=]() {return *isMasterTypeSrc != 0;},
+				[=]() {*isMasterTypeSrc = 1;}
+			));	
 			return menu;
 		}
 	};	

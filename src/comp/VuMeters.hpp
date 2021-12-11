@@ -245,28 +245,14 @@ struct VuFiveColorItem : MenuItem {
 	int8_t *srcColors;// this can be a vector of colors that will all be set (when used in EQ for example)
 	int vectorSize = 1;
 
-	struct VuColorSubItem : MenuItem {
-		int8_t *srcColors;
-		int vectorSize;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			for (int t = 0; t < vectorSize; t++) {
-				srcColors[t] = setVal;
-			}
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		
 		for (int i = 0; i < numVuThemes; i++) {
-			VuColorSubItem *vuColItem = createMenuItem<VuColorSubItem>(vuColorNames[i], CHECKMARK(*srcColors == i));
-			vuColItem->srcColors = srcColors;
-			vuColItem->vectorSize = vectorSize;
-			vuColItem->setVal = i;
-			menu->addChild(vuColItem);
+			menu->addChild(createCheckMenuItem(vuColorNames[i], "",
+				[=]() {return *srcColors == i;},
+				[=]() {for (int t = 0; t < vectorSize; t++) srcColors[t] = i;}
+			));	
 		}
-
 		return menu;
 	}
 };
