@@ -162,14 +162,6 @@ struct UnmeldWidget : ModuleWidget {
 	int lastFacePlate = 0;
 	PortWidget* pwPolyIn;
 		
-	struct FacePlateItem : MenuItem {
-		Unmeld *module;
-		int plate;
-		void onAction(const event::Action &e) override {
-			module->facePlate = plate;
-		}
-	};
-	
 	void appendContextMenu(Menu *menu) override {
 		Unmeld *module = (Unmeld*)(this->module);
 		assert(module);
@@ -181,12 +173,10 @@ struct UnmeldWidget : ModuleWidget {
 		menu->addChild(themeLabel);
 
 		for (int i = 0; i < NUM_PANELS; i++) {
-			FacePlateItem *aItem = new FacePlateItem();
-			aItem->text = facePlateNames[i];
-			aItem->rightText = CHECKMARK(module->facePlate == i);
-			aItem->module = module;
-			aItem->plate = i;
-			menu->addChild(aItem);
+			menu->addChild(createCheckMenuItem(facePlateNames[i], "",
+				[=]() {return module->facePlate == i;},
+				[=]() {module->facePlate = i;}
+			));	
 		}
 	}	
 	

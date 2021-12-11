@@ -294,25 +294,25 @@ struct MeldWidget : ModuleWidget {
 		int start;
 		int end;
 		
-		struct PanelsSubItem : MenuItem {
-			Meld *module;
-			int plate;
-			void onAction(const event::Action &e) override {
-				module->facePlate = plate;
-			}
-		};
-
 		Menu *createChildMenu() override {
 			Menu *menu = new Menu;
-				
 			for (int i = start; i < end; i++) {
-				PanelsSubItem *apItem = createMenuItem<PanelsSubItem>(facePlateNames[i], CHECKMARK(module->facePlate == i));
-				apItem->module = module;
-				apItem->plate = i;
-				menu->addChild(apItem);
+				menu->addChild(createCheckMenuItem(facePlateNames[i], "",
+					[=]() {return module->facePlate == i;},
+					[=]() {module->facePlate = i;}
+				));	
 			}
-			
 			return menu;
+		}
+		
+		void step() override {
+			std::string _rightText = RIGHT_ARROW;
+			int fp = module->facePlate;
+			if (fp >= start && fp < end) {
+				_rightText.insert(0, " ");
+				_rightText.insert(0, CHECKMARK_STRING);
+			}
+			rightText = _rightText;
 		}
 	};
 
@@ -326,23 +326,19 @@ struct MeldWidget : ModuleWidget {
 		themeLabel->text = "Panel choices";
 		menu->addChild(themeLabel);
 
-		int fp = module->facePlate;
-		char rights[8] = CHECKMARK_STRING; if (fp >= NUM_M) rights[0] = 0;
-		PanelsItem *audiopItem = createMenuItem<PanelsItem>("Audio panels", strcat(strcat(rights, " "), RIGHT_ARROW));
+		PanelsItem *audiopItem = createMenuItem<PanelsItem>("Audio panels", "");
 		audiopItem->module = module;
 		audiopItem->start = 0;
 		audiopItem->end = NUM_M;
 		menu->addChild(audiopItem);
 
-		char rights2[8] = CHECKMARK_STRING; if (fp < NUM_M || fp >= (NUM_M + NUM_16)) rights2[0] = 0;
-		PanelsItem *cvsrpItem = createMenuItem<PanelsItem>("CV panels", strcat(strcat(rights2, " "), RIGHT_ARROW));
+		PanelsItem *cvsrpItem = createMenuItem<PanelsItem>("CV panels", "");
 		cvsrpItem->module = module;
 		cvsrpItem->start = NUM_M;
 		cvsrpItem->end = NUM_M + NUM_16;
 		menu->addChild(cvsrpItem);
 
-		char rights3[8] = CHECKMARK_STRING; if (fp < (NUM_M + NUM_16)) rights3[0] = 0;
-		PanelsItem *cvjrpItem = createMenuItem<PanelsItem>("CV panels Jr", strcat(strcat(rights3, " "), RIGHT_ARROW));
+		PanelsItem *cvjrpItem = createMenuItem<PanelsItem>("CV panels Jr", "");
 		cvjrpItem->module = module;
 		cvjrpItem->start = NUM_M + NUM_16;
 		cvjrpItem->end = NUM_M + NUM_16 + NUM_8;
