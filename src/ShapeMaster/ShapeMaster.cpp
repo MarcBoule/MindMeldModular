@@ -330,11 +330,6 @@ void ShapeMasterWidget::appendContextMenu(Menu *menu) {
 	ppqnCItem->srcShapeMaster = module;
 	ppqnCItem->disabled = module->running;
 	menu->addChild(ppqnCItem);
-
-	// PpqnAvgItem<ShapeMaster> *ppqnAItem = createMenuItem<PpqnAvgItem<ShapeMaster>>("Clock averaging", RIGHT_ARROW);
-	// ppqnAItem->srcShapeMaster = module;
-	// ppqnAItem->disabled = module->running;
-	// menu->addChild(ppqnAItem);
 	#endif
 
 	RunOffSettingItem *runOffSetItem = createMenuItem<RunOffSettingItem>("Run off setting", RIGHT_ARROW);
@@ -344,17 +339,20 @@ void ShapeMasterWidget::appendContextMenu(Menu *menu) {
 
 	menu->addChild(new MenuSeparator());
 
-	ShowChanNamesItem *showChanNamesItem = createMenuItem<ShowChanNamesItem>("Show channel labels", CHECKMARK(module->miscSettings2.cc4[2] != 0));
-	showChanNamesItem->srcShowChanNames = &(module->miscSettings2.cc4[2]);
-	menu->addChild(showChanNamesItem);
+	menu->addChild(createCheckMenuItem("Show channel labels", "",
+		[=]() {return module->miscSettings2.cc4[2] != 0;},
+		[=]() {module->miscSettings2.cc4[2] ^= 0x1;}
+	));
+	
+	menu->addChild(createCheckMenuItem("Show node tooltip", "",
+		[=]() {return module->miscSettings2.cc4[3] != 0;},
+		[=]() {module->miscSettings2.cc4[3] ^= 0x1;}
+	));
 
-	ShowPointTooltipItem *showPtToolItem = createMenuItem<ShowPointTooltipItem>("Show node tooltip", CHECKMARK(module->miscSettings2.cc4[3] != 0));
-	showPtToolItem->srcPointTooltipNames = &(module->miscSettings2.cc4[3]);
-	menu->addChild(showPtToolItem);
-
-	ShowPointsItem *showPointsItem = createMenuItem<ShowPointsItem>("Show shape nodes", CHECKMARK(module->miscSettings.cc4[3] != 0));
-	showPointsItem->setValSrc = &(module->miscSettings.cc4[3]);
-	menu->addChild(showPointsItem);
+	menu->addChild(createCheckMenuItem("Show shape nodes", "",
+		[=]() {return module->miscSettings.cc4[3] != 0;},
+		[=]() {module->miscSettings.cc4[3] ^= 0x1;}
+	));
 	
 	LineWidthSlider *lineWidthSlider = new LineWidthSlider(&module->lineWidth);
 	lineWidthSlider->box.size.x = 200.0f;
@@ -373,9 +371,10 @@ void ShapeMasterWidget::appendContextMenu(Menu *menu) {
 	knobArcShowItem->srcDetailsShow = &(module->miscSettings.cc4[0]);
 	menu->addChild(knobArcShowItem);	
 
-	CloakedItem *cloakItem = createMenuItem<CloakedItem>("Cloaked mode", CHECKMARK(module->miscSettings3.cc4[2] != 0));
-	cloakItem->srcCloaked = &(module->miscSettings3.cc4[2]);
-	menu->addChild(cloakItem);
+	menu->addChild(createCheckMenuItem("Cloaked mode", "",
+		[=]() {return module->miscSettings3.cc4[2] != 0;},
+		[=]() {module->miscSettings3.cc4[2] ^= 0x1;}
+	));	
 }
 
 

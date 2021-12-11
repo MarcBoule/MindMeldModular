@@ -61,17 +61,6 @@ void createBackgroundMenu(ui::Menu* menu, Shape* shape, Vec normPos) {
 // Normal point menus
 // --------------------
 
-struct DeletePointItem : MenuItem {
-	Shape* shape;
-	int pt;
-
-	void onAction(const event::Action &e) override {
-		shape->deletePointWithBlock(pt, true);// with history
-	}
-};
-
-
-
 void captureNewTime(std::string* text, Channel* channel, int pt, float length) {
 	Shape* shape = channel->getShape();
 	Vec ptVec = shape->getPointVect(pt);
@@ -229,10 +218,9 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 	float time = length * ptVec.x;	
 	std::string timeText = timeToString(time, false);
 	
-	MenuLabel *timeLabel = new MenuLabel();
-	timeLabel->text = "Horiz.: ";
-	timeLabel->text.append(timeText).append("s");
-	menu->addChild(timeLabel);
+	std::string timeLabel = "Horiz.: ";
+	timeLabel.append(timeText).append("s");
+	menu->addChild(createMenuLabel(timeLabel));
 
 	TimeValueField* timeValueField = new TimeValueField;
 	timeValueField->box.size.x = 100;
@@ -248,9 +236,8 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 	float voltRanged = channel->applyRange(ptVec.y);
 	std::string voltRangedText = string::f("%.4g", voltRanged);
 	
-	MenuLabel *voltLabel = new MenuLabel();
-	voltLabel->text = string::f("Vert.: %s V", voltRangedText.c_str());
-	menu->addChild(voltLabel);
+	std::string voltLabel = string::f("Vert.: %s V", voltRangedText.c_str());
+	menu->addChild(createMenuLabel(voltLabel));
 
 	if (voltRanged <= 6.25635f && voltRanged >= -3.70943f) {// values here are v/oct for 20kHz and 20Hz respectively 
 		float freq = 261.6256f * std::pow(2.0f, voltRanged); 
@@ -265,9 +252,8 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 		}
 		char note[8];
 		printNote(voltRanged, note, true);
-		MenuLabel *volt2Label = new MenuLabel();
-		volt2Label->text = string::f("(%s, %s)", freqStr.c_str(), note);
-		menu->addChild(volt2Label);
+		std::string volt2Label = string::f("(%s, %s)", freqStr.c_str(), note);
+		menu->addChild(createMenuLabel(volt2Label));
 	}	
 
 	VoltValueField* voltValueField = new VoltValueField;
@@ -280,12 +266,9 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 	
 	menu->addChild(new MenuSeparator());
 	
-	DeletePointItem *delPointItem = createMenuItem<DeletePointItem>("Delete node", "");
-	delPointItem->shape = shape;
-	delPointItem->pt = pt;
-	menu->addChild(delPointItem);
-	
-	// menu->addChild(new MenuSeparator());
+	menu->addChild(createMenuItem("Delete node", "",
+		[=]() {shape->deletePointWithBlock(pt, true);}// with history
+	));
 }
 
 
@@ -293,58 +276,38 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 // Control point menus
 // --------------------
 
+void myActionCtrlType(Shape* shape, int pt, int8_t setVal) {
+	// Push TypeAndCtrlChange history action (rest is done in onDragEnd())
+	TypeAndCtrlChange* h = new TypeAndCtrlChange;
+	h->shapeSrc = shape;
+	h->pt = pt;
+	h->oldCtrl = shape->getCtrl(pt);// only type is changing but must grab both since undo/redo will change both
+	h->oldType = shape->getType(pt);
+	
+	shape->setType(pt, setVal);
 
-struct ResetCtrlItem : MenuItem {
-	Shape* shape;
-	int pt;
-
-	void onAction(const event::Action &e) override {
-		shape->makeLinear(pt);// has implicit history
-	}
-};
-
-
-struct CtrlTypeItem : MenuItem {
-	Shape* shape;
-	int pt;
-	int8_t setVal = 0;
-
-	void onAction(const event::Action &e) override {
-		// Push TypeAndCtrlChange history action (rest is done in onDragEnd())
-		TypeAndCtrlChange* h = new TypeAndCtrlChange;
-		h->shapeSrc = shape;
-		h->pt = pt;
-		h->oldCtrl = shape->getCtrl(pt);// only type is changing but must grab both since undo/redo will change both
-		h->oldType = shape->getType(pt);
-		
-		shape->setType(pt, setVal);
-
-		h->newCtrl = shape->getCtrl(pt);// only type is changing but must grab both since undo/redo will change both
-		h->newType = shape->getType(pt);
-		h->name = "change control point";
-		APP->history->push(h);
-	}
-};
+	h->newCtrl = shape->getCtrl(pt);// only type is changing but must grab both since undo/redo will change both
+	h->newType = shape->getType(pt);
+	h->name = "change control point";
+	APP->history->push(h);
+}
 
 
 void createCtrlMenu(ui::Menu* menu, Shape* shape, int pt) {
-	CtrlTypeItem *smoothTypeItem = createMenuItem<CtrlTypeItem>("Smooth", CHECKMARK(shape->getType(pt) == 0));
-	smoothTypeItem->shape = shape;
-	smoothTypeItem->pt = pt;
-	menu->addChild(smoothTypeItem);
-
-	CtrlTypeItem *sshapeTypeItem = createMenuItem<CtrlTypeItem>("S-Shape", CHECKMARK(shape->getType(pt) == 1));
-	sshapeTypeItem->shape = shape;
-	sshapeTypeItem->setVal = 1;
-	sshapeTypeItem->pt = pt;
-	menu->addChild(sshapeTypeItem);
+	menu->addChild(createCheckMenuItem("Smooth", "",
+		[=]() {return shape->getType(pt) == 0;},
+		[=]() {myActionCtrlType(shape, pt, 0);}
+	));	
+	menu->addChild(createCheckMenuItem("S-Shape", "",
+		[=]() {return shape->getType(pt) == 1;},
+		[=]() {myActionCtrlType(shape, pt, 1);}
+	));	
 
 	menu->addChild(new MenuSeparator());
 
-	ResetCtrlItem *resetCtrlItem = createMenuItem<ResetCtrlItem>("Reset", "");
-	resetCtrlItem->shape = shape;
-	resetCtrlItem->pt = pt;
-	menu->addChild(resetCtrlItem);
+	menu->addChild(createMenuItem("Reset", "",
+		[=]() {shape->makeLinear(pt);}// has implicit history
+	));
 }
 
 
@@ -371,111 +334,53 @@ struct GainAdjustVcaSlider : ui::Slider {
 	}
 };
 
-struct RetrigItem : MenuItem {
-	Channel* channel;
-
-	void onAction(const event::Action &e) override {
-		channel->toggleAllowRetrig();
-	}
-};
 
 #ifdef SM_PRO
 struct SmTriggersItem : MenuItem {
 	Channel* channel;
-	
-	struct EocOnLastOnlyItem : MenuItem {
-		Channel* channel;
-		void onAction(const event::Action &e) override {
-			channel->toggleEocOnLastOnly();
-		}
-	};
-
-	struct ExcludeEocFromOrItem : MenuItem {
-		Channel* channel;
-		void onAction(const event::Action &e) override {
-			channel->toggleExcludeEocFromOr();
-		}
-	};
-	
-	struct EosOnlyAfterSosItem : MenuItem {
-		Channel* channel;
-		void onAction(const event::Action &e) override {
-			channel->toggleEosOnlyAfterSos();
-		}
-	};
-
-
+		
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
-		EocOnLastOnlyItem *eocLastOnlyItem = createMenuItem<EocOnLastOnlyItem>("EOC on last cycle only", CHECKMARK(channel->getEocOnLastOnly()));
-		eocLastOnlyItem->channel = channel;
-		menu->addChild(eocLastOnlyItem);
-		
-		ExcludeEocFromOrItem *eocExItem = createMenuItem<ExcludeEocFromOrItem>("EOC excluded from OR", CHECKMARK(channel->isExcludeEocFromOr()));
-		eocExItem->channel = channel;
-		menu->addChild(eocExItem);
-		
-		EosOnlyAfterSosItem *eosAfterSosItem = createMenuItem<EosOnlyAfterSosItem>("EOS only after SOS", CHECKMARK(channel->getEosOnlyAfterSos()));
-		eosAfterSosItem->channel = channel;
-		menu->addChild(eosAfterSosItem);
+		menu->addChild(createCheckMenuItem("EOC on last cycle only", "",
+			[=]() {return channel->getEocOnLastOnly();},
+			[=]() {channel->toggleEocOnLastOnly();}
+		));	
+		menu->addChild(createCheckMenuItem("EOC excluded from OR", "",
+			[=]() {return channel->isExcludeEocFromOr();},
+			[=]() {channel->toggleExcludeEocFromOr();}
+		));	
+
+		menu->addChild(createCheckMenuItem("EOS only after SOS", "",
+			[=]() {return channel->getEosOnlyAfterSos();},
+			[=]() {channel->toggleEosOnlyAfterSos();}
+		));	
 
 		return menu;
 	}
 };
-#endif
 
-struct LfoGateResettingItem : MenuItem {
-	Channel* channel;
-
-	void onAction(const event::Action &e) override {
-		channel->toggleGateRestart();
-	}
-};
-
-
-#ifdef SM_PRO
-struct PlayheadNeverJumpsItem : MenuItem {
-	Channel* channel;
-
-	void onAction(const event::Action &e) override {
-		channel->togglePlayheadNeverJumps();
-	}
-};
 struct Allow1BarLocksItem : MenuItem {
 	Channel* channel;
 	bool* running;
-
-	struct Allow1BarLocksSubItem : MenuItem {
-		Channel* channel;
-		bool shouldBe = true;
-
-		void onAction(const event::Action &e) override {
-			if (channel->isAllow1BarLocks() != shouldBe) {
-				channel->toggleAllow1BarLocks();
-			}
-		}
-	};
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
 		if (*running) {
-			MenuLabel *disabledLabel = new MenuLabel();
-			disabledLabel->text = "[Turn off run]";
-			menu->addChild(disabledLabel);
+			menu->addChild(createMenuLabel("[Turn off run]"));
 		}			
-		
-		Allow1BarLocksSubItem *allow1barItem = createMenuItem<Allow1BarLocksSubItem>("Quantise to max 1 bar", CHECKMARK(channel->isAllow1BarLocks()));
-		allow1barItem->channel = channel;
-		allow1barItem->disabled = *running;
-		menu->addChild(allow1barItem);
-		
-		Allow1BarLocksSubItem *disallow1barItem = createMenuItem<Allow1BarLocksSubItem>("Quantise to cycle length", CHECKMARK(!channel->isAllow1BarLocks()));
-		disallow1barItem->channel = channel;
-		disallow1barItem->shouldBe = false;
-		disallow1barItem->disabled = *running;
-		menu->addChild(disallow1barItem);
+
+		menu->addChild(createCheckMenuItem("Quantise to max 1 bar", "",
+			[=]() {return channel->isAllow1BarLocks();},
+			[=]() {if (!channel->isAllow1BarLocks()) channel->toggleAllow1BarLocks();},
+			*running
+		));	
+		menu->addChild(createCheckMenuItem("Quantise to cycle length", "",
+			[=]() {return !channel->isAllow1BarLocks();},
+			[=]() {if (channel->isAllow1BarLocks()) channel->toggleAllow1BarLocks();},
+			*running
+		));	
 		
 		return menu;
 	}
@@ -485,32 +390,21 @@ struct Allow1BarLocksItem : MenuItem {
 struct ShowTooltipVoltsAsItem : MenuItem {
 	Channel* channel;
 	
-	struct ShowTooltipVoltsAsSubItem : MenuItem {
-		Channel* channel;
-		int8_t setVal;
-
-		void onAction(const event::Action &e) override {
-			channel->setShowTooltipVoltsAs(setVal);
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		
-		ShowTooltipVoltsAsSubItem *showT1Item = createMenuItem<ShowTooltipVoltsAsSubItem>("Volts (default)", CHECKMARK(channel->getShowTooltipVoltsAs() == 1));
-		showT1Item->channel = channel;
-		showT1Item->setVal = 1;
-		menu->addChild(showT1Item);
 
-		ShowTooltipVoltsAsSubItem *showT0Item = createMenuItem<ShowTooltipVoltsAsSubItem>("Frequency", CHECKMARK(channel->getShowTooltipVoltsAs() == 0));
-		showT0Item->channel = channel;
-		showT0Item->setVal = 0;
-		menu->addChild(showT0Item);
-
-		ShowTooltipVoltsAsSubItem *showT2Item = createMenuItem<ShowTooltipVoltsAsSubItem>("Note", CHECKMARK(channel->getShowTooltipVoltsAs() == 2));
-		showT2Item->channel = channel;
-		showT2Item->setVal = 2;
-		menu->addChild(showT2Item);
+		menu->addChild(createCheckMenuItem("Volts (default)", "",
+			[=]() {return channel->getShowTooltipVoltsAs() == 1;},
+			[=]() {channel->setShowTooltipVoltsAs(1);}
+		));	
+		menu->addChild(createCheckMenuItem("Frequency", "",
+			[=]() {return channel->getShowTooltipVoltsAs() == 0;},
+			[=]() {channel->setShowTooltipVoltsAs(0);}
+		));	
+		menu->addChild(createCheckMenuItem("Note", "",
+			[=]() {return channel->getShowTooltipVoltsAs() == 2;},
+			[=]() {channel->setShowTooltipVoltsAs(2);}
+		));	
 
 		return menu;
 	}
@@ -519,25 +413,16 @@ struct ShowTooltipVoltsAsItem : MenuItem {
 struct DecoupledFirstAndLastItem : MenuItem {
 	Channel* channel;
 
-	struct DecoupledFirstAndLastSubItem : MenuItem {
-		Channel* channel;
-
-		void onAction(const event::Action &e) override {
-			channel->toggleDecoupledFirstAndLast();
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		
-		DecoupledFirstAndLastSubItem *dec0Item = createMenuItem<DecoupledFirstAndLastSubItem>("Coupled (default)", CHECKMARK(!channel->isDecoupledFirstAndLast()));
-		dec0Item->channel = channel;
-		menu->addChild(dec0Item);
-		
-		DecoupledFirstAndLastSubItem *dec1Item = createMenuItem<DecoupledFirstAndLastSubItem>("Decoupled", CHECKMARK(channel->isDecoupledFirstAndLast()));
-		dec1Item->channel = channel;
-		menu->addChild(dec1Item);
-		
+		menu->addChild(createCheckMenuItem("Coupled (default)", "",
+			[=]() {return !channel->isDecoupledFirstAndLast();},
+			[=]() {channel->toggleDecoupledFirstAndLast();}
+		));	
+		menu->addChild(createCheckMenuItem("Decoupled", "",
+			[=]() {return channel->isDecoupledFirstAndLast();},
+			[=]() {channel->toggleDecoupledFirstAndLast();}
+		));	
 		return menu;
 	}
 };
@@ -546,24 +431,15 @@ struct DecoupledFirstAndLastItem : MenuItem {
 struct PolySumItem : MenuItem {
 	Channel* channel;
 
-	struct PolySumSubItem : MenuItem {
-		Channel* channel;
-		int8_t setVal;
-		void onAction(const event::Action &e) override {
-			channel->channelSettings.cc4[2] = setVal;
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
-		for (int i = 0; i < NUM_POLY_MODES; i++) {
-			PolySumSubItem *polyMdItem = createMenuItem<PolySumSubItem>(polyModeNames[i], CHECKMARK(channel->getPolyMode() == i));
-			polyMdItem->channel = channel;
-			polyMdItem->setVal = i;
-			menu->addChild(polyMdItem);
+		for (int i = 0; i < NUM_POLY_MODES; i++) {			
+			menu->addChild(createCheckMenuItem(polyModeNames[i], "",
+				[=]() {return channel->getPolyMode() == i;},
+				[=]() {channel->channelSettings.cc4[2] = i;}
+			));	
 		}
-		
 		return menu;
 	}
 };
@@ -594,7 +470,6 @@ struct CopyChanelItem : MenuItem {
 
 struct PasteChanelItem : MenuItem {
 	Channel* channelDestination;
-	// json_t** channelCopyPasteCache;
 
 	void onAction(const event::Action &e) override {
 		// old version with json memory
@@ -676,31 +551,23 @@ struct ScopeVcaPolySelItem : MenuItem {
 	int8_t *srcScopeVcaPolySelItem;
 	Channel* channel;
 
-	struct ScopeVcaPolySelSubItem : MenuItem {
-		int8_t *srcScopeVcaPolySelItem;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			*srcScopeVcaPolySelItem = setVal;
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
 		int maxChan = std::max(channel->getVcaPostSize(), channel->getVcaPreSize());
 		
-		ScopeVcaPolySelSubItem *polySelStereoItem = createMenuItem<ScopeVcaPolySelSubItem>("Poly-chans 1+2", CHECKMARK(*srcScopeVcaPolySelItem == 16));
-		polySelStereoItem->srcScopeVcaPolySelItem = srcScopeVcaPolySelItem;
-		polySelStereoItem->setVal = 16;
-		polySelStereoItem->disabled = maxChan <= 1;
-		menu->addChild(polySelStereoItem);
+		menu->addChild(createCheckMenuItem("Poly-chans 1+2", "",
+			[=]() {return *srcScopeVcaPolySelItem == 16;},
+			[=]() {*srcScopeVcaPolySelItem = 16;},
+			maxChan <= 1
+		));	
 		
 		for (int i = 0; i < 16; i++) {
-			ScopeVcaPolySelSubItem *polySelItem = createMenuItem<ScopeVcaPolySelSubItem>(string::f("Poly-chan %i", i + 1), CHECKMARK(*srcScopeVcaPolySelItem == i));
-			polySelItem->srcScopeVcaPolySelItem = srcScopeVcaPolySelItem;
-			polySelItem->setVal = i;
-			polySelItem->disabled = i >= maxChan;
-			menu->addChild(polySelItem);
+			menu->addChild(createCheckMenuItem(string::f("Poly-chan %i", i + 1), "",
+				[=]() {return *srcScopeVcaPolySelItem == i;},
+				[=]() {*srcScopeVcaPolySelItem = i;},
+				i >= maxChan
+			));
 		}
 
 		return menu;
@@ -711,24 +578,14 @@ struct ScopeVcaPolySelItem : MenuItem {
 struct ChanColorItem : MenuItem {
 	int8_t *srcChanColor;
 
-	struct ChanColorSubItem : MenuItem {
-		int8_t *srcChanColor;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			*srcChanColor = setVal;
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		
 		for (int i = 0; i < numChanColors; i++) {
-			ChanColorSubItem *chanColItem = createMenuItem<ChanColorSubItem>(chanColorNames[i], CHECKMARK(*srcChanColor == i));
-			chanColItem->srcChanColor = srcChanColor;
-			chanColItem->setVal = i;
-			menu->addChild(chanColItem);
+			menu->addChild(createCheckMenuItem(chanColorNames[i], "",
+				[=]() {return *srcChanColor == i;},
+				[=]() {*srcChanColor = i;}
+			));	
 		}
-		
 		return menu;
 	}
 };
@@ -766,41 +623,33 @@ struct ChanNameField : ui::TextField {
 	}
 };
 
-struct ChannelResetOnSustainItem : MenuItem {
-	Channel* channel;
-
-	void onAction(const event::Action &e) override {
-		channel->toggleChannelResetOnSustain();
-	}
-};
-
-
 void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, bool* running) {
 	ChanNameField* chanNameField = new ChanNameField;
 	chanNameField->box.size.x = 100;
 	chanNameField->setChannel(&(channels[chan]));
 	menu->addChild(chanNameField);
 
-	MenuLabel *settingsLabel = new MenuLabel();
-	settingsLabel->text = "Settings";
-	menu->addChild(settingsLabel);
+	menu->addChild(createMenuLabel("Settings"));
 
 	GainAdjustVcaSlider *vcaGainAdjustSlider = new GainAdjustVcaSlider(&(channels[chan]), -20.0f, 20.0f);
 	vcaGainAdjustSlider->box.size.x = 200.0f;
 	menu->addChild(vcaGainAdjustSlider);
 
-	RetrigItem *retrgItem = createMenuItem<RetrigItem>("T/G, SC - Retrigger", CHECKMARK(channels[chan].getAllowRetrig()));
-	retrgItem->channel = &(channels[chan]);
-	menu->addChild(retrgItem);
+	menu->addChild(createCheckMenuItem("T/G, SC - Retrigger", "",
+		[=]() {return channels[chan].getAllowRetrig();},
+		[=]() {channels[chan].toggleAllowRetrig();}
+	));	
 
-	LfoGateResettingItem *lfoGateResetItem = createMenuItem<LfoGateResettingItem>("CTRL - Restart", CHECKMARK(channels[chan].getGateRestart()));
-	lfoGateResetItem->channel = &(channels[chan]);
-	menu->addChild(lfoGateResetItem);
+	menu->addChild(createCheckMenuItem("CTRL - Restart", "",
+		[=]() {return channels[chan].getGateRestart();},
+		[=]() {channels[chan].toggleGateRestart();}
+	));	
 
 	#ifdef SM_PRO
-	PlayheadNeverJumpsItem *playNoJumpItem = createMenuItem<PlayheadNeverJumpsItem>("Playhead never jumps", CHECKMARK(channels[chan].getPlayheadNeverJumps()));
-	playNoJumpItem->channel = &(channels[chan]);
-	menu->addChild(playNoJumpItem);
+	menu->addChild(createCheckMenuItem("Playhead never jumps", "",
+		[=]() {return channels[chan].getPlayheadNeverJumps();},
+		[=]() {channels[chan].togglePlayheadNeverJumps();}
+	));	
 
 	Allow1BarLocksItem *allow1barItem = createMenuItem<Allow1BarLocksItem>("Sync lock quantising", RIGHT_ARROW);
 	allow1barItem->channel = &(channels[chan]);
@@ -813,9 +662,10 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	decFlItem->channel = &(channels[chan]);
 	menu->addChild(decFlItem);
 
-	ChannelResetOnSustainItem *rstSusItem = createMenuItem<ChannelResetOnSustainItem>("Use sustain as channel reset", CHECKMARK(channels[chan].isChannelResetOnSustain()));
-	rstSusItem->channel = &(channels[chan]);
-	menu->addChild(rstSusItem);
+	menu->addChild(createCheckMenuItem("Use sustain as channel reset", "",
+		[=]() {return channels[chan].isChannelResetOnSustain();},
+		[=]() {channels[chan].toggleChannelResetOnSustain();}
+	));	
 
 	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", RIGHT_ARROW);
 	sumSteItem->channel = &(channels[chan]);
@@ -851,9 +701,7 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 
 	menu->addChild(new MenuSeparator());
 
-	MenuLabel *actionsLabel = new MenuLabel();
-	actionsLabel->text = "Actions";
-	menu->addChild(actionsLabel);
+	menu->addChild(createMenuLabel("Actions"));
 
 	CopyChanelItem *copyChanItem = createMenuItem<CopyChanelItem>("Copy channel", "");
 	copyChanItem->channelSource = &(channels[chan]);
@@ -1117,28 +965,13 @@ struct SensitivitySlider : ui::Slider {
 	}
 };
 
-struct SidechainUseVcaItem : MenuItem {
-	Channel* channel;
-
-	void onAction(const event::Action &e) override {
-		channel->toggleSidechainUseVca();
-	}
-};
-
-struct SidechainLowTrig : MenuItem {
-	Channel* channel;
-
-	void onAction(const event::Action &e) override {
-		channel->toggleSidechainLowTrig();
-	}
-};
-
 void createSidechainSettingsMenu(Channel* channel) {
 	ui::Menu *menu = createMenu();
 
-	SidechainUseVcaItem *scVcaItem = createMenuItem<SidechainUseVcaItem>("Use VCA input", CHECKMARK(channel->isSidechainUseVca()));
-	scVcaItem->channel = channel;
-	menu->addChild(scVcaItem);
+	menu->addChild(createCheckMenuItem("Use VCA input", "",
+		[=]() {return channel->isSidechainUseVca();},
+		[=]() {channel->toggleSidechainUseVca();}
+	));	
 
 	GainAdjustScSlider *scGainAdjustSlider = new GainAdjustScSlider(channel, -20.0f, 20.0f);
 	scGainAdjustSlider->box.size.x = 200.0f;
@@ -1155,9 +988,10 @@ void createSidechainSettingsMenu(Channel* channel) {
 
 	menu->addChild(new MenuSeparator());
 
-	SidechainLowTrig *scLowTrigItem = createMenuItem<SidechainLowTrig>("Low range trigger level", CHECKMARK(channel->isSidechainLowTrig()));
-	scLowTrigItem->channel = channel;
-	menu->addChild(scLowTrigItem);
+	menu->addChild(createCheckMenuItem("Low range trigger level", "",
+		[=]() {return channel->isSidechainLowTrig();},
+		[=]() {channel->toggleSidechainLowTrig();}
+	));	
 
 	HysteresisSlider *hysteresisSlider = new HysteresisSlider(channel);
 	hysteresisSlider->box.size.x = 200.0f;
@@ -1329,14 +1163,6 @@ struct RandomBoolSubItem : MenuItem {
 	}
 };
 
-struct RandomizeSubItem : MenuItem {
-	Channel* channel;
-	
-	void onAction(const event::Action &e) override {
-		channel->randomizeShape(true);
-	}
-};
-
 
 struct RandomNoteItem : MenuItem {
 	RandomSettings* randomSettings;
@@ -1367,7 +1193,7 @@ struct RandomNoteItem : MenuItem {
 			else {
 				noteText.insert(0, "- ");
 			}
-			RandomNoteSubItem *rndNote0Item = createMenuItem<RandomNoteSubItem>(noteText, CHECKMARK(randomSettings->getScaleKey(i)));
+			RandomNoteSubItem *rndNote0Item = createMenuItem<RandomNoteSubItem>(noteText, "");// rightText set in RandomNoteSubItem
 			rndNote0Item->randomSettings = randomSettings;
 			rndNote0Item->key = i;
 			menu->addChild(rndNote0Item);	
@@ -1380,16 +1206,14 @@ struct RandomNoteItem : MenuItem {
 
 void addRandomMenu(Menu* menu, Channel* channel) {
 	RandomSettings* randomSettings = channel->getRandomSettings();
-	
-	RandomizeSubItem *radizeItem = createMenuItem<RandomizeSubItem>("Randomise", "");
-	radizeItem->channel = channel;
-	menu->addChild(radizeItem);
+		
+	menu->addChild(createMenuItem("Randomise", "",
+		[=]() {channel->randomizeShape(true);}
+	));
 
 	menu->addChild(new MenuSeparator());
 	
-	MenuLabel *rndsetLabel = new MenuLabel();
-	rndsetLabel->text = "Randomization settings:";
-	menu->addChild(rndsetLabel);
+	menu->addChild(createMenuLabel("Randomization settings:"));
 	
 
 	NumNodeRangeSlider *nodeRange1Slider = new NumNodeRangeSlider(&(randomSettings->numNodesMin), &(randomSettings->numNodesMax), RandomSettings::RAND_NODES_MIN_DEF, true);
@@ -1412,16 +1236,16 @@ void addRandomMenu(Menu* menu, Channel* channel) {
 	maxVSlider->box.size.x = 200.0f;
 	menu->addChild(maxVSlider);
 	
-	RandomBoolSubItem *steppedItem = createMenuItem<RandomBoolSubItem>("Stepped", CHECKMARK(randomSettings->stepped != 0));
+	RandomBoolSubItem *steppedItem = createMenuItem<RandomBoolSubItem>("Stepped", "");// rightText set in RandomBoolSubItem
 	steppedItem->setting = &randomSettings->stepped;
 	steppedItem->ctrlMaxPtr = &randomSettings->ctrlMax;
 	menu->addChild(steppedItem);
 	
-	RandomBoolSubItem *gridItem = createMenuItem<RandomBoolSubItem>("Lock to Grid-X", CHECKMARK(randomSettings->grid != 0));
+	RandomBoolSubItem *gridItem = createMenuItem<RandomBoolSubItem>("Lock to Grid-X", "");// rightText set in RandomBoolSubItem
 	gridItem->setting = &randomSettings->grid;
 	menu->addChild(gridItem);
 	
-	RandomBoolSubItem *quantItem = createMenuItem<RandomBoolSubItem>("Quantized", CHECKMARK(randomSettings->quantized != 0));
+	RandomBoolSubItem *quantItem = createMenuItem<RandomBoolSubItem>("Quantized", "");// rightText set in RandomBoolSubItem
 	quantItem->setting = &randomSettings->quantized;
 	menu->addChild(quantItem);
 	
@@ -1465,22 +1289,12 @@ struct SnapValueField : ui::TextField {
 	}
 };
 
-
-struct SnapSubItem : MenuItem {
-	Channel* channel;
-	int8_t setVal;
-	void onAction(const event::Action &e) override {
-		channel->setGridX(setVal, true);
-	}
-};
-
-
 void addGridXMenu(Menu* menu, Channel* channel) {
 	for (int p = 0; p < NUM_SNAP_OPTIONS; p++) {
-		SnapSubItem *snapChoice = createMenuItem<SnapSubItem>(string::f("%i", snapValues[p]), CHECKMARK(channel->getGridX() == snapValues[p]));
-		snapChoice->channel = channel;
-		snapChoice->setVal = snapValues[p];
-		menu->addChild(snapChoice);
+		menu->addChild(createCheckMenuItem(string::f("%i", snapValues[p]), "",
+			[=]() {return channel->getGridX() == snapValues[p];},
+			[=]() {channel->setGridX(snapValues[p], true);}
+		));	
 	}
 
 	SnapValueField* snapValueField = new SnapValueField;
@@ -1491,23 +1305,15 @@ void addGridXMenu(Menu* menu, Channel* channel) {
 
 // Range menu item
 
-struct RangeSubItem : MenuItem {
-	Channel* channel;
-	int8_t setVal;
-	void onAction(const event::Action &e) override {
-		channel->setRangeIndex(setVal, true);
-	}
-};
-
 void addRangeMenu(Menu* menu, Channel* channel) {
 	for (int p = 0; p < NUM_RANGE_OPTIONS; p++) {
 		if (p == 5) {
 			menu->addChild(new MenuSeparator());
 		}
-		RangeSubItem *rangeChoice = createMenuItem<RangeSubItem>(channel->getRangeText(p), CHECKMARK(channel->getRangeIndex() == p));
-		rangeChoice->channel = channel;
-		rangeChoice->setVal = p;
-		menu->addChild(rangeChoice);
+		menu->addChild(createCheckMenuItem(channel->getRangeText(p), "",
+			[=]() {return channel->getRangeIndex() == p;},
+			[=]() {channel->setRangeIndex(p, true);}
+		));	
 	}
 }
 
@@ -1517,90 +1323,77 @@ void addRangeMenu(Menu* menu, Channel* channel) {
 
 // Trig mode sub item
 
-struct TrigModeSubItem : MenuItem {
-	Channel* channel;
-	int8_t setVal;
-	void onAction(const event::Action &e) override {
-		int oldTrig = channel->getTrigMode();
-		if (setVal != oldTrig) {
-			channel->setTrigMode(setVal);
-			// setVal is newTrigMode
-			// Push TrigModeChange history action
-			TrigModeChange* h = new TrigModeChange;
-			h->channelSrc = channel;
-			h->oldTrigMode = oldTrig;
-			h->newTrigMode = setVal;
-			APP->history->push(h);
-		}
+void myActionTm(Channel* channel, int8_t setVal) {// action for trig mode menu
+	int oldTrig = channel->getTrigMode();
+	if (setVal != oldTrig) {
+		channel->setTrigMode(setVal);
+		// setVal is newTrigMode
+		// Push TrigModeChange history action
+		TrigModeChange* h = new TrigModeChange;
+		h->channelSrc = channel;
+		h->oldTrigMode = oldTrig;
+		h->newTrigMode = setVal;
+		APP->history->push(h);
 	}
-};
+}
 
 void addTrigModeMenu(Menu* menu, Channel* channel) {
 	for (int t = 0; t < NUM_TRIG_MODES; t++) {
-		TrigModeSubItem *trigModeChoice = createMenuItem<TrigModeSubItem>(trigModeNamesLong[t], CHECKMARK(channel->getTrigMode() == t));
-		trigModeChoice->channel = channel;
-		trigModeChoice->setVal = t;
-		menu->addChild(trigModeChoice);
+		menu->addChild(createCheckMenuItem(trigModeNamesLong[t], "",
+			[=]() {return channel->getTrigMode() == t;},
+			[=]() {myActionTm(channel, t);}
+		));	
 	}
 }
 
 
 // Play mode menu item
 
-struct PlayModeSubItem : MenuItem {
-	Channel* channel;
-	int8_t setVal;
-	void onAction(const event::Action &e) override {
-		int oldPlay = channel->getPlayMode();
-		if (setVal != oldPlay) {
-			channel->setPlayMode(setVal);
-			// setVal is newPlayMode
-			// Push PlayModeChange history action
-			PlayModeChange* h = new PlayModeChange;
-			h->channelSrc = channel;
-			h->oldPlayMode = oldPlay;
-			h->newPlayMode = setVal;
-			APP->history->push(h);
-		}
+void myActionPm(Channel* channel, int8_t setVal) {// action for play mode menu when trig mode is all except CV
+	int oldPlay = channel->getPlayMode();
+	if (setVal != oldPlay) {
+		channel->setPlayMode(setVal);
+		// setVal is newPlayMode
+		// Push PlayModeChange history action
+		PlayModeChange* h = new PlayModeChange;
+		h->channelSrc = channel;
+		h->oldPlayMode = oldPlay;
+		h->newPlayMode = setVal;
+		APP->history->push(h);
 	}
-};
+}
 
-struct BipolCvModeSubItem : MenuItem {
-	Channel* channel;
-	int8_t setVal;
-	void onAction(const event::Action &e) override {
-		int oldBipolCvMode = channel->getBipolCvMode();
-		if (setVal != oldBipolCvMode) {
-			channel->setBipolCvMode(setVal);
-			// setVal is newPlayMode
-			// Push BipolCvModeChange history action
-			BipolCvModeChange* h = new BipolCvModeChange;
-			h->channelSrc = channel;
-			h->oldBipolCvMode = oldBipolCvMode;
-			h->newBipolCvMode = setVal;
-			APP->history->push(h);
-		}
+void myActionPmTmCv(Channel* channel, int8_t setVal) {// action for play mode menu when trig mode is CV
+	int oldBipolCvMode = channel->getBipolCvMode();
+	if (setVal != oldBipolCvMode) {
+		channel->setBipolCvMode(setVal);
+		// setVal is newPlayMode
+		// Push BipolCvModeChange history action
+		BipolCvModeChange* h = new BipolCvModeChange;
+		h->channelSrc = channel;
+		h->oldBipolCvMode = oldBipolCvMode;
+		h->newBipolCvMode = setVal;
+		APP->history->push(h);
 	}
-};
+}
 
 void addPlayModeMenu(Menu* menu, Channel* channel) {
 	if (channel->getTrigMode() == TM_CV) {
-		BipolCvModeSubItem *bipol0ModeChoice = createMenuItem<BipolCvModeSubItem>("Unipolar T/G in", CHECKMARK(channel->getBipolCvMode() == 0));
-		bipol0ModeChoice->channel = channel;
-		bipol0ModeChoice->setVal = 0;
-		menu->addChild(bipol0ModeChoice);
-		
-		BipolCvModeSubItem *bipol1ModeChoice = createMenuItem<BipolCvModeSubItem>("Bipolar T/G in", CHECKMARK(channel->getBipolCvMode() == 1));
-		bipol1ModeChoice->channel = channel;
-		bipol1ModeChoice->setVal = 1;
-		menu->addChild(bipol1ModeChoice);
+		menu->addChild(createCheckMenuItem("Unipolar T/G in", "",
+			[=]() {return channel->getBipolCvMode() == 0;},
+			[=]() {myActionPmTmCv(channel, 0);}
+		));	
+		menu->addChild(createCheckMenuItem("Bipolar T/G in", "",
+			[=]() {return channel->getBipolCvMode() == 1;},
+			[=]() {myActionPmTmCv(channel, 1);}
+		));	
 	}
 	else {
 		for (int p = 0; p < NUM_PLAY_MODES; p++) {
-			PlayModeSubItem *playModeChoice = createMenuItem<PlayModeSubItem>(playModeNamesLong[p], CHECKMARK(channel->getPlayMode() == p));
-			playModeChoice->channel = channel;
-			playModeChoice->setVal = p;
-			menu->addChild(playModeChoice);
+			menu->addChild(createCheckMenuItem(playModeNamesLong[p], "",
+				[=]() {return channel->getPlayMode() == p;},
+				[=]() {myActionPm(channel, p);}
+			));	
 		}
 	}
 }
@@ -1610,11 +1403,13 @@ void addPlayModeMenu(Menu* menu, Channel* channel) {
 // Length menu
 
 #ifdef SM_PRO
-struct SyncRatioSubItem : MenuItem {
+struct SyncRatioSectionItem : MenuItem {
+	Channel* channel;
 	Param* lengthSyncParamSrc;
-	int setVal;
-	
-	void onAction(const event::Action &e) override {
+	int startRatio;
+	int endRatio;
+
+	void myAction(int setVal) {
 		// Push SyncLengthChange history action
 		SyncLengthChange* h = new SyncLengthChange;
 		h->lengthSyncParamSrc = lengthSyncParamSrc;
@@ -1625,73 +1420,36 @@ struct SyncRatioSubItem : MenuItem {
 		h->newSyncLength = lengthSyncParamSrc->getValue();
 		APP->history->push(h);
 	}
-};
-
-void addSyncRatioMenu(Menu* menu, Param* lengthSyncParamSrc, Channel* channel) {
-	int i = 0;
-	for (int s = 0; s < NUM_SECTIONS; s++) {
-		if (s != 0) {
-			menu->addChild(new MenuSeparator());
-		}
-		MenuLabel *sectionLabel = new MenuLabel();
-		sectionLabel->text = sectionNames[s];
-		menu->addChild(sectionLabel);
-		for (int r = 0; r < numRatiosPerSection[s]; r++) {
-			int lengthSyncIndex = channel->getLengthSync();
-			std::string longNameI = multDivTable[i].longName;
-			int lengthSyncIndexWithCv = channel->getLengthSyncWithCv();
-			if (lengthSyncIndexWithCv != lengthSyncIndex && i == lengthSyncIndexWithCv) {
-				longNameI.append(" *cv");
-			}							
-			SyncRatioSubItem *ratioChoice = createMenuItem<SyncRatioSubItem>(longNameI, CHECKMARK(lengthSyncIndex == i));
-			ratioChoice->lengthSyncParamSrc = lengthSyncParamSrc;
-			ratioChoice->setVal = i;
-			ratioChoice->disabled = channel->inadmissibleLengthSync(i);
-			menu->addChild(ratioChoice);
-			i++;
-		}
-	}
-}
-
-
-
-
-struct SyncRatioSectionItem : MenuItem {
-	Channel* channel;
-	Param* lengthSyncParamSrc;
-	int startRatio;
-	int endRatio;
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
-		for (int i = startRatio; i < endRatio; i++) {
-			int lengthSyncIndex = channel->getLengthSync();
-			std::string longNameI = multDivTable[i].longName;
-			int lengthSyncIndexWithCv = channel->getLengthSyncWithCv();
-			if (lengthSyncIndexWithCv != lengthSyncIndex && i == lengthSyncIndexWithCv) {
-				longNameI.append(" *cv");
-			}							
-			SyncRatioSubItem *ratioChoice = createMenuItem<SyncRatioSubItem>(longNameI, CHECKMARK(lengthSyncIndex == i));
-			ratioChoice->lengthSyncParamSrc = lengthSyncParamSrc;
-			ratioChoice->setVal = i;
-			ratioChoice->disabled = channel->inadmissibleLengthSync(i);
-			menu->addChild(ratioChoice);
+		for (int i = startRatio; i < endRatio; i++) {		
+			menu->addChild(createCheckMenuItem(multDivTable[i].longName, "",
+				[=]() {return channel->getLengthSync() == i;},
+				[=]() {myAction(i);},
+				channel->inadmissibleLengthSync(i)
+			));	
 		}
 		
 		return menu;
+	}
+	
+	void step() override {
+		std::string _rightText = RIGHT_ARROW;
+		if (channel->getLengthSync() >= startRatio && channel->getLengthSync() < endRatio) {
+			_rightText.insert(0, " ");
+			_rightText.insert(0, CHECKMARK_STRING);
+		}
+		rightText = _rightText;
+		MenuItem::step();
 	}
 };
 
 void addSyncRatioMenuTwoLevel(Menu* menu, Param* lengthSyncParamSrc, Channel* channel) {
 	int i = 0;
 	for (int s = 0; s < NUM_SECTIONS; s++) {
-		std::string rightText = RIGHT_ARROW;
-		if (channel->getLengthSync() >= i && channel->getLengthSync() < i + numRatiosPerSection[s]) {
-			rightText.insert(0, " ");
-			rightText.insert(0, CHECKMARK(true));
-		}
-		SyncRatioSectionItem *srsecItem = createMenuItem<SyncRatioSectionItem>(sectionNames[s], rightText);
+		SyncRatioSectionItem *srsecItem = createMenuItem<SyncRatioSectionItem>(sectionNames[s], RIGHT_ARROW);
 		srsecItem->channel = channel;
 		srsecItem->lengthSyncParamSrc = lengthSyncParamSrc;
 		srsecItem->startRatio = i;
@@ -1706,18 +1464,8 @@ void addSyncRatioMenuTwoLevel(Menu* menu, Param* lengthSyncParamSrc, Channel* ch
 struct ShowULengthAsItem : MenuItem {
 	Channel* channel;
 	
-	struct ShowULengthAsSubItem : MenuItem {
-		Channel* channel;
-		int8_t setVal;
-
-		void onAction(const event::Action &e) override {
-			channel->setShowUnsyncLengthAs(setVal);
-		}
-	};
-
 	Menu *createChildMenu() override {
-		
-		std::string showULengthTypes[3] = {
+		const std::string showULengthTypes[3] = {
 			"Time (default)", 
 			"Frequency", 
 			"Note"
@@ -1726,10 +1474,10 @@ struct ShowULengthAsItem : MenuItem {
 		Menu *menu = new Menu;
 		
 		for (int i = 0; i < 3; i++) {			
-			ShowULengthAsSubItem *showU0Item = createMenuItem<ShowULengthAsSubItem>(showULengthTypes[i], CHECKMARK(channel->getShowUnsyncedLengthAs() == i));
-			showU0Item->channel = channel;
-			showU0Item->setVal = i;
-			menu->addChild(showU0Item);
+			menu->addChild(createCheckMenuItem(showULengthTypes[i], "",
+				[=]() {return channel->getShowUnsyncedLengthAs() == i;},
+				[=]() {channel->setShowUnsyncLengthAs(i);}
+			));	
 		}		
 		return menu;
 	}
@@ -1803,9 +1551,7 @@ void addUnsyncRatioMenu(Menu* menu, Param* lengthUnsyncParamSrc, Channel* channe
 
 	menu->addChild(new MenuSeparator());
 
-	MenuLabel *freqLabel = new MenuLabel();
-	freqLabel->text = "Length (Hz) or note (ex. C#4)";
-	menu->addChild(freqLabel);
+	menu->addChild(createMenuLabel("Length (Hz) or note (ex. C#4)"));
 	
 	UnsyncedLengthValueField* unsyncLengthField = new UnsyncedLengthValueField;
 	unsyncLengthField->box.size.x = 100;

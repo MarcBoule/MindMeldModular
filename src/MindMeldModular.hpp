@@ -186,24 +186,14 @@ struct HoldDetect {
 struct DispTwoColorItem : MenuItem {
 	int8_t *srcColor;
 
-	struct DispColorSubItem : MenuItem {
-		int8_t *srcColor;
-		int setVal;
-		void onAction(const event::Action &e) override {
-			*srcColor = setVal;
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-		
 		for (int i = 0; i < 2; i++) {// only yellow and light gray wanted in EqMaster
-			DispColorSubItem *dispColItem = createMenuItem<DispColorSubItem>(dispColorNames[i], CHECKMARK(*srcColor == i));
-			dispColItem->srcColor = srcColor;
-			dispColItem->setVal = i;
-			menu->addChild(dispColItem);
+			menu->addChild(createCheckMenuItem(dispColorNames[i], "",
+				[=]() {return *srcColor == i;},
+				[=]() {*srcColor = i;}
+			));
 		}
-		
 		return menu;
 	}
 };
@@ -214,26 +204,16 @@ struct DispTwoColorItem : MenuItem {
 struct PolyStereoItem : MenuItem {
 	int8_t *polyStereoSrc;
 
-	struct PolyStereoSubItem : MenuItem {
-		int8_t *polyStereoSrc;
-		int setVal = 0;
-		void onAction(const event::Action &e) override {
-			*polyStereoSrc = setVal;
-		}
-	};
-
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-
-		PolyStereoSubItem *ps0Item = createMenuItem<PolyStereoSubItem>("Sum each input (L, R)", CHECKMARK(*polyStereoSrc == 0));
-		ps0Item->polyStereoSrc = polyStereoSrc;
-		menu->addChild(ps0Item);
-
-		PolyStereoSubItem *ps1Item = createMenuItem<PolyStereoSubItem>("Sum to stereo (L only)", CHECKMARK(*polyStereoSrc == 1));
-		ps1Item->polyStereoSrc = polyStereoSrc;
-		ps1Item->setVal = 1;
-		menu->addChild(ps1Item);
-
+		menu->addChild(createCheckMenuItem("Sum each input (L, R)", "",
+			[=]() {return *polyStereoSrc == 0;},
+			[=]() {*polyStereoSrc = 0;}
+		));
+		menu->addChild(createCheckMenuItem("Sum to stereo (L only)", "",
+			[=]() {return *polyStereoSrc == 1;},
+			[=]() {*polyStereoSrc = 1;}
+		));
 		return menu;
 	}
 };

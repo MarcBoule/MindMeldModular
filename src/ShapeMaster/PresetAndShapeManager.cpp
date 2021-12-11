@@ -399,21 +399,12 @@ struct LoadInitPresetOrShapeItem : MenuItem {
 	}
 };
 
-struct DeferredItem : MenuItem {
-	int8_t *srcMiscSettingDeferral;
-	void onAction(const event::Action &e) override {
-		*srcMiscSettingDeferral ^= 0x1;
-	}
-};
-
 
 void PresetAndShapeManager::createPresetOrShapeMenu(Channel* channel, bool isPreset) {
 	ui::Menu *menu = createMenu();
 	std::string dir;
 
-	MenuLabel *titleLabel = new MenuLabel();
-	titleLabel->text = (isPreset ? "Channel presets" : "Shapes");
-	menu->addChild(titleLabel);
+	menu->addChild(createMenuLabel(isPreset ? "Channel presets" : "Shapes"));
 		
 	menu->addChild(new MenuSeparator());
 
@@ -430,16 +421,16 @@ void PresetAndShapeManager::createPresetOrShapeMenu(Channel* channel, bool isPre
 	appendDirMenu(userPath, menu, channel, isPreset);
 	
 	// Defer until EOC
-	DeferredItem *deferredItem = createMenuItem<DeferredItem>("Defer prev/next until EOC", CHECKMARK(miscSettings3->cc4[isPreset ? 0 : 1] != 0));
-	deferredItem->srcMiscSettingDeferral = &(miscSettings3->cc4[isPreset ? 0 : 1]);
-	menu->addChild(deferredItem);
+	int8_t *srcMiscSettingDeferral = &(miscSettings3->cc4[isPreset ? 0 : 1]);
+	menu->addChild(createCheckMenuItem("Defer prev/next until EOC", "",
+		[=]() {return miscSettings3->cc4[isPreset ? 0 : 1] != 0;},
+		[=]() {*srcMiscSettingDeferral ^= 0x1;}
+	));
 	
 	
 	menu->addChild(new MenuSeparator());
 
-	MenuLabel *actLabel = new MenuLabel();
-	actLabel->text = "Actions";
-	menu->addChild(actLabel);
+	menu->addChild(createMenuLabel("Actions"));
 			
 	// Save user preset or shape
 	SaveUserSubItem *saveUserItem = createMenuItem<SaveUserSubItem>(isPreset ? "Save user preset" : "Save user shape", "");
