@@ -17,11 +17,6 @@ struct FilterCutWidget : ParamWidget {
 	FilterCutWidget() {
 		box.size = Vec(6.0f, 6.0f);
 	};
-	// void reset() override {
-		// if (paramQuantity) {
-			// paramQuantity->reset();
-		// }
-	// }
 };
 
 struct HPFCutoffParamQuantity : ParamQuantity {
@@ -550,9 +545,7 @@ struct MasterDisplay : EditableDisplayBase {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			MenuLabel *mastSetLabel = new MenuLabel();
-			mastSetLabel->text = "Master settings: " + std::string(masterLabel) + string::f("  (id %" PRId64 ")", *idSrc + 1);
-			menu->addChild(mastSetLabel);
+			menu->addChild(createMenuLabel("Master settings: " + std::string(masterLabel) + string::f("  (id %" PRId64 ")", *idSrc + 1)));
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);
 			fadeSlider->box.size.x = 200.0f;
@@ -630,9 +623,7 @@ struct TrackDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 			TMixerTrack *srcTrack = &(tracks[trackNumSrc]);
 			
-			MenuLabel *trkSetLabel = new MenuLabel();
-			trkSetLabel->text = "Track settings: " + std::string(srcTrack->trackName, 4);
-			menu->addChild(trkSetLabel);
+			menu->addChild(createMenuLabel("Track settings: " + std::string(srcTrack->trackName, 4)));
 			
 			InvertInputItem *invInItem = createMenuItem<InvertInputItem>("Invert input", CHECKMARK(srcTrack->invertInput != 0));
 			invInItem->invertInputSrc = &(srcTrack->invertInput);
@@ -656,9 +647,7 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(widthSlider);
 			}
 			else {
-				MenuLabel *noWidthLabel = new MenuLabel();
-				noWidthLabel->text = "Stereo width: N/A";
-				menu->addChild(noWidthLabel);
+				menu->addChild(createMenuLabel("Stereo width: N/A"));
 			}
 			
 			PanCvLevelSlider *panCvSlider = new PanCvLevelSlider(&(srcTrack->panCvLevel));
@@ -725,11 +714,8 @@ struct TrackDisplay : EditableDisplayBase {
 			}
 			
 			menu->addChild(new MenuSeparator());
-			//menu->addChild(new MenuLabel());// empty line
 
-			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + std::string(srcTrack->trackName, 4);
-			menu->addChild(settingsALabel);
+			menu->addChild(createMenuLabel("Actions: " + std::string(srcTrack->trackName, 4)));
 
 			InitializeTrackItem<TMixerTrack> *initTrackItem = createMenuItem<InitializeTrackItem<TMixerTrack>>("Initialize track settings", "");
 			initTrackItem->srcTrack = srcTrack;
@@ -784,9 +770,7 @@ struct GroupDisplay : EditableDisplayBase {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			MenuLabel *grpSetLabel = new MenuLabel();
-			grpSetLabel->text = "Group settings: " + std::string(srcGroup->groupName, 4);
-			menu->addChild(grpSetLabel);
+			menu->addChild(createMenuLabel("Group settings: " + std::string(srcGroup->groupName, 4)));
 			
 			GainAdjustSlider *groupGainAdjustSlider = new GainAdjustSlider(&(srcGroup->gainAdjust), -20.0f, 20.0f);
 			groupGainAdjustSlider->box.size.x = 200.0f;
@@ -865,11 +849,8 @@ struct GroupDisplay : EditableDisplayBase {
 			}
 			
 			menu->addChild(new MenuSeparator());
-			//menu->addChild(new MenuLabel());// empty line
 
-			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + std::string(srcGroup->groupName, 4);
-			menu->addChild(settingsALabel);
+			menu->addChild(createMenuLabel("Actions: " + std::string(srcGroup->groupName, 4)));
 
 			InitializeGroupItem<TMixerGroup> *initGroupItem = createMenuItem<InitializeGroupItem<TMixerGroup>>("Initialize group settings", "");
 			initGroupItem->srcGroup = srcGroup;
@@ -918,9 +899,7 @@ struct AuxDisplay : EditableDisplayBase {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			MenuLabel *auxSetLabel = new MenuLabel();
-			auxSetLabel->text = "Aux settings: " + text;
-			menu->addChild(auxSetLabel);
+			menu->addChild(createMenuLabel("Aux settings: " + text));
 			
 			HPFCutoffSlider<TAuxspanderAux> *auxHPFAdjustSlider = new HPFCutoffSlider<TAuxspanderAux>(srcAux);
 			auxHPFAdjustSlider->box.size.x = 200.0f;
@@ -977,11 +956,8 @@ struct AuxDisplay : EditableDisplayBase {
 			}
 			
 			menu->addChild(new MenuSeparator());
-			//menu->addChild(new MenuLabel());// empty line
 
-			MenuLabel *settingsALabel = new MenuLabel();
-			settingsALabel->text = "Actions: " + text;
-			menu->addChild(settingsALabel);
+			menu->addChild(createMenuLabel("Actions: " + text));
 
 			InitializeAuxItem<TAuxspanderAux> *initAuxItem = createMenuItem<InitializeAuxItem<TAuxspanderAux>>("Initialize aux settings", "");
 			initAuxItem->srcAux = srcAux;

@@ -67,9 +67,7 @@ void appendContextMenu(Menu *menu) override {
 
 	menu->addChild(new MenuSeparator());
 	
-	MenuLabel *settingsALabel = new MenuLabel();
-	settingsALabel->text = "Audio settings";
-	menu->addChild(settingsALabel);
+	menu->addChild(createMenuLabel("Audio settings"));
 	
 	FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
 	filterPosItem->filterPosSrc = &(module->gInfo.filterPos);
@@ -117,9 +115,7 @@ void appendContextMenu(Menu *menu) override {
 	if (module->auxExpanderPresent) {
 		menu->addChild(new MenuSeparator());
 
-		MenuLabel *settingsVLabel = new MenuLabel();
-		settingsVLabel->text = "AuxSpander";
-		menu->addChild(settingsVLabel);
+		menu->addChild(createMenuLabel("AuxSpander"));
 		
 		TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
 		auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
@@ -140,9 +136,7 @@ void appendContextMenu(Menu *menu) override {
 	
 	menu->addChild(new MenuSeparator());
 	
-	MenuLabel *settingsVLabel = new MenuLabel();
-	settingsVLabel->text = "Visual settings";
-	menu->addChild(settingsVLabel);
+	menu->addChild(createMenuLabel("Visual settings"));
 	
 	DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 	dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);

@@ -168,9 +168,7 @@ struct UnmeldWidget : ModuleWidget {
 
 		menu->addChild(new MenuSeparator());
 		
-		MenuLabel *themeLabel = new MenuLabel();
-		themeLabel->text = "Panel";
-		menu->addChild(themeLabel);
+		menu->addChild(createMenuLabel("Panel"));
 
 		for (int i = 0; i < NUM_PANELS; i++) {
 			menu->addChild(createCheckMenuItem(facePlateNames[i], "",

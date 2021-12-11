@@ -853,10 +853,11 @@ struct EqMasterWidget : ModuleWidget {
 		DecayRateItem *decayItem = createMenuItem<DecayRateItem>("Analyser decay", RIGHT_ARROW);
 		decayItem->decayRateSrc = &(module->miscSettings2.cc4[1]);
 		menu->addChild(decayItem);
-
-		HideEqWhenBypassItem *hideeqItem = createMenuItem<HideEqWhenBypassItem>("Hide EQ curves when bypassed", CHECKMARK(module->miscSettings2.cc4[2] != 0));
-		hideeqItem->hideEqWhenBypass = &(module->miscSettings2.cc4[2]);
-		menu->addChild(hideeqItem);
+		
+		menu->addChild(createCheckMenuItem("Hide EQ curves when bypassed", "",
+			[=]() {return module->miscSettings2.cc4[2] != 0;},
+			[=]() {module->miscSettings2.cc4[2] ^= 0x1;}
+		));	
 
 		menu->addChild(new MenuSeparator());
 		

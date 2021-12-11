@@ -248,9 +248,4 @@ struct DecayRateItem : MenuItem {
 	}
 };
 
-struct HideEqWhenBypassItem : MenuItem {
-	int8_t *hideEqWhenBypass;
-	void onAction(const event::Action &e) override {
-		*hideEqWhenBypass ^= 0x1;
-	}
-};
+

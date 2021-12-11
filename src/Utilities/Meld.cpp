@@ -322,9 +322,7 @@ struct MeldWidget : ModuleWidget {
 
 		menu->addChild(new MenuSeparator());
 
-		MenuLabel *themeLabel = new MenuLabel();
-		themeLabel->text = "Panel choices";
-		menu->addChild(themeLabel);
+		menu->addChild(createMenuLabel("Panel choices"));
 
 		PanelsItem *audiopItem = createMenuItem<PanelsItem>("Audio panels", "");
 		audiopItem->module = module;

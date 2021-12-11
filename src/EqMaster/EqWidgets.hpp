@@ -74,9 +74,7 @@ struct TrackLabel : LedDisplayChoice {
 			menu->addChild(copyItem);
 
 
-			MenuLabel *trkSelLabel = new MenuLabel();
-			trkSelLabel->text = "Select Track: ";
-			menu->addChild(trkSelLabel);
+			menu->addChild(createMenuLabel("Select Track: "));
 			
 			for (int trk = 0; trk < 24; trk++) {
 				bool onSource = (trk == currTrk);
