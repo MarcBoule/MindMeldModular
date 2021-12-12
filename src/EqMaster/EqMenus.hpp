@@ -15,14 +15,6 @@
 // Freq, gain, q display labels right-click menu
 // --------------------
 
-// show notes (freq displays only)
-struct ShowNotesItem : MenuItem {
-	int8_t *showFreqAsNotesSrc;
-	void onAction(const event::Action &e) override {
-		*showFreqAsNotesSrc ^= 0x1;
-	}
-};
-
 // CV level items (freq, gain, q)
 struct CvLevelQuantity : Quantity {
 	float *srcCvLevel = NULL;
@@ -170,47 +162,21 @@ struct FetchLabelsItem : MenuItem {
 };
 
 
-// init track settings
-template <typename TEqTrack>
-struct InitializeEqTrackItem : MenuItem {
-	int* updateTrackLabelRequestSrc = NULL;
-	TEqTrack *srcTrack;
-	void onAction(const event::Action &e) override {
-		srcTrack->onReset();
-		*updateTrackLabelRequestSrc = 2;// force param refreshing
-	}
-};
-
 
 struct CopyTrackSettingsItem : MenuItem {
-	char* trackLabelsSrc;
+	Param* trackParamSrc;
 	TrackEq *trackEqsSrc;
-	int trackNumSrc;
+	char* trackLabelsSrc;
 
-	struct CopyTrackSettingsSubItem : MenuItem {
-		TrackEq *trackEqsSrc;
-		int trackNumSrc;	
-		int trackNumDest;
-
-		void onAction(const event::Action &e) override {
-			trackEqsSrc[trackNumDest].copyFrom(&trackEqsSrc[trackNumSrc]);
-		}
-	};
-	
-	
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
-
 		for (int trk = 0; trk < 24; trk++) {
-			bool onSource = (trk == trackNumSrc);
-			CopyTrackSettingsSubItem *reo0Item = createMenuItem<CopyTrackSettingsSubItem>(std::string(&(trackLabelsSrc[trk * 4]), 4), CHECKMARK(onSource));
-			reo0Item->trackEqsSrc = trackEqsSrc;
-			reo0Item->trackNumSrc = trackNumSrc;
-			reo0Item->trackNumDest = trk;
-			reo0Item->disabled = onSource;
-			menu->addChild(reo0Item);
+			menu->addChild(createCheckMenuItem(std::string(&(trackLabelsSrc[trk * 4]), 4), "",
+				[=]() {return trk == (int)(trackParamSrc->getValue() + 0.5f);},
+				[=]() {int trackNumSrc = (int)(trackParamSrc->getValue() + 0.5f);
+						if (trackNumSrc != trk) trackEqsSrc[trk].copyFrom(&trackEqsSrc[trackNumSrc]);}
+			));
 		}
-
 		return menu;
 	}		
 };

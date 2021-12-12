@@ -47,42 +47,31 @@ struct TrackLabel : LedDisplayChoice {
 		}
 		LedDisplayChoice::drawLayer(args, layer);
 	}
-	
-	struct TrackSelectItem : MenuItem {
-		Param* trackParamSrc;
-		int trackNumber;
-		void onAction(const event::Action &e) override {
-			trackParamSrc->setValue((float)trackNumber);
-		}
-	};
-	
+		
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 			
-			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+			menu->addChild(createMenuItem("Initialize track settings", "",
+				[=]() {int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
+						trackEqsSrc[currTrk].onReset();
+						*updateTrackLabelRequestSrc = 2;// force param refreshing
+					}
+			));
 			
-			InitializeEqTrackItem<TrackEq> *initTrackItem = createMenuItem<InitializeEqTrackItem<TrackEq>>("Initialize track settings", "");
-			initTrackItem->srcTrack = &trackEqsSrc[currTrk];
-			initTrackItem->updateTrackLabelRequestSrc = updateTrackLabelRequestSrc;
-			menu->addChild(initTrackItem);			
-
 			CopyTrackSettingsItem *copyItem = createMenuItem<CopyTrackSettingsItem>("Copy track settings to:", RIGHT_ARROW);
-			copyItem->trackLabelsSrc = trackLabelsSrc;
+			copyItem->trackParamSrc = trackParamSrc;
 			copyItem->trackEqsSrc = trackEqsSrc;
-			copyItem->trackNumSrc = currTrk;
+			copyItem->trackLabelsSrc = trackLabelsSrc;
 			menu->addChild(copyItem);
-
 
 			menu->addChild(createMenuLabel("Select Track: "));
 			
 			for (int trk = 0; trk < 24; trk++) {
-				bool onSource = (trk == currTrk);
-				TrackSelectItem *tsItem = createMenuItem<TrackSelectItem>(std::string(&(trackLabelsSrc[trk * 4]), 4), CHECKMARK(onSource));
-				tsItem->trackParamSrc = trackParamSrc;
-				tsItem->trackNumber = trk;
-				tsItem->disabled = onSource;
-				menu->addChild(tsItem);
+				menu->addChild(createCheckMenuItem(std::string(&(trackLabelsSrc[trk * 4]), 4), "",
+					[=]() {return trk == (int)(trackParamSrc->getValue() + 0.5f);},
+					[=]() {trackParamSrc->setValue((float)trk);}
+				));	
 			}
 			
 			e.consume(this);
@@ -190,9 +179,10 @@ struct BandLabelFreq : BandLabelBase {
 			menu->addChild(cvLevSlider);
 
 			// show notes checkmark
-			ShowNotesItem *showNotesItem = createMenuItem<ShowNotesItem>("Show freq as note", CHECKMARK(*showFreqAsNotesSrc != 0));
-			showNotesItem->showFreqAsNotesSrc = showFreqAsNotesSrc;
-			menu->addChild(showNotesItem);
+			menu->addChild(createCheckMenuItem("Show freq as note", "",
+				[=]() {return *showFreqAsNotesSrc != 0;},
+				[=]() {*showFreqAsNotesSrc ^= 0x1;}
+			));	
 
 			event::Action eAction;
 			onAction(eAction);
