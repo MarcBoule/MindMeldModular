@@ -107,11 +107,11 @@ void appendContextMenu(Menu *menu) override {
 	lincv0Item->linearVolCvInputsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[3]);
 	menu->addChild(lincv0Item);
 	
-	EcoItem *eco0Item = createMenuItem<EcoItem>("Eco mode", CHECKMARK(module->gInfo.ecoMode));
-	eco0Item->ecoModeSrc = &(module->gInfo.ecoMode);
-	menu->addChild(eco0Item);
-	
-	
+	menu->addChild(createCheckMenuItem("Eco mode", "",
+		[=]() {return module->gInfo.ecoMode != 0;},
+		[=]() {module->gInfo.ecoMode = ~module->gInfo.ecoMode;}
+	));
+
 	if (module->auxExpanderPresent) {
 		menu->addChild(new MenuSeparator());
 
@@ -156,9 +156,10 @@ void appendContextMenu(Menu *menu) override {
 	cvPointerShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
 	menu->addChild(cvPointerShowItem);
 	
-	CloakedModeItem *nightItem = createMenuItem<CloakedModeItem>("Cloaked mode", CHECKMARK(module->gInfo.colorAndCloak.cc4[cloakedMode]));
-	nightItem->colorAndCloakSrc = &(module->gInfo.colorAndCloak);
-	menu->addChild(nightItem);
+	menu->addChild(createCheckMenuItem("Cloaked mode", "",
+		[=]() {return module->gInfo.colorAndCloak.cc4[cloakedMode];},
+		[=]() {module->gInfo.colorAndCloak.cc4[cloakedMode] ^= 0xFF;}
+	));
 }
 
 

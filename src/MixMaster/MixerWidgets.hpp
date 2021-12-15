@@ -266,19 +266,6 @@ struct GroupSelectDisplay : ParamWidget {
 			}
 		}
 	}
-	
-	// void reset() override {
-		// if (paramQuantity) {
-			// paramQuantity->reset();
-		// }
-	// }
-
-	// void randomize() override {
-		// if (paramQuantity) {
-			// float value = paramQuantity->getMinValue() + std::floor(random::uniform() * (paramQuantity->getRange() + 1));
-			// paramQuantity->setValue(value);
-		// }
-	// }
 };
 
 
@@ -559,17 +546,19 @@ struct MasterDisplay : EditableDisplayBase {
 			dimSliderItem->box.size.x = 200.0f;
 			menu->addChild(dimSliderItem);
 			
-			DcBlockItem *dcItem = createMenuItem<DcBlockItem>("DC blocker", CHECKMARK(*dcBlock));
-			dcItem->dcBlockSrc = dcBlock;
-			menu->addChild(dcItem);
+			menu->addChild(createCheckMenuItem("DC blocker", "",
+				[=]() {return *dcBlock;},
+				[=]() {*dcBlock = !*dcBlock;}
+			));
 			
 			ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
 			clipItem->clippingSrc = clipping;
 			menu->addChild(clipItem);
 
-			MasterFaderScalesSendsItem *mastScaleSendItem = createMenuItem<MasterFaderScalesSendsItem>("Apply master fader to aux sends", CHECKMARK(*masterFaderScalesSendsSrc != 0));
-			mastScaleSendItem->masterFaderScalesSendsSrc = masterFaderScalesSendsSrc;
-			menu->addChild(mastScaleSendItem);
+			menu->addChild(createCheckMenuItem("Apply master fader to aux sends", "",
+				[=]() {return *masterFaderScalesSendsSrc != 0;},
+				[=]() {*masterFaderScalesSendsSrc ^= 0x1;}
+			));
 			
 			if (colorAndCloak->cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
@@ -585,9 +574,10 @@ struct MasterDisplay : EditableDisplayBase {
 				menu->addChild(dispColItem);
 			}
 			
-			ChainOnlyItem *schItem = createMenuItem<ChainOnlyItem>("Solo chain inputs", CHECKMARK(*chainOnly));
-			schItem->chainOnlySrc = chainOnly;
-			menu->addChild(schItem);
+			menu->addChild(createCheckMenuItem("Solo chain inputs", "",
+				[=]() {return *chainOnly;},
+				[=]() {*chainOnly ^= 0x1;}
+			));
 			
 			e.consume(this);
 			return;
@@ -625,9 +615,10 @@ struct TrackDisplay : EditableDisplayBase {
 			
 			menu->addChild(createMenuLabel("Track settings: " + std::string(srcTrack->trackName, 4)));
 			
-			InvertInputItem *invInItem = createMenuItem<InvertInputItem>("Invert input", CHECKMARK(srcTrack->invertInput != 0));
-			invInItem->invertInputSrc = &(srcTrack->invertInput);
-			menu->addChild(invInItem);
+			menu->addChild(createCheckMenuItem("Invert input", "",
+				[=]() {return srcTrack->invertInput != 0;},
+				[=]() {srcTrack->invertInput ^= 0x1;}
+			));
 
 			GainAdjustSlider *trackGainAdjustSlider = new GainAdjustSlider(&(srcTrack->gainAdjust), -20.0f, 20.0f);
 			trackGainAdjustSlider->box.size.x = 200.0f;
@@ -662,10 +653,10 @@ struct TrackDisplay : EditableDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc)));
-			linkFadItem->linkBitMaskSrc = &(srcTrack->gInfo->linkBitMask);
-			linkFadItem->trackOrGroupNum = trackNumSrc;
-			menu->addChild(linkFadItem);
+			menu->addChild(createCheckMenuItem("Link fader and fade", "",
+				[=]() {return isLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc);},
+				[=]() {toggleLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc);}
+			));
 
 			PolyStereoItem *polySteItem = createMenuItem<PolyStereoItem>("Poly input behavior", RIGHT_ARROW);
 			polySteItem->polyStereoSrc = &(srcTrack->polyStereo);
@@ -801,11 +792,11 @@ struct GroupDisplay : EditableDisplayBase {
 			menu->addChild(fadeProfSlider);
 			
 			int groupNumForLink = numTracks + srcGroup->groupNum;
-			LinkFaderItem *linkFadItem = createMenuItem<LinkFaderItem>("Link fader and fade", CHECKMARK(isLinked(&(srcGroup->gInfo->linkBitMask), groupNumForLink)));
-			linkFadItem->linkBitMaskSrc = &(srcGroup->gInfo->linkBitMask);
-			linkFadItem->trackOrGroupNum = groupNumForLink;
-			menu->addChild(linkFadItem);
-			
+			menu->addChild(createCheckMenuItem("Link fader and fade", "",
+				[=]() {return isLinked(&(srcGroup->gInfo->linkBitMask), groupNumForLink);},
+				[=]() {toggleLinked(&(srcGroup->gInfo->linkBitMask), groupNumForLink);}
+			));
+
 			if (srcGroup->gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
