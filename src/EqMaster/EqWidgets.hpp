@@ -64,7 +64,16 @@ struct TrackLabel : LedDisplayChoice {
 			copyItem->trackEqsSrc = trackEqsSrc;
 			copyItem->trackLabelsSrc = trackLabelsSrc;
 			menu->addChild(copyItem);
-
+			
+			MoveTrackSettingsItem *moveItem = createMenuItem<MoveTrackSettingsItem>("Move track settings to:", RIGHT_ARROW);
+			moveItem->trackParamSrc = trackParamSrc;
+			moveItem->trackEqsSrc = trackEqsSrc;
+			moveItem->trackLabelsSrc = trackLabelsSrc;
+			moveItem->updateTrackLabelRequestSrc = updateTrackLabelRequestSrc;
+			menu->addChild(moveItem);
+			
+			menu->addChild(new MenuSeparator());
+			
 			menu->addChild(createMenuLabel("Select Track: "));
 			
 			for (int trk = 0; trk < 24; trk++) {

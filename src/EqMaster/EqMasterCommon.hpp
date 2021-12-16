@@ -118,6 +118,13 @@ class TrackEq {
 		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
 		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
 		trackGainSlewer.setRiseFall(antipopSlewDb);
+		
+		// the following are just set here to dummy values since there are test and sets in their initializations further below, and this is just to get rid of uninit warning, good values will be set in init()'s onReset()
+		// trackActive = false;
+		bandActive = simd::float_4(0.0f);
+		freq = simd::float_4(0.0f);
+		gain = simd::float_4(0.0f);
+		q = simd::float_4(0.0f);
 	}
 	
 	void init(int _trackNum, float _sampleRate, uint32_t *_cvConnected) {
