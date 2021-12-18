@@ -1141,29 +1141,6 @@ struct ZeroOrMaxSlider : ui::Slider {
 };
 
 
-struct RandomBoolSubItem : MenuItem {
-	int8_t* setting;
-	float* ctrlMaxPtr = NULL;// used only when this item is the "Stepped" item
-	
-	void onAction(const event::Action &e) override {
-		*setting ^= 0x1;
-		if (ctrlMaxPtr != NULL) {
-			if (*setting) {// i.e. if Stepped
-				*ctrlMaxPtr = 0.0f;
-			}
-			else {
-				*ctrlMaxPtr = 100.0f;
-			}
-		}
-		e.unconsume();
-	}
-	void step() override {
-		rightText = CHECKMARK(*setting != 0);
-		MenuItem::step();
-	}
-};
-
-
 struct RandomNoteItem : MenuItem {
 	RandomSettings* randomSettings;
 	
@@ -1236,18 +1213,20 @@ void addRandomMenu(Menu* menu, Channel* channel) {
 	maxVSlider->box.size.x = 200.0f;
 	menu->addChild(maxVSlider);
 	
-	RandomBoolSubItem *steppedItem = createMenuItem<RandomBoolSubItem>("Stepped", "");// rightText set in RandomBoolSubItem
-	steppedItem->setting = &randomSettings->stepped;
-	steppedItem->ctrlMaxPtr = &randomSettings->ctrlMax;
-	menu->addChild(steppedItem);
-	
-	RandomBoolSubItem *gridItem = createMenuItem<RandomBoolSubItem>("Lock to Grid-X", "");// rightText set in RandomBoolSubItem
-	gridItem->setting = &randomSettings->grid;
-	menu->addChild(gridItem);
-	
-	RandomBoolSubItem *quantItem = createMenuItem<RandomBoolSubItem>("Quantized", "");// rightText set in RandomBoolSubItem
-	quantItem->setting = &randomSettings->quantized;
-	menu->addChild(quantItem);
+	menu->addChild(createCheckMenuItem("Stepped", "",
+		[=]() {return randomSettings->stepped != 0;},
+		[=]() {randomSettings->stepped ^= 0x1; randomSettings->ctrlMax = randomSettings->stepped ? 0.0f : 100.0f;}
+	));	
+
+	menu->addChild(createCheckMenuItem("Lock to Grid-X", "",
+		[=]() {return randomSettings->grid != 0;},
+		[=]() {randomSettings->grid ^= 0x1;}
+	));	
+
+	menu->addChild(createCheckMenuItem("Quantized", "",
+		[=]() {return randomSettings->quantized != 0;},
+		[=]() {randomSettings->quantized ^= 0x1;}
+	));	
 	
 	RandomNoteItem *rndNoteItem = createMenuItem<RandomNoteItem>("Quantization scale", RIGHT_ARROW);
 	rndNoteItem->randomSettings = randomSettings;
