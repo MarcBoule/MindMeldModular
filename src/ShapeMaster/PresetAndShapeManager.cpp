@@ -39,7 +39,11 @@ bool loadPresetOrShape(const std::string path, Channel* dest, bool isPreset, boo
 	json_t* presetOrShapeFileJ = json_loadf(file, 0, &error);
 	if (!presetOrShapeFileJ) {
 		std::string message = string::f("JSON parsing error at %s %d:%d %s", error.source, error.line, error.column, error.text);
+#ifdef USING_CARDINAL_NOT_RACK
+		async_dialog_message(message.c_str());
+#else
 		osdialog_message(OSDIALOG_WARNING, OSDIALOG_OK, message.c_str());
+#endif
 		return false;
 	}
 	DEFER({
@@ -49,7 +53,11 @@ bool loadPresetOrShape(const std::string path, Channel* dest, bool isPreset, boo
 	json_t *channelPresetOrShapeJ = json_object_get(presetOrShapeFileJ, isPreset ? "ShapeMaster channel preset" : "ShapeMaster shape");
 	if (!channelPresetOrShapeJ) {
 		std::string message = isPreset ? "INVALID ShapeMaster channel preset file" : "INVALID ShapeMaster shape file";
+#ifdef USING_CARDINAL_NOT_RACK
+		async_dialog_message(message.c_str());
+#else
 		osdialog_message(OSDIALOG_WARNING, OSDIALOG_OK, message.c_str());
+#endif
 		return false;
 	}
 
@@ -310,12 +318,25 @@ struct SaveUserSubItem : MenuItem {
 			filename = system::getFilename(presetOrShapePath);// string::filename(presetOrShapePath);
 		}
 
+#ifdef USING_CARDINAL_NOT_RACK
+		Channel* channel = this->channel;
+		Channel* channelDirtyCache = this->channelDirtyCache;
+		bool isPreset = this->isPreset;
+		async_dialog_filebrowser(true, dir.c_str(), text.c_str(), [channel, channelDirtyCache, isPreset](char* pathC) {
+			pathSelected(channel, channelDirtyCache, isPreset, pathC);
+		});
+#else
 		osdialog_filters* filters = osdialog_filters_parse(isPreset ? PRESET_FILTER : SHAPE_FILTER);
 		DEFER({
 			osdialog_filters_free(filters);
 		});
 
 		char* pathC = osdialog_file(OSDIALOG_SAVE, dir.c_str(), filename.c_str(), filters);
+		pathSelected(channel, channelDirtyCache, isPreset, pathC);
+#endif
+	}
+
+	static void pathSelected(Channel* channel, Channel* channelDirtyCache, bool isPreset, char* pathC) {
 		if (!pathC) {
 			// Fail silently
 			return;
