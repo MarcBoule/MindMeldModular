@@ -714,15 +714,15 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	decFlItem->channel = &(channels[chan]);
 	menu->addChild(decFlItem);
 
+	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("Node triggers", RIGHT_ARROW);
+	nodetrigItem->channel = &(channels[chan]);
+	menu->addChild(nodetrigItem);
+
 	menu->addChild(createCheckMenuItem("Use sustain as channel reset", "",
 		[=]() {return channels[chan].isChannelResetOnSustain();},
 		[=]() {channels[chan].toggleChannelResetOnSustain();}
 	));	
 
-
-	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("Node triggers", RIGHT_ARROW);
-	nodetrigItem->channel = &(channels[chan]);
-	menu->addChild(nodetrigItem);
 
 	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", "");// arrow done in PolySumItem
 	sumSteItem->channel = &(channels[chan]);
