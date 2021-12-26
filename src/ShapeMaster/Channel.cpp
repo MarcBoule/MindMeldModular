@@ -518,9 +518,11 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 			vcaPostSize = 0;
 			scSignal = 0.0f;
 			int pcDelta = shape.getPcDelta();
-			bool reverse = playHead.getReverse();
-			if ( (reverse && pcDelta == -1) || (!reverse && pcDelta == 1) ) {
-				nodeTrigPulseGen.trigger(nodeTrigDuration);
+			if (pcDelta != 0) {
+				bool reverse = playHead.getReverse();
+				if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
+					nodeTrigPulseGen.trigger(nodeTrigDuration);
+				}
 			}
 			outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
 		}
