@@ -40,6 +40,7 @@ void Shape::onReset() {
 	}
 	numPts = 3;
 	pc = 0;// not saved
+	pcDelta = 0;// not saved
 	unlockShape();
 }
 
@@ -54,6 +55,7 @@ void Shape::initMinPts() {
 	points[1].x = 1.0f;
 	numPts = 2;
 	pc = 0;
+	pcDelta = 0;
 	unlockShape();
 }
 
@@ -342,6 +344,7 @@ void Shape::dataFromJsonShape(json_t *shapeJ) {
 	if (numPtsJ) {
 		numPts = json_integer_value(numPtsJ);
 		pc = 0;
+		pcDelta = 0;
 	}
 	
 	unlockShape();
@@ -358,6 +361,7 @@ void Shape::copyShapeTo(Shape* destShape) {
 	memcpy(destShape->type, type, sizeof(int8_t) * numPts);
 	destShape->numPts = numPts;
 	destShape->pc = 0;
+	destShape->pcDelta = 0;
 	destShape->unlockShape();
 }
 
@@ -369,6 +373,7 @@ void Shape::pasteShapeFrom(Shape* srcShape) {
 	memcpy(type, srcShape->type, sizeof(int8_t) * srcShape->numPts);
 	numPts = srcShape->numPts;
 	pc = 0;
+	pcDelta = 0;
 	unlockShape();
 }
 

@@ -437,10 +437,15 @@ struct PolySumItem : MenuItem {
 		for (int i = 0; i < NUM_POLY_MODES; i++) {			
 			menu->addChild(createCheckMenuItem(polyModeNames[i], "",
 				[=]() {return channel->getPolyMode() == i;},
-				[=]() {channel->channelSettings.cc4[2] = i;}
+				[=]() {channel->channelSettings.cc4[2] = i;},
+				channel->isNodeTriggers()
 			));	
 		}
 		return menu;
+	}
+	
+	void step() override {
+		disabled = channel->isNodeTriggers();
 	}
 };
 
@@ -464,7 +469,6 @@ struct CopyChanelItem : MenuItem {
 		json_decref(clipboardJ);
 		glfwSetClipboardString(APP->window->win, channelClip);
 		free(channelClip);
-
 	}
 };
 
@@ -559,18 +563,22 @@ struct ScopeVcaPolySelItem : MenuItem {
 		menu->addChild(createCheckMenuItem("Poly-chans 1+2", "",
 			[=]() {return *srcScopeVcaPolySelItem == 16;},
 			[=]() {*srcScopeVcaPolySelItem = 16;},
-			maxChan <= 1
+			maxChan <= 1 || channel->isNodeTriggers()
 		));	
 		
 		for (int i = 0; i < 16; i++) {
 			menu->addChild(createCheckMenuItem(string::f("Poly-chan %i", i + 1), "",
 				[=]() {return *srcScopeVcaPolySelItem == i;},
 				[=]() {*srcScopeVcaPolySelItem = i;},
-				i >= maxChan
+				i >= maxChan || channel->isNodeTriggers()
 			));
 		}
 
 		return menu;
+	}
+
+	void step() override {
+		disabled = channel->isNodeTriggers();
 	}
 };
 
@@ -665,6 +673,11 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	menu->addChild(createCheckMenuItem("Use sustain as channel reset", "",
 		[=]() {return channels[chan].isChannelResetOnSustain();},
 		[=]() {channels[chan].toggleChannelResetOnSustain();}
+	));	
+
+	menu->addChild(createCheckMenuItem("Node triggers on VCA output", "",
+		[=]() {return channels[chan].isNodeTriggers();},
+		[=]() {channels[chan].toggleNodeTriggers();}
 	));	
 
 	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", RIGHT_ARROW);

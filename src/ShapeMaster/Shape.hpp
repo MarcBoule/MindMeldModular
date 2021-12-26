@@ -38,6 +38,7 @@ class Shape {
 	int8_t type[MAX_PTS];// 0 is smooth, 1 is s-shape
 	int numPts;
 	int pc;// point cache, index into points, has to be managed in lockstep with numPts such that 0 <= pc < (numPts - 1)
+	int pcDelta;
 	
 	std::atomic_flag lock_shape = ATOMIC_FLAG_INIT;// blocking and mandatory for all modifications that can temporarily change invariants, non-blocking test for process() (should leave output unchanged when can't acquire lock)
 	float evalShapeForProcessRet = 0.0f;
@@ -73,6 +74,10 @@ class Shape {
 	void onReset();
 	
 	void initMinPts();
+	
+	int getPcDelta() {
+		return pcDelta;
+	}
 		
 
 	// Smooth function:
@@ -266,17 +271,22 @@ class Shape {
 		// returns previous value if couldn't get lock to calc an eval
 		// x is in normalized space [0;1]
 		if (x <= 0.0) {
+			pcDelta = -pc;
 			pc = 0;
 			evalShapeForProcessRet = points[0].y;
 		}
 		else if (x >= 1.0) {
-			pc = numPts - 2;// is sure to be >= 0, and pc must be < numPts-1
+			int newpc = numPts - 2;// is sure to be >= 0, and pc must be < numPts-1
+			pcDelta = newpc - pc;
+			pc = newpc;
 			evalShapeForProcessRet = points[numPts - 1].y;			
 		}
 		else {
 			// here x is in ]0;1[
 			if (lockShapeNonBlocking()) {
-				pc = calcPointFromX<double>(x, pc);			
+				int newpc = calcPointFromX<double>(x, pc);
+				pcDelta = newpc - pc;
+				pc = newpc;		
 				evalShapeForProcessRet = calcY<double>(pc, x - (double)points[pc].x);
 				unlockShape();
 			}
@@ -295,7 +305,7 @@ class Shape {
 			return points[0].y;
 		}
 		else if (x >= 1.0) {
-			*epc = numPts - 2;// is sure to be >= 0, and pc must be < numPts-1
+			*epc = numPts - 2;// is sure to be >= 0, and epc must be < numPts-1
 			return points[numPts - 1].y;
 		}
 		// here x is in ]0;1[

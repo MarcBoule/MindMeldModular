@@ -45,8 +45,9 @@ void Channel::construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, Cloc
 		pqReps = (*_paramQuantitiesSrc)[REPETITIONS_PARAM + chanNum * NUM_CHAN_PARAMS];
 	}
 	presetAndShapeManager = _presetAndShapeManager;// can be null
+	clockDetector = _clockDetector;
 	
-	playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager);
+	playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen);
 	// onReset(false); // not needed since ShapeMaster::onReset() will propagate to Channel::onReset();
 }
 
@@ -77,6 +78,7 @@ void Channel::onReset(bool withParams) {
 	setShowUnsyncLengthAs(0x0);// show unsynced length in: 0 = seconds, 1 = Hz, 2 = note; must use setShowUnsyncLengthAs() to change, do not write to channelSettings2.cc4[1] directly
 	channelSettings2.cc4[2] = 0x1;// tooltip Y mode (1 is default volts, 0 is freq, 2 is notes)
 	channelSettings2.cc4[3] = 0x0;// decoupledFirstLast
+	channelSettings3.cc4[0] = 0x0;// node triggers
 	presetPath = "";
 	shapePath = "";
 	chanName = string::f("Channel %i", chanNum + 1);
@@ -138,6 +140,7 @@ json_t* Channel::dataToJsonChannel(bool withParams, bool withProUnsyncMatch, boo
 	json_object_set_new(channelJ, "rangeIndex", json_integer(rangeIndex));
 	json_object_set_new(channelJ, "channelSettings", json_integer(channelSettings.cc1));
 	json_object_set_new(channelJ, "channelSettings2", json_integer(channelSettings2.cc1));
+	json_object_set_new(channelJ, "channelSettings3", json_integer(channelSettings3.cc1));
 	json_object_set_new(channelJ, "presetPath", json_string(presetPath.c_str()));
 	json_object_set_new(channelJ, "shapePath", json_string(shapePath.c_str()));
 	if (withFullSettings) {
@@ -237,6 +240,16 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 			channelSettings2.cc4[3] = newSettings2.cc4[3];
 		}
 		setShowUnsyncLengthAs(newSettings2.cc4[1]);
+	}
+
+	json_t *channelSettings3J = json_object_get(channelJ, "channelSettings3");
+	if (channelSettings3J) {
+		PackedBytes4 newSettings3;
+		newSettings3.cc1 = json_integer_value(channelSettings3J);
+		if (withFullSettings) {
+			// not saved with preset
+			channelSettings3.cc1 = newSettings3.cc1;
+		}
 	}
 
 	json_t *presetPathJ = json_object_get(channelJ, "presetPath");
@@ -358,6 +371,7 @@ bool Channel::isDirty(Channel* refChan) {
 	if (rangeIndex != refChan->rangeIndex) return true;// int comparison
 	// if (chanSettings.cc1 != refChan->chanSettings.cc1) return true;// 4x int comparison, but excluded from dirty comparison
 	// if (chanSettings2.cc1 != refChan->chanSettings2.cc1) return true;// 4x int comparison, but excluded from dirty comparison
+	// if (chanSettings3.cc1 != refChan->chanSettings3.cc1) return true;// 4x int comparison, but excluded from dirty comparison
 	// if (!(presetPath == refChan->presetPath)) return true;// text comp, not relevant for dirty comparison
 	// if (!(shapePath == refChan->shapePath)) return true;// text comp, not relevant for dirty comparison
 	// if (!(chanName == refChan->chanName)) return true;// text comp, not relevant for dirty comparison
@@ -417,6 +431,7 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 		}
 		
 		playHead.processDiv8();// only has slowSlewPulseGen refresh
+		nodeTrigPulseGen.process(clockDetector->getSampleTime() * 8.0f);
 	}
 	
 	
@@ -492,99 +507,113 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 		// VCA
 		// --------
 		
-		// vcaPre and vcaPreSize
-		vcaPreSize = inInput->getChannels();
-		if (vcaPreSize > 0) {
-			int vcaPreMax = std::min(vcaPreSize, polyModeChanOut[getPolyMode()]);
-			for (int c = 0; c < vcaPreSize; c++) {
-				if (c < vcaPreMax) {
-					vcaPre[c] = inInput->getVoltage(c) * gainAdjustVca;
-				}
-				else {
-					vcaPre[c % vcaPreMax] += inInput->getVoltage(c) * gainAdjustVca;
-				}
+		if (isNodeTriggers()) {
+			// needed for scope
+			vcaPreSize = 0;
+			vcaPostSize = 0;
+			scSignal = 0.0f;
+			int pcDelta = shape.getPcDelta();
+			bool reverse = playHead.getReverse();
+			if ( (reverse && pcDelta == -1) || (!reverse && pcDelta == 1) ) {
+				nodeTrigPulseGen.trigger(NODE_TRIG_DURATION);
 			}
-			vcaPreSize = vcaPreMax;
+			outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
 		}
-		
-		// scSignal
-		scSignal = 0.0f;
-		if (getTrigMode() == TM_SC) {
-			bool needsScProcessing = false;
-			if (isSidechainUseVca() && vcaPreSize > 0) {
-				scSignal = vcaPre[0];
-				for (int c = 1; c < vcaPreSize; c++) {
-					scSignal += vcaPre[c];
-				}
-				needsScProcessing = true;
-			}
-			else if (!isSidechainUseVca() && scInput->getChannels() > chanNum) {
-				scSignal = scInput->getVoltage(chanNum);
-				needsScProcessing = true;	
-			}
-			if (needsScProcessing) {
-				scSignal *= gainAdjustSc;
-				// HPF
-				if (isHpfCutoffActive()) {
-					scSignal = hpFilter.process(scSignal);
-				}
-				// LPF
-				if (isLpfCutoffActive()) {
-					scSignal = lpFilter.process(scSignal);
-				}
-				scEnvelope = scEnvSlewer.process(std::fabs(sampleTime), scSignal);
-			}
-		}
-		
-		
-		// vcaPost and vcaPostSize
-		vcaPostSize = outOutput->getChannels();// already poly mode correct, see ShapeMaster.cpp
-		if (vcaPostSize > 0) {
-			
-			// (crossover needed even if audition because of scope and audition antipop)
-			if ((paCrossover->getValue() >= CROSSOVER_OFF) && vcaPreSize > 0) {
-				float gainLow = 1.0f + (shapeCv - 1.0f) * xoverSlewWithCv[2];//paLow->getValue();
-				float gainHigh = 1.0f + (shapeCv - 1.0f) * xoverSlewWithCv[1];//paHigh->getValue();
-				for (int c2 = 0; c2 < ((vcaPostSize + 1) >> 1); c2++) {
-					int iL = c2 << 1;
-					int iR = iL + 1;
-					simd::float_4 lrRes = xover.process(vcaPre[iL], vcaPre[iR], c2);
-					// lrRes[0] = left low, left high, right low, lrRes[3] = right high
-					vcaPost[iL] = lrRes[0] * gainLow + lrRes[1] * gainHigh;
-					vcaPost[iR] = lrRes[2] * gainLow + lrRes[3] * gainHigh;
-				}
-			}
-			else {
-				for (int c = 0; c < vcaPostSize; c++) {
-					if (c < vcaPreSize) {
-						vcaPost[c] = vcaPre[c] * shapeCv;
+		else {		
+			// vcaPre and vcaPreSize
+			vcaPreSize = inInput->getChannels();
+			if (vcaPreSize > 0) {
+				int vcaPreMax = std::min(vcaPreSize, polyModeChanOut[getPolyMode()]);
+				for (int c = 0; c < vcaPreSize; c++) {
+					if (c < vcaPreMax) {
+						vcaPre[c] = inInput->getVoltage(c) * gainAdjustVca;
 					}
 					else {
-						vcaPost[c] = 0.0f;
+						vcaPre[c % vcaPreMax] += inInput->getVoltage(c) * gainAdjustVca;
 					}
 				}
-			}		
+				vcaPreSize = vcaPreMax;
+			}
+			
+			// scSignal
+			scSignal = 0.0f;
+			if (getTrigMode() == TM_SC) {
+				bool needsScProcessing = false;
+				if (isSidechainUseVca() && vcaPreSize > 0) {
+					scSignal = vcaPre[0];
+					for (int c = 1; c < vcaPreSize; c++) {
+						scSignal += vcaPre[c];
+					}
+					needsScProcessing = true;
+				}
+				else if (!isSidechainUseVca() && scInput->getChannels() > chanNum) {
+					scSignal = scInput->getVoltage(chanNum);
+					needsScProcessing = true;	
+				}
+				if (needsScProcessing) {
+					scSignal *= gainAdjustSc;
+					// HPF
+					if (isHpfCutoffActive()) {
+						scSignal = hpFilter.process(scSignal);
+					}
+					// LPF
+					if (isLpfCutoffActive()) {
+						scSignal = lpFilter.process(scSignal);
+					}
+					scEnvelope = scEnvSlewer.process(std::fabs(sampleTime), scSignal);
+				}
+			}
+			
+			
+			// vcaPost and vcaPostSize
+			vcaPostSize = outOutput->getChannels();// already poly mode correct, see ShapeMaster.cpp
+			if (vcaPostSize > 0) {
+				
+				// (crossover needed even if audition because of scope and audition antipop)
+				if ((paCrossover->getValue() >= CROSSOVER_OFF) && vcaPreSize > 0) {
+					float gainLow = 1.0f + (shapeCv - 1.0f) * xoverSlewWithCv[2];//paLow->getValue();
+					float gainHigh = 1.0f + (shapeCv - 1.0f) * xoverSlewWithCv[1];//paHigh->getValue();
+					for (int c2 = 0; c2 < ((vcaPostSize + 1) >> 1); c2++) {
+						int iL = c2 << 1;
+						int iR = iL + 1;
+						simd::float_4 lrRes = xover.process(vcaPre[iL], vcaPre[iR], c2);
+						// lrRes[0] = left low, left high, right low, lrRes[3] = right high
+						vcaPost[iL] = lrRes[0] * gainLow + lrRes[1] * gainHigh;
+						vcaPost[iR] = lrRes[2] * gainLow + lrRes[3] * gainHigh;
+					}
+				}
+				else {
+					for (int c = 0; c < vcaPostSize; c++) {
+						if (c < vcaPreSize) {
+							vcaPost[c] = vcaPre[c] * shapeCv;
+						}
+						else {
+							vcaPost[c] = 0.0f;
+						}
+					}
+				}		
 
-			// write VCA output, with possible audition crossfade
-			if (playHead.getTrigMode() == TM_SC && playHead.getAudition() && playHead.getAuditionGain() != 0.0f) {
-				float auditionGain = playHead.getAuditionGain();
-				float crossfaded = vcaPost[0] * (1.0f - auditionGain) + scSignal * auditionGain;
-				outOutput->setVoltage(crossfaded, 0);
-				if (vcaPostSize > 1) {
-					crossfaded = vcaPost[1] * (1.0f - auditionGain) + scSignal * auditionGain;
-					outOutput->setVoltage(crossfaded, 1);
+				// write VCA output, with possible audition crossfade
+				if (playHead.getTrigMode() == TM_SC && playHead.getAudition() && playHead.getAuditionGain() != 0.0f) {
+					float auditionGain = playHead.getAuditionGain();
+					float crossfaded = vcaPost[0] * (1.0f - auditionGain) + scSignal * auditionGain;
+					outOutput->setVoltage(crossfaded, 0);
+					if (vcaPostSize > 1) {
+						crossfaded = vcaPost[1] * (1.0f - auditionGain) + scSignal * auditionGain;
+						outOutput->setVoltage(crossfaded, 1);
+					}
+					for (int c = 2; c < vcaPostSize; c++) {
+						crossfaded = vcaPost[c] * (1.0f - auditionGain) + 0.0f * auditionGain;
+						outOutput->setVoltage(crossfaded, c);
+					}
 				}
-				for (int c = 2; c < vcaPostSize; c++) {
-					crossfaded = vcaPost[c] * (1.0f - auditionGain) + 0.0f * auditionGain;
-					outOutput->setVoltage(crossfaded, c);
+				else {
+					for (int c = 0; c < vcaPostSize; c++) {
+						outOutput->setVoltage(vcaPost[c], c);
+					}
 				}
 			}
-			else {
-				for (int c = 0; c < vcaPostSize; c++) {
-					outOutput->setVoltage(vcaPost[c], c);
-				}
-			}
-		}
+		}// isNodeTriggers
 	}// if (channelActive)
 	else {
 		// needed for scope

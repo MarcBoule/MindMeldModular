@@ -96,6 +96,7 @@ class Channel {
 	public:
 	PackedBytes4 channelSettings;
 	PackedBytes4 channelSettings2;
+	PackedBytes4 channelSettings3;
 	private:
 	std::string presetPath;
 	std::string shapePath;
@@ -127,7 +128,7 @@ class Channel {
 	simd::float_4 xoverSlewWithCv;// xfreq = [0], xhigh = [1], xlow = [2], slew = [3] (slew unrelated to xvoer)
 	bool xoverSlewCvConnected;
 	private:
-	
+	dsp::PulseGenerator nodeTrigPulseGen;
 		
 	// no need to save, no reset
 	int chanNum = 0;
@@ -142,6 +143,7 @@ class Channel {
 	float vcaPre[16] = {};
 	float vcaPost[16] = {};
 	PresetAndShapeManager* presetAndShapeManager;
+	ClockDetector* clockDetector;
 	bool prevNextButtonsClicked[4] = {false};// matches the PREV_NEXT_PRE_SHA param
 	dsp::SchmittTrigger arrowButtonTriggers[4];	
 	
@@ -241,25 +243,9 @@ class Channel {
 	}
 	void setSmoothCutoffFreq() {
 		lastSmoothParam = paSmooth->getValue();
-		
-		// Method1: convert param value to fc value, 0.0 param means MAXFREQ_SMOOTH, 1.0 means MINFREQ_SMOOTH
 		float fc = (MINFREQ_SMOOTH - MAXFREQ_SMOOTH) * std::pow(lastSmoothParam, 1.0f / 4.0f) + MAXFREQ_SMOOTH;
-		
-		// Method2: 
-		// float fc = MAXFREQ_SMOOTH * 0.001f / std::max(0.001f, lastSmoothParam);
-		
 		smoothFilter.setParameters(false, fc * sampleTime);
 	}
-	/*void setSlewRate() {
-		lastSlewParamWithCv = xoverSlewWithCv[3];
-		if (lastSlewParamWithCv < 0.001f) {// don't compare with 0.0f because of Rack parameter smoothing, it will take time to get to 0.0f
-			// effectively turns off the slew limiter, 10.0f is used in case it's applied to a voltage, but in this case here it's applied to a normalized value further in the code
-			slewLimiter.setRiseFall(10.0f / sampleTime);
-		}
-		else {
-			slewLimiter.setRiseFall(1.0f / (lastSlewParamWithCv * 0.5f));// 0.5f is a fixed length in seconds (same method as relative slew but with a fixed length instead)
-		}	
-	}*/
 	void setHysteresis(float _hysteresis) {
 		playHead.setHysteresis(_hysteresis);
 	}
@@ -488,6 +474,9 @@ class Channel {
 	}
 	bool isDecoupledFirstAndLast() {
 		return channelSettings2.cc4[3] != 0;
+	}
+	bool isNodeTriggers() {
+		return channelSettings3.cc4[0] != 0;
 	}
 	int8_t getPolyMode() {
 		return channelSettings.cc4[2];
@@ -719,6 +708,10 @@ class Channel {
 		if (!isDecoupledFirstAndLast()) {
 			shape.coupleFirstAndLast();
 		}
+	}
+	void toggleNodeTriggers() {
+		channelSettings3.cc4[0] ^= 0x1;
+		nodeTrigPulseGen.reset();
 	}
 	
 	int getVcaPreSize() {

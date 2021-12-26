@@ -15,6 +15,7 @@ static const int NUM_KNOB_PARAMS = 15;
 static const int NUM_BUTTON_PARAMS = 6;
 static const int NUM_ARROW_PARAMS = 4;
 static const int NUM_CHAN_PARAMS = NUM_KNOB_PARAMS + NUM_BUTTON_PARAMS + NUM_ARROW_PARAMS;
+static const float NODE_TRIG_DURATION = 0.01f;
 
 enum SmParamIds {
 	// channel-specific params

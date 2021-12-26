@@ -121,6 +121,8 @@ class PlayHead {
 	double length = 1.0;// this is not a double length; only valid when state == STEPPING
 	double lengths[2] = {1.0, 1.0} ;// sum must equal 2 * length; only valid when state == STEPPING
 	LengthSyncInfo lsi;
+	bool reverse;// valid only after calling this.process()
+	dsp::PulseGenerator* nodeTrigPulseGen;
 	
 	
 	#ifdef SM_PRO
@@ -142,7 +144,7 @@ class PlayHead {
 	
 	public: 
 	
-	void construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager);
+	void construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen);
 	
 	void onReset(bool withParams);
 	
@@ -354,7 +356,9 @@ class PlayHead {
 		}
 		return string::f("%.2f", math::normalizeZero(valHold));
 	}
-
+	bool getReverse() {
+		return reverse;
+	}
 
 	// --------
 	

@@ -209,12 +209,17 @@ void ShapeMaster::process(const ProcessArgs &args) {
 		for (int c = 0; c < NUM_CHAN; c++) 
 		{
 			if (outputs[OUT_OUTPUTS + c].isConnected()) {
-				int inChans = inputs[IN_INPUTS + c].getChannels();
-				inChans = std::min(inChans, polyModeChanOut[channels[c].getPolyMode()]);
-				int scChanC = channels[c].getTrigMode() == TM_SC ? (scChan > c ? 1 : 0) : 0;
-				int outChans = std::max(inChans, scChanC);
-				// here outChans can be 0 (if no sc conditions nor vca input)
-				outputs[OUT_OUTPUTS + c].setChannels(outChans);// true channels will be 0 even if outChans > 0, since unconnected output forces 0 channels
+				if (channels[c].isNodeTriggers()) {
+					outputs[OUT_OUTPUTS + c].setChannels(1);
+				}
+				else {
+					int inChans = inputs[IN_INPUTS + c].getChannels();
+					inChans = std::min(inChans, polyModeChanOut[channels[c].getPolyMode()]);
+					int scChanC = channels[c].getTrigMode() == TM_SC ? (scChan > c ? 1 : 0) : 0;
+					int outChans = std::max(inChans, scChanC);
+					// here outChans can be 0 (if no sc conditions nor vca input)
+					outputs[OUT_OUTPUTS + c].setChannels(outChans);// true channels will be 0 even if outChans > 0, since unconnected output forces 0 channels
+				}
 			}
 			channels[c].processSlow(cvExp ? &(cvExp->chanCvs[c]) : NULL);
 		}
