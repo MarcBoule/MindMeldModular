@@ -446,22 +446,15 @@ struct PolySumItem : MenuItem {
 	
 	void step() override {
 		disabled = channel->isNodeTriggers();
+		MenuItem::step();
 	}
 };
 
 
 struct CopyChanelItem : MenuItem {
 	Channel* channelSource;
-	// json_t** channelCopyPasteCache;
 	
 	void onAction(const event::Action &e) override {
-		// old version with json memory
-		// if (*channelCopyPasteCache != NULL) {
-			// json_decref(*channelCopyPasteCache);
-		// }
-		// (*channelCopyPasteCache) = channelSource->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
-		
-		// new version with clipboard
 		json_t* channelJ = channelSource->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
 		json_t* clipboardJ = json_object();		
 		json_object_set_new(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Channel", channelJ);
@@ -476,21 +469,6 @@ struct PasteChanelItem : MenuItem {
 	Channel* channelDestination;
 
 	void onAction(const event::Action &e) override {
-		// old version with json memory
-		// if (*channelCopyPasteCache != NULL) {
-			// // Push ChannelChange history action (rest is done below)
-			// ChannelChange* h = new ChannelChange;
-			// h->channelSrc = channelDestination;
-			// h->oldJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
-			
-			// channelDestination->dataFromJsonChannel(*channelCopyPasteCache, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS);
-		
-			// h->newJson = channelDestination->dataToJsonChannel(WITH_PARAMS, WITHOUT_PRO_UNSYNC_MATCH, WITH_FULL_SETTINGS);
-			// h->name = "paste channel";
-			// APP->history->push(h);
-		// }
-		
-		// new version with clipboard
 		// Push ChannelChange history action (rest is done below)
 		ChannelChange* h = new ChannelChange;
 		h->channelSrc = channelDestination;
@@ -579,7 +557,73 @@ struct ScopeVcaPolySelItem : MenuItem {
 
 	void step() override {
 		disabled = channel->isNodeTriggers();
+		MenuItem::step();
 	}
+};
+
+
+struct NodeTriggersItem : MenuItem {
+	Channel* channel;
+	
+	// Node triggers duration quantity and slider
+	struct NodeTrigDurationQuantity : Quantity {
+		Channel* channel = NULL;
+		
+		NodeTrigDurationQuantity(Channel* _channel) {
+			channel = _channel;
+		}
+		void setValue(float value) override {
+			channel->setNodeTrigDuration(math::clamp(value, getMinValue(), getMaxValue()));
+		}
+		float getValue() override {
+			return channel->getNodeTrigDuration();
+		}
+		float getMinValue() override {return 0.001f;}
+		float getMaxValue() override {return 0.1f;}
+		float getDefaultValue() override {return Channel::DEFAULT_NODETRIG_DURATION;}
+		float getDisplayValue() override {return getValue();}
+		std::string getDisplayValueString() override {
+			return string::f("%i", (int)(getValue() * 1000.0f + 0.5f));
+		}
+		void setDisplayValue(float displayValue) override {setValue(displayValue);}
+		std::string getLabel() override {return "Node triggers";}
+		std::string getUnit() override {return "ms";}
+	};
+	struct NodeTrigDurationSlider : ui::Slider {
+		NodeTrigDurationSlider(Channel* channel) {
+			quantity = new NodeTrigDurationQuantity(channel);
+		}
+		~NodeTrigDurationSlider() {
+			delete quantity;
+		}
+	};	
+	
+	
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		
+		menu->addChild(createCheckMenuItem("Node triggers on VCA output", "",
+			[=]() {return channel->isNodeTriggers();},
+			[=]() {channel->toggleNodeTriggers();}
+		));	
+
+		NodeTrigDurationSlider *nodetrigSlider = new NodeTrigDurationSlider(channel);
+		nodetrigSlider->box.size.x = 200.0f;
+		menu->addChild(nodetrigSlider);
+
+		return menu;
+	}
+
+	void step() override {
+		std::string _rightText = RIGHT_ARROW;
+		if (channel->isNodeTriggers()) {
+			_rightText.insert(0, " ");
+			_rightText.insert(0, CHECKMARK_STRING);
+		}
+		rightText = _rightText;
+		MenuItem::step();
+	}
+
 };
 
 
@@ -675,12 +719,12 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 		[=]() {channels[chan].toggleChannelResetOnSustain();}
 	));	
 
-	menu->addChild(createCheckMenuItem("Node triggers on VCA output", "",
-		[=]() {return channels[chan].isNodeTriggers();},
-		[=]() {channels[chan].toggleNodeTriggers();}
-	));	
 
-	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", RIGHT_ARROW);
+	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("Node triggers", RIGHT_ARROW);
+	nodetrigItem->channel = &(channels[chan]);
+	menu->addChild(nodetrigItem);
+
+	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", "");// arrow done in PolySumItem
 	sumSteItem->channel = &(channels[chan]);
 	menu->addChild(sumSteItem);
 

@@ -47,7 +47,7 @@ void Channel::construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, Cloc
 	presetAndShapeManager = _presetAndShapeManager;// can be null
 	clockDetector = _clockDetector;
 	
-	playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen);
+	playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration);
 	// onReset(false); // not needed since ShapeMaster::onReset() will propagate to Channel::onReset();
 }
 
@@ -68,6 +68,7 @@ void Channel::onReset(bool withParams) {
 	sensitivity = DEFAULT_SENSITIVITY;
 	gainAdjustVca = 1.0f;
 	gainAdjustSc = 1.0f;
+	nodeTrigDuration = DEFAULT_NODETRIG_DURATION;
 	gridX = 16;
 	rangeIndex = 0;
 	channelSettings.cc4[0] = 0x0;// local invert shadow
@@ -136,6 +137,7 @@ json_t* Channel::dataToJsonChannel(bool withParams, bool withProUnsyncMatch, boo
 	json_object_set_new(channelJ, "lpfCutoffSqFreq", json_real(getLPFCutoffSqFreq()));
 	json_object_set_new(channelJ, "sensitivity", json_real(sensitivity));
 	json_object_set_new(channelJ, "gainAdjustSc", json_real(gainAdjustSc));
+	json_object_set_new(channelJ, "nodeTrigDuration", json_real(nodeTrigDuration));
 	json_object_set_new(channelJ, "gridX", json_integer(gridX));
 	json_object_set_new(channelJ, "rangeIndex", json_integer(rangeIndex));
 	json_object_set_new(channelJ, "channelSettings", json_integer(channelSettings.cc1));
@@ -209,6 +211,9 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 	
 	json_t *gainAdjustScJ = json_object_get(channelJ, "gainAdjustSc");
 	if (gainAdjustScJ) gainAdjustSc = json_number_value(gainAdjustScJ);
+	
+	json_t *nodeTrigDurationJ = json_object_get(channelJ, "nodeTrigDuration");
+	if (nodeTrigDurationJ) nodeTrigDuration = json_number_value(nodeTrigDurationJ);
 	
 	json_t *gridXJ = json_object_get(channelJ, "gridX");
 	if (gridXJ) gridX = json_integer_value(gridXJ);
@@ -515,7 +520,7 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 			int pcDelta = shape.getPcDelta();
 			bool reverse = playHead.getReverse();
 			if ( (reverse && pcDelta == -1) || (!reverse && pcDelta == 1) ) {
-				nodeTrigPulseGen.trigger(NODE_TRIG_DURATION);
+				nodeTrigPulseGen.trigger(nodeTrigDuration);
 			}
 			outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
 		}

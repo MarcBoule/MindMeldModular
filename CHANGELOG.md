@@ -3,6 +3,7 @@
 - Make menus stay open and refresh checkmarks when ctrl/cmd-clicked
 - Add track move to EqMaster (labels not moved, only EQ settings)
 - Draw ShapeMaster and EqMaster displays in module browser
+- Add channel options in ShapeMaster to output a trigger in the VCA output when the playhead crosses nodes
 
 
 ### 2.0.8 (2021-11-27)

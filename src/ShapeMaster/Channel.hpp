@@ -42,6 +42,7 @@ class Channel {
 	static constexpr float DEFAULT_SENSITIVITY = 0.5f;// dB or volts, not sure yet
 	static constexpr float SENSITIVITY_MAX = 1.0f;
 	static constexpr float SENSITIVITY_MIN = 0.0f;
+	static constexpr float DEFAULT_NODETRIG_DURATION = 0.01f;
 	
 	static const int SCF_SCALING_EXP = 2;// must adjust bounds below when changing this; used in menu.cpp L776, L824; channel.hpp L199, L203, L527, L539; inverse used in channel.cpp L175, L184
 	
@@ -91,13 +92,14 @@ class Channel {
 	float sensitivity;
 	float gainAdjustVca;// this is a gain here (not dB)
 	float gainAdjustSc;// this is a gain here (not dB)
+	float nodeTrigDuration;
 	uint8_t gridX;
 	int8_t rangeIndex;
 	public:
 	PackedBytes4 channelSettings;
 	PackedBytes4 channelSettings2;
-	PackedBytes4 channelSettings3;
 	private:
+	PackedBytes4 channelSettings3;
 	std::string presetPath;
 	std::string shapePath;
 	std::string chanName;
@@ -263,6 +265,9 @@ class Channel {
 	void setGainAdjustSc(float _gainAdjust) {;
 		gainAdjustSc = _gainAdjust;// this is a gain here (not dB)
 	}
+	void setNodeTrigDuration(float _duration) {;
+		nodeTrigDuration = _duration;
+	}
 	void setPlayMode(int8_t _playMode) {
 		playHead.setPlayMode(_playMode);
 	}
@@ -382,6 +387,9 @@ class Channel {
 	}
 	float getGainAdjustSc() {
 		return gainAdjustSc;// this is a gain here (not dB)
+	}
+	float getNodeTrigDuration() {
+		return nodeTrigDuration;
 	}
 	float getGainAdjustVcaDb() {
 		return 20.0f * std::log10(gainAdjustVca);

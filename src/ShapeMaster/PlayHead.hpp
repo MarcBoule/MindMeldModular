@@ -123,6 +123,7 @@ class PlayHead {
 	LengthSyncInfo lsi;
 	bool reverse;// valid only after calling this.process()
 	dsp::PulseGenerator* nodeTrigPulseGen;
+	float* nodeTrigDuration;
 	
 	
 	#ifdef SM_PRO
@@ -144,7 +145,7 @@ class PlayHead {
 	
 	public: 
 	
-	void construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen);
+	void construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen, float* nodeTrigDuration);
 	
 	void onReset(bool withParams);
 	

@@ -10,7 +10,7 @@
 #include "PresetAndShapeManager.hpp"
 
 
-void PlayHead::construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen) {
+void PlayHead::construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen, float* _nodeTrigDuration) {
 	chanNum = _chanNum;
 	sosEosEoc = _sosEosEoc;
 	clockDetector = _clockDetector;
@@ -18,6 +18,7 @@ void PlayHead::construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clo
 	scEnvelope = _scEnvelope;
 	presetAndShapeManager = _presetAndShapeManager;
 	nodeTrigPulseGen = _nodeTrigPulseGen;
+	nodeTrigDuration = _nodeTrigDuration;
 	paramQuantityRepititionSrc = _paramQuantityRepititionSrc;
 	paRepetitions = &_chanParams[REPETITIONS_PARAM];
 	paLengthSync = &_chanParams[LENGTH_SYNC_PARAM];
@@ -584,7 +585,7 @@ double PlayHead::process(ChanCvs *chanCvs) {
 		xt = newXt;
 		if (xt >= 1.0) {
 			// EOC
-			nodeTrigPulseGen->trigger(NODE_TRIG_DURATION);
+			nodeTrigPulseGen->trigger(*nodeTrigDuration);
 			cycleCount++;
 			lengthIndex ^= 0x1;
 			int maxRep = getRepetitions();
