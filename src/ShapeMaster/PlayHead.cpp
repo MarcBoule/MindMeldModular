@@ -428,6 +428,7 @@ double PlayHead::process(ChanCvs *chanCvs) {
 			}
 			xt = clamp(inV * 0.1f, 0.0f, 1.0f);
 		}
+		reverse = false;
 		return xt;
 	}
 	
