@@ -32,6 +32,7 @@ struct ShapeMaster : Module {
 		ENUMS(DEFERRAL_LIGHTS, 4),
 		SC_HPF_LIGHT,
 		SC_LPF_LIGHT,
+		ENUMS(NODETRIG_LIGHTS, 8),
 		NUM_LIGHTS
 	};
 

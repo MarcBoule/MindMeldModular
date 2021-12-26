@@ -65,11 +65,14 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 		configOutput(OUT_OUTPUTS + c, string::f("Channel %i VCA", c + 1));
 		configOutput(CV_OUTPUTS + c, string::f("Channel %i CV", c + 1));
 		configBypass(IN_INPUTS + c, OUT_OUTPUTS + c);
+		configLight(NODETRIG_LIGHTS + c, string::f("Channel %i node-trigger mode", c + 1));
 	}
 	configInput(CLOCK_INPUT, "Clock");
 	configInput(RESET_INPUT, "Reset");
 	configInput(RUN_INPUT, "Run");
 	configInput(SIDECHAIN_INPUT, "Sidechain");
+	configLight(SC_HPF_LIGHT, "Current channel sidechain HPF active");
+	configLight(SC_LPF_LIGHT, "Current channel sidechain LPF active");
 	
 	
 	for (int c = 0; c < 8; c++) {
@@ -261,24 +264,11 @@ void ShapeMaster::process(const ProcessArgs &args) {
 	// Scope
 	scopeBuffers.populate(&channels[currChan], miscSettings.cc4[2]);
 	
-	// Lights
+	// Lights (others are in module widget's step())
 	if (refresh.processLights()) {
 		// Reset light
 		lights[RESET_LIGHT].setSmoothBrightness(resetLight, args.sampleTime * (RefreshCounter::displayRefreshStepSkips >> 2));	
-		resetLight = 0.0f;
-					
-		// Run light
-		lights[RUN_LIGHT].setBrightness(running ? 1.0f : 0.0f);
-		
-		// Deferral light
-		for (int i = 0; i < 4; i++) {
-			lights[DEFERRAL_LIGHTS + i].setBrightness(presetAndShapeManager.isDeferred(currChan, i) ? 1.0f : 0.0f);
-		}
-		
-		// SC lights
-		lights[SC_HPF_LIGHT].setBrightness(channels[currChan].getTrigMode() == TM_SC && channels[currChan].isHpfCutoffActive() ? 1.0f : 0.0f);
-		lights[SC_LPF_LIGHT].setBrightness(channels[currChan].getTrigMode() == TM_SC && channels[currChan].isLpfCutoffActive() ? 1.0f : 0.0f);
-		
+		resetLight = 0.0f;		
 	}// refresh.processLights()
 
 	fsDiv8 = ((fsDiv8 + 1) % 8);
@@ -691,10 +681,12 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	static constexpr float outsDY = 10.5f;
 	static constexpr float audioOutX = 172.72f;
 	static constexpr float cvOutX = 185.42f;
-
+	static constexpr float redDx = 3.92f;
+	static constexpr float redDy = 3.43f;
 	// outputs
 	for (int i = 0; i < 8; i++) {
 		addOutput(createOutputCentered<MmPort>(mm2px(Vec(audioOutX, outsY + outsDY * i)), module, OUT_OUTPUTS + i));
+		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(audioOutX + redDx, outsY + outsDY * i + redDy)), module, ShapeMaster::NODETRIG_LIGHTS + i));
 		addOutput(createOutputCentered<MmPort>(mm2px(Vec(cvOutX, outsY + outsDY * i)), module, CV_OUTPUTS + i));
 	}
 
@@ -843,6 +835,25 @@ void ShapeMasterWidget::step() {
 			SvgPanel* svgPanel = (SvgPanel*)getPanel();
 			svgPanel->fb->dirty = true;
 		}
+		
+		// Lights
+		// ------
+		
+		// Node trigger mode led
+		for (int c = 0; c < 8; c++) {
+			module->lights[ShapeMaster::NODETRIG_LIGHTS + c].setBrightness(module->channels[c].isNodeTriggers() ? 10.0f : 0.0f);
+		}
+		// Run light
+		module->lights[ShapeMaster::RUN_LIGHT].setBrightness(module->running ? 1.0f : 0.0f);
+		
+		// Deferral light
+		for (int i = 0; i < 4; i++) {
+			module->lights[ShapeMaster::DEFERRAL_LIGHTS + i].setBrightness(module->presetAndShapeManager.isDeferred(chan, i) ? 1.0f : 0.0f);
+		}
+		
+		// SC lights
+		module->lights[ShapeMaster::SC_HPF_LIGHT].setBrightness(module->channels[chan].getTrigMode() == TM_SC && module->channels[chan].isHpfCutoffActive() ? 1.0f : 0.0f);
+		module->lights[ShapeMaster::SC_LPF_LIGHT].setBrightness(module->channels[chan].getTrigMode() == TM_SC && module->channels[chan].isLpfCutoffActive() ? 1.0f : 0.0f);
 	}
 	
 	stepDivider++;
