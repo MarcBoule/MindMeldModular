@@ -20,6 +20,7 @@ void init(Plugin *p) {
 	p->addModel(modelAuxExpander);
 	p->addModel(modelMeld);
 	p->addModel(modelUnmeld);
+	p->addModel(modelMSMelder);
 	p->addModel(modelEqMaster);
 	p->addModel(modelEqExpander);
 	p->addModel(modelBassMaster);

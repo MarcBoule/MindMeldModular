@@ -28,6 +28,7 @@ extern Model *modelMixMaster;
 extern Model *modelAuxExpander;
 extern Model *modelMeld;
 extern Model *modelUnmeld;
+extern Model *modelMSMelder;
 extern Model *modelEqMaster;
 extern Model *modelEqExpander;
 extern Model *modelBassMaster;
