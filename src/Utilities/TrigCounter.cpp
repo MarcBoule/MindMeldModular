@@ -121,6 +121,10 @@ struct TrigCounter : Module {
 		}
 		if (trigTrigger.process(inputs[TRIG_INPUT].getVoltage())) {
 			count++;
+			int total = (int)(params[TOTAL_PARAM].getValue() + 0.5f);
+			if (count == total) {
+				count = 0;
+			}
 		}
 		
 		// Output
