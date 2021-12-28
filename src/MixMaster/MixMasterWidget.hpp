@@ -317,6 +317,19 @@ void step() override {
 			
 			// Mixer Message Bus (for EQ and others)
 			module->sendToMessageBus();
+			
+			
+			// Lights
+			// ------
+		
+			for (int i = 0; i < N_TRK; i++) {
+				module->lights[TMixMaster::TRACK_HPF_LIGHTS + i].setBrightness(module->tracks[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
+				module->lights[TMixMaster::TRACK_LPF_LIGHTS + i].setBrightness(module->tracks[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
+			}
+			for (int i = 0; i < N_GRP; i++) {
+				module->lights[TMixMaster::GROUP_HPF_LIGHTS + i].setBrightness(module->groups[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
+				module->lights[TMixMaster::GROUP_LPF_LIGHTS + i].setBrightness(module->groups[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
+			}
 		}
 	}			
 	

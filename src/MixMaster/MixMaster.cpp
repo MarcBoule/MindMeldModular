@@ -656,14 +656,7 @@ struct MixMaster : Module {
 		//********** Lights **********
 		
 		if (refresh.processLights()) {
-			for (int i = 0; i < N_TRK; i++) {
-				lights[TRACK_HPF_LIGHTS + i].setBrightness(tracks[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
-				lights[TRACK_LPF_LIGHTS + i].setBrightness(tracks[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
-			}
-			for (int i = 0; i < N_GRP; i++) {
-				lights[GROUP_HPF_LIGHTS + i].setBrightness(groups[i].getHPFCutoffFreq() >= GlobalConst::minHPFCutoffFreq ? 1.0f : 0.0f);
-				lights[GROUP_LPF_LIGHTS + i].setBrightness(groups[i].getLPFCutoffFreq() <= GlobalConst::maxLPFCutoffFreq ? 1.0f : 0.0f);
-			}
+			// see module widget step()
 		}
 		
 		
