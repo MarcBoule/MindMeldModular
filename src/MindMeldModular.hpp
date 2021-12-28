@@ -34,6 +34,7 @@ extern Model *modelEqExpander;
 extern Model *modelBassMaster;
 extern Model *modelBassMasterJr;
 extern Model *modelShapeMaster;
+extern Model *modelTrigCounter;
 
 
 

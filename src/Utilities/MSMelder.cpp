@@ -1,5 +1,6 @@
 //***********************************************************************************************
-//Split/merge to/from Left/Right, that also spaces out the signals for compatibility with EQ master 
+//Split/merge to/from Left/Right that spaces out the signals for compatibility with EQ master
+//Used for mid/side eq'ing with two EqMasters, using MixMaster inserts and VCV Mid/Side modules 
 //For VCV Rack by Steve Baker and Marc Boulé 
 //
 //Based on code from the Fundamental plugin by Andrew Belt 

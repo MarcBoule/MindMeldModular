@@ -26,6 +26,7 @@ void init(Plugin *p) {
 	p->addModel(modelBassMaster);
 	p->addModel(modelBassMasterJr);
 	p->addModel(modelShapeMaster);
+	p->addModel(modelTrigCounter);
 }
 
 
