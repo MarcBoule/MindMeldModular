@@ -1192,6 +1192,10 @@ struct AuxExpanderWidget : ModuleWidget {
 	
 		// CV input bus mute, solo
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 8)), module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT));	
+		
+		// Mismatched AuxSpander overlay message
+		MismatchedAuxOverlay* mismatchesAuxWidget = new MismatchedAuxOverlay(box.size, module);
+		addChild(mismatchesAuxWidget);
 	}
 };
 
@@ -1543,7 +1547,11 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 5)), module, TAuxExpander::POLY_BUS_SND_PAN_RET_CV_INPUT));	
 	
 		// CV input bus mute, solo
-		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT));	
+		addInput(createInputCentered<MmPortGold>(mm2px(Vec(cvx, 13.8 + 10.85 * 6)), module, TAuxExpander::POLY_BUS_MUTE_SOLO_CV_INPUT));
+
+		// Mismatched AuxSpander overlay message
+		MismatchedAuxOverlay* mismatchesAuxWidget = new MismatchedAuxOverlay(box.size, module);
+		addChild(mismatchesAuxWidget);		
 	}
 };
 

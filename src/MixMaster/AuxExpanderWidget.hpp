@@ -168,3 +168,42 @@ void step() override {
 	}
 	ModuleWidget::step();
 }
+
+
+
+struct MismatchedAuxOverlay : widget::Widget {
+	Module* module;
+	static const int margin = 90;
+	
+	MismatchedAuxOverlay(Vec boxsize, Module* _module) {
+		box.size = boxsize;
+		module = _module;
+	}
+	
+	void drawLayer(const DrawArgs& args, int layer) override {
+		Widget::drawLayer(args, layer);
+		if (layer == 1 && module != NULL) {
+			bool badMother = (module->leftExpander.module && module->leftExpander.module->model == (N_TRK == 16 ? modelMixMasterJr : modelMixMaster));
+			if (badMother) {
+				nvgBeginPath(args.vg);
+				nvgRect(args.vg, 0 + margin, 0 + margin, box.size.x - 2 * margin, box.size.y - 2 * margin);
+				nvgFillColor(args.vg, nvgRGBAf(0, 0, 0, 0.6));
+				nvgFill(args.vg);
+
+				std::string text = "Mixer - AuxSpander mismatch";
+				std::string text2 = N_TRK == 16 ? "Please use the 8-track AuxSpander Jr" : "Please use the 16-track AuxSpander";
+				float ofx = bndLabelWidth(args.vg, -1, text.c_str()) + 2;
+				float ofy = bndLabelHeight(args.vg, -1, text.c_str(), ofx);
+				Rect r;
+				r.pos = box.size.div(2).minus(Vec(ofx, ofy).div(2));
+				r.size = Vec(ofx, ofy);
+				bndLabel(args.vg, RECT_ARGS(r), -1, text.c_str());
+				ofx = bndLabelWidth(args.vg, -1, text2.c_str()) + 2;
+				ofy = bndLabelHeight(args.vg, -1, text2.c_str(), ofx);
+				r.pos = box.size.div(2).minus(Vec(ofx, -ofy).div(2));
+				r.size = Vec(ofx, ofy);
+				bndLabel(args.vg, RECT_ARGS(r), -1, text2.c_str());
+			}
+		}
+	}
+};
