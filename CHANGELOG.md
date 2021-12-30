@@ -4,6 +4,7 @@
 - Add track move to EqMaster (labels not moved, only EQ settings)
 - Draw ShapeMaster and EqMaster displays in module browser
 - Add channel options in ShapeMaster to output a trigger in the VCA output when the playhead crosses nodes
+- Add warning overlay message in AuxSpanders when mismatched to a MixMaster
 
 
 ### 2.0.8 (2021-11-27)
