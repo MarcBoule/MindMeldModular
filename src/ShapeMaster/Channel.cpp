@@ -22,7 +22,6 @@ void Channel::construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, Cloc
 	lpFilter.setParameters(false, 0.4f);
 	if (_inputs) {
 		inInput = &_inputs[IN_INPUTS + chanNum];
-		trigInput = &_inputs[TRIG_INPUTS + chanNum];
 		scInput = &_inputs[SIDECHAIN_INPUT];
 	}
 	if (_outputs) {

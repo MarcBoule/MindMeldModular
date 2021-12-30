@@ -136,7 +136,6 @@ class Channel {
 	int chanNum = 0;
 	bool* running = NULL;
 	Input* inInput = NULL;// use only in process() because of channelDirtyCache and possible nullness
-	Input* trigInput = NULL;// use only in process() because of channelDirtyCache and possible nullness
 	Input* scInput = NULL;// use only in process() because of channelDirtyCache and possible nullness
 	Output* outOutput = NULL;// use only in process() because of channelDirtyCache and possible nullness
 	Output* cvOutput = NULL;// use only in process() because of channelDirtyCache and possible nullness
