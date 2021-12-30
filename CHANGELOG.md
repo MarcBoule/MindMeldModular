@@ -4,7 +4,8 @@
 - Add track move to EqMaster (labels not moved, only EQ settings)
 - Draw ShapeMaster and EqMaster displays in module browser
 - Add channel options in ShapeMaster to output a trigger in the VCA output when the playhead crosses nodes
-- Add warning overlay message in AuxSpanders when mismatched to a MixMaster
+- Add warning overlay message in AuxSpanders when mismatched to a MixMaster or wrong size (8 vs 16 tracks)
+- Add new routing module called M/S Melder to facilitate mid/side EQ'ing with VCV Mid/Side and EqMaster
 
 
 ### 2.0.8 (2021-11-27)

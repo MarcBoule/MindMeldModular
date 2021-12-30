@@ -113,7 +113,7 @@ struct MSMelder : Module {
 		// Inputs and slow
 		if (refresh.processInputs()) {
 			// Channel sizes of output ports
-			for (int i = 0; i < 2; i++) {
+			for (int i = 0; i < 3; i++) {
 				// split
 				int inSplitChans = inputs[A_INPUT + i].getChannels();
 				int outSplitChans = (inSplitChans + 1) & ~0x1;// make even (up)
@@ -130,7 +130,7 @@ struct MSMelder : Module {
 		
 		
 		// Outputs
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < 3; i++) {
 			int chansDiv2 = inputs[A_INPUT + i].getChannels() >> 1;
 			for (int c = 0; c < chansDiv2; c++) {
 				// split
@@ -163,14 +163,19 @@ struct MSMelderWidget : ModuleWidget {
 		setModule(module);
 
 		// Main panels from Inkscape
-		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/meld/meld-1-8.svg")));
+		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/ms-melder.svg")));
 		
-		addInput(createInputCentered<MmPortGold>(mm2px(Vec(10.33, 34.5 + 10.85 * 0)), module, MSMelder::A_INPUT));
-		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(10.33, 34.5 + 10.85 * 1)), module, MSMelder::AL_OUTPUT));
-		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(20.15, 34.5 + 10.85 * 1)), module, MSMelder::AR_OUTPUT));
-		addInput(createInputCentered<MmPortGold>(mm2px(Vec(10.33, 34.5 + 10.85 * 2)), module, MSMelder::AL_INPUT));
-		addInput(createInputCentered<MmPortGold>(mm2px(Vec(20.15, 34.5 + 10.85 * 2)), module, MSMelder::AR_INPUT));
-		addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(10.33, 34.5 + 10.85 * 3)), module, MSMelder::A_OUTPUT));
+		static const float top = 18.95f;// first row of jacks
+		static const float dy2 = 36.95f;// sections
+		
+		for (int i = 0; i < 3; i++) {
+			addInput(createInputCentered<MmPortGold>(mm2px(Vec(10.33f, top + dy2 * i)), module, MSMelder::A_INPUT + i));
+			addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(20.15f, top + dy2 * i)), module, MSMelder::A_OUTPUT + i));
+			addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(10.33f, top + dy2 * i + 10.75f)), module, MSMelder::AL_OUTPUT + i));
+			addOutput(createOutputCentered<MmPortGold>(mm2px(Vec(20.15f, top + dy2 * i + 10.75f)), module, MSMelder::AR_OUTPUT + i));
+			addInput(createInputCentered<MmPortGold>(mm2px(Vec(10.33f, top + dy2 * i + 10.75f + 9.85f)), module, MSMelder::AL_INPUT + i));
+			addInput(createInputCentered<MmPortGold>(mm2px(Vec(20.15f, top + dy2 * i + 10.75f + 9.85f)), module, MSMelder::AR_INPUT + i));
+		}	
 	}
 };
 

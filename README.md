@@ -31,6 +31,8 @@ The following modules are part of the MindMeld module pack:
 
 * [Meld / Unmeld](#meldunmeld): Utility modules for MixMaster and MixMasterJr.
 
+* [M/S Melder](#msmelder): Utility routing module to facilitate mid/side EQ'ing with VCV Mid/Side and EqMaster.
+
 * [BassMaster](#bassmaster): Dual band spatialiser for high spread and bass mono.
 
 * [ShapeMaster](#shapemaster): Multi-stage envelope generator (MSEG) / complex LFO.
@@ -113,6 +115,14 @@ Expander module to add CV control over most parameters in the EqMaster. All jack
 ![IM](res/img/MeldUnmeld.png)
 
 Two utility modules to help manage direct out and insert connections. Three panel options are available in each module: 1-8, 9-16, Grp/Aux. The 8 LEDs in the right side of the Meld module can be clicked and are used to bypass an insert (red), or not (green). The Meld module also features a set of panels for merging the CV poly-inputs found on the MixMaster and AuxSpander modules.
+
+
+<a id="msmelder"></a>
+## M/S Melder
+
+![IM](res/img/MSMelder.png)
+
+A utility module to simplify the patching of mid/side EQ'ing with VCV Mid/Side and EqMaster. The picture above shows how to connect M/S Melder on the mixer inserts for tracks 1-8.
 
 
 <a id="bassmaster"></a>

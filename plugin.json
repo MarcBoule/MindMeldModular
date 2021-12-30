@@ -73,6 +73,7 @@
 			"slug": "MSMelder",
 			"name": "M/S Melder",
 			"description": "Mid-side splitting and merging for MixMaster, VCV Mid/Side and EqMaster",
+			"manualUrl": "https://marcboule.github.io/MindMeldModular/#msmelder",
 			"tags": ["Polyphonic", "Utility"]
 		},
  		{
