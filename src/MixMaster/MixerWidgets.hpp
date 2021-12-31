@@ -433,7 +433,6 @@ struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 
 struct EditableDisplayBase : LedDisplayTextField {
 	int numChars = 4;
-	int textSize = 12;
 	bool doubleClick = false;
 	Widget* tabNextFocus = NULL;
 	PackedBytes4* colorAndCloak = NULL;
@@ -490,6 +489,8 @@ struct EditableDisplayBase : LedDisplayTextField {
 		
 		if (text.length() > (unsigned)numChars) {
 			text = text.substr(0, numChars);
+			cursor = numChars;
+			selection = numChars;
 		}
 	}
 	
@@ -527,7 +528,6 @@ struct MasterDisplay : EditableDisplayBase {
 	
 	MasterDisplay() {
 		numChars = 6;
-		textSize = 13;
 		box.size = mm2px(Vec(16.0f, 5.3f));
 		textOffset = mm2px(Vec(0.0f, -0.6773)); ; // was Vec(9.0f, -2.0f) which is 3.048000, -0.677333 in mm
 		text = "-0000-";

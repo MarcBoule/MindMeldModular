@@ -21,7 +21,7 @@ class Shape {
 	// static const int8_t decoupledFirstLast = 0x1;
 
 	private:
-	static constexpr float SAFETY = 1e-4f;
+	static constexpr float SAFETY = 1e-5f;
 	static constexpr float SAFETYx5 = SAFETY * 5.0f;
 	static constexpr float MIN_CTRL = 7.5e-8f;
 	
