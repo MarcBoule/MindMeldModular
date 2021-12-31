@@ -4,19 +4,16 @@
 - Add track move to EqMaster (labels not moved, only EQ settings)
 - Draw ShapeMaster and EqMaster displays in module browser
 - Add channel options in ShapeMaster to output a trigger in the VCA output when the playhead crosses nodes
-- Add warning overlay message in AuxSpanders when mismatched to a MixMaster or wrong size (8 vs 16 tracks)
+- Add warning overlay message in AuxSpanders when mismatched to a MixMaster of wrong size (8 vs 16 tracks)
 - Add new routing module called M/S Melder to facilitate mid/side EQ'ing with VCV Mid/Side and EqMaster
-- Add automatic panel selection in Meld (using its polyphonic output) and in Unmeld (using its polyphonic input)
+- Add automatic panel detection in Meld (using its polyphonic output) and in Unmeld (using its polyphonic input)
+- Fix crash in editable labels in MixMasters, AuxSpanders; same in uMeld for the ShapeMaster-PRO plugin
 
 
 ### 2.0.8 (2021-11-27)
 
 - First v2 library candidate
-- Many changes that are not listed here
-
-
-### 1.1.15 (2021-x-x
-
+- Many changes that are not listed here and that were not part of an official release, such as:
 - MixMaster: Added gain adjust to groups
 - ShapeMaster: Added cloaked mode
 - ShapeMaster: Added keyboard hover entry for grid-x
