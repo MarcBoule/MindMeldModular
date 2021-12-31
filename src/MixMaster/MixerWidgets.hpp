@@ -440,9 +440,10 @@ struct EditableDisplayBase : LedDisplayTextField {
 	int8_t* dispColorLocal;
 
 	EditableDisplayBase() {
-		box.size = mm2px(Vec(18.6f, 5.0f));// svg is 10.6
-		textOffset = Vec(6.0f, -2.7f);
+		box.size = mm2px(Vec(12.0f, 5.0f));// svg is 10.6 wide
+		textOffset = mm2px(Vec(0.0f, -0.9144));  // was Vec(6.0f, -2.7f); which is 2.032000, -0.914400 in mm
 		text = "-00-";
+		// DEBUG("%f, %f", 9.0f * MM_PER_IN / SVG_DPI, -2.0 * MM_PER_IN / SVG_DPI);
 	};
 	
 	void draw(const DrawArgs &args) override {}	// don't want background, which is in draw, actual text is in drawLayer
@@ -458,6 +459,10 @@ struct EditableDisplayBase : LedDisplayTextField {
 				cursor = numChars;
 				selection = numChars;
 			}
+			// nvgBeginPath(args.vg);
+			// nvgRect(args.vg, 0, 0, box.size.x, box.size.y);
+			// nvgFillColor(args.vg, nvgRGBAf(0.0f, 0.0f, 0.8f, 1.0f));
+			// nvgFill(args.vg);		
 		}
 		LedDisplayTextField::drawLayer(args, layer);
 	}
@@ -523,8 +528,8 @@ struct MasterDisplay : EditableDisplayBase {
 	MasterDisplay() {
 		numChars = 6;
 		textSize = 13;
-		box.size = mm2px(Vec(24.6f, 5.3f));
-		textOffset = Vec(9.0f, -2.0f);
+		box.size = mm2px(Vec(16.0f, 5.3f));
+		textOffset = mm2px(Vec(0.0f, -0.6773)); ; // was Vec(9.0f, -2.0f) which is 3.048000, -0.677333 in mm
 		text = "-0000-";
 	}
 	

@@ -6,6 +6,7 @@
 - Add channel options in ShapeMaster to output a trigger in the VCA output when the playhead crosses nodes
 - Add warning overlay message in AuxSpanders when mismatched to a MixMaster or wrong size (8 vs 16 tracks)
 - Add new routing module called M/S Melder to facilitate mid/side EQ'ing with VCV Mid/Side and EqMaster
+- Add automatic panel selection in Meld (using its polyphonic output) and in Unmeld (using its polyphonic input)
 
 
 ### 2.0.8 (2021-11-27)
@@ -14,7 +15,7 @@
 - Many changes that are not listed here
 
 
-### 1.1.15 (2021-x-x)
+### 1.1.15 (2021-x-x
 
 - MixMaster: Added gain adjust to groups
 - ShapeMaster: Added cloaked mode
