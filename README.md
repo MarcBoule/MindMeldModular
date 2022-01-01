@@ -122,7 +122,7 @@ Two utility modules to help manage direct out and insert connections. Three pane
 
 ![IM](res/img/MSMelder.png)
 
-A utility module to simplify the patching of mid/side EQ'ing with VCV Mid/Side and EqMaster. The picture above shows how to connect M/S Melder on the mixer inserts for tracks 1-8; the same patching technique can be used for tracks 9-16 (applicable only to the 16-track MixMaster) and Goups/Auxes, each requiring only an additional VCV Mid/Side module.
+A utility module (bottom left in the picture above) to simplify the patching of mid/side EQ'ing with VCV Mid/Side and EqMaster. The picture above shows how to connect M/S Melder on the mixer inserts for tracks 1-8; the same patching technique can be used for tracks 9-16 (applicable only to the 16-track MixMaster) and Goups/Auxes, each requiring only an additional VCV Mid/Side module.
 
 
 <a id="bassmaster"></a>

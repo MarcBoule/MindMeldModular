@@ -94,12 +94,6 @@
 			"description": "Multi-Stage Envelope Generator (MSEG) / Complex LFO",
 			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-ShapeMaster-Manual-V1_0.pdf",
 			"tags": ["Envelope generator", "LFO", "Sequencer"]
-		},
-		{
-			"slug": "TrigCounter",
-			"name": "TrigCounter",
-			"description": "Trigger counter with an interval gate output",
-			"tags": ["Utility"]
 		}
 	]
 }
