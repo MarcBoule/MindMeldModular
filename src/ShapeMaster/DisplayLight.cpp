@@ -446,7 +446,9 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		float toolOffsetX = margins.x;
 		float toolOffsetVoltsY = margins.y * 2.3f;
 		float toolOffsetTimeY = toolOffsetVoltsY;
-		if (ptVec.y < 0.5f) {
+		float toolOffsetNodeY = toolOffsetVoltsY;
+		bool tooltipAboveNode = ptVec.y < 0.5f;
+		if (tooltipAboveNode) {
 			toolOffsetTimeY *= -1.0f;
 			toolOffsetVoltsY *= -1.78f;
 		}
@@ -455,6 +457,17 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		}
 		if (ptVec.x > 0.5f) {
 			toolOffsetX *= -1.0f;
+		}
+		
+		bool showNodeNumber = channels[*currChan].isNodeTriggers();
+		if (showNodeNumber && ptSelect > 0) {
+			if (tooltipAboveNode) {
+				toolOffsetNodeY *= (-1.78f - 0.78f);
+			}
+			else {
+				toolOffsetTimeY += toolOffsetVoltsY * 0.78f;
+				toolOffsetVoltsY *= 1.78f;
+			}
 		}
 		
 		ptVec.y = 1.0f - ptVec.y;
@@ -467,6 +480,10 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 		nvgTextAlign(args.vg, textAlign);
 		nvgText(args.vg, ptVec.x + toolOffsetX, ptVec.y + toolOffsetVoltsY, voltRangedText.c_str(), NULL);
 		nvgText(args.vg, ptVec.x + toolOffsetX, ptVec.y + toolOffsetTimeY, timeText.c_str(), NULL);
+		
+		if (showNodeNumber && ptSelect > 0) {
+			nvgText(args.vg, ptVec.x + toolOffsetX, ptVec.y + toolOffsetNodeY, string::f("Node %d", ptSelect).c_str(), NULL);
+		}
 	}
 }
 
