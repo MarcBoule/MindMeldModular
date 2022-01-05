@@ -623,7 +623,7 @@ struct NodeTriggersItem : MenuItem {
 		));	
 		#endif
 
-		menu->addChild(createCheckMenuItem("Node triggers on VCA output", "",
+		menu->addChild(createCheckMenuItem("Node triggers", "",
 			[=]() {return channel->getNodeTriggers() == 1;},
 			[=]() {channel->setNodeTriggers(1);}
 		));	
@@ -724,16 +724,6 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	decFlItem->channel = &(channels[chan]);
 	menu->addChild(decFlItem);
 
-	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("VCA output", RIGHT_ARROW);
-	nodetrigItem->channel = &(channels[chan]);
-	menu->addChild(nodetrigItem);
-
-	menu->addChild(createCheckMenuItem("Use sustain as channel reset", "",
-		[=]() {return channels[chan].isChannelResetOnSustain();},
-		[=]() {channels[chan].toggleChannelResetOnSustain();}
-	));	
-
-
 	PolySumItem *sumSteItem = createMenuItem<PolySumItem>("Poly VCA summing", "");// arrow done in PolySumItem
 	sumSteItem->channel = &(channels[chan]);
 	menu->addChild(sumSteItem);
@@ -742,6 +732,15 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	polyVcaItem->srcScopeVcaPolySelItem = &(channels[chan].channelSettings2.cc4[0]);
 	polyVcaItem->channel = &(channels[chan]);
 	menu->addChild(polyVcaItem);
+
+	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("VCA output", RIGHT_ARROW);
+	nodetrigItem->channel = &(channels[chan]);
+	menu->addChild(nodetrigItem);
+
+	menu->addChild(createCheckMenuItem("Use sustain as channel reset", "",
+		[=]() {return channels[chan].isChannelResetOnSustain();},
+		[=]() {channels[chan].toggleChannelResetOnSustain();}
+	));	
 
 	#ifdef SM_PRO
 	if (trigExpPresent) {
