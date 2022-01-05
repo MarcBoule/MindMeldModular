@@ -459,7 +459,7 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 			toolOffsetX *= -1.0f;
 		}
 		
-		bool showNodeNumber = channels[*currChan].isNodeTriggers();
+		bool showNodeNumber = channels[*currChan].getNodeTriggers() != 0;
 		if (showNodeNumber && ptSelect > 0) {
 			if (tooltipAboveNode) {
 				toolOffsetNodeY *= (-1.78f - 0.78f);

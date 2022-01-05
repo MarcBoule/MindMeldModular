@@ -75,6 +75,9 @@ class Shape {
 	
 	void initMinPts();
 	
+	int getPc() {
+		return pc;
+	}
 	int getPcDelta() {
 		return pcDelta;
 	}

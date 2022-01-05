@@ -42,7 +42,7 @@ class Channel {
 	static constexpr float DEFAULT_SENSITIVITY = 0.5f;// dB or volts, not sure yet
 	static constexpr float SENSITIVITY_MAX = 1.0f;
 	static constexpr float SENSITIVITY_MIN = 0.0f;
-	static constexpr float DEFAULT_NODETRIG_DURATION = 0.01f;
+	static constexpr float DEFAULT_NODETRIG_DURATION = 0.001f;
 	
 	static const int SCF_SCALING_EXP = 2;// must adjust bounds below when changing this; used in menu.cpp L776, L824; channel.hpp L199, L203, L527, L539; inverse used in channel.cpp L175, L184
 	
@@ -482,8 +482,8 @@ class Channel {
 	bool isDecoupledFirstAndLast() {
 		return channelSettings2.cc4[3] != 0;
 	}
-	bool isNodeTriggers() {
-		return channelSettings3.cc4[0] != 0;
+	int getNodeTriggers() {
+		return channelSettings3.cc4[0];
 	}
 	int8_t getPolyMode() {
 		return channelSettings.cc4[2];
@@ -716,8 +716,8 @@ class Channel {
 			shape.coupleFirstAndLast();
 		}
 	}
-	void toggleNodeTriggers() {
-		channelSettings3.cc4[0] ^= 0x1;
+	void setNodeTriggers(int nt) {
+		channelSettings3.cc4[0] = nt;
 		nodeTrigPulseGen.reset();
 	}
 	

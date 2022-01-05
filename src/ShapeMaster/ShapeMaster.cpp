@@ -212,7 +212,7 @@ void ShapeMaster::process(const ProcessArgs &args) {
 		for (int c = 0; c < NUM_CHAN; c++) 
 		{
 			if (outputs[OUT_OUTPUTS + c].isConnected()) {
-				if (channels[c].isNodeTriggers()) {
+				if (channels[c].getNodeTriggers() != 0) {
 					outputs[OUT_OUTPUTS + c].setChannels(1);
 				}
 				else {
@@ -841,7 +841,7 @@ void ShapeMasterWidget::step() {
 		
 		// Node trigger mode led
 		for (int c = 0; c < 8; c++) {
-			module->lights[ShapeMaster::NODETRIG_LIGHTS + c].setBrightness(module->channels[c].isNodeTriggers() ? 10.0f : 0.0f);
+			module->lights[ShapeMaster::NODETRIG_LIGHTS + c].setBrightness((module->channels[c].getNodeTriggers() != 0) ? 10.0f : 0.0f);
 		}
 		// Run light
 		module->lights[ShapeMaster::RUN_LIGHT].setBrightness(module->running ? 1.0f : 0.0f);

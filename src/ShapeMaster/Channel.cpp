@@ -78,7 +78,7 @@ void Channel::onReset(bool withParams) {
 	setShowUnsyncLengthAs(0x0);// show unsynced length in: 0 = seconds, 1 = Hz, 2 = note; must use setShowUnsyncLengthAs() to change, do not write to channelSettings2.cc4[1] directly
 	channelSettings2.cc4[2] = 0x1;// tooltip Y mode (1 is default volts, 0 is freq, 2 is notes)
 	channelSettings2.cc4[3] = 0x0;// decoupledFirstLast
-	channelSettings3.cc4[0] = 0x0;// node triggers
+	channelSettings3.cc4[0] = 0;// 0 = none, 1 = node triggers
 	presetPath = "";
 	shapePath = "";
 	chanName = string::f("Channel %i", chanNum + 1);
@@ -511,19 +511,30 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 		// VCA
 		// --------
 		
-		if (isNodeTriggers()) {
+		if (getNodeTriggers() != 0) {
 			// needed for scope
 			vcaPreSize = 0;
 			vcaPostSize = 0;
 			scSignal = 0.0f;
-			int pcDelta = shape.getPcDelta();
-			if (pcDelta != 0) {
-				bool reverse = playHead.getReverse();
-				if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
-					nodeTrigPulseGen.trigger(nodeTrigDuration);
-				}
+			
+			#ifdef SM_PRO
+			// shape tracker
+			if (getNodeTriggers() > 1) {
+				outOutput->setVoltage(((float)(shape.getPc())) * 0.01f);
 			}
-			outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
+			else 
+			#endif
+			// node triggers
+			{
+				int pcDelta = shape.getPcDelta();
+				if (pcDelta != 0) {
+					bool reverse = playHead.getReverse();
+					if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
+						nodeTrigPulseGen.trigger(nodeTrigDuration);
+					}
+				}
+				outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
+			}
 		}
 		else {		
 			// vcaPre and vcaPreSize
@@ -619,7 +630,7 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 					}
 				}
 			}
-		}// isNodeTriggers
+		}// getNodeTriggers
 	}// if (channelActive)
 	else {
 		// needed for scope

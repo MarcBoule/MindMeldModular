@@ -438,14 +438,14 @@ struct PolySumItem : MenuItem {
 			menu->addChild(createCheckMenuItem(polyModeNames[i], "",
 				[=]() {return channel->getPolyMode() == i;},
 				[=]() {channel->channelSettings.cc4[2] = i;},
-				channel->isNodeTriggers()
+				channel->getNodeTriggers() != 0
 			));	
 		}
 		return menu;
 	}
 	
 	void step() override {
-		disabled = channel->isNodeTriggers();
+		disabled = channel->getNodeTriggers() != 0;
 		MenuItem::step();
 	}
 };
@@ -541,14 +541,14 @@ struct ScopeVcaPolySelItem : MenuItem {
 		menu->addChild(createCheckMenuItem("Poly-chans 1+2", "",
 			[=]() {return *srcScopeVcaPolySelItem == 16;},
 			[=]() {*srcScopeVcaPolySelItem = 16;},
-			maxChan <= 1 || channel->isNodeTriggers()
+			maxChan <= 1 || (channel->getNodeTriggers() != 0)
 		));	
 		
 		for (int i = 0; i < 16; i++) {
 			menu->addChild(createCheckMenuItem(string::f("Poly-chan %i", i + 1), "",
 				[=]() {return *srcScopeVcaPolySelItem == i;},
 				[=]() {*srcScopeVcaPolySelItem = i;},
-				i >= maxChan || channel->isNodeTriggers()
+				i >= maxChan || (channel->getNodeTriggers() != 0)
 			));
 		}
 
@@ -556,7 +556,7 @@ struct ScopeVcaPolySelItem : MenuItem {
 	}
 
 	void step() override {
-		disabled = channel->isNodeTriggers();
+		disabled = channel->getNodeTriggers() != 0;
 		MenuItem::step();
 	}
 };
@@ -583,11 +583,20 @@ struct NodeTriggersItem : MenuItem {
 		float getDefaultValue() override {return Channel::DEFAULT_NODETRIG_DURATION;}
 		float getDisplayValue() override {return getValue();}
 		std::string getDisplayValueString() override {
+			if (channel->getNodeTriggers() != 1) {
+				return "N/A";
+			}
 			return string::f("%i", (int)(getValue() * 1000.0f + 0.5f));
 		}
 		void setDisplayValue(float displayValue) override {setValue(displayValue);}
-		std::string getLabel() override {return "Node triggers";}
-		std::string getUnit() override {return "ms";}
+		std::string getLabel() override {
+			return "Node triggers";}
+		std::string getUnit() override {
+			if (channel->getNodeTriggers() != 1) {
+				return "";
+			}
+			return "ms";
+		}
 	};
 	struct NodeTrigDurationSlider : ui::Slider {
 		NodeTrigDurationSlider(Channel* channel) {
@@ -602,9 +611,21 @@ struct NodeTriggersItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		
+		menu->addChild(createCheckMenuItem("VCA (default)", "",
+			[=]() {return channel->getNodeTriggers() == 0;},
+			[=]() {channel->setNodeTriggers(0);}
+		));	
+		
+		#ifdef SM_PRO
+		menu->addChild(createCheckMenuItem("ShapeTracker CV", "",
+			[=]() {return channel->getNodeTriggers() == 2;},
+			[=]() {channel->setNodeTriggers(2);}
+		));	
+		#endif
+
 		menu->addChild(createCheckMenuItem("Node triggers on VCA output", "",
-			[=]() {return channel->isNodeTriggers();},
-			[=]() {channel->toggleNodeTriggers();}
+			[=]() {return channel->getNodeTriggers() == 1;},
+			[=]() {channel->setNodeTriggers(1);}
 		));	
 
 		NodeTrigDurationSlider *nodetrigSlider = new NodeTrigDurationSlider(channel);
@@ -613,17 +634,6 @@ struct NodeTriggersItem : MenuItem {
 
 		return menu;
 	}
-
-	void step() override {
-		std::string _rightText = RIGHT_ARROW;
-		if (channel->isNodeTriggers()) {
-			_rightText.insert(0, " ");
-			_rightText.insert(0, CHECKMARK_STRING);
-		}
-		rightText = _rightText;
-		MenuItem::step();
-	}
-
 };
 
 
@@ -714,7 +724,7 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	decFlItem->channel = &(channels[chan]);
 	menu->addChild(decFlItem);
 
-	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("Node triggers", RIGHT_ARROW);
+	NodeTriggersItem *nodetrigItem = createMenuItem<NodeTriggersItem>("VCA output", RIGHT_ARROW);
 	nodetrigItem->channel = &(channels[chan]);
 	menu->addChild(nodetrigItem);
 
