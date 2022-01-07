@@ -38,6 +38,16 @@ struct EqExpander : Module {
 	
 	EqExpander() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+	
+		for (int i = 0; i < 16; i++) {
+			configInput(TRACK_CV_INPUTS + i, string::f("Track %i poly CV", i + 1));
+		}
+		for (int i = 0; i < 4; i++) {
+			configInput(TRACK_CV_INPUTS + 16 + i, string::f("Group %i poly CV", i + 1));
+			configInput(TRACK_CV_INPUTS + 20 + i, string::f("Aux %i poly CV", i + 1));
+		}
+		configInput(ACTIVE_CV_INPUTS + 0, "Track active states");
+		configInput(ACTIVE_CV_INPUTS + 1, "Group/Aux active states");
 
 		onReset();
 	}

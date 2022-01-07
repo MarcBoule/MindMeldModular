@@ -206,7 +206,7 @@ class Channel {
 			shape.copyShapeTo(h->oldShape);
 		}
 		
-		shape.randomizeShape(&randomSettings, getGridX(), getRangeIndex());
+		shape.randomizeShape(&randomSettings, getGridX(), getRangeIndex(), isDecoupledFirstAndLast());
 		
 		if (withHistory) {
 			h->newShape = new Shape();
@@ -483,7 +483,11 @@ class Channel {
 		return channelSettings2.cc4[3] != 0;
 	}
 	int getNodeTriggers() {
+		#ifdef SM_PRO
 		return channelSettings3.cc4[0];
+		#else
+		return std::min(1, channelSettings3.cc4[0]);
+		#endif
 	}
 	int8_t getPolyMode() {
 		return channelSettings.cc4[2];

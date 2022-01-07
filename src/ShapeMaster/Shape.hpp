@@ -347,7 +347,7 @@ class Shape {
 		points[numPts - 1].y = points[0].y;
 	}
 
-	void setPointWithSafety(int p, Vec newPt, int xQuant, int yQuant, int8_t decoupledFirstLast);
+	void setPointWithSafety(int p, Vec newPt, int xQuant, int yQuant, bool decoupledFirstLast);
 	
 	void insertPoint(int p, Vec newPt, float newCtrl = 0.5f, int8_t newType = 0);
 	
@@ -430,7 +430,7 @@ class Shape {
 	
 	void invertShape();
 	
-	void randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex);
+	void randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast);
 	
 	bool isDirty(Shape* refShape);
 };

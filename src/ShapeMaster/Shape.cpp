@@ -60,14 +60,14 @@ void Shape::initMinPts() {
 }
 
 
-void Shape::setPointWithSafety(int p, Vec newPt, int xQuant, int yQuant, int8_t decoupledFirstLast) {
+void Shape::setPointWithSafety(int p, Vec newPt, int xQuant, int yQuant, bool decoupledFirstLast) {
 	// newPt is in normalized space and pre clamped
 	// method assumes point p already has enough space between neighbors, i.e. :
 	//   points[p - 1].x + SAFETY  <  points[p].x  <  points[p + 1].x - SAFETY
 	// quantize y to range if wanted
 	newPt.y = normalizedQuantize(newPt.y, yQuant);
 	if (p == 0 || p == (numPts - 1)) {
-		if (decoupledFirstLast == 0) {
+		if (!decoupledFirstLast) {
 			points[0].y = newPt.y;
 			points[numPts - 1].y = newPt.y;
 		}
@@ -482,7 +482,7 @@ float calcRandCv(RandomSettings* randomSettings, float restCv, int rangeValue) {
 }
 
 
-void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex) {
+void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast) {
 	Bjorklund bjorklund;
 	initMinPts();
 	
@@ -570,6 +570,10 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 					nextInsPt++;
 				}
 			}			
+		}
+		if (decoupledFirstLast && numPts > 2) {
+			points[numPts - 2].x = 1.0f;
+			numPts--;
 		}
 		unlockShape();
 	}

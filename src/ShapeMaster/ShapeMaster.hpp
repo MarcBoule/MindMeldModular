@@ -32,7 +32,7 @@ struct ShapeMaster : Module {
 		ENUMS(DEFERRAL_LIGHTS, 4),
 		SC_HPF_LIGHT,
 		SC_LPF_LIGHT,
-		ENUMS(NODETRIG_LIGHTS, 8),
+		ENUMS(NODETRIG_LIGHTS, 8 * 2),// room for GreenRed
 		NUM_LIGHTS
 	};
 

@@ -65,7 +65,7 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 		configOutput(OUT_OUTPUTS + c, string::f("Channel %i VCA", c + 1));
 		configOutput(CV_OUTPUTS + c, string::f("Channel %i CV", c + 1));
 		configBypass(IN_INPUTS + c, OUT_OUTPUTS + c);
-		configLight(NODETRIG_LIGHTS + c, string::f("Channel %i node-trigger mode", c + 1));
+		configLight(NODETRIG_LIGHTS + c * 2, string::f("Channel %i node-trigger mode", c + 1));
 	}
 	configInput(CLOCK_INPUT, "Clock");
 	configInput(RESET_INPUT, "Reset");
@@ -686,7 +686,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	// outputs
 	for (int i = 0; i < 8; i++) {
 		addOutput(createOutputCentered<MmPort>(mm2px(Vec(audioOutX, outsY + outsDY * i)), module, OUT_OUTPUTS + i));
-		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(audioOutX + redDx, outsY + outsDY * i + redDy)), module, ShapeMaster::NODETRIG_LIGHTS + i));
+		addChild(createLightCentered<TinyLight<GreenRedLight>>(mm2px(Vec(audioOutX + redDx, outsY + outsDY * i + redDy)), module, ShapeMaster::NODETRIG_LIGHTS + i * 2));
 		addOutput(createOutputCentered<MmPort>(mm2px(Vec(cvOutX, outsY + outsDY * i)), module, CV_OUTPUTS + i));
 	}
 
@@ -841,7 +841,8 @@ void ShapeMasterWidget::step() {
 		
 		// Node trigger mode led
 		for (int c = 0; c < 8; c++) {
-			module->lights[ShapeMaster::NODETRIG_LIGHTS + c].setBrightness((module->channels[c].getNodeTriggers() != 0) ? 10.0f : 0.0f);
+			module->lights[ShapeMaster::NODETRIG_LIGHTS + c * 2 + 0].setBrightness((module->channels[c].getNodeTriggers() == 2) ? 10.0f : 0.0f);// green
+			module->lights[ShapeMaster::NODETRIG_LIGHTS + c * 2 + 1].setBrightness((module->channels[c].getNodeTriggers() == 1) ? 10.0f : 0.0f);// red
 		}
 		// Run light
 		module->lights[ShapeMaster::RUN_LIGHT].setBrightness(module->running ? 1.0f : 0.0f);

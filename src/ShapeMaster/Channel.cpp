@@ -517,15 +517,12 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 			vcaPostSize = 0;
 			scSignal = 0.0f;
 			
-			#ifdef SM_PRO
-			// shape tracker
 			if (getNodeTriggers() > 1) {
+				// shape tracker
 				outOutput->setVoltage(((float)(shape.getPc())) * 0.01f);
 			}
-			else 
-			#endif
-			// node triggers
-			{
+			else {
+				// node triggers
 				int pcDelta = shape.getPcDelta();
 				if (pcDelta != 0) {
 					bool reverse = playHead.getReverse();
