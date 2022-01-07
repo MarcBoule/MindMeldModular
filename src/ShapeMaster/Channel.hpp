@@ -483,11 +483,10 @@ class Channel {
 		return channelSettings2.cc4[3] != 0;
 	}
 	int getNodeTriggers() {
-		#ifdef SM_PRO
-		return channelSettings3.cc4[0];
-		#else
-		return std::min(1, channelSettings3.cc4[0]);
+		#ifndef SM_PRO
+		if (channelSettings3.cc4[0] > 1) return 1;
 		#endif
+		return channelSettings3.cc4[0];
 	}
 	int8_t getPolyMode() {
 		return channelSettings.cc4[2];

@@ -579,18 +579,13 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 	}
 	else {// not stepped
 		if (!randomSettings->grid) {
-			if (numPtsRnd > 1) {	
-				for (int rp = 0; rp < numPtsRnd - 1; rp++) {
-					float rndX = random::uniform();
-					float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
-					int retPt = insertPointWithSafetyAndBlock(Vec(rndX, rndCv), false);// without history
+			for (int rp = 0; rp < numPtsRnd - 1; rp++) {
+				float rndX = random::uniform();
+				float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+				int retPt = insertPointWithSafetyAndBlock(Vec(rndX, rndCv), false);// without history
 
-					setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
-					type[retPt] = 0;
-				}
-				setCtrlWithSafety(0, calcRndCtrl(randomSettings->ctrlMax));
-				points[0].y = restCv;
-				points[numPts - 1].y = restCv;
+				setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
+				type[retPt] = 0;
 			}
 		}
 		else {// is grid
@@ -604,8 +599,13 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 				setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
 				type[retPt] = 0;
 			}
-			setCtrlWithSafety(0, calcRndCtrl(randomSettings->ctrlMax));
-			points[0].y = restCv;
+		}
+		setCtrlWithSafety(0, calcRndCtrl(randomSettings->ctrlMax));
+		points[0].y = restCv;
+		if (decoupledFirstLast) {
+			points[numPts - 1].y = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+		}
+		else {
 			points[numPts - 1].y = restCv;
 		}
 	}
