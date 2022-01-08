@@ -1091,6 +1091,7 @@ struct EqMasterWidget : ModuleWidget {
 				if (module->mappedId == 0) {
 					if (oldMappedId != 0) {
 						module->initTrackLabelsAndColors();
+						module->updateTrackLabelRequest = 1;
 					}
 				}
 				else {
@@ -1174,10 +1175,10 @@ struct EqMasterWidget : ModuleWidget {
 							moveTrack(module->trackEqs, message.tm.tmSep[1], message.tm.tmSep[2]);
 							// DEBUG("Track move from %i to %i", message.tm.tmSep[1], message.tm.tmSep[2]);
 						}
+						
+						module->updateTrackLabelRequest = 1;
 					}
 				}
-				module->updateTrackLabelRequest = 1;
-				
 				oldMappedId = module->mappedId;
 			}// update labels from message bus at 1Hz
 			
