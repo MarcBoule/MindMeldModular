@@ -74,6 +74,7 @@ struct EqMaster : Module {
 	bool requestStop = false;
 	bool requestWork = false;
 	int requestPage = 0;
+	int32_t lastTrackMove = 0;
 	std::condition_variable cv;// https://thispointer.com//c11-multithreading-part-7-condition-variables-explained/
 	std::thread worker;// http://www.cplusplus.com/reference/thread/thread/thread/
 	
@@ -840,7 +841,7 @@ struct EqMasterWidget : ModuleWidget {
 
 		menu->addChild(new MenuSeparator());
 		
-		FetchLabelsItem *fetchItem = createMenuItem<FetchLabelsItem>("Fetch track labels from Mixer", RIGHT_ARROW);
+		MixerLinkItem *fetchItem = createMenuItem<MixerLinkItem>("Link to mixer", RIGHT_ARROW);
 		fetchItem->mappedIdSrc = &(module->mappedId);
 		menu->addChild(fetchItem);
 
@@ -1081,8 +1082,8 @@ struct EqMasterWidget : ModuleWidget {
 		EqMaster* module = (EqMaster*)(this->module);
 		if (module) {
 			int trk = module->getSelectedTrack();			
-			
-			// update labels from message bus at 1Hz
+	
+			// update labels and check for track move from message bus at 1Hz
 			time_t currentTime = time(0);
 			if (currentTime != oldTime) {
 				oldTime = currentTime;
@@ -1102,6 +1103,7 @@ struct EqMasterWidget : ModuleWidget {
 						// module->mappedId = 0;
 					}
 					else {
+						// update labels and colors continually (1Hz)
 						if (message.isJr) {
 							module->initTrackLabelsAndColors();// need this since message.trkGrpAuxLabels is not completely filled
 							// Track labels
@@ -1165,12 +1167,21 @@ struct EqMasterWidget : ModuleWidget {
 								}
 							}
 						}
+						// check for track move in mixer
+						if (message.tm.tmSep[0] != 0 && message.tm.tmTot != module->lastTrackMove) {
+							// has valid and fresh move
+							module->lastTrackMove = message.tm.tmTot;// avoids doing the move again until a new fresh move is detected
+							moveTrack(module->trackEqs, message.tm.tmSep[1], message.tm.tmSep[2]);
+							// DEBUG("Track move from %i to %i", message.tm.tmSep[1], message.tm.tmSep[2]);
+						}
 					}
 				}
 				module->updateTrackLabelRequest = 1;
 				
 				oldMappedId = module->mappedId;
-			}
+			}// update labels from message bus at 1Hz
+			
+			
 
 			// Track label (pull from module or this step method)
 			if (module->updateTrackLabelRequest != 0) {// pull request from module

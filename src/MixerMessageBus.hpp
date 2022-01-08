@@ -19,14 +19,21 @@
 
 struct MessageBase {
 	int64_t id;
-	char name[7] = {0};
+	char name[7] = {};
 };
 
 struct MixerMessage : MessageBase {
+	// GUI elements:
 	bool isJr;
 	char trkGrpAuxLabels[(16 + 4 + 4) * 4];
 	int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 	int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+	// Track move elements:
+	union tmU {
+		int8_t tmSep[4];// 0 is has move (0=no, 1=yes), 1 is src, 2 is dest, 3 is rotating tag (0 to 15, 15 being arbitrary choice)
+		int32_t tmTot;
+	};
+	tmU tm;
 };
 
 
@@ -35,7 +42,7 @@ struct MixerMessageBus {
 	std::unordered_map<int64_t, MixerMessage> memberData;// first value is a "Module::id + 1" (so that 0 = deregistered, instead of -1)
 
 
-	void send(int64_t id, char* masterLabel, char* trackLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {
+	void send(int64_t id, char* masterLabel, char* trackLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors, bool doTrackMoveInit) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
@@ -50,8 +57,11 @@ struct MixerMessageBus {
 		if (_dispColors[0] >= 7) {
 			memcpy(&memberData[id].dispColors[1], &_dispColors[1], 16 + 4 + 4);
 		}
+		if (doTrackMoveInit) {
+			memberData[id].tm.tmTot = 0;
+		}
 	}
-	void sendJr(int64_t id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors) {// does not write to tracks 9-16 and groups 3-4 when jr.
+	void sendJr(int64_t id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors, bool doTrackMoveInit) {// does not write to tracks 9-16 and groups 3-4 when jr.
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
@@ -71,8 +81,22 @@ struct MixerMessageBus {
 			memcpy(&memberData[id].dispColors[1 + 16], &_dispColors[1 + 16], 2);
 			memcpy(&memberData[id].dispColors[1 + 16 + 4], &_dispColors[1 + 16 + 4], 4);
 		}
+		if (doTrackMoveInit) {
+			memberData[id].tm.tmTot = 0;
+		}
 	}
-
+	
+	void sendTrackMove(int64_t id, int8_t srcTrack, int8_t destTrack) {
+		std::lock_guard<std::mutex> lock(memberMutex);
+		// not need to write id since that is already there (MixMaster construct has sendToMessageBus() which has send(...))
+		memberData[id].tm.tmSep[0] = 1;
+		memberData[id].tm.tmSep[1] = srcTrack;
+		memberData[id].tm.tmSep[2] = destTrack;
+		memberData[id].tm.tmSep[3]++;
+		if (memberData[id].tm.tmSep[3] > 15) {
+			memberData[id].tm.tmSep[3] = 0;
+		}
+	}
 
 	void receive(MixerMessage* message) {// id of sender we want to receive from must be in message->id, other fields will be filled by this method as the receive mechanism. If non-existing sender is requested, a blank message with an id of 0 will be returned
 		std::lock_guard<std::mutex> lock(memberMutex);

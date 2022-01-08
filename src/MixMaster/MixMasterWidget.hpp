@@ -316,7 +316,7 @@ void step() override {
 			
 			
 			// Mixer Message Bus (for EQ and others)
-			module->sendToMessageBus();
+			module->sendToMessageBus(false);// do not do track move init (would overwrite async track move writing)
 			
 			
 			// Lights

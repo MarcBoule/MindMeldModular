@@ -117,7 +117,7 @@ struct MixMaster : Module {
 	alignas(4) char auxLabels[4 * 4 + 4];// slow expander
 		
 		
-	void sendToMessageBus() { 
+	void sendToMessageBus(bool doTrackMoveInit) { 
 		int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 		int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 		vuColors[0] = gInfo.colorAndCloak.cc4[vuColorGlobal];
@@ -146,10 +146,10 @@ struct MixMaster : Module {
 		}
 		
 		if (N_TRK < 16) {
-			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels, vuColors, dispColors);
+			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels, vuColors, dispColors, doTrackMoveInit);
 		}
 		else {
-			mixerMessageBus.send(id + 1, master.masterLabel, trackLabels, auxLabels, vuColors, dispColors);
+			mixerMessageBus.send(id + 1, master.masterLabel, trackLabels, auxLabels, vuColors, dispColors, doTrackMoveInit);
 		}
 	}
 	
@@ -244,7 +244,7 @@ struct MixMaster : Module {
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
-		sendToMessageBus();// register by just writing data
+		sendToMessageBus(true);// register by just writing data; true means doTrackMoveInit
 	}
   
 	~MixMaster() {
@@ -1056,6 +1056,7 @@ struct MixMasterWidget : ModuleWidget {
 				trackDisplays[i]->trackOrGroupResetInAuxPtr = &(module->trackOrGroupResetInAux);
 				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
+				trackDisplays[i]->idPtr = &(module->id);
 				trackDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i];
 				trackDisplays[i]->lpfParamQuantity = module->paramQuantities[TMixMaster::TRACK_LPCUT_PARAMS + i];
 			}
@@ -1361,6 +1362,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				trackDisplays[i]->trackOrGroupResetInAuxPtr = &(module->trackOrGroupResetInAux);
 				trackDisplays[i]->trackMoveInAuxRequestPtr = &(module->trackMoveInAuxRequest);
 				trackDisplays[i]->inputWidgets = inputWidgets;
+				trackDisplays[i]->idPtr = &(module->id);
 				trackDisplays[i]->hpfParamQuantity = module->paramQuantities[TMixMaster::TRACK_HPCUT_PARAMS + i];
 				trackDisplays[i]->lpfParamQuantity = module->paramQuantities[TMixMaster::TRACK_LPCUT_PARAMS + i];
 			}

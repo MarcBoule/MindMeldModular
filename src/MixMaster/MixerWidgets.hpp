@@ -612,6 +612,7 @@ struct TrackDisplay : EditableDisplayBase {
 	PortWidget **inputWidgets;
 	ParamQuantity* hpfParamQuantity;
 	ParamQuantity* lpfParamQuantity;
+	int64_t *idPtr;
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -732,6 +733,7 @@ struct TrackDisplay : EditableDisplayBase {
 			reodrerItem->updateTrackLabelRequestPtr = updateTrackLabelRequestPtr;
 			reodrerItem->trackMoveInAuxRequestPtr = trackMoveInAuxRequestPtr;
 			reodrerItem->inputWidgets = inputWidgets;
+			reodrerItem->idPtr = idPtr;
 			menu->addChild(reodrerItem);
 			
 			e.consume(this);

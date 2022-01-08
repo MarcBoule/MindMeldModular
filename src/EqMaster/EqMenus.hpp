@@ -93,7 +93,7 @@ struct MomentaryCvItem : MenuItem {
 
 
 
-struct FetchLabelsItem : MenuItem {
+struct MixerLinkItem : MenuItem {
 	int64_t *mappedIdSrc;
 	
 	Menu *createChildMenu() override {
@@ -153,6 +153,25 @@ struct CopyTrackSettingsItem : MenuItem {
 };
 
 
+void moveTrack(TrackEq *trackEqsSrc, int trackNumSrc, int trackNumDest) {
+	// does not check for trackNumSrc == trackNumDest
+	TrackEq buffer1;
+	
+	buffer1.copyFrom(&trackEqsSrc[trackNumSrc]);
+	if (trackNumDest < trackNumSrc) {
+		for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
+			trackEqsSrc[trk + 1].copyFrom(&trackEqsSrc[trk]);
+		}
+	}
+	else {// must automatically be bigger (equal is impossible)
+		for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
+			trackEqsSrc[trk].copyFrom(&trackEqsSrc[trk + 1]);
+		}
+	}
+	trackEqsSrc[trackNumDest].copyFrom(&buffer1);
+}
+
+
 struct MoveTrackSettingsItem : MenuItem {
 	Param* trackParamSrc;
 	TrackEq *trackEqsSrc;
@@ -164,38 +183,11 @@ struct MoveTrackSettingsItem : MenuItem {
 		int trackNumSrc;	
 		int trackNumDest;
 		int* updateTrackLabelRequestSrc = NULL;
-		// PackedBytes4 *miscSettings2Src;
 		char* trackLabelsSrc;
-		
 		
 		void onAction(const event::Action &e) override {
 			if (trackNumSrc != trackNumDest) {		
-				TrackEq buffer1;
-				// char bufChar[4];// not used since no sense moving labels, when linked to a mixmaster it's the mixer that controls them, and when not linked, then can't be user modified and they are simply hardcoded to 1-16-grp-aux
-				// buffer1.init(25, 44100.0f, NULL);// all dummy args since nothing that uses these will be called on buffer1
-				
-				buffer1.copyFrom(&trackEqsSrc[trackNumSrc]);
-				// memcpy(bufChar, &(trackLabelsSrc[trackNumSrc * 4]), 4 * sizeof(char));
-				if (trackNumDest < trackNumSrc) {
-					for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
-						trackEqsSrc[trk + 1].copyFrom(&trackEqsSrc[trk]);
-						// if (miscSettings2Src->cc4[3] != 0) {
-							// memcpy(&(trackLabelsSrc[(trk + 1) * 4]), &(trackLabelsSrc[trk * 4]), 4 * sizeof(char));
-						// }
-					}
-				}
-				else {// must automatically be bigger (equal is impossible)
-					for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
-						trackEqsSrc[trk].copyFrom(&trackEqsSrc[trk + 1]);
-						// if (miscSettings2Src->cc4[3] != 0) {
-							// memcpy(&(trackLabelsSrc[trk * 4]), &(trackLabelsSrc[(trk + 1) * 4]), 4 * sizeof(char));
-						// }
-					}
-				}
-				trackEqsSrc[trackNumDest].copyFrom(&buffer1);
-				// if (miscSettings2Src->cc4[3] != 0) {
-					// memcpy(&(trackLabelsSrc[trackNumDest * 4]), bufChar, 4 * sizeof(char));
-				// }
+				moveTrack(trackEqsSrc, trackNumSrc, trackNumDest);
 				*updateTrackLabelRequestSrc = 2;// force param refreshing
 				
 				e.consume(this);// don't allow ctrl-click to keep menu open
@@ -207,13 +199,6 @@ struct MoveTrackSettingsItem : MenuItem {
 		Menu *menu = new Menu;
 		int trackNumSrc = (int)(trackParamSrc->getValue() + 0.5f);
 		
-		// menu->addChild(createCheckMenuItem("Move track names", "",
-			// [=]() {return miscSettings2Src->cc4[3] != 0;},
-			// [=]() {miscSettings2Src->cc4[3] ^= 0x1;}
-		// ));
-		
-		// menu->addChild(new MenuSeparator());
-		
 		for (int trk = 0; trk < 24; trk++) {
 			bool onSource = (trk == trackNumSrc);
 			MoveTrackSubItem *reo0Item = createMenuItem<MoveTrackSubItem>(std::string(&(trackLabelsSrc[trk * 4]), 4), CHECKMARK(onSource));
@@ -221,7 +206,6 @@ struct MoveTrackSettingsItem : MenuItem {
 			reo0Item->trackNumSrc = trackNumSrc;
 			reo0Item->trackNumDest = trk;
 			reo0Item->updateTrackLabelRequestSrc = updateTrackLabelRequestSrc;
-			// reo0Item->miscSettings2Src = miscSettings2Src;
 			reo0Item->trackLabelsSrc = trackLabelsSrc;
 			reo0Item->disabled = onSource;
 			menu->addChild(reo0Item);

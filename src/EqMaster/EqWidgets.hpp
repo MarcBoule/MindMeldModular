@@ -65,12 +65,23 @@ struct TrackLabel : LedDisplayChoice {
 			copyItem->trackLabelsSrc = trackLabelsSrc;
 			menu->addChild(copyItem);
 			
-			MoveTrackSettingsItem *moveItem = createMenuItem<MoveTrackSettingsItem>("Move track settings to:", RIGHT_ARROW);
-			moveItem->trackParamSrc = trackParamSrc;
-			moveItem->trackEqsSrc = trackEqsSrc;
-			moveItem->trackLabelsSrc = trackLabelsSrc;
-			moveItem->updateTrackLabelRequestSrc = updateTrackLabelRequestSrc;
-			menu->addChild(moveItem);
+			std::string moveMenuText = "Move track settings to:";
+			if (*mappedId != 0) {
+				menu->addChild(createSubmenuItem(moveMenuText, "",
+					[=](Menu* menu) {
+						menu->addChild(createMenuLabel("[Unavailable when linked to mixer]"));
+
+					}
+				));
+			}
+			else {
+				MoveTrackSettingsItem *moveItem = createMenuItem<MoveTrackSettingsItem>(moveMenuText, RIGHT_ARROW);
+				moveItem->trackParamSrc = trackParamSrc;
+				moveItem->trackEqsSrc = trackEqsSrc;
+				moveItem->trackLabelsSrc = trackLabelsSrc;
+				moveItem->updateTrackLabelRequestSrc = updateTrackLabelRequestSrc;
+				menu->addChild(moveItem);
+			}
 			
 			menu->addChild(new MenuSeparator());
 			
