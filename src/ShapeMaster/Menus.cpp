@@ -617,7 +617,7 @@ struct NodeTriggersItem : MenuItem {
 		));	
 		
 		#ifdef SM_PRO
-		menu->addChild(createCheckMenuItem("ShapeTracker CV", "",
+		menu->addChild(createCheckMenuItem("ShapeTracker (ST)", "",
 			[=]() {return channel->getNodeTriggers() == 2;},
 			[=]() {channel->setNodeTriggers(2);}
 		));	
