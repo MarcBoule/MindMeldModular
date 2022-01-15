@@ -843,6 +843,7 @@ struct EqMasterWidget : ModuleWidget {
 		
 		MixerLinkItem *fetchItem = createMenuItem<MixerLinkItem>("Link to mixer", RIGHT_ARROW);
 		fetchItem->mappedIdSrc = &(module->mappedId);
+		fetchItem->lastTrackMoveSrc = &(module->lastTrackMove);
 		menu->addChild(fetchItem);
 
 		if (module->expPresentLeft || module->expPresentRight) {

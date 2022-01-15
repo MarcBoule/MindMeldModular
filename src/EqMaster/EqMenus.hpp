@@ -95,6 +95,7 @@ struct MomentaryCvItem : MenuItem {
 
 struct MixerLinkItem : MenuItem {
 	int64_t *mappedIdSrc;
+	int32_t *lastTrackMoveSrc;
 	
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
@@ -114,7 +115,15 @@ struct MixerLinkItem : MenuItem {
 			std::string mixerName = std::string(pl.name) + string::f("  (id %" PRId64 ")", pl.id);
 			menu->addChild(createCheckMenuItem(mixerName, "",
 				[=]() {return *mappedIdSrc == pl.id;},
-				[=]() {*mappedIdSrc = pl.id;}
+				[=]() {
+					*mappedIdSrc = pl.id;
+					MixerMessage message;
+					message.id = pl.id;
+					mixerMessageBus.receive(&message);
+					if (message.id != 0) {
+						*lastTrackMoveSrc = message.tm.tmTot;// avoid spurious move when connecting to a mixer that already had done a track move
+					}
+				}
 			));	
 		}
 		delete mixerMessageSurvey;
