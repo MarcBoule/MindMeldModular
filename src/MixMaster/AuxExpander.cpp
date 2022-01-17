@@ -681,7 +681,7 @@ struct AuxExpander : Module {
 				if (isConnected) {
 					volCv = clamp(inputs[POLY_BUS_SND_PAN_RET_CV_INPUT].getVoltage(8 + i) * 0.1f, 0.f, 1.0f);
 					paramRetFaderWithCv[i] = fader * volCv;
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] == 0) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[3] == 0) {
 						fader = paramRetFaderWithCv[i];
 					}
 				}
