@@ -32,7 +32,7 @@ struct TAfmExpInterface {// messages to expander from mother (data is in expande
 	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
 	int8_t trackOrGroupResetInAux;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
 	alignas(4) char trackLabels[4 * (N_TRK + N_GRP)];
-	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];
+	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];// only valid when colorAndCloak.cc4[dispColorGlobal] >= numDispThemes
 	float auxRetFadeGains[4];
 	float srcMuteGhost[4];
 };

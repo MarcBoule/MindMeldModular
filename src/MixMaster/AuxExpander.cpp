@@ -512,7 +512,9 @@ struct AuxExpander : Module {
 				}
 				memcpy(trackLabels, messagesFromMother->trackLabels, 4 * (N_TRK + N_GRP));
 				updateTrackLabelRequest = 1;
-				memcpy(trackDispColsLocal, messagesFromMother->trackDispColsLocal, (N_TRK / 4 + 1) * 4);
+				if (messagesFromMother->colorAndCloak.cc4[dispColorGlobal] >= numDispThemes) {
+					memcpy(trackDispColsLocal, messagesFromMother->trackDispColsLocal, (N_TRK / 4 + 1) * 4);
+				}
 				memcpy(auxRetFadeGains, messagesFromMother->auxRetFadeGains, 4 * 4);
 				memcpy(srcMuteGhost, messagesFromMother->srcMuteGhost, 4 * 4);
 			}

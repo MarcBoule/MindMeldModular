@@ -679,13 +679,8 @@ struct MixMaster : Module {
 				trackOrGroupResetInAux = -1;
 				memcpy(messageToExpander->trackLabels, trackLabels, ((N_TRK + N_GRP) << 2));
 				
-				PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
-				if (gInfo.colorAndCloak.cc4[dispColorGlobal] < numDispThemes) {
-					for (int i = 0; i < (N_TRK / 4 + 1); i++) {
-						tmpDispCols[i].cc1 = 0;
-					}
-				}
-				else {
+				if (gInfo.colorAndCloak.cc4[dispColorGlobal] >= numDispThemes) {
+					PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
 					for (int i = 0; i < (N_TRK / 4); i++) {
 						for (int j = 0; j < 4; j++) {
 							tmpDispCols[i].cc4[j] = tracks[ (i << 2) + j ].dispColorLocal;
@@ -694,8 +689,9 @@ struct MixMaster : Module {
 					for (int j = 0; j < N_GRP; j++) {
 						tmpDispCols[N_TRK / 4].cc4[j] = groups[ j ].dispColorLocal;
 					}
-				}	
-				memcpy(messageToExpander->trackDispColsLocal, tmpDispCols, (N_TRK / 4 + 1) * 4);
+					memcpy(messageToExpander->trackDispColsLocal, tmpDispCols, (N_TRK / 4 + 1) * 4);
+				}
+				
 				// auxFadeGains
 				for (int auxi = 0; auxi < 4; auxi++) {
 					messageToExpander->auxRetFadeGains[auxi] = aux[auxi].fadeGain;
