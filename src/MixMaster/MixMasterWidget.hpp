@@ -14,6 +14,7 @@ GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[N_GRP];
 PortWidget* inputWidgets[N_TRK * 4];// Left, Right, Volume, Pan
 PanelBorder* panelBorder;
 time_t oldTime = 0;
+GlobalToLocalOp globalToLocalOp;
 
 
 
@@ -97,6 +98,7 @@ void appendContextMenu(Menu *menu) override {
 	MomentaryCvModeItem *momentItem = createMenuItem<MomentaryCvModeItem>("Mute/Solo CV", RIGHT_ARROW);
 	momentItem->momentaryCvButtonsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]);
 	momentItem->isGlobal = true;
+	momentItem->localOp = &globalToLocalOp;
 	menu->addChild(momentItem);
 
 	FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
@@ -192,7 +194,12 @@ void step() override {
 		}
 		
 		// GlobalToLocal operation
-		
+		if (globalToLocalOp.opCode != GTOL_NOP) {
+			DEBUG("GTOL %i, %i", globalToLocalOp.opCode, globalToLocalOp.operand);
+			
+			
+			globalToLocalOp.opCode = GTOL_NOP;
+		}
 		
 		// Update param and port tooltips and message bus at 1Hz (and filter lights also)
 		time_t currentTime = time(0);

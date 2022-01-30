@@ -174,6 +174,7 @@ struct FilterPosItem : MenuItem {
 struct MomentaryCvModeItem : MenuItem {
 	int8_t *momentaryCvButtonsSrc;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
 	const std::string momentaryCvNames[3] = {
 		"Gate high/low",
 		"Trigger toggle (default)",
@@ -187,7 +188,8 @@ struct MomentaryCvModeItem : MenuItem {
 			int i = ordering[k];
 			menu->addChild(createCheckMenuItem(momentaryCvNames[i], "",
 				[=]() {return *momentaryCvButtonsSrc == i;},
-				[=]() {*momentaryCvButtonsSrc = i;}
+				[=]() {if (i == 2) localOp->setOp(GTOL_MOMENTCV, *momentaryCvButtonsSrc);
+					   *momentaryCvButtonsSrc = i;}
 			));
 		}
 		return menu;

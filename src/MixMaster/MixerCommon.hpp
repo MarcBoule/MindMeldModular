@@ -160,7 +160,27 @@ enum ccIds {
 };
 
 
+enum GTOL_IDS {
+	GTOL_NOP,
+	GTOL_VUCOL,
+	GTOL_LABELCOL,
+	GTOL_STEREOPAN,
+	GTOL_AUXSENDS,
+	GTOL_DIRECTOUTS,
+	GTOL_FILTERPOS,
+	GTOL_MOMENTCV
+};
+
 struct GlobalToLocalOp {
-	int8_t op;// 0 is no-op, 1 = vucol, 2 = dispcol, 
+	int8_t opCode;// see GTOL_IDS
+	int8_t operand;// the global value that we want to be set in all the local values
 	
+	GlobalToLocalOp() {
+		opCode = GTOL_NOP;
+	}
+	
+	void setOp(int8_t _opCode, int8_t _operand) {
+		opCode = _opCode;
+		operand = _operand;
+	}
 };
