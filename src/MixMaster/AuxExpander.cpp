@@ -184,7 +184,7 @@ struct AuxExpander : Module {
 		colorAndCloak.cc1 = 0;
 		directOutPanStereoMomentCvLinearVol.cc4[0] = 3; // directOutsMode: post-solo by default
 		directOutPanStereoMomentCvLinearVol.cc4[1] = 1; // panLawStereo
-		directOutPanStereoMomentCvLinearVol.cc4[2] = 1; // momentaryCvButtons: momentary by default
+		directOutPanStereoMomentCvLinearVol.cc4[2] = 1; // : 0=gatelevel, 1=momentary, 2=pertrack
 		directOutPanStereoMomentCvLinearVol.cc4[3] = 0; // linearVolCvInputs: 0 means powN, 1 means linear		
 		muteAuxSendWhenReturnGrouped = 0;
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no

@@ -436,6 +436,9 @@ struct MixerMaster {
 	float fadeProfile; // exp when +1, lin when 0, log when -1
 	int8_t vuColorThemeLocal;
 	int8_t dispColorLocal;
+	int8_t momentCvMuteLocal;
+	int8_t momentCvDimLocal;
+	int8_t momentCvMonoLocal;
 	int8_t chainOnly;
 	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	char masterLabel[7];
@@ -488,6 +491,9 @@ struct MixerMaster {
 		fadeProfile = 0.0f;
 		vuColorThemeLocal = 0;
 		dispColorLocal = 0;
+		momentCvMuteLocal = 1;
+		momentCvDimLocal = 1;
+		momentCvMonoLocal = 1;
 		chainOnly = 0;
 		dimGain = 0.25119f;// 0.1 = -20 dB, 0.25119 = -12 dB
 		snprintf(masterLabel, 7, "MASTER");
@@ -533,6 +539,15 @@ struct MixerMaster {
 		// dispColorLocal
 		json_object_set_new(rootJ, "dispColorLocal", json_integer(dispColorLocal));
 		
+		// momentCvMuteLocal
+		json_object_set_new(rootJ, "momentCvMuteLocal", json_integer(momentCvMuteLocal));
+		
+		// momentCvDimLocal
+		json_object_set_new(rootJ, "momentCvDimLocal", json_integer(momentCvDimLocal));
+		
+		// momentCvMonoLocal
+		json_object_set_new(rootJ, "momentCvMonoLocal", json_integer(momentCvMonoLocal));
+		
 		// chainOnly
 		json_object_set_new(rootJ, "chainOnly", json_integer(chainOnly));
 		
@@ -574,6 +589,21 @@ struct MixerMaster {
 		json_t *dispColorLocalJ = json_object_get(rootJ, "dispColorLocal");
 		if (dispColorLocalJ)
 			dispColorLocal = json_integer_value(dispColorLocalJ);
+		
+		// momentCvMuteLocal
+		json_t *momentCvMuteLocalJ = json_object_get(rootJ, "momentCvMuteLocal");
+		if (momentCvMuteLocalJ)
+			momentCvMuteLocal = json_integer_value(momentCvMuteLocalJ);
+		
+		// momentCvDimLocal
+		json_t *momentCvDimLocalJ = json_object_get(rootJ, "momentCvDimLocal");
+		if (momentCvDimLocalJ)
+			momentCvDimLocal = json_integer_value(momentCvDimLocalJ);
+		
+		// momentCvMonoLocal
+		json_t *momentCvMonoLocalJ = json_object_get(rootJ, "momentCvMonoLocal");
+		if (momentCvMonoLocalJ)
+			momentCvMonoLocal = json_integer_value(momentCvMonoLocalJ);
 		
 		// chainOnly
 		json_t *chainOnlyJ = json_object_get(rootJ, "chainOnly");
@@ -796,6 +826,8 @@ struct MixerGroup {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
+	int8_t momentCvMuteLocal;
+	int8_t momentCvSoloLocal;
 	float panCvLevel;// 0 to 1.0f
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo, 2 is 200% stereo widening
 
@@ -885,6 +917,8 @@ struct MixerGroup {
 		vuColorThemeLocal = 0;
 		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
+		momentCvMuteLocal = 1;
+		momentCvSoloLocal = 1;
 		panCvLevel = 1.0f;
 		stereoWidth = 1.0f;
 		resetNonJson();
@@ -950,6 +984,12 @@ struct MixerGroup {
 		// dispColorLocal
 		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
 		
+		// momentCvMuteLocal
+		json_object_set_new(rootJ, (ids + "momentCvMuteLocal").c_str(), json_integer(momentCvMuteLocal));
+		
+		// momentCvSoloLocal
+		json_object_set_new(rootJ, (ids + "momentCvSoloLocal").c_str(), json_integer(momentCvSoloLocal));
+		
 		// panCvLevel
 		json_object_set_new(rootJ, (ids + "panCvLevel").c_str(), json_real(panCvLevel));
 
@@ -1006,6 +1046,16 @@ struct MixerGroup {
 		json_t *dispColorLocalJ = json_object_get(rootJ, (ids + "dispColorLocal").c_str());
 		if (dispColorLocalJ)
 			dispColorLocal = json_integer_value(dispColorLocalJ);
+		
+		// momentCvMuteLocal
+		json_t *momentCvMuteLocalJ = json_object_get(rootJ, (ids + "momentCvMuteLocal").c_str());
+		if (momentCvMuteLocalJ)
+			momentCvMuteLocal = json_integer_value(momentCvMuteLocalJ);
+		
+		// momentCvSoloLocal
+		json_t *momentCvSoloLocalJ = json_object_get(rootJ, (ids + "momentCvSoloLocal").c_str());
+		if (momentCvSoloLocalJ)
+			momentCvSoloLocal = json_integer_value(momentCvSoloLocalJ);
 		
 		// panCvLevel
 		json_t *panCvLevelJ = json_object_get(rootJ, (ids + "panCvLevel").c_str());
@@ -1292,6 +1342,8 @@ struct MixerTrack {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t dispColorLocal;
+	int8_t momentCvMuteLocal;
+	int8_t momentCvSoloLocal;
 	int8_t polyStereo;// 0 = off (default), 1 = on
 	float panCvLevel;// 0 to 1.0f
 	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo, 2 is 200% stereo widening
@@ -1399,6 +1451,8 @@ struct MixerTrack {
 		vuColorThemeLocal = 0;
 		filterPos = 1;// default is post-insert
 		dispColorLocal = 0;
+		momentCvMuteLocal = 1;
+		momentCvSoloLocal = 1;
 		polyStereo = 0;
 		panCvLevel = 1.0f;
 		stereoWidth = 1.0f;
@@ -1472,6 +1526,12 @@ struct MixerTrack {
 		// dispColorLocal
 		json_object_set_new(rootJ, (ids + "dispColorLocal").c_str(), json_integer(dispColorLocal));
 
+		// momentCvMuteLocal
+		json_object_set_new(rootJ, (ids + "momentCvMuteLocal").c_str(), json_integer(momentCvMuteLocal));
+		
+		// momentCvSoloLocal
+		json_object_set_new(rootJ, (ids + "momentCvSoloLocal").c_str(), json_integer(momentCvSoloLocal));
+		
 		// polyStereo
 		json_object_set_new(rootJ, (ids + "polyStereo").c_str(), json_integer(polyStereo));
 
@@ -1545,6 +1605,16 @@ struct MixerTrack {
 		if (dispColorLocalJ)
 			dispColorLocal = json_integer_value(dispColorLocalJ);
 		
+		// momentCvMuteLocal
+		json_t *momentCvMuteLocalJ = json_object_get(rootJ, (ids + "momentCvMuteLocal").c_str());
+		if (momentCvMuteLocalJ)
+			momentCvMuteLocal = json_integer_value(momentCvMuteLocalJ);
+		
+		// momentCvSoloLocal
+		json_t *momentCvSoloLocalJ = json_object_get(rootJ, (ids + "momentCvSoloLocal").c_str());
+		if (momentCvSoloLocalJ)
+			momentCvSoloLocal = json_integer_value(momentCvSoloLocalJ);
+		
 		// polyStereo
 		json_t *polyStereoJ = json_object_get(rootJ, (ids + "polyStereo").c_str());
 		if (polyStereoJ)
@@ -1582,6 +1652,8 @@ struct MixerTrack {
 		dest->vuColorThemeLocal = vuColorThemeLocal;
 		dest->filterPos = filterPos;
 		dest->dispColorLocal = dispColorLocal;
+		dest->momentCvMuteLocal = momentCvMuteLocal;
+		dest->momentCvSoloLocal = momentCvSoloLocal;
 		dest->polyStereo = polyStereo;
 		dest->panCvLevel = panCvLevel;
 		dest->stereoWidth = stereoWidth;
@@ -1600,6 +1672,8 @@ struct MixerTrack {
 		vuColorThemeLocal = src->vuColorThemeLocal;
 		filterPos = src->filterPos;
 		dispColorLocal = src->dispColorLocal;
+		momentCvMuteLocal = src->momentCvMuteLocal;
+		momentCvSoloLocal = src->momentCvSoloLocal;
 		polyStereo = src->polyStereo;
 		panCvLevel = src->panCvLevel;
 		stereoWidth = src->stereoWidth;

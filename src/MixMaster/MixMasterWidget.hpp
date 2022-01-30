@@ -196,7 +196,31 @@ void step() override {
 		// GlobalToLocal operation
 		if (globalToLocalOp.opCode != GTOL_NOP) {
 			DEBUG("GTOL %i, %i", globalToLocalOp.opCode, globalToLocalOp.operand);
-			
+			switch (globalToLocalOp.opCode) {
+				
+				
+				case (GTOL_MOMENTCV) : {
+					// targets to set:
+					// MixMaster:
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].momentCvMuteLocal = globalToLocalOp.operand;
+						module->tracks[i].momentCvSoloLocal = globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].momentCvMuteLocal = globalToLocalOp.operand;
+						module->groups[i].momentCvSoloLocal = globalToLocalOp.operand;
+					}
+					module->master.momentCvMuteLocal = globalToLocalOp.operand;
+					module->master.momentCvDimLocal = globalToLocalOp.operand;
+					module->master.momentCvMonoLocal = globalToLocalOp.operand;
+					// AuxExpander:
+					//   track send mutes
+					//   group send mutes
+					//   return mutes 
+					//   return solos
+					break;
+				}
+			}
 			
 			globalToLocalOp.opCode = GTOL_NOP;
 		}

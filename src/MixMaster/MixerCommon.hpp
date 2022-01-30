@@ -124,6 +124,8 @@ struct TrackSettingsCpBuffer {
 	int8_t vuColorThemeLocal;
 	int8_t filterPos;
 	int8_t dispColorLocal;
+	int8_t momentCvMuteLocal;
+	int8_t momentCvSoloLocal;
 	int8_t polyStereo;
 	float panCvLevel;
 	float stereoWidth;

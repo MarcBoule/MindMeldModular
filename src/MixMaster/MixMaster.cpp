@@ -894,7 +894,7 @@ struct MixMaster : Module {
 				// track mutes
 				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTESOLO_INPUTS + 0].getVoltage(trk));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? tracks[trk].momentCvMuteLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_MUTE_PARAMS + trk].getValue();// toggle
 							params[TRACK_MUTE_PARAMS + trk].setValue(newParam);
@@ -912,7 +912,7 @@ struct MixMaster : Module {
 				// track solos
 				state = muteSoloCvTriggers[trk + N_TRK].process(inputs[soloInputNum].getVoltage((N_TRK == 16 ? 0 : 8) + trk));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? tracks[trk].momentCvSoloLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_SOLO_PARAMS + trk].getValue();// toggle
 							params[TRACK_SOLO_PARAMS + trk].setValue(newParam);
@@ -929,7 +929,7 @@ struct MixMaster : Module {
 				// group mutes
 				state = muteSoloCvTriggers[grp + N_TRK * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? groups[grp].momentCvMuteLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_MUTE_PARAMS + grp].getValue();// toggle
 							params[GROUP_MUTE_PARAMS + grp].setValue(newParam);
@@ -942,7 +942,7 @@ struct MixMaster : Module {
 				// group solos 
 				state = muteSoloCvTriggers[grp + N_TRK * 2 + N_GRP].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp + N_GRP));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? groups[grp].momentCvSoloLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_SOLO_PARAMS + grp].getValue();// toggle
 							params[GROUP_SOLO_PARAMS + grp].setValue(newParam);
@@ -956,7 +956,7 @@ struct MixMaster : Module {
 			// master mute
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2));
 			if (state != 0) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMuteLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MUTE_PARAM].getValue();// toggle
 						params[MAIN_MUTE_PARAM].setValue(newParam);
@@ -969,7 +969,7 @@ struct MixMaster : Module {
 			// master dim
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 1));
 			if (state != 0) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvDimLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_DIM_PARAM].getValue();// toggle
 						params[MAIN_DIM_PARAM].setValue(newParam);
@@ -982,7 +982,7 @@ struct MixMaster : Module {
 			// master mono
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 2));
 			if (state != 0) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMonoLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MONO_PARAM].getValue();// toggle
 						params[MAIN_MONO_PARAM].setValue(newParam);
