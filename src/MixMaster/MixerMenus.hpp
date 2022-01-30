@@ -170,6 +170,31 @@ struct FilterPosItem : MenuItem {
 	}
 };
 
+
+struct MomentaryCvModeItem : MenuItem {
+	int8_t *momentaryCvButtonsSrc;
+	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
+	const std::string momentaryCvNames[3] = {
+		"Gate high/low",
+		"Trigger toggle (default)",
+		"Set per track"
+	};
+	int ordering[3] = {1, 0, 2};
+
+	Menu *createChildMenu() override {
+		Menu *menu = new Menu;
+		for (int k = 0; k < (isGlobal ? 3 : 2); k++) {
+			int i = ordering[k];
+			menu->addChild(createCheckMenuItem(momentaryCvNames[i], "",
+				[=]() {return *momentaryCvButtonsSrc == i;},
+				[=]() {*momentaryCvButtonsSrc = i;}
+			));
+		}
+		return menu;
+	}
+};
+
+
 struct AuxReturnItem : MenuItem {
 	int* auxReturnsMutedWhenMainSoloPtr;
 	int* auxReturnsSolosMuteDryPtr;
@@ -219,23 +244,6 @@ struct AuxRetFbProtItem : MenuItem {
 		menu->addChild(createCheckMenuItem("Feedback protection OFF (Warning RTFM!)", "",
 			[=]() {return *groupedAuxReturnFeedbackProtectionSrc == 0;},
 			[=]() {*groupedAuxReturnFeedbackProtectionSrc = 0;}
-		));
-		return menu;
-	}
-};
-
-struct MomentaryCvItem : MenuItem {
-	int8_t *momentaryCvButtonsSrc;
-
-	Menu *createChildMenu() override {
-		Menu *menu = new Menu;
-		menu->addChild(createCheckMenuItem("Trigger toggle", "",
-			[=]() {return *momentaryCvButtonsSrc == 1;},
-			[=]() {*momentaryCvButtonsSrc = 1;}
-		));
-		menu->addChild(createCheckMenuItem("Gate high/low", "",
-			[=]() {return *momentaryCvButtonsSrc == 0;},
-			[=]() {*momentaryCvButtonsSrc = 0;}
 		));
 		return menu;
 	}

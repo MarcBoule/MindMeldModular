@@ -94,8 +94,9 @@ void appendContextMenu(Menu *menu) override {
 	directOutsItem->directOutsSkipGroupedTracksPtr = &(module->gInfo.directOutsSkipGroupedTracks);
 	menu->addChild(directOutsItem);
 	
-	MomentaryCvItem *momentItem = createMenuItem<MomentaryCvItem>("Mute/Solo CV", RIGHT_ARROW);
+	MomentaryCvModeItem *momentItem = createMenuItem<MomentaryCvModeItem>("Mute/Solo CV", RIGHT_ARROW);
 	momentItem->momentaryCvButtonsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]);
+	momentItem->isGlobal = true;
 	menu->addChild(momentItem);
 
 	FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
@@ -190,7 +191,10 @@ void step() override {
 			svgPanel->fb->dirty = true;
 		}
 		
-		// Update param and port tooltips and message bus at 1Hz
+		// GlobalToLocal operation
+		
+		
+		// Update param and port tooltips and message bus at 1Hz (and filter lights also)
 		time_t currentTime = time(0);
 		if (currentTime != oldTime) {
 			oldTime = currentTime;

@@ -381,12 +381,6 @@ struct GlobalInfo {
 		// faders (populate linkedFaderReloadValues)
 		json_t *fadersJ = json_object_get(rootJ, "faders");
 		if (fadersJ && N_TRK == nTrkSrc) {
-			// for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
-				// json_t *fadersArrayJ = json_array_get(fadersJ, trkOrGrp);
-				// if (fadersArrayJ)
-					// linkedFaderReloadValues[trkOrGrp] = json_number_value(fadersArrayJ);
-			// }
-
 			// tracks
 			for (int trk = 0; trk < std::min(N_TRK, nTrkSrc); trk++) {
 				json_t *fadersArrayJ = json_array_get(fadersJ, trk);
