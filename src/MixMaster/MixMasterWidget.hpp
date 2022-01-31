@@ -14,7 +14,6 @@ GroupDisplay<TMixMaster::MixerGroup>* groupDisplays[N_GRP];
 PortWidget* inputWidgets[N_TRK * 4];// Left, Right, Volume, Pan
 PanelBorder* panelBorder;
 time_t oldTime = 0;
-GlobalToLocalOp globalToLocalOp;
 
 
 
@@ -98,7 +97,7 @@ void appendContextMenu(Menu *menu) override {
 	MomentaryCvModeItem *momentItem = createMenuItem<MomentaryCvModeItem>("Mute/Solo CV", RIGHT_ARROW);
 	momentItem->momentaryCvButtonsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]);
 	momentItem->isGlobal = true;
-	momentItem->localOp = &globalToLocalOp;
+	momentItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(momentItem);
 
 	FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
@@ -194,35 +193,26 @@ void step() override {
 		}
 		
 		// GlobalToLocal operation
-		if (globalToLocalOp.opCode != GTOL_NOP) {
-			DEBUG("GTOL %i, %i", globalToLocalOp.opCode, globalToLocalOp.operand);
-			switch (globalToLocalOp.opCode) {
-				
-				
+		if (module->globalToLocalOp.opCodeMixer != GTOL_NOP) {
+			DEBUG("GTOL mixer %i, %i", module->globalToLocalOp.opCodeMixer, module->globalToLocalOp.operand);
+			// only mixer locals set here, auxspander locals set in ToExpander code in module->process()
+			switch (module->globalToLocalOp.opCodeMixer) {
 				case (GTOL_MOMENTCV) : {
-					// targets to set:
-					// MixMaster:
 					for (int i = 0; i < N_TRK; i++) {
-						module->tracks[i].momentCvMuteLocal = globalToLocalOp.operand;
-						module->tracks[i].momentCvSoloLocal = globalToLocalOp.operand;
+						module->tracks[i].momentCvMuteLocal = module->globalToLocalOp.operand;
+						module->tracks[i].momentCvSoloLocal = module->globalToLocalOp.operand;
 					}
 					for (int i = 0; i < N_GRP; i++) {
-						module->groups[i].momentCvMuteLocal = globalToLocalOp.operand;
-						module->groups[i].momentCvSoloLocal = globalToLocalOp.operand;
+						module->groups[i].momentCvMuteLocal = module->globalToLocalOp.operand;
+						module->groups[i].momentCvSoloLocal = module->globalToLocalOp.operand;
 					}
-					module->master.momentCvMuteLocal = globalToLocalOp.operand;
-					module->master.momentCvDimLocal = globalToLocalOp.operand;
-					module->master.momentCvMonoLocal = globalToLocalOp.operand;
-					// AuxExpander:
-					//   track send mutes
-					//   group send mutes
-					//   return mutes 
-					//   return solos
+					module->master.momentCvMuteLocal = module->globalToLocalOp.operand;
+					module->master.momentCvDimLocal = module->globalToLocalOp.operand;
+					module->master.momentCvMonoLocal = module->globalToLocalOp.operand;
 					break;
 				}
 			}
-			
-			globalToLocalOp.opCode = GTOL_NOP;
+			module->globalToLocalOp.opCodeMixer = GTOL_NOP;
 		}
 		
 		// Update param and port tooltips and message bus at 1Hz (and filter lights also)

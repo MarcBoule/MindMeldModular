@@ -115,6 +115,7 @@ struct MixMaster : Module {
 	PackedBytes4 auxDispColors;// slow expander
 	float values20[20];// slow expander
 	alignas(4) char auxLabels[4 * 4 + 4];// slow expander
+	GlobalToLocalOp globalToLocalOp;
 		
 		
 	void sendToMessageBus(bool doTrackMoveInit) { 
@@ -653,13 +654,15 @@ struct MixMaster : Module {
 		setFadeCvOuts();
 
 
-		//********** Lights **********
+
+		//********** Lights ********** 
 		
 		if (refresh.processLights()) {
 			// see module widget step()
-		}
-		
-		
+		}// processLights()
+
+
+
 		//********** Expander **********
 		
 		// To Aux-Expander
@@ -700,6 +703,13 @@ struct MixMaster : Module {
 				for (int auxi = 0; auxi < 4; auxi++) {
 					messageToExpander->srcMuteGhost[auxi] = aux[auxi].fadeGainScaledWithSolo;
 				}
+				// GlobalToLocal operation
+				messageToExpander->globalToLocalOp.opCodeExpander = GTOL_NOP;
+				if (globalToLocalOp.opCodeExpander != GTOL_NOP) {
+					// only auxspander locals set here via expander, mixer locals are set in module widget's step()
+					messageToExpander->globalToLocalOp = globalToLocalOp;
+					globalToLocalOp.opCodeExpander = GTOL_NOP;
+				}
 			}
 			
 			// Fast
@@ -719,7 +729,6 @@ struct MixMaster : Module {
 			rightExpander.module->leftExpander.messageFlipRequested = true;
 		}// if (auxExpanderPresent)
 
-		
 	}// process()
 	
 	

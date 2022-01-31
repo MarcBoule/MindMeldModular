@@ -12,6 +12,29 @@
 #include "../dsp/ButterworthFilters.hpp"
 
 
+enum GTOL_IDS {
+	GTOL_NOP,
+	GTOL_VUCOL,
+	GTOL_LABELCOL,
+	GTOL_STEREOPAN,
+	GTOL_AUXSENDS,
+	GTOL_DIRECTOUTS,
+	GTOL_FILTERPOS,
+	GTOL_MOMENTCV
+};
+
+struct GlobalToLocalOp {
+	int8_t opCodeMixer = GTOL_NOP;;// see GTOL_IDS
+	int8_t opCodeExpander = GTOL_NOP;// see GTOL_IDS
+	int8_t operand;// the global value that we want to be set in all the local values
+		
+	void setOp(int8_t _opCode, int8_t _operand) {
+		operand = _operand;// set this first for safe thread behavior
+		opCodeMixer = _opCode;
+		opCodeExpander = _opCode;
+	}
+};
+
 
 //*****************************************************************************
 // Communications between mixer and auxspander
@@ -35,6 +58,7 @@ struct TAfmExpInterface {// messages to expander from mother (data is in expande
 	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];// only valid when colorAndCloak.cc4[dispColorGlobal] >= numDispThemes
 	float auxRetFadeGains[4];
 	float srcMuteGhost[4];
+	GlobalToLocalOp globalToLocalOp;
 };
 
 
@@ -162,27 +186,3 @@ enum ccIds {
 };
 
 
-enum GTOL_IDS {
-	GTOL_NOP,
-	GTOL_VUCOL,
-	GTOL_LABELCOL,
-	GTOL_STEREOPAN,
-	GTOL_AUXSENDS,
-	GTOL_DIRECTOUTS,
-	GTOL_FILTERPOS,
-	GTOL_MOMENTCV
-};
-
-struct GlobalToLocalOp {
-	int8_t opCode;// see GTOL_IDS
-	int8_t operand;// the global value that we want to be set in all the local values
-	
-	GlobalToLocalOp() {
-		opCode = GTOL_NOP;
-	}
-	
-	void setOp(int8_t _opCode, int8_t _operand) {
-		opCode = _opCode;
-		operand = _operand;
-	}
-};

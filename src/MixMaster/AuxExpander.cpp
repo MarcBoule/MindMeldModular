@@ -69,6 +69,8 @@ struct AuxExpander : Module {
 	PackedBytes4 panLawStereoLocal;// must send back to main panel
 	PackedBytes4 vuColorThemeLocal; // 0 to numthemes - 1; (when per-track choice)
 	PackedBytes4 dispColorAuxLocal;
+	PackedBytes4 momentCvRetMuteLocal;
+	PackedBytes4 momentCvRetSoloLocal;
 	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
 	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	AuxspanderAux aux[4];
@@ -239,6 +241,8 @@ struct AuxExpander : Module {
 			globalRetPansWithCV[i] = 0.5f;
 			aux[i].resetNonJson();
 			indivTrackSendCvConnected[i] = false;
+			momentCvRetMuteLocal.cc4[i] = 1;
+			momentCvRetSoloLocal.cc4[i] = 1;
 		}
 		globalSendsCvConnected = false;
 		indivGroupSendCvConnected = false;
@@ -276,6 +280,12 @@ struct AuxExpander : Module {
 		for (int c = 0; c < 4; c++)
 			json_array_insert_new(dispColorAuxLocalJ, c, json_integer(dispColorAuxLocal.cc4[c]));// keep as array for legacy
 		json_object_set_new(rootJ, "dispColorAuxLocal", dispColorAuxLocalJ);
+
+		// momentCvRetMuteLocal
+		json_object_set_new(rootJ, "momentCvRetMuteLocal", json_integer(momentCvRetMuteLocal.cc1));
+
+		// momentCvRetSoloLocal
+		json_object_set_new(rootJ, "momentCvRetSoloLocal", json_integer(momentCvRetSoloLocal.cc1));
 
 		// auxFadeRatesAndProfiles
 		json_t *auxFadeRatesAndProfilesJ = json_array();
@@ -328,6 +338,16 @@ struct AuxExpander : Module {
 			}
 		}
 		
+		// momentCvRetMuteLocal
+		json_t *momentCvRetMuteLocalJ = json_object_get(rootJ, "momentCvRetMuteLocal");
+		if (momentCvRetMuteLocalJ)
+			momentCvRetMuteLocal.cc1 = json_integer_value(momentCvRetMuteLocalJ);
+
+		// momentCvRetSoloLocal
+		json_t *momentCvRetSoloLocalJ = json_object_get(rootJ, "momentCvRetSoloLocal");
+		if (momentCvRetSoloLocalJ)
+			momentCvRetSoloLocal.cc1 = json_integer_value(momentCvRetSoloLocalJ);
+
 		// auxFadeRatesAndProfiles
 		json_t *auxFadeRatesAndProfilesJ = json_object_get(rootJ, "auxFadeRatesAndProfiles");
 		if (auxFadeRatesAndProfilesJ) {
@@ -517,6 +537,27 @@ struct AuxExpander : Module {
 				}
 				memcpy(auxRetFadeGains, messagesFromMother->auxRetFadeGains, 4 * 4);
 				memcpy(srcMuteGhost, messagesFromMother->srcMuteGhost, 4 * 4);
+				
+				// GlobalToLocal operation
+				if (messagesFromMother->globalToLocalOp.opCodeExpander != GTOL_NOP) {
+					DEBUG("GTOL auxspander %i, %i", messagesFromMother->globalToLocalOp.opCodeExpander, messagesFromMother->globalToLocalOp.operand);
+					switch (messagesFromMother->globalToLocalOp.opCodeExpander) {
+						case (GTOL_MOMENTCV) : {
+							// for (int i = 0; i < N_TRK; i++) {
+								// module->tracks[i].momentCvMuteLocal = module->globalToLocalOp.operand;
+								// module->tracks[i].momentCvSoloLocal = module->globalToLocalOp.operand;
+							// }
+							// for (int i = 0; i < N_GRP; i++) {
+								// module->groups[i].momentCvMuteLocal = module->globalToLocalOp.operand;
+								// module->groups[i].momentCvSoloLocal = module->globalToLocalOp.operand;
+							// }
+							// module->master.momentCvMuteLocal = module->globalToLocalOp.operand;
+							// module->master.momentCvDimLocal = module->globalToLocalOp.operand;
+							// module->master.momentCvMonoLocal = module->globalToLocalOp.operand;
+							break;
+						}
+					}
+				}
 			}
 			
 			// Fast values from mother
