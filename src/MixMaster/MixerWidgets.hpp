@@ -182,6 +182,8 @@ struct CvAndFadePointerAuxRet : CvAndFadePointerBase {
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
+	int8_t *trackOrGroupMomentCvSendMutePtr;
+	PackedBytes4* directOutPanStereoMomentCvLinearVol = NULL;
 	int8_t* dispColorPtr = NULL;
 	int8_t* dispColorLocalPtr;
 	
@@ -201,6 +203,27 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 			}	
 		}
 		LedDisplayChoice::drawLayer(args, layer);
+	}
+	
+	void onButton(const event::Button &e) override {
+		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			if (directOutPanStereoMomentCvLinearVol->cc4[2] < 2) return; // remove this if ever there are permanent settings
+			
+			ui::Menu *menu = createMenu();
+			
+			menu->addChild(createMenuLabel("Settings: "));// + std::string(srcTrack->trackName, 4)));
+			
+			if (directOutPanStereoMomentCvLinearVol->cc4[2] >= 2) {
+				MomentaryCvModeItem *momentSendMuteItem = createMenuItem<MomentaryCvModeItem>("Send mute CV", RIGHT_ARROW);
+				momentSendMuteItem->momentaryCvButtonsSrc = trackOrGroupMomentCvSendMutePtr;
+				momentSendMuteItem->isGlobal = false;
+				menu->addChild(momentSendMuteItem);
+			}
+			
+			e.consume(this);
+			return;
+		}
+		LedDisplayChoice::onButton(e);
 	}
 };
 
@@ -883,8 +906,9 @@ struct AuxDisplay : EditableDisplayBase {
 	int8_t* srcVuColor = NULL;
 	int8_t* srcDirectOutsModeLocal = NULL;
 	int8_t* srcPanLawStereoLocal = NULL;
-	int8_t* srcDirectOutsModeGlobal = NULL;
-	int8_t* srcPanLawStereoGlobal = NULL;
+	int8_t* srcMomentCvRetMuteLocal = NULL;
+	int8_t* srcMomentCvRetSoloLocal = NULL;
+	PackedBytes4* directOutPanStereoMomentCvLinearVol = NULL;
 	float* srcPanCvLevel = NULL;
 	float* srcFadeRatesAndProfiles = NULL;// use [0] for fade rate, [4] for fade profile, pointer must be setup with aux indexing
 	char* auxName;
@@ -925,18 +949,30 @@ struct AuxDisplay : EditableDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			if (*srcDirectOutsModeGlobal >= 4) {
+			if (directOutPanStereoMomentCvLinearVol->cc4[0] >= 4) {
 				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
 				directOutsItem->isGlobal = false;
 				menu->addChild(directOutsItem);
 			}
 
-			if (*srcPanLawStereoGlobal >= 3) {
+			if (directOutPanStereoMomentCvLinearVol->cc4[1] >= 3) {
 				PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 				panLawStereoItem->panLawStereoSrc = srcPanLawStereoLocal;
 				panLawStereoItem->isGlobal = false;
 				menu->addChild(panLawStereoItem);
+			}
+
+			if (directOutPanStereoMomentCvLinearVol->cc4[2] >= 2) {
+				MomentaryCvModeItem *momentRetMuteItem = createMenuItem<MomentaryCvModeItem>("Return mute CV", RIGHT_ARROW);
+				momentRetMuteItem->momentaryCvButtonsSrc = srcMomentCvRetMuteLocal;
+				momentRetMuteItem->isGlobal = false;
+				menu->addChild(momentRetMuteItem);
+				
+				MomentaryCvModeItem *momentRetSoloItem = createMenuItem<MomentaryCvModeItem>("Return solo CV", RIGHT_ARROW);
+				momentRetSoloItem->momentaryCvButtonsSrc = srcMomentCvRetSoloLocal;
+				momentRetSoloItem->isGlobal = false;
+				menu->addChild(momentRetSoloItem);
 			}
 
 			if (colorAndCloak->cc4[vuColorGlobal] >= numVuThemes) {	

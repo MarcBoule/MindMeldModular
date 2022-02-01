@@ -194,7 +194,6 @@ void step() override {
 		
 		// GlobalToLocal operation
 		if (module->globalToLocalOp.opCodeMixer != GTOL_NOP) {
-			DEBUG("GTOL mixer %i, %i", module->globalToLocalOp.opCodeMixer, module->globalToLocalOp.operand);
 			// only mixer locals set here, auxspander locals set in ToExpander code in module->process()
 			switch (module->globalToLocalOp.opCodeMixer) {
 				case (GTOL_MOMENTCV) : {

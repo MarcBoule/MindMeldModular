@@ -71,6 +71,8 @@ struct AuxExpander : Module {
 	PackedBytes4 dispColorAuxLocal;
 	PackedBytes4 momentCvRetMuteLocal;
 	PackedBytes4 momentCvRetSoloLocal;
+	int8_t momentCvTrackMuteLocal[N_TRK];
+	int8_t momentCvGroupMuteLocal[N_GRP];
 	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
 	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	AuxspanderAux aux[4];
@@ -225,6 +227,14 @@ struct AuxExpander : Module {
 	void onReset() override {
 		for (int i = 0; i < 4; i++) {
 			aux[i].onReset();
+			momentCvRetMuteLocal.cc4[i] = 1;
+			momentCvRetSoloLocal.cc4[i] = 1;
+		}
+		for (int i = 0; i < N_TRK; i++) {
+			momentCvTrackMuteLocal[i] = 1;
+		}
+		for (int i = 0; i < N_GRP; i++) {
+			momentCvGroupMuteLocal[i] = 1;
 		}
 		resetNonJson(false);
 	}
@@ -241,8 +251,6 @@ struct AuxExpander : Module {
 			globalRetPansWithCV[i] = 0.5f;
 			aux[i].resetNonJson();
 			indivTrackSendCvConnected[i] = false;
-			momentCvRetMuteLocal.cc4[i] = 1;
-			momentCvRetSoloLocal.cc4[i] = 1;
 		}
 		globalSendsCvConnected = false;
 		indivGroupSendCvConnected = false;
@@ -286,6 +294,18 @@ struct AuxExpander : Module {
 
 		// momentCvRetSoloLocal
 		json_object_set_new(rootJ, "momentCvRetSoloLocal", json_integer(momentCvRetSoloLocal.cc1));
+
+		// momentCvTrackMuteLocal
+		json_t *momentCvTrackMuteLocalJ = json_array();
+		for (int i = 0; i < N_TRK; i++)
+			json_array_insert_new(momentCvTrackMuteLocalJ, i, json_integer(momentCvTrackMuteLocal[i]));
+		json_object_set_new(rootJ, "momentCvTrackMuteLocal", momentCvTrackMuteLocalJ);
+
+		// momentCvGroupMuteLocal
+		json_t *momentCvGroupMuteLocalJ = json_array();
+		for (int i = 0; i < N_GRP; i++)
+			json_array_insert_new(momentCvGroupMuteLocalJ, i, json_integer(momentCvGroupMuteLocal[i]));
+		json_object_set_new(rootJ, "momentCvGroupMuteLocal", momentCvGroupMuteLocalJ);
 
 		// auxFadeRatesAndProfiles
 		json_t *auxFadeRatesAndProfilesJ = json_array();
@@ -348,6 +368,28 @@ struct AuxExpander : Module {
 		if (momentCvRetSoloLocalJ)
 			momentCvRetSoloLocal.cc1 = json_integer_value(momentCvRetSoloLocalJ);
 
+		// momentCvTrackMuteLocal
+		json_t *momentCvTrackMuteLocalJ = json_object_get(rootJ, "momentCvTrackMuteLocal");
+		if (momentCvTrackMuteLocalJ) {
+			for (int i = 0; i < N_TRK; i++)
+			{
+				json_t *momentCvTrackMuteLocalArrayJ = json_array_get(momentCvTrackMuteLocalJ, i);
+				if (momentCvTrackMuteLocalArrayJ)
+					momentCvTrackMuteLocal[i] = json_integer_value(momentCvTrackMuteLocalArrayJ);
+			}
+		}
+		
+		// momentCvGroupMuteLocal
+		json_t *momentCvGroupMuteLocalJ = json_object_get(rootJ, "momentCvGroupMuteLocal");
+		if (momentCvGroupMuteLocalJ) {
+			for (int i = 0; i < N_GRP; i++)
+			{
+				json_t *momentCvGroupMuteLocalArrayJ = json_array_get(momentCvGroupMuteLocalJ, i);
+				if (momentCvGroupMuteLocalArrayJ)
+					momentCvGroupMuteLocal[i] = json_integer_value(momentCvGroupMuteLocalArrayJ);
+			}
+		}
+		
 		// auxFadeRatesAndProfiles
 		json_t *auxFadeRatesAndProfilesJ = json_object_get(rootJ, "auxFadeRatesAndProfiles");
 		if (auxFadeRatesAndProfilesJ) {
@@ -537,26 +579,8 @@ struct AuxExpander : Module {
 				}
 				memcpy(auxRetFadeGains, messagesFromMother->auxRetFadeGains, 4 * 4);
 				memcpy(srcMuteGhost, messagesFromMother->srcMuteGhost, 4 * 4);
-				
-				// GlobalToLocal operation
 				if (messagesFromMother->globalToLocalOp.opCodeExpander != GTOL_NOP) {
-					DEBUG("GTOL auxspander %i, %i", messagesFromMother->globalToLocalOp.opCodeExpander, messagesFromMother->globalToLocalOp.operand);
-					switch (messagesFromMother->globalToLocalOp.opCodeExpander) {
-						case (GTOL_MOMENTCV) : {
-							// for (int i = 0; i < N_TRK; i++) {
-								// module->tracks[i].momentCvMuteLocal = module->globalToLocalOp.operand;
-								// module->tracks[i].momentCvSoloLocal = module->globalToLocalOp.operand;
-							// }
-							// for (int i = 0; i < N_GRP; i++) {
-								// module->groups[i].momentCvMuteLocal = module->globalToLocalOp.operand;
-								// module->groups[i].momentCvSoloLocal = module->globalToLocalOp.operand;
-							// }
-							// module->master.momentCvMuteLocal = module->globalToLocalOp.operand;
-							// module->master.momentCvDimLocal = module->globalToLocalOp.operand;
-							// module->master.momentCvMonoLocal = module->globalToLocalOp.operand;
-							break;
-						}
-					}
+					doGlobalToLocalOp(messagesFromMother->globalToLocalOp.opCodeExpander, messagesFromMother->globalToLocalOp.operand);
 				}
 			}
 			
@@ -786,21 +810,26 @@ struct AuxExpander : Module {
 		
 		float buffer1[5];// bit0 = auxA, bit1 = auxB, bit2 = auxC, bit3 = auxD, bit4 = mute param
 		float buffer2[5];
+		int8_t momentCvTrackMuteBuffer;
 		
 		writeTrackParams(trackNumSrc, buffer2);
+		momentCvTrackMuteBuffer = momentCvTrackMuteLocal[trackNumSrc];
 		if (trackNumDest < trackNumSrc) {
 			for (int trk = trackNumSrc - 1; trk >= trackNumDest; trk--) {
 				writeTrackParams(trk, buffer1);
 				readTrackParams(trk + 1, buffer1);
+				momentCvTrackMuteLocal[trk + 1] = momentCvTrackMuteLocal[trk];
 			}
 		}
 		else {// must automatically be bigger (equal is impossible)
 			for (int trk = trackNumSrc; trk < trackNumDest; trk++) {
 				writeTrackParams(trk + 1, buffer1);
 				readTrackParams(trk, buffer1);
+				momentCvTrackMuteLocal[trk] = momentCvTrackMuteLocal[trk + 1];
 			}
 		}
 		readTrackParams(trackNumDest, buffer2);
+		momentCvTrackMuteLocal[trackNumDest] = momentCvTrackMuteBuffer;
 	}
 	
 	void resetTrackOrGroup(int tg) {
@@ -820,7 +849,7 @@ struct AuxExpander : Module {
 			for (int trk = 0; trk < N_TRK; trk++) {
 				state = muteSoloCvTriggers[trk].process(inputs[POLY_AUX_M_CV_INPUT].getVoltage(trk));
 				if (state != 0) {
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvTrackMuteLocal[trk] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_AUXMUTE_PARAMS + trk].getValue();// toggle
 							params[TRACK_AUXMUTE_PARAMS + trk].setValue(newParam);
@@ -838,7 +867,7 @@ struct AuxExpander : Module {
 			for (int grp = 0; grp < N_GRP; grp++) {
 				state = muteSoloCvTriggers[grp + N_TRK].process(inputs[inputNum].getVoltage(grp + (N_TRK & 0xF)));
 				if (state != 0) {
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvGroupMuteLocal[grp] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_AUXMUTE_PARAMS + grp].getValue();// toggle
 							params[GROUP_AUXMUTE_PARAMS + grp].setValue(newParam);
@@ -856,7 +885,7 @@ struct AuxExpander : Module {
 				// mutes
 				state = muteSoloCvTriggers[aux + (N_TRK + N_GRP)].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux));
 				if (state != 0) {
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvRetMuteLocal.cc4[aux] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GLOBAL_AUXMUTE_PARAMS + aux].getValue();// toggle
 							params[GLOBAL_AUXMUTE_PARAMS + aux].setValue(newParam);
@@ -870,7 +899,7 @@ struct AuxExpander : Module {
 				// solos
 				state = muteSoloCvTriggers[aux + (N_TRK + N_GRP) + 4].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux + 4));
 				if (state != 0) {
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] != 0) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvRetSoloLocal.cc4[aux] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GLOBAL_AUXSOLO_PARAMS + aux].getValue();// toggle
 							params[GLOBAL_AUXSOLO_PARAMS + aux].setValue(newParam);
@@ -881,6 +910,24 @@ struct AuxExpander : Module {
 					}
 				}
 				
+			}
+		}
+	}
+	
+	void doGlobalToLocalOp(int8_t opCode, int8_t operand) {
+		switch (opCode) {
+			case (GTOL_MOMENTCV) : {
+				for (int i = 0; i < N_TRK; i++) {
+					momentCvTrackMuteLocal[i] = operand;
+				}
+				for (int i = 0; i < N_GRP; i++) {
+					momentCvGroupMuteLocal[i] = operand;
+				}
+				for (int i = 0; i < 4; i++) {
+					momentCvRetMuteLocal.cc4[i] = operand;
+					momentCvRetSoloLocal.cc4[i] = operand;
+				}
+				break;
 			}
 		}
 	}
@@ -919,8 +966,9 @@ struct AuxExpanderWidget : ModuleWidget {
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
-				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[0]);
-				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[1]);
+				auxDisplays[i]->srcMomentCvRetMuteLocal = &(module->momentCvRetMuteLocal.cc4[i]);
+				auxDisplays[i]->srcMomentCvRetSoloLocal = &(module->momentCvRetSoloLocal.cc4[i]);
+				auxDisplays[i]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				auxDisplays[i]->srcPanCvLevel = &(module->panCvLevels[i]);
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
@@ -1033,6 +1081,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for tracks 1 to 8
 			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 4.7))));
 			if (module) {
+				trackAndGroupLabels[i]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvTrackMuteLocal[i]);
+				trackAndGroupLabels[i]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				trackAndGroupLabels[i]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
 			}
@@ -1075,6 +1125,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for tracks 9 to 16
 			addChild(trackAndGroupLabels[i + 8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 65.08))));
 			if (module) {
+				trackAndGroupLabels[i + 8]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvTrackMuteLocal[i + 8]);
+				trackAndGroupLabels[i + 8]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				trackAndGroupLabels[i + 8]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 8]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 8) >> 2].cc4[i & 0x3]);
 			}
@@ -1122,6 +1174,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for groups 1 to 2
 			addChild(trackAndGroupLabels[i + 16] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 2 + 12.7 * i, 4.7))));
 			if (module) {
+				trackAndGroupLabels[i + 16]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvGroupMuteLocal[i]);
+				trackAndGroupLabels[i + 16]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				trackAndGroupLabels[i + 16]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 16]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 16) >> 2].cc4[i & 0x3]);			
 			}
@@ -1169,6 +1223,8 @@ struct AuxExpanderWidget : ModuleWidget {
 			// Labels for groups 3 to 4
 			addChild(trackAndGroupLabels[i + 18] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(171.45 + 2 + 12.7 * i, 65.08))));
 			if (module) {
+				trackAndGroupLabels[i + 18]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvGroupMuteLocal[i + 2]);
+				trackAndGroupLabels[i + 18]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				trackAndGroupLabels[i + 18]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 18]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 18) >> 2].cc4[(i + 18) & 0x3]);
 			}
@@ -1277,8 +1333,9 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				auxDisplays[i]->srcVuColor = &(module->vuColorThemeLocal.cc4[i]);
 				auxDisplays[i]->srcDirectOutsModeLocal = &(module->directOutsModeLocal.cc4[i]);
 				auxDisplays[i]->srcPanLawStereoLocal = &(module->panLawStereoLocal.cc4[i]);
-				auxDisplays[i]->srcDirectOutsModeGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[0]);
-				auxDisplays[i]->srcPanLawStereoGlobal = &(module->directOutPanStereoMomentCvLinearVol.cc4[1]);
+				auxDisplays[i]->srcMomentCvRetMuteLocal = &(module->momentCvRetMuteLocal.cc4[i]);
+				auxDisplays[i]->srcMomentCvRetSoloLocal = &(module->momentCvRetSoloLocal.cc4[i]);
+				auxDisplays[i]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				auxDisplays[i]->srcPanCvLevel = &(module->panCvLevels[i]);
 				auxDisplays[i]->srcFadeRatesAndProfiles = &(module->auxFadeRatesAndProfiles[i]);
 				auxDisplays[i]->auxName = &(module->auxLabels[i * 4]);
@@ -1391,6 +1448,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			// Labels for tracks 1 to 4
 			addChild(trackAndGroupLabels[i] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 4.7))));
 			if (module) {
+				trackAndGroupLabels[i]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvTrackMuteLocal[i]);
+				trackAndGroupLabels[i]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				trackAndGroupLabels[i]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
 			}
@@ -1434,6 +1493,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			// Labels for tracks 5 to 8
 			addChild(trackAndGroupLabels[i + 4] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(67.31 + 2 + 12.7 * i, 65.08))));
 			if (module) {
+				trackAndGroupLabels[i + 4]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvTrackMuteLocal[i + 4]);
+				trackAndGroupLabels[i + 4]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 				trackAndGroupLabels[i + 4]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 				trackAndGroupLabels[i + 4]->dispColorLocalPtr = &(module->trackDispColsLocal[(i + 4) >> 2].cc4[i & 0x3]);
 			}
@@ -1482,6 +1543,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		// Labels for group 1
 		addChild(trackAndGroupLabels[8] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(xGrp1 + 2, 4.7))));
 		if (module) {
+			trackAndGroupLabels[8]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvGroupMuteLocal[0]);
+			trackAndGroupLabels[8]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 			trackAndGroupLabels[8]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 			trackAndGroupLabels[8]->dispColorLocalPtr = &(module->trackDispColsLocal[(8) >> 2].cc4[0]);			
 		}
@@ -1529,6 +1592,8 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		// Labels for group 2
 		addChild(trackAndGroupLabels[9] = createWidgetCentered<TrackAndGroupLabel>(mm2px(Vec(xGrp1 + 2, 65.08))));
 		if (module) {
+			trackAndGroupLabels[9]->trackOrGroupMomentCvSendMutePtr = &(module->momentCvGroupMuteLocal[1]);
+			trackAndGroupLabels[9]->directOutPanStereoMomentCvLinearVol = &(module->directOutPanStereoMomentCvLinearVol);
 			trackAndGroupLabels[9]->dispColorPtr = &(module->colorAndCloak.cc4[dispColorGlobal]);
 			trackAndGroupLabels[9]->dispColorLocalPtr = &(module->trackDispColsLocal[(9) >> 2].cc4[1]);
 		}
