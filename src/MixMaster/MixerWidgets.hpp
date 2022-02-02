@@ -542,6 +542,10 @@ struct MasterDisplay : EditableDisplayBase {
 	float* fadeRate;
 	float* fadeProfile;
 	int8_t* vuColorThemeLocal;
+	PackedBytes4* directOutPanStereoMomentCvLinearVol;
+	int8_t* momentCvMuteLocal;
+	int8_t* momentCvDimLocal;
+	int8_t* momentCvMonoLocal;
 	int8_t* chainOnly;
 	float* dimGain;
 	char* masterLabel;
@@ -587,6 +591,24 @@ struct MasterDisplay : EditableDisplayBase {
 				[=]() {return *masterFaderScalesSendsSrc != 0;},
 				[=]() {*masterFaderScalesSendsSrc ^= 0x1;}
 			));
+			
+			if (directOutPanStereoMomentCvLinearVol->cc4[2] >= 2) {
+				MomentaryCvModeItem *momentMastMuteItem = createMenuItem<MomentaryCvModeItem>("Msater mute CV", RIGHT_ARROW);
+				momentMastMuteItem->momentaryCvButtonsSrc = momentCvMuteLocal;
+				momentMastMuteItem->isGlobal = false;
+				menu->addChild(momentMastMuteItem);
+				
+				MomentaryCvModeItem *momentMastDimItem = createMenuItem<MomentaryCvModeItem>("Msater dim CV", RIGHT_ARROW);
+				momentMastDimItem->momentaryCvButtonsSrc = momentCvDimLocal;
+				momentMastDimItem->isGlobal = false;
+				menu->addChild(momentMastDimItem);
+				
+				MomentaryCvModeItem *momentMastMonoItem = createMenuItem<MomentaryCvModeItem>("Msater mono CV", RIGHT_ARROW);
+				momentMastMonoItem->momentaryCvButtonsSrc = momentCvMonoLocal;
+				momentMastMonoItem->isGlobal = false;
+				menu->addChild(momentMastMonoItem);
+			}
+			
 			
 			if (colorAndCloak->cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
@@ -636,6 +658,7 @@ struct TrackDisplay : EditableDisplayBase {
 	ParamQuantity* hpfParamQuantity;
 	ParamQuantity* lpfParamQuantity;
 	int64_t *idPtr;
+
 
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
@@ -719,6 +742,18 @@ struct TrackDisplay : EditableDisplayBase {
 				menu->addChild(panLawStereoItem);
 			}
 
+			if (srcTrack->gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2) {
+				MomentaryCvModeItem *momentTrackMuteItem = createMenuItem<MomentaryCvModeItem>("Mute CV", RIGHT_ARROW);
+				momentTrackMuteItem->momentaryCvButtonsSrc = &(srcTrack->momentCvMuteLocal);
+				momentTrackMuteItem->isGlobal = false;
+				menu->addChild(momentTrackMuteItem);
+				
+				MomentaryCvModeItem *momentTrackSoloItem = createMenuItem<MomentaryCvModeItem>("Solo CV", RIGHT_ARROW);
+				momentTrackSoloItem->momentaryCvButtonsSrc = &(srcTrack->momentCvSoloLocal);
+				momentTrackSoloItem->isGlobal = false;
+				menu->addChild(momentTrackSoloItem);
+			}
+	
 			if (srcTrack->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numVuThemes) {	
 				VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
 				vuColItem->srcColor = &(srcTrack->vuColorThemeLocal);
@@ -853,6 +888,18 @@ struct GroupDisplay : EditableDisplayBase {
 				panLawStereoItem->panLawStereoSrc = &(srcGroup->panLawStereo);
 				panLawStereoItem->isGlobal = false;
 				menu->addChild(panLawStereoItem);
+			}
+
+			if (srcGroup->gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2) {
+				MomentaryCvModeItem *momentGroupMuteItem = createMenuItem<MomentaryCvModeItem>("Mute CV", RIGHT_ARROW);
+				momentGroupMuteItem->momentaryCvButtonsSrc = &(srcGroup->momentCvMuteLocal);
+				momentGroupMuteItem->isGlobal = false;
+				menu->addChild(momentGroupMuteItem);
+				
+				MomentaryCvModeItem *momentGroupSoloItem = createMenuItem<MomentaryCvModeItem>("Solo CV", RIGHT_ARROW);
+				momentGroupSoloItem->momentaryCvButtonsSrc = &(srcGroup->momentCvSoloLocal);
+				momentGroupSoloItem->isGlobal = false;
+				menu->addChild(momentGroupSoloItem);
 			}
 
 			if (srcGroup->gInfo->colorAndCloak.cc4[vuColorGlobal] >= numVuThemes) {	

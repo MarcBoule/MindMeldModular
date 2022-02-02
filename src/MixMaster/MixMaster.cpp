@@ -1266,6 +1266,10 @@ struct MixMasterWidget : ModuleWidget {
 			masterDisplay->fadeRate = &(module->master.fadeRate);
 			masterDisplay->fadeProfile = &(module->master.fadeProfile);
 			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
+			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo.directOutPanStereoMomentCvLinearVol);
+			masterDisplay->momentCvMuteLocal = &(module->master.momentCvMuteLocal);
+			masterDisplay->momentCvDimLocal = &(module->master.momentCvDimLocal);
+			masterDisplay->momentCvMonoLocal = &(module->master.momentCvMonoLocal);
 			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
 			masterDisplay->chainOnly = &(module->master.chainOnly);
 			masterDisplay->dimGain = &(module->master.dimGain);
@@ -1566,7 +1570,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			masterDisplay->clipping = &(module->master.clipping);
 			masterDisplay->fadeRate = &(module->master.fadeRate);
 			masterDisplay->fadeProfile = &(module->master.fadeProfile);
-			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
+			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);		
+			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo.directOutPanStereoMomentCvLinearVol);
+			masterDisplay->momentCvMuteLocal = &(module->master.momentCvMuteLocal);
+			masterDisplay->momentCvDimLocal = &(module->master.momentCvDimLocal);
+			masterDisplay->momentCvMonoLocal = &(module->master.momentCvMonoLocal);
 			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
 			masterDisplay->chainOnly = &(module->master.chainOnly);
 			masterDisplay->dimGain = &(module->master.dimGain);
