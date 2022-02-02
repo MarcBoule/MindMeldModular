@@ -89,10 +89,10 @@ void appendContextMenu(Menu *menu) override {
 	chainItem->chainModeSrc = &(module->gInfo.chainMode);
 	menu->addChild(chainItem);
 	
-	TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+	DirectOutsModeItem *directOutsItem = createMenuItem<DirectOutsModeItem>("Direct outs", RIGHT_ARROW);
 	directOutsItem->tapModePtr = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[0]);
 	directOutsItem->isGlobal = true;
-	directOutsItem->isGlobalDirectOuts = true;
+	directOutsItem->localOp = &(module->globalToLocalOp);
 	directOutsItem->directOutsSkipGroupedTracksPtr = &(module->gInfo.directOutsSkipGroupedTracks);
 	menu->addChild(directOutsItem);
 	
@@ -121,9 +121,10 @@ void appendContextMenu(Menu *menu) override {
 
 		menu->addChild(createMenuLabel("AuxSpander"));
 		
-		TapModePlusItem *auxSendsItem = createMenuItem<TapModePlusItem>("Aux sends", RIGHT_ARROW);
+		AuxSendsItem *auxSendsItem = createMenuItem<AuxSendsItem>("Aux sends", RIGHT_ARROW);
 		auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
 		auxSendsItem->isGlobal = true;
+		auxSendsItem->localOp = &(module->globalToLocalOp);
 		auxSendsItem->groupsControlTrackSendLevelsSrc = &(module->gInfo.groupsControlTrackSendLevels);
 		menu->addChild(auxSendsItem);
 		

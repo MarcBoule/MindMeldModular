@@ -715,7 +715,7 @@ struct TrackDisplay : EditableDisplayBase {
 			menu->addChild(polySteItem);
 
 			if (srcTrack->gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] >= 4) {
-				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				DirectOutsModeItem *directOutsItem = createMenuItem<DirectOutsModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcTrack->directOutsMode);
 				directOutsItem->isGlobal = false;
 				menu->addChild(directOutsItem);
@@ -729,7 +729,7 @@ struct TrackDisplay : EditableDisplayBase {
 			}
 
 			if (srcTrack->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
-				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
+				AuxSendsItem *auxSendsItem = createMenuItem<AuxSendsItem>("Aux sends", RIGHT_ARROW);
 				auxSendsItem->tapModePtr = &(srcTrack->auxSendsMode);
 				auxSendsItem->isGlobal = false;
 				menu->addChild(auxSendsItem);
@@ -863,7 +863,7 @@ struct GroupDisplay : EditableDisplayBase {
 			));
 
 			if (srcGroup->gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] >= 4) {
-				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				DirectOutsModeItem *directOutsItem = createMenuItem<DirectOutsModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = &(srcGroup->directOutsMode);
 				directOutsItem->isGlobal = false;
 				menu->addChild(directOutsItem);
@@ -877,7 +877,7 @@ struct GroupDisplay : EditableDisplayBase {
 			}
 
 			if (srcGroup->gInfo->auxSendsMode >= 4 && *auxExpanderPresentPtr) {
-				TapModeItem *auxSendsItem = createMenuItem<TapModeItem>("Aux sends", RIGHT_ARROW);
+				AuxSendsItem *auxSendsItem = createMenuItem<AuxSendsItem>("Aux sends", RIGHT_ARROW);
 				auxSendsItem->tapModePtr = &(srcGroup->auxSendsMode);
 				auxSendsItem->isGlobal = false;
 				menu->addChild(auxSendsItem);
@@ -997,7 +997,7 @@ struct AuxDisplay : EditableDisplayBase {
 			menu->addChild(fadeProfSlider);
 			
 			if (directOutPanStereoMomentCvLinearVol->cc4[0] >= 4) {
-				TapModeItem *directOutsItem = createMenuItem<TapModeItem>("Direct outs", RIGHT_ARROW);
+				DirectOutsModeItem *directOutsItem = createMenuItem<DirectOutsModeItem>("Direct outs", RIGHT_ARROW);
 				directOutsItem->tapModePtr = srcDirectOutsModeLocal;
 				directOutsItem->isGlobal = false;
 				menu->addChild(directOutsItem);

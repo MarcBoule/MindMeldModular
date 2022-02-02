@@ -101,13 +101,12 @@ struct PanLawStereoItem : MenuItem {
 };
 
 
-// used for direct outs mode and aux send mode (tap choice 1-4)
-struct TapModeItem : MenuItem {
+struct DirectOutsModeItem : MenuItem {
 	int8_t* tapModePtr;
 	bool isGlobal;
-	bool isGlobalDirectOuts = false;
-	int8_t* directOutsSkipGroupedTracksPtr;// invalid value when isGlobalDirectOuts is false
-	const std::string tapModeNames[6] = {
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
+	int8_t* directOutsSkipGroupedTracksPtr;// invalid value when isGlobal is false
+	const std::string directOutModeNames[6] = {
 		"Pre-insert",
 		"Pre-fader",
 		"Post-fader",
@@ -120,15 +119,15 @@ struct TapModeItem : MenuItem {
 		Menu *menu = new Menu;
 		
 		for (int i = 0; i < (isGlobal ? 5 : 4); i++) {
-			menu->addChild(createCheckMenuItem(tapModeNames[i], "",
+			menu->addChild(createCheckMenuItem(directOutModeNames[i], "",
 				[=]() {return *tapModePtr == i;},
-				[=]() {*tapModePtr = i;}
+				[=]() {if (i == 4) localOp->setOp(GTOL_DIRECTOUTS, *tapModePtr);
+					   *tapModePtr = i;}
 			));
 		}
-		
-		if (isGlobalDirectOuts) {
+		if (isGlobal) {
 			menu->addChild(new MenuSeparator());
-			menu->addChild(createCheckMenuItem(tapModeNames[5], "",
+			menu->addChild(createCheckMenuItem(directOutModeNames[5], "",
 				[=]() {return *directOutsSkipGroupedTracksPtr != 0;},
 				[=]() {*directOutsSkipGroupedTracksPtr ^= 0x1;}
 			));
@@ -138,18 +137,37 @@ struct TapModeItem : MenuItem {
 	}
 };
 
-struct TapModePlusItem : TapModeItem {
-	int* groupsControlTrackSendLevelsSrc;
+struct AuxSendsItem : MenuItem {
+	int8_t* tapModePtr;
+	bool isGlobal;
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
+	int* groupsControlTrackSendLevelsSrc;// invalid value when isGlobal is false
+	const std::string auxModeNames[6] = {
+		"Pre-insert",
+		"Pre-fader",
+		"Post-fader",
+		"Post-mute/solo (default)",
+		"Set per track",
+		"Groups control track send levels"
+	};
 
 	Menu *createChildMenu() override {
-		Menu *menu = TapModeItem::createChildMenu();
-
-		menu->addChild(new MenuSeparator());
+		Menu *menu = new Menu;
 		
-		menu->addChild(createCheckMenuItem("Groups control track send levels", "",
-			[=]() {return *groupsControlTrackSendLevelsSrc != 0;},
-			[=]() {*groupsControlTrackSendLevelsSrc ^= 0x1;}
-		));
+		for (int i = 0; i < (isGlobal ? 5 : 4); i++) {
+			menu->addChild(createCheckMenuItem(auxModeNames[i], "",
+				[=]() {return *tapModePtr == i;},
+				[=]() {if (i == 4) localOp->setOp(GTOL_AUXSENDS, *tapModePtr);
+					   *tapModePtr = i;}
+			));
+		}
+		if (isGlobal) { 
+			menu->addChild(new MenuSeparator());
+			menu->addChild(createCheckMenuItem(auxModeNames[5], "",
+				[=]() {return *groupsControlTrackSendLevelsSrc != 0;},
+				[=]() {*groupsControlTrackSendLevelsSrc ^= 0x1;}
+			));
+		}
 		return menu;
 	}
 };
