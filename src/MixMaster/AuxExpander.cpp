@@ -916,6 +916,36 @@ struct AuxExpander : Module {
 	
 	void doGlobalToLocalOp(int8_t opCode, int8_t operand) {
 		switch (opCode) {
+			case (GTOL_VUCOL) : {
+				for (int i = 0; i < 4; i++) {
+					vuColorThemeLocal.cc4[i] = operand;
+				}
+				break;
+			}
+			case (GTOL_LABELCOL) : {
+				for (int i = 0; i < 4; i++) {
+					dispColorAuxLocal.cc4[i] = operand;
+				}
+				break;
+			}
+			case (GTOL_STEREOPAN) : {
+				for (int i = 0; i < 4; i++) {
+					panLawStereoLocal.cc4[i] = operand;
+				}
+				break;
+			}
+			// case (GTOL_AUXSENDS) : {
+				// break;
+			// }
+			case (GTOL_DIRECTOUTS) : {
+				for (int i = 0; i < 4; i++) {
+					directOutsModeLocal.cc4[i] = operand;
+				}
+				break;
+			}
+			// case (GTOL_FILTERPOS) : {
+				// break;
+			// }
 			case (GTOL_MOMENTCV) : {
 				for (int i = 0; i < N_TRK; i++) {
 					momentCvTrackMuteLocal[i] = operand;

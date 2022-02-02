@@ -72,6 +72,7 @@ void appendContextMenu(Menu *menu) override {
 	FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
 	filterPosItem->filterPosSrc = &(module->gInfo.filterPos);
 	filterPosItem->isGlobal = true;
+	filterPosItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(filterPosItem);
 	
 	PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
@@ -81,6 +82,7 @@ void appendContextMenu(Menu *menu) override {
 	PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
 	panLawStereoItem->panLawStereoSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[1]);
 	panLawStereoItem->isGlobal = true;
+	panLawStereoItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(panLawStereoItem);
 	
 	ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
@@ -143,11 +145,13 @@ void appendContextMenu(Menu *menu) override {
 	DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 	dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
 	dispColItem->isGlobal = true;
+	dispColItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(dispColItem);
 	
 	VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
 	vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
 	vuColItem->isGlobal = true;
+	vuColItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(vuColItem);
 	
 	KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
@@ -196,6 +200,62 @@ void step() override {
 		if (module->globalToLocalOp.opCodeMixer != GTOL_NOP) {
 			// only mixer locals set here, auxspander locals set in ToExpander code in module->process()
 			switch (module->globalToLocalOp.opCodeMixer) {
+				case (GTOL_VUCOL) : {
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].vuColorThemeLocal = module->globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].vuColorThemeLocal = module->globalToLocalOp.operand;
+					}
+					module->master.vuColorThemeLocal = module->globalToLocalOp.operand;
+					break;
+				}
+				case (GTOL_LABELCOL) : {
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].dispColorLocal = module->globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].dispColorLocal = module->globalToLocalOp.operand;
+					}
+					module->master.dispColorLocal = module->globalToLocalOp.operand;
+					break;
+				}
+				case (GTOL_STEREOPAN) : {
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].panLawStereo = module->globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].panLawStereo = module->globalToLocalOp.operand;
+					}
+					break;
+				}
+				case (GTOL_AUXSENDS) : {
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].auxSendsMode = module->globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].auxSendsMode = module->globalToLocalOp.operand;
+					}
+					break;
+				}
+				case (GTOL_DIRECTOUTS) : {
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].directOutsMode = module->globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].directOutsMode = module->globalToLocalOp.operand;
+					}
+					break;
+				}
+				case (GTOL_FILTERPOS) : {
+					for (int i = 0; i < N_TRK; i++) {
+						module->tracks[i].filterPos = module->globalToLocalOp.operand;
+					}
+					for (int i = 0; i < N_GRP; i++) {
+						module->groups[i].filterPos = module->globalToLocalOp.operand;
+					}
+					break;
+				}
 				case (GTOL_MOMENTCV) : {
 					for (int i = 0; i < N_TRK; i++) {
 						module->tracks[i].momentCvMuteLocal = module->globalToLocalOp.operand;

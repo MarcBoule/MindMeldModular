@@ -593,17 +593,17 @@ struct MasterDisplay : EditableDisplayBase {
 			));
 			
 			if (directOutPanStereoMomentCvLinearVol->cc4[2] >= 2) {
-				MomentaryCvModeItem *momentMastMuteItem = createMenuItem<MomentaryCvModeItem>("Msater mute CV", RIGHT_ARROW);
+				MomentaryCvModeItem *momentMastMuteItem = createMenuItem<MomentaryCvModeItem>("Master mute CV", RIGHT_ARROW);
 				momentMastMuteItem->momentaryCvButtonsSrc = momentCvMuteLocal;
 				momentMastMuteItem->isGlobal = false;
 				menu->addChild(momentMastMuteItem);
 				
-				MomentaryCvModeItem *momentMastDimItem = createMenuItem<MomentaryCvModeItem>("Msater dim CV", RIGHT_ARROW);
+				MomentaryCvModeItem *momentMastDimItem = createMenuItem<MomentaryCvModeItem>("Master dim CV", RIGHT_ARROW);
 				momentMastDimItem->momentaryCvButtonsSrc = momentCvDimLocal;
 				momentMastDimItem->isGlobal = false;
 				menu->addChild(momentMastDimItem);
 				
-				MomentaryCvModeItem *momentMastMonoItem = createMenuItem<MomentaryCvModeItem>("Msater mono CV", RIGHT_ARROW);
+				MomentaryCvModeItem *momentMastMonoItem = createMenuItem<MomentaryCvModeItem>("Master mono CV", RIGHT_ARROW);
 				momentMastMonoItem->momentaryCvButtonsSrc = momentCvMonoLocal;
 				momentMastMonoItem->isGlobal = false;
 				menu->addChild(momentMastMonoItem);

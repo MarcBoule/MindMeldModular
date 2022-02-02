@@ -19,13 +19,15 @@
 struct VuColorItem : MenuItem {
 	int8_t *srcColor;
 	bool isGlobal = false;// true when this is in the context menu of module, false when it is in a track/group/master context menu
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		for (int i = 0; i < (numVuThemes + (isGlobal ? 1 : 0)); i++) {
 			menu->addChild(createCheckMenuItem(vuColorNames[i], "",
 				[=]() {return *srcColor == i;},
-				[=]() {*srcColor = i;}
+				[=]() {if (i == numVuThemes) localOp->setOp(GTOL_VUCOL, *srcColor);
+					   *srcColor = i;}
 			));
 		}
 		return menu;
@@ -36,13 +38,15 @@ struct VuColorItem : MenuItem {
 struct DispColorItem : MenuItem {
 	int8_t *srcColor;
 	bool isGlobal = false;// true when this is in the context menu of module, false when it is in a track/group/master context menu
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		for (int i = 0; i < (numDispThemes + (isGlobal ? 1 : 0)); i++) {		
 			menu->addChild(createCheckMenuItem(dispColorNames[i], "",
 				[=]() {return *srcColor == i;},
-				[=]() {*srcColor = i;}
+				[=]() {if (i == numDispThemes) localOp->setOp(GTOL_LABELCOL, *srcColor);
+					   *srcColor = i;}
 			));
 		}
 		return menu;
@@ -75,6 +79,7 @@ struct PanLawMonoItem : MenuItem {
 struct PanLawStereoItem : MenuItem {
 	int8_t *panLawStereoSrc;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
 	const std::string panLawStereoNames[4] = {
 		"Stereo balance linear",
 		"Stereo balance equal power (default)",
@@ -87,7 +92,8 @@ struct PanLawStereoItem : MenuItem {
 		for (int i = 0; i < (isGlobal ? 4 : 3); i++) {
 			menu->addChild(createCheckMenuItem(panLawStereoNames[i], "",
 				[=]() {return *panLawStereoSrc == i;},
-				[=]() {*panLawStereoSrc = i;}
+				[=]() {if (i == 3) localOp->setOp(GTOL_STEREOPAN, *panLawStereoSrc);
+					   *panLawStereoSrc = i;}
 			));
 		}
 		return menu;
@@ -152,6 +158,7 @@ struct TapModePlusItem : TapModeItem {
 struct FilterPosItem : MenuItem {
 	int8_t *filterPosSrc;
 	bool isGlobal;// true when this is in the context menu of module, false when it is in a track/group context menu
+	GlobalToLocalOp* localOp;// must always set this up when isGlobal==true
 	const std::string filterPosNames[3] = {
 		"Pre-insert",
 		"Post-insert (default)",
@@ -163,7 +170,8 @@ struct FilterPosItem : MenuItem {
 		for (int i = 0; i < (isGlobal ? 3 : 2); i++) {
 			menu->addChild(createCheckMenuItem(filterPosNames[i], "",
 				[=]() {return *filterPosSrc == i;},
-				[=]() {*filterPosSrc = i;}
+				[=]() {if (i == 2) localOp->setOp(GTOL_FILTERPOS, *filterPosSrc);
+					   *filterPosSrc = i;}
 			));
 		}
 		return menu;
