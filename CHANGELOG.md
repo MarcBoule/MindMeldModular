@@ -7,8 +7,10 @@
 - Add new routing module called M/S Melder to facilitate mid/side EQ'ing with VCV Mid/Side and EqMaster
 - Add automatic panel detection in Meld (using its polyphonic output) and in Unmeld (using its polyphonic input)
 - Fix crash in editable labels in MixMasters, AuxSpanders; same in uMeld for the ShapeMaster-PRO plugin
-- Automatically move eq settings in EqMaster when tracks are moved in the mixer to which it is linked
+- Automatically move EQ settings in EqMaster when tracks are moved in the mixer to which it is linked
 - Add track move to EqMaster (labels not moved, only EQ settings; only available when EQ is not linked to a mixer)
+- Add per-track option for CV mode in Mixers and AuxSpanders
+- Make all settings that have a per-track option write the current state to all individual per-track settings when per-track is selected
 
 
 ### 2.0.8 (2021-11-27)
