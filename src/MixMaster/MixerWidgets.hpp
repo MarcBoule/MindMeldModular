@@ -207,17 +207,18 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 	
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
-			if (directOutPanStereoMomentCvLinearVol->cc4[2] < 2) return; // remove this if ever there are permanent settings
-			
 			ui::Menu *menu = createMenu();
 			
-			menu->addChild(createMenuLabel("Settings: "));// + std::string(srcTrack->trackName, 4)));
+			menu->addChild(createMenuLabel("Settings: " + text));
 			
 			if (directOutPanStereoMomentCvLinearVol->cc4[2] >= 2) {
 				MomentaryCvModeItem *momentSendMuteItem = createMenuItem<MomentaryCvModeItem>("Send mute CV", RIGHT_ARROW);
 				momentSendMuteItem->momentaryCvButtonsSrc = trackOrGroupMomentCvSendMutePtr;
 				momentSendMuteItem->isGlobal = false;
 				menu->addChild(momentSendMuteItem);
+			}
+			else {
+				menu->addChild(createMenuLabel("[None currently active]"));
 			}
 			
 			e.consume(this);
@@ -564,7 +565,7 @@ struct MasterDisplay : EditableDisplayBase {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			menu->addChild(createMenuLabel("Master settings: " + std::string(masterLabel) + string::f("  (id %" PRId64 ")", *idSrc + 1)));
+			menu->addChild(createMenuLabel("Master settings: " + text + string::f("  (id %" PRId64 ")", *idSrc + 1)));
 			
 			FadeRateSlider *fadeSlider = new FadeRateSlider(fadeRate);
 			fadeSlider->box.size.x = 200.0f;
@@ -665,7 +666,7 @@ struct TrackDisplay : EditableDisplayBase {
 			ui::Menu *menu = createMenu();
 			TMixerTrack *srcTrack = &(tracks[trackNumSrc]);
 			
-			menu->addChild(createMenuLabel("Track settings: " + std::string(srcTrack->trackName, 4)));
+			menu->addChild(createMenuLabel("Track settings: " + text));
 			
 			menu->addChild(createCheckMenuItem("Invert input", "",
 				[=]() {return srcTrack->invertInput != 0;},
@@ -770,7 +771,7 @@ struct TrackDisplay : EditableDisplayBase {
 			
 			menu->addChild(new MenuSeparator());
 
-			menu->addChild(createMenuLabel("Actions: " + std::string(srcTrack->trackName, 4)));
+			menu->addChild(createMenuLabel("Actions: " + text));
 
 			InitializeTrackItem<TMixerTrack> *initTrackItem = createMenuItem<InitializeTrackItem<TMixerTrack>>("Initialize track settings", "");
 			initTrackItem->srcTrack = srcTrack;
@@ -826,7 +827,7 @@ struct GroupDisplay : EditableDisplayBase {
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
 			ui::Menu *menu = createMenu();
 
-			menu->addChild(createMenuLabel("Group settings: " + std::string(srcGroup->groupName, 4)));
+			menu->addChild(createMenuLabel("Group settings: " + text));
 			
 			GainAdjustSlider *groupGainAdjustSlider = new GainAdjustSlider(&(srcGroup->gainAdjust), -20.0f, 20.0f);
 			groupGainAdjustSlider->box.size.x = 200.0f;
@@ -918,7 +919,7 @@ struct GroupDisplay : EditableDisplayBase {
 			
 			menu->addChild(new MenuSeparator());
 
-			menu->addChild(createMenuLabel("Actions: " + std::string(srcGroup->groupName, 4)));
+			menu->addChild(createMenuLabel("Actions: " + text));
 
 			InitializeGroupItem<TMixerGroup> *initGroupItem = createMenuItem<InitializeGroupItem<TMixerGroup>>("Initialize group settings", "");
 			initGroupItem->srcGroup = srcGroup;
