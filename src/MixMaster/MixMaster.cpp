@@ -584,7 +584,7 @@ struct MixMaster : Module {
 		}
 		
 		// GlobalInfo
-		gInfo.process();
+		// none
 		
 		// Tracks
 		for (int trk = 0; trk < N_TRK; trk++) {

@@ -35,7 +35,6 @@ struct GlobalInfo {
 	int8_t filterPos;// 0 = pre insert, 1 = post insert, 2 = per track
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
-	float linkedFaderReloadValues[N_TRK + N_GRP];
 	int8_t masterFaderScalesSends;// 1 = yes 
 	
 
@@ -43,7 +42,6 @@ struct GlobalInfo {
 	unsigned long soloBitMask;// when = 0ul, nothing to do, when non-zero, a track must check its solo to see if it should play
 	int returnSoloBitMask;
 	float sampleTime;
-	bool requestLinkedFaderReload;
 	float oldFaders[N_TRK + N_GRP];
 
 	// no need to save, no reset
@@ -155,16 +153,6 @@ struct GlobalInfo {
 		}
 	}	
 	
-	void process() {// GlobalInfo
-		if (requestLinkedFaderReload) {
-			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
-				oldFaders[trkOrGrp] = linkedFaderReloadValues[trkOrGrp];
-				paFade[trkOrGrp].setValue(linkedFaderReloadValues[trkOrGrp]);
-			}
-			requestLinkedFaderReload = false;
-		}
-	}
-	
 	void construct(Param *_params, float* _values20) {
 		paMute = &_params[TRACK_MUTE_PARAMS];
 		paSolo = &_params[TRACK_SOLO_PARAMS];
@@ -196,9 +184,6 @@ struct GlobalInfo {
 		filterPos = 1;// default is post-insert
 		groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
-		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
-			linkedFaderReloadValues[trkOrGrp] = 1.0f;
-		}
 		masterFaderScalesSends = 0;// false by default
 		resetNonJson();
 	}
@@ -208,8 +193,9 @@ struct GlobalInfo {
 		updateSoloBitMask();
 		updateReturnSoloBits();
 		sampleTime = APP->engine->getSampleTime();
-		requestLinkedFaderReload = true;// whether comming from onReset() or dataFromJson(), we need a synchronous fader reload of linked faders, and at this point we assume that the linkedFaderReloadValues[] have been setup.
-		// oldFaders[] not done here since done synchronously by "requestLinkedFaderReload = true" above
+		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
+			oldFaders[trkOrGrp] = paFade[trkOrGrp].getValue();
+		}			
 		updateGroupUsage();
 	}
 
@@ -263,13 +249,6 @@ struct GlobalInfo {
 		// ecoMode
 		json_object_set_new(rootJ, "ecoMode", json_integer(ecoMode));
 		
-		// faders (extra copy for linkedFaderReloadValues that will be populated in dataFromJson())
-		json_t *fadersJ = json_array();
-		for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
-			json_array_insert_new(fadersJ, trkOrGrp, json_real(paFade[TRACK_FADER_PARAMS + trkOrGrp].getValue()));
-		}
-		json_object_set_new(rootJ, "faders", fadersJ);		
-
 		// momentaryCvButtons
 		json_object_set_new(rootJ, "momentaryCvButtons", json_integer(directOutPanStereoMomentCvLinearVol.cc4[2]));
 
@@ -377,28 +356,6 @@ struct GlobalInfo {
 		json_t *ecoModeJ = json_object_get(rootJ, "ecoMode");
 		if (ecoModeJ)
 			ecoMode = json_integer_value(ecoModeJ);
-		
-		// faders (populate linkedFaderReloadValues)
-		json_t *fadersJ = json_object_get(rootJ, "faders");
-		if (fadersJ && N_TRK == nTrkSrc) {
-			// tracks
-			for (int trk = 0; trk < std::min(N_TRK, nTrkSrc); trk++) {
-				json_t *fadersArrayJ = json_array_get(fadersJ, trk);
-				if (fadersArrayJ)
-					linkedFaderReloadValues[trk] = json_number_value(fadersArrayJ);
-			}
-			// groups
-			for (int grp = 0; grp < std::min(N_GRP, nGrpSrc); grp++) {
-				json_t *fadersArrayJ = json_array_get(fadersJ, nTrkSrc + grp);
-				if (fadersArrayJ)
-					linkedFaderReloadValues[N_TRK + grp] = json_number_value(fadersArrayJ);
-			}
-		}
-		else {// legacy or mixer interchange of different sizes (16 <-> 8 track)
-			for (int trkOrGrp = 0; trkOrGrp < (N_TRK + N_GRP); trkOrGrp++) {
-				linkedFaderReloadValues[trkOrGrp] = paFade[trkOrGrp].getValue();
-			}
-		}
 		
 		// momentaryCvButtons
 		json_t *momentaryCvButtonsJ = json_object_get(rootJ, "momentaryCvButtons");
