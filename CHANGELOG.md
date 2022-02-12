@@ -1,4 +1,4 @@
-### 2.0.9 (in development)
+### 2.0.9 (2022-02-12)
 
 - Make menus stay open and refresh checkmarks when ctrl/cmd-clicked
 - Draw ShapeMaster and EqMaster displays in module browser
