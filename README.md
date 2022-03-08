@@ -122,7 +122,7 @@ Two utility modules to help manage direct out and insert connections. Three pane
 
 ![IM](res/img/MSMelder.png)
 
-A utility module (bottom left in the picture above) to simplify the patching of mid/side EQ'ing with VCV Mid/Side and EqMaster. The picture above shows how to connect M/S Melder on the mixer inserts for tracks 1-8; the same patching technique can be used for tracks 9-16 (applicable only to the 16-track MixMaster) and Goups/Auxes, each requiring only an additional VCV Mid/Side module.
+A utility module (bottom left in the picture above) to simplify the patching of mid/side EQ'ing with VCV Mid/Side and EqMaster. The picture above shows how to connect M/S Melder on the mixer inserts for tracks 1-8; the same patching technique can be used for tracks 9-16 (applicable only to the 16-track MixMaster) and Groups/Auxes, each requiring only an additional VCV Mid/Side module.
 
 
 <a id="bassmaster"></a>
@@ -165,7 +165,8 @@ The ShapeMaster Pro (not shown) is a commercial plugin which adds the following 
 * CV Visualisation
 * SM-CV expander module for CV control
 * SM-Triggers expander module
-* uMeld - 8 channel poly merge module
+* uMeld module - 8 channel poly merge module
+* ShapeTracker module - Shape section gate and trigger generator for ShapeMaster Pro
 
 The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](https://library.vcvrack.com/MindMeld-ShapeMasterPro).
 
@@ -184,6 +185,7 @@ The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](htt
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
 * Artem Leonov, [Mixing mini patches in VCV RACK with new MINDMELD EQMASTER module](https://www.youtube.com/watch?v=wW1UREZQQXU)
 * Jakub Ciupinski, ShapeMaster [Ep.1-Intro](https://www.youtube.com/watch?v=dq87VzR-37I), [Ep.2-LFO](https://www.youtube.com/watch?v=rI9GSK90Tio), [Ep.3-Sequencer](https://www.youtube.com/watch?v=X92K5c9NAh4), [Ep.4-Random](https://www.youtube.com/watch?v=x-azB2iyjfY), [Ep.5-Time/Groove shaping](https://www.youtube.com/watch?v=m7XY0v_hSAE), [Ep.6-Multifunctions](https://www.youtube.com/watch?v=1bWlMzLIYAg), [Ep.7-PhaseSeq](https://www.youtube.com/watch?v=Ue7blVMOKL0), [Ep.8-Playheads](https://www.youtube.com/watch?v=zL3qVTyhntM)
+* Jakub Ciupinski, [ShapeTracker for ShapeMaster Pro](https://www.youtube.com/watch?v=s1WLeTJpf8Y)
 
 ### In the wild
 * Wouter Spekkink, [Street lights](https://www.youtube.com/watch?v=QpDp3RGGcBg)
