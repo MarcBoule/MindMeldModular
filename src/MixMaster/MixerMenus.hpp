@@ -230,11 +230,11 @@ struct AuxReturnItem : MenuItem {
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
 		menu->addChild(createCheckMenuItem("Mute aux returns when soloing tracks", "",
-			[=]() {return auxReturnsMutedWhenMainSoloPtr != 0;},
+			[=]() {return *auxReturnsMutedWhenMainSoloPtr != 0;},
 			[=]() {*auxReturnsMutedWhenMainSoloPtr ^= 0x1;}
 		));
 		menu->addChild(createCheckMenuItem("Mute tracks when soloing aux returns", "",
-			[=]() {return auxReturnsSolosMuteDryPtr != 0;},
+			[=]() {return *auxReturnsSolosMuteDryPtr != 0;},
 			[=]() {*auxReturnsSolosMuteDryPtr ^= 0x1;}
 		));
 		return menu;
