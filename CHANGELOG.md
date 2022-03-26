@@ -1,4 +1,4 @@
-### 2.0.10 (in development)
+### 2.1.0 (2022-03-26)
 
 - Fix menu bug with global aux returns in MixMaster
 
