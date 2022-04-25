@@ -482,131 +482,243 @@ float calcRandCv(RandomSettings* randomSettings, float restCv, int rangeValue) {
 }
 
 
-void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast) {
-	Bjorklund bjorklund;
-	initMinPts();
-	
-	int numPtsMin = (int)(randomSettings->numNodesMin + 0.5f);
-	int numPtsMax = std::max(numPtsMin, (int)(randomSettings->numNodesMax + 0.5f));// safety
-	int numPtsRnd = random::u32() % (numPtsMax - numPtsMin + 1) + numPtsMin;
+struct SegmentPair {
+	int16_t pt;
+	int16_t isStep;
+};
 
-	float restCv = rangeValues[rangeIndex] < 0 ? 0.5f : 0.0f;
-	
-	// prepare euclidean grid if needed
-	if (randomSettings->grid) {
-		while (numPtsRnd > (int)gridX) {
-			gridX <<= 1;
-		}
-		// here gridX <= 128, numPtsRnd <= gridX
-		bjorklund.init(gridX, numPtsRnd);// gridX is size of seqeunce, numPtsRnd is numPulses which are <= gridX
-		bjorklund.randomRotate();
-		// bjorklund.print();// only shows in terminal when Rack quits
-	}
-	
-	if (randomSettings->stepped) {
-		lockShapeBlocking();
-		if (!randomSettings->grid) {
-			for (int rp = numPtsRnd - 1; rp >= 0; rp--) {
-				float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
-				float xStepL = (float)rp / (float)numPtsRnd;
-				bool slide = random::uniform() < (randomSettings->ctrlMax * 0.01f);
-				// right node
-				if (!slide) {
-					float xStepR = (float)(rp + 1) / (float)numPtsRnd - SAFETY;
-					insertPoint(1, Vec(xStepR, rndCv));
-				}
-				// left node
-				if (rp > 0) { 
-					insertPoint(1, Vec(xStepL, rndCv));
-				}
-				else {
-					// do end points manually
-					points[0].y = rndCv;
-					ctrl[0] = 0.5f;
-					type[0] = 0;
-					points[numPts - 1].y = rndCv;
-				}	
-				if (slide) {
-					setCtrlWithSafety(rp > 0 ? 1 : 0, calcRndCtrl(90.0f));// max ctrl is 90% in this case, don't want too extreme curves
-				}
-			}
-		}
-		else {// is grid
-			int onePos = 0;
-			int nextInsPt = 1;
-			for (int rp = 0; rp < numPtsRnd; rp++) {
-				float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
-				float xStepL = (float)onePos / (float)gridX;
-				bool slide = random::uniform() < (randomSettings->ctrlMax * 0.01f);
-				// left node
-				if (rp > 0) { 
-					insertPoint(nextInsPt, Vec(xStepL, rndCv));
-					if (slide) {
-						setCtrlWithSafety(nextInsPt, calcRndCtrl(90.0f));// max ctrl is 90% in this case, don't want too extreme curves
+void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast) {
+	if (randomSettings->deltaMode != 0) {
+		// delta mode randomization (aka vertical randomization)
+		std::vector<SegmentPair> ptSeg;
+		int ranges[24];// for quantization
+		
+		if (randomSettings->quantized != 0) {
+			// This method is by Andrew Belt and is from the Fundamental Quantizer, modified by Marc Boulé
+			// Find closest notes for each range
+			for (int i = 0; i < 24; i++) {
+				int closestNote = 0;
+				int closestDist = INT_MAX;
+				for (int note = -12; note <= 24; note++) {
+					int dist = std::abs((i + 1) / 2 - note);
+					// Ignore enabled state if no notes are enabled
+					if (randomSettings->scale != 0 && ( (randomSettings->scale & (0x1 << eucMod(note, 12))) == 0 )) {   // !enabledNotes[eucMod(note, 12)]) {
+						continue;
 					}
-					nextInsPt++;
-				}
-				else {
-					// do end points manually
-					points[0].y = rndCv;
-					ctrl[0] = 0.5f;
-					type[0] = 0;
-					points[numPts - 1].y = rndCv;
-					if (slide) {
-						setCtrlWithSafety(0, calcRndCtrl(90.0f));// max ctrl is 90% in this case, don't want too extreme curves
-					}
-				}	
-				onePos = bjorklund.nextOne(onePos);
-				// right node
-				if (!slide) {
-					float xStepR;
-					if (rp >= numPtsRnd - 1) {
-						xStepR = 1.0 - SAFETY;
+					if (dist < closestDist) {
+						closestNote = note;
+						closestDist = dist;
 					}
 					else {
-						xStepR = (float)onePos / (float)gridX;
+						// If dist increases, we won't find a better one.
+						break;
 					}
-					insertPoint(nextInsPt, Vec(xStepR, rndCv));
-					nextInsPt++;
 				}
-			}			
+				ranges[i] = closestNote;
+			}	
 		}
-		if (decoupledFirstLast && numPts > 2) {
-			points[numPts - 2].x = 1.0f;
-			numPts--;
+		
+		lockShapeBlocking();
+		
+		int numTruePts = numPts - (decoupledFirstLast ? 0 : 1);
+				
+		// find all segments
+		for (int pt = 0; pt < numTruePts ; pt++) {
+			SegmentPair nseg;
+			nseg.pt = pt;
+			nseg.isStep = 0;
+			// now check for step
+			int nextPt = pt + 1;
+			if (nextPt < numTruePts && points[pt].y == points[nextPt].y) {// TODO check gridx
+				float p1xg = points[pt].x * (float)gridX;
+				float p2xg = points[nextPt].x * (float)gridX;
+				float p1xgr = std::round(p1xg);
+				float p2xgr = std::round(p2xg);
+				if (p2xgr - p1xgr == 1) {
+					float d1xg = std::fabs(p1xg - p1xgr); 
+					float d2xg = std::fabs(p2xg - p2xgr); 
+					float safg = SAFETYx5 * (float)gridX;
+					if (d1xg < safg && d2xg < safg) {
+						nseg.isStep = 1;
+						pt++;
+					}
+				}
+			}
+			ptSeg.push_back(nseg);
+		}
+			
+		// keep only deltaNodes % of the segments (randomly chosen)
+		int numToKeep = std::round(randomSettings->deltaNodes * 0.01f * ptSeg.size());	
+		if (numToKeep > 0) {
+			if (numToKeep < (int)ptSeg.size()) {
+				std::random_shuffle(ptSeg.begin(), ptSeg.end());
+				ptSeg.resize(numToKeep);
+			}
+			
+			for (int s = 0; s < numToKeep; s++) {
+				int ptToMove = ptSeg[s].pt;
+				float newOffset = (random::uniform() - 0.5f) * randomSettings->deltaChange * 0.02f;
+				float newVert = points[ptToMove].y + newOffset;
+				// begin fold
+				if (newVert > 1.0f) {
+					newVert = 1.0f - (newVert - 1.0f) * 0.5f; 
+				}
+				if (newVert < 0.0f) {
+					newVert = newVert * -0.5f;
+				}
+				// end fold
+				newVert = clamp(newVert, 0.0f, 1.0f);// always keep this even when folding
+				// start quantization 
+				if (randomSettings->quantized != 0) {
+					int rangeValue = rangeValues[rangeIndex];
+					int numOct = (rangeValue > 0 ? rangeValue : rangeValue * -2);// number of octaves over which to span
+					newVert *= (float)numOct;
+					int range = std::floor(newVert * 24);
+					int octave = eucDiv(range, 24);
+					range -= octave * 24;
+					int note = ranges[range] + octave * 12;
+					newVert = float(note) / 12;
+					newVert /= (float)numOct;
+				}
+				// end quantization
+				points[ptToMove].y = newVert;		
+				if (ptSeg[s].isStep != 0) {
+					points[ptToMove + 1].y = points[ptToMove].y;
+				}
+			}
+			if (!decoupledFirstLast) {
+				points[numPts - 1].y = points[0].y;
+			}
 		}
 		unlockShape();
 	}
-	else {// not stepped
-		if (!randomSettings->grid) {
-			for (int rp = 0; rp < numPtsRnd - 1; rp++) {
-				float rndX = random::uniform();
-				float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
-				int retPt = insertPointWithSafetyAndBlock(Vec(rndX, rndCv), false);// without history
+	else {
+		// non delta mode randomization
+		Bjorklund bjorklund;
+		initMinPts();
+		
+		int numPtsMin = (int)(randomSettings->numNodesMin + 0.5f);
+		int numPtsMax = std::max(numPtsMin, (int)(randomSettings->numNodesMax + 0.5f));// safety
+		int numPtsRnd = random::u32() % (numPtsMax - numPtsMin + 1) + numPtsMin;
 
-				setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
-				type[retPt] = 0;
+		float restCv = rangeValues[rangeIndex] < 0 ? 0.5f : 0.0f;
+		
+		// prepare euclidean grid if needed
+		if (randomSettings->grid) {
+			while (numPtsRnd > (int)gridX) {
+				gridX <<= 1;
 			}
+			// here gridX <= 128, numPtsRnd <= gridX
+			bjorklund.init(gridX, numPtsRnd);// gridX is size of seqeunce, numPtsRnd is numPulses which are <= gridX
+			bjorklund.randomRotate();
+			// bjorklund.print();// only shows in terminal when Rack quits
 		}
-		else {// is grid
-			int onePos = 0;
-			for (int rp = 0; rp < numPtsRnd; rp++) {
-				onePos = bjorklund.nextOne(onePos);
-				float rndX = (float)onePos / (float)gridX;
-				float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
-				int retPt = insertPointWithSafetyAndBlock(Vec(rndX, rndCv), false);// without history
+		
+		if (randomSettings->stepped) {
+			lockShapeBlocking();
+			if (!randomSettings->grid) {
+				for (int rp = numPtsRnd - 1; rp >= 0; rp--) {
+					float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+					float xStepL = (float)rp / (float)numPtsRnd;
+					bool slide = random::uniform() < (randomSettings->ctrlMax * 0.01f);
+					// right node
+					if (!slide) {
+						float xStepR = (float)(rp + 1) / (float)numPtsRnd - SAFETY;
+						insertPoint(1, Vec(xStepR, rndCv));
+					}
+					// left node
+					if (rp > 0) { 
+						insertPoint(1, Vec(xStepL, rndCv));
+					}
+					else {
+						// do end points manually
+						points[0].y = rndCv;
+						ctrl[0] = 0.5f;
+						type[0] = 0;
+						points[numPts - 1].y = rndCv;
+					}	
+					if (slide) {
+						setCtrlWithSafety(rp > 0 ? 1 : 0, calcRndCtrl(90.0f));// max ctrl is 90% in this case, don't want too extreme curves
+					}
+				}
+			}
+			else {// is grid
+				int onePos = 0;
+				int nextInsPt = 1;
+				for (int rp = 0; rp < numPtsRnd; rp++) {
+					float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+					float xStepL = (float)onePos / (float)gridX;
+					bool slide = random::uniform() < (randomSettings->ctrlMax * 0.01f);
+					// left node
+					if (rp > 0) { 
+						insertPoint(nextInsPt, Vec(xStepL, rndCv));
+						if (slide) {
+							setCtrlWithSafety(nextInsPt, calcRndCtrl(90.0f));// max ctrl is 90% in this case, don't want too extreme curves
+						}
+						nextInsPt++;
+					}
+					else {
+						// do end points manually
+						points[0].y = rndCv;
+						ctrl[0] = 0.5f;
+						type[0] = 0;
+						points[numPts - 1].y = rndCv;
+						if (slide) {
+							setCtrlWithSafety(0, calcRndCtrl(90.0f));// max ctrl is 90% in this case, don't want too extreme curves
+						}
+					}	
+					onePos = bjorklund.nextOne(onePos);
+					// right node
+					if (!slide) {
+						float xStepR;
+						if (rp >= numPtsRnd - 1) {
+							xStepR = 1.0 - SAFETY;
+						}
+						else {
+							xStepR = (float)onePos / (float)gridX;
+						}
+						insertPoint(nextInsPt, Vec(xStepR, rndCv));
+						nextInsPt++;
+					}
+				}			
+			}
+			if (decoupledFirstLast && numPts > 2) {
+				points[numPts - 2].x = 1.0f;
+				numPts--;
+			}
+			unlockShape();
+		}
+		else {// not stepped
+			if (!randomSettings->grid) {
+				for (int rp = 0; rp < numPtsRnd - 1; rp++) {
+					float rndX = random::uniform();
+					float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+					int retPt = insertPointWithSafetyAndBlock(Vec(rndX, rndCv), false);// without history
 
-				setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
-				type[retPt] = 0;
+					setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
+					type[retPt] = 0;
+				}
 			}
-		}
-		setCtrlWithSafety(0, calcRndCtrl(randomSettings->ctrlMax));
-		points[0].y = restCv;
-		if (decoupledFirstLast) {
-			points[numPts - 1].y = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
-		}
-		else {
-			points[numPts - 1].y = restCv;
+			else {// is grid
+				int onePos = 0;
+				for (int rp = 0; rp < numPtsRnd; rp++) {
+					onePos = bjorklund.nextOne(onePos);
+					float rndX = (float)onePos / (float)gridX;
+					float rndCv = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+					int retPt = insertPointWithSafetyAndBlock(Vec(rndX, rndCv), false);// without history
+
+					setCtrlWithSafety(retPt, calcRndCtrl(randomSettings->ctrlMax));			
+					type[retPt] = 0;
+				}
+			}
+			setCtrlWithSafety(0, calcRndCtrl(randomSettings->ctrlMax));
+			points[0].y = restCv;
+			if (decoupledFirstLast) {
+				points[numPts - 1].y = calcRandCv(randomSettings, restCv, rangeValues[rangeIndex]);
+			}
+			else {
+				points[numPts - 1].y = restCv;
+			}
 		}
 	}
 }

@@ -1084,20 +1084,24 @@ struct NumNodeRangeQuantity : Quantity {
 	float* otherNum = NULL;
 	float defaultVal = 5.0f;
 	bool isMin = true;
+	int8_t* deltaMode = NULL;
 	
-	NumNodeRangeQuantity(float* _mainNum, float* _otherNum, float _defaultVal, bool _isMin) {
+	NumNodeRangeQuantity(float* _mainNum, float* _otherNum, float _defaultVal, bool _isMin, int8_t* _deltaMode) {
 		mainNum = _mainNum;
 		otherNum = _otherNum;
 		defaultVal = _defaultVal;
 		isMin = _isMin;
+		deltaMode = _deltaMode;
 	}
 	void setValue(float value) override {
-		*mainNum = math::clamp(value, getMinValue(), getMaxValue());
-		if (isMin) {
-			*otherNum = std::fmax(*mainNum, *otherNum);
-		}
-		else {
-			*otherNum = std::fmin(*mainNum, *otherNum);
+		if (*deltaMode == 0) {
+			*mainNum = math::clamp(value, getMinValue(), getMaxValue());
+			if (isMin) {
+				*otherNum = std::fmax(*mainNum, *otherNum);
+			}
+			else {
+				*otherNum = std::fmin(*mainNum, *otherNum);
+			}
 		}
 	}
 	float getValue() override {
@@ -1108,19 +1112,26 @@ struct NumNodeRangeQuantity : Quantity {
 	float getDefaultValue() override {return defaultVal;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
+		if (*deltaMode != 0) 
+			return "--";
 		return string::f("%i", (int)(*mainNum + 0.5f));
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {
-		if (isMin) return "Min segments";
+		if (*deltaMode != 0) 
+			return "N/A";
+		if (isMin) 
+			return "Min segments";
 		return "Max segments";
 	}
-	std::string getUnit() override {return "";}
+	std::string getUnit() override {
+		return "";
+	}
 };
 
 struct NumNodeRangeSlider : ui::Slider {
-	NumNodeRangeSlider(float* mainNum, float* otherNum, float defaultVal, bool isMin) {
-		quantity = new NumNodeRangeQuantity(mainNum, otherNum, defaultVal, isMin);
+	NumNodeRangeSlider(float* mainNum, float* otherNum, float defaultVal, bool isMin, int8_t* deltaMode) {
+		quantity = new NumNodeRangeQuantity(mainNum, otherNum, defaultVal, isMin, deltaMode);
 	}
 	~NumNodeRangeSlider() {
 		delete quantity;
@@ -1130,12 +1141,16 @@ struct NumNodeRangeSlider : ui::Slider {
 
 struct RandCtrlQuantity : Quantity {
 	float* ctrlMax = NULL;
+	int8_t* deltaMode = NULL;
 	
-	RandCtrlQuantity(float* _ctrlMax) {
+	RandCtrlQuantity(float* _ctrlMax, int8_t* _deltaMode) {
 		ctrlMax = _ctrlMax;
+		deltaMode = _deltaMode;
 	}
 	void setValue(float value) override {
-		*ctrlMax = math::clamp(value, getMinValue(), getMaxValue());
+		if (*deltaMode == 0) {
+			*ctrlMax = math::clamp(value, getMinValue(), getMaxValue());
+		}
 	}
 	float getValue() override {
 		return *ctrlMax;
@@ -1145,38 +1160,51 @@ struct RandCtrlQuantity : Quantity {
 	float getDefaultValue() override {return RandomSettings::RAND_CTRL_DEF;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
+		if (*deltaMode != 0) 
+			return "--";
 		return string::f("%.1f", *ctrlMax);
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {
+		if (*deltaMode != 0) 
+			return "N/A";
 		return "Curve max";
 	}
-	std::string getUnit() override {return "%";}
+	std::string getUnit() override {
+		if (*deltaMode != 0) 
+			return "";
+		return "%";
+	}
 };
 
 struct CtrlMaxSlider : ui::Slider {
-	CtrlMaxSlider(float* ctrlMax) {
-		quantity = new RandCtrlQuantity(ctrlMax);
+	CtrlMaxSlider(float* ctrlMax, int8_t* deltaMode) {
+		quantity = new RandCtrlQuantity(ctrlMax, deltaMode);
 	}
 	~CtrlMaxSlider() {
 		delete quantity;
 	}
 };
 
+
 struct ZeroOrMaxQuantity : Quantity {
 	float* thisV = NULL;
 	float* otherV = NULL;
 	bool isZero = true;
+	int8_t* deltaMode = NULL;
 	
-	ZeroOrMaxQuantity(float* _thisV, float* _otherV, bool _isZero) {
+	ZeroOrMaxQuantity(float* _thisV, float* _otherV, bool _isZero, int8_t* _deltaMode) {
 		thisV = _thisV;
 		otherV = _otherV;
 		isZero = _isZero;
+		deltaMode = _deltaMode;
 	}
 	void setValue(float value) override {
-		*thisV = math::clamp(value, getMinValue(), getMaxValue());
-		if (*otherV > (100.0f - *thisV)) {
-			*otherV = 100.0f - *thisV;
+		if (*deltaMode == 0) {
+			*thisV = math::clamp(value, getMinValue(), getMaxValue());
+			if (*otherV > (100.0f - *thisV)) {
+				*otherV = 100.0f - *thisV;
+			}
 		}
 	}
 	float getValue() override {
@@ -1187,21 +1215,123 @@ struct ZeroOrMaxQuantity : Quantity {
 	float getDefaultValue() override {return RandomSettings::RAND_ZERO_DEF;}
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
+		if (*deltaMode != 0) 
+			return "--";
 		return string::f("%.1f", *thisV);
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {
-		if (isZero) return "0V ratio";
+		if (*deltaMode != 0) 
+			return "N/A";
+		if (isZero) 
+			return "0V ratio";
 		return "MaxV ratio";
 	}
-	std::string getUnit() override {return "%";}
+	std::string getUnit() override {
+		if (*deltaMode != 0) 
+			return "";
+		return "%";
+	}
 };
-
 struct ZeroOrMaxSlider : ui::Slider {
-	ZeroOrMaxSlider(float* _thisV, float* _otherV, bool _isZero) {
-		quantity = new ZeroOrMaxQuantity(_thisV, _otherV, _isZero);
+	ZeroOrMaxSlider(float* _thisV, float* _otherV, bool _isZero, int8_t* _deltaMode) {
+		quantity = new ZeroOrMaxQuantity(_thisV, _otherV, _isZero, _deltaMode);
 	}
 	~ZeroOrMaxSlider() {
+		delete quantity;
+	}
+};
+
+
+struct DeltaChangeQuantity : Quantity {
+	float* deltaChange = NULL;
+	int8_t* deltaMode = NULL;
+	
+	DeltaChangeQuantity(float* _deltaChange, int8_t* _deltaMode) {
+		deltaChange = _deltaChange;
+		deltaMode = _deltaMode;
+	}
+	void setValue(float value) override {
+		if (*deltaMode != 0) {
+			*deltaChange = math::clamp(value, getMinValue(), getMaxValue());
+		}
+	}
+	float getValue() override {
+		return *deltaChange;
+	}
+	float getMinValue() override {return 0.0f;}
+	float getMaxValue() override {return 100.0f;}
+	float getDefaultValue() override {return RandomSettings::RAND_DELTA_CHANGE_DEF;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		if (*deltaMode == 0) 
+			return "--";
+		return string::f("%.1f", *deltaChange);
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {
+		if (*deltaMode == 0) 
+			return "N/A";
+		return "Range";
+	}
+	std::string getUnit() override {
+		if (*deltaMode == 0) 
+			return "";
+		return "%";
+	}
+};
+struct DeltaChangeSlider : ui::Slider {
+	DeltaChangeSlider(float* deltaChange, int8_t* deltaMode) {
+		quantity = new DeltaChangeQuantity(deltaChange, deltaMode);
+	}
+	~DeltaChangeSlider() {
+		delete quantity;
+	}
+};
+
+
+struct DeltaNodesQuantity : Quantity {
+	float* deltaNodes = NULL;
+	int8_t* deltaMode = NULL;
+	
+	DeltaNodesQuantity(float* _deltaNodes, int8_t* _deltaMode) {
+		deltaNodes = _deltaNodes;
+		deltaMode = _deltaMode;
+	}
+	void setValue(float value) override {
+		if (*deltaMode != 0) {
+			*deltaNodes = math::clamp(value, getMinValue(), getMaxValue());
+		}
+	}
+	float getValue() override {
+		return *deltaNodes;
+	}
+	float getMinValue() override {return 0.0f;}
+	float getMaxValue() override {return 100.0f;}
+	float getDefaultValue() override {return RandomSettings::RAND_DELTA_NODES_DEF;}
+	float getDisplayValue() override {return getValue();}
+	std::string getDisplayValueString() override {
+		if (*deltaMode == 0) 
+			return "--";
+		return string::f("%.1f", *deltaNodes);
+	}
+	void setDisplayValue(float displayValue) override {setValue(displayValue);}
+	std::string getLabel() override {
+		if (*deltaMode == 0) 
+			return "N/A";
+		return "Segments";
+	}
+	std::string getUnit() override {
+		if (*deltaMode == 0) 
+			return "";
+		return "%";
+	}
+};
+struct DeltaNodesSlider : ui::Slider {
+	DeltaNodesSlider(float* deltaNodes, int8_t* deltaMode) {
+		quantity = new DeltaNodesQuantity(deltaNodes, deltaMode);
+	}
+	~DeltaNodesSlider() {
 		delete quantity;
 	}
 };
@@ -1246,6 +1376,15 @@ struct RandomNoteItem : MenuItem {
 	}
 };
 
+struct VerticalOnlySubItem : MenuItem {
+	RandomSettings* randomSettings;
+	
+	void onAction(const event::Action &e) override {
+		randomSettings->deltaMode ^= 0x1;
+		e.consume(this);// don't allow ctrl-click to keep menu open
+	}
+};
+
 
 void addRandomMenu(Menu* menu, Channel* channel) {
 	RandomSettings* randomSettings = channel->getRandomSettings();
@@ -1258,37 +1397,51 @@ void addRandomMenu(Menu* menu, Channel* channel) {
 	
 	menu->addChild(createMenuLabel("Randomization settings:"));
 	
+	if (randomSettings->deltaMode == 0) {
+		// normal mode
+	
+		NumNodeRangeSlider *nodeRange1Slider = new NumNodeRangeSlider(&(randomSettings->numNodesMin), &(randomSettings->numNodesMax), RandomSettings::RAND_NODES_MIN_DEF, true, &(randomSettings->deltaMode));
+		nodeRange1Slider->box.size.x = 200.0f;
+		menu->addChild(nodeRange1Slider);
+		
+		NumNodeRangeSlider *nodeRange2Slider = new NumNodeRangeSlider(&(randomSettings->numNodesMax), &(randomSettings->numNodesMin), RandomSettings::RAND_NODES_MAX_DEF, false, &(randomSettings->deltaMode));
+		nodeRange2Slider->box.size.x = 200.0f;
+		menu->addChild(nodeRange2Slider);
+		
+		CtrlMaxSlider *ctrMaxSlider = new CtrlMaxSlider(&(randomSettings->ctrlMax), &(randomSettings->deltaMode));
+		ctrMaxSlider->box.size.x = 200.0f;
+		menu->addChild(ctrMaxSlider);
+		
+		ZeroOrMaxSlider *zeroVSlider = new ZeroOrMaxSlider(&(randomSettings->zeroV), &(randomSettings->maxV), true, &(randomSettings->deltaMode));
+		zeroVSlider->box.size.x = 200.0f;
+		menu->addChild(zeroVSlider);
+		
+		ZeroOrMaxSlider *maxVSlider = new ZeroOrMaxSlider(&(randomSettings->maxV), &(randomSettings->zeroV), false, &(randomSettings->deltaMode));
+		maxVSlider->box.size.x = 200.0f;
+		menu->addChild(maxVSlider);
+		
+		menu->addChild(createCheckMenuItem("Stepped", "",
+			[=]() {return randomSettings->stepped != 0;},
+			[=]() {randomSettings->stepped ^= 0x1; randomSettings->ctrlMax = randomSettings->stepped ? 0.0f : 100.0f;}
+		));	
 
-	NumNodeRangeSlider *nodeRange1Slider = new NumNodeRangeSlider(&(randomSettings->numNodesMin), &(randomSettings->numNodesMax), RandomSettings::RAND_NODES_MIN_DEF, true);
-	nodeRange1Slider->box.size.x = 200.0f;
-	menu->addChild(nodeRange1Slider);
-	
-	NumNodeRangeSlider *nodeRange2Slider = new NumNodeRangeSlider(&(randomSettings->numNodesMax), &(randomSettings->numNodesMin), RandomSettings::RAND_NODES_MAX_DEF, false);
-	nodeRange2Slider->box.size.x = 200.0f;
-	menu->addChild(nodeRange2Slider);
-	
-	CtrlMaxSlider *ctrMaxSlider = new CtrlMaxSlider(&(randomSettings->ctrlMax));
-	ctrMaxSlider->box.size.x = 200.0f;
-	menu->addChild(ctrMaxSlider);
-	
-	ZeroOrMaxSlider *zeroVSlider = new ZeroOrMaxSlider(&(randomSettings->zeroV), &(randomSettings->maxV), true);
-	zeroVSlider->box.size.x = 200.0f;
-	menu->addChild(zeroVSlider);
-	
-	ZeroOrMaxSlider *maxVSlider = new ZeroOrMaxSlider(&(randomSettings->maxV), &(randomSettings->zeroV), false);
-	maxVSlider->box.size.x = 200.0f;
-	menu->addChild(maxVSlider);
-	
-	menu->addChild(createCheckMenuItem("Stepped", "",
-		[=]() {return randomSettings->stepped != 0;},
-		[=]() {randomSettings->stepped ^= 0x1; randomSettings->ctrlMax = randomSettings->stepped ? 0.0f : 100.0f;}
-	));	
+		menu->addChild(createCheckMenuItem("Lock to Grid-X", "",
+			[=]() {return randomSettings->grid != 0;},
+			[=]() {randomSettings->grid ^= 0x1;}
+		));	
+	}
+	else {
+		// delta mode (aka vertical only mode)
+		
+		DeltaNodesSlider *delt2Slider = new DeltaNodesSlider(&(randomSettings->deltaNodes), &(randomSettings->deltaMode));
+		delt2Slider->box.size.x = 200.0f;
+		menu->addChild(delt2Slider);
 
-	menu->addChild(createCheckMenuItem("Lock to Grid-X", "",
-		[=]() {return randomSettings->grid != 0;},
-		[=]() {randomSettings->grid ^= 0x1;}
-	));	
-
+		DeltaChangeSlider *deltSlider = new DeltaChangeSlider(&(randomSettings->deltaChange), &(randomSettings->deltaMode));
+		deltSlider->box.size.x = 200.0f;
+		menu->addChild(deltSlider);
+	}
+	
 	menu->addChild(createCheckMenuItem("Quantized", "",
 		[=]() {return randomSettings->quantized != 0;},
 		[=]() {randomSettings->quantized ^= 0x1;}
@@ -1297,6 +1450,16 @@ void addRandomMenu(Menu* menu, Channel* channel) {
 	RandomNoteItem *rndNoteItem = createMenuItem<RandomNoteItem>("Quantization scale", RIGHT_ARROW);
 	rndNoteItem->randomSettings = randomSettings;
 	menu->addChild(rndNoteItem);
+	
+	menu->addChild(new MenuSeparator());
+
+	// menu->addChild(createCheckMenuItem("Vertical only", "",
+		// [=]() {return randomSettings->deltaMode != 0;},
+		// [=]() {randomSettings->deltaMode ^= 0x1;}
+	// ));	
+	VerticalOnlySubItem *vonlyItem = createMenuItem<VerticalOnlySubItem>("Vertical only", CHECKMARK(randomSettings->deltaMode != 0));
+	vonlyItem->randomSettings = randomSettings;
+	menu->addChild(vonlyItem);
 }
 
 // Snap menu item
