@@ -1,3 +1,8 @@
+### 2.1.1 (in development)
+
+- ShapeMaster: Added vertical-only option in randomize menu
+
+
 ### 2.1.0 (2022-03-26)
 
 - Fix menu bug with global aux returns in MixMaster
