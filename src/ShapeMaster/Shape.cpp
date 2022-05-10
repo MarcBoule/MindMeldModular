@@ -509,6 +509,13 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 						closestNote = note;
 						closestDist = dist;
 					}
+					else if (dist == closestDist) {
+						// coin-flip for equidistant quantization, to ensure no drift towards bottom when continual random
+						if (random::uniform() >= 0.5f) { 
+							closestNote = note;
+							closestDist = dist;
+						}
+					}
 					else {
 						// If dist increases, we won't find a better one.
 						break;
