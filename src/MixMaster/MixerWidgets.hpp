@@ -513,8 +513,10 @@ struct EditableDisplayBase : LedDisplayTextField {
 		
 		if (text.length() > (unsigned)numChars) {
 			text = text.substr(0, numChars);
-			cursor = numChars;
-			selection = numChars;
+			if (cursor > numChars) {
+				cursor = numChars;
+			}
+			selection = cursor;
 		}
 	}
 	
