@@ -1394,6 +1394,11 @@ void addRandomMenu(Menu* menu, Channel* channel) {
 	));
 
 	menu->addChild(new MenuSeparator());
+
+	VerticalOnlySubItem *vonlyItem = createMenuItem<VerticalOnlySubItem>("Vertical only", CHECKMARK(randomSettings->deltaMode != 0));
+	vonlyItem->randomSettings = randomSettings;
+	menu->addChild(vonlyItem);
+	menu->addChild(new MenuSeparator());
 	
 	menu->addChild(createMenuLabel("Randomization settings:"));
 	
@@ -1450,16 +1455,6 @@ void addRandomMenu(Menu* menu, Channel* channel) {
 	RandomNoteItem *rndNoteItem = createMenuItem<RandomNoteItem>("Quantization scale", RIGHT_ARROW);
 	rndNoteItem->randomSettings = randomSettings;
 	menu->addChild(rndNoteItem);
-	
-	menu->addChild(new MenuSeparator());
-
-	// menu->addChild(createCheckMenuItem("Vertical only", "",
-		// [=]() {return randomSettings->deltaMode != 0;},
-		// [=]() {randomSettings->deltaMode ^= 0x1;}
-	// ));	
-	VerticalOnlySubItem *vonlyItem = createMenuItem<VerticalOnlySubItem>("Vertical only", CHECKMARK(randomSettings->deltaMode != 0));
-	vonlyItem->randomSettings = randomSettings;
-	menu->addChild(vonlyItem);
 }
 
 // Snap menu item
