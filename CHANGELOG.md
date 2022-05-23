@@ -1,6 +1,7 @@
 ### 2.1.1 (in development)
 
 - ShapeMaster: Added vertical-only option in randomize menu
+- MixMaster: Fix track label tabbing cursor bug
 
 
 ### 2.1.0 (2022-03-26)
