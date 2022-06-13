@@ -529,6 +529,9 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 					if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
 						nodeTrigPulseGen.trigger(nodeTrigDuration);
 					}
+					if (getTrigMode() == TM_CV) {
+						nodeTrigPulseGen.trigger(nodeTrigDuration);
+					}
 				}
 				outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
 			}

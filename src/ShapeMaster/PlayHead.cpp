@@ -27,6 +27,7 @@ void PlayHead::construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clo
 	paLock = &_chanParams[LOCK_PARAM];
 	paSwing = &_chanParams[SWING_PARAM];
 	paFreeze = &_chanParams[FREEZE_PARAM];
+	paPhase = &_chanParams[PHASE_PARAM];
 	paPlay = &_chanParams[PLAY_PARAM];
 	paSustainLoop = &_chanParams[LOOP_PARAM];
 	paOffset = &_chanParams[OFFSET_PARAM];
