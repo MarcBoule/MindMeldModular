@@ -63,7 +63,6 @@ class PlayHead {
 	Param* paLock;
 	Param* paSwing;
 	Param* paFreeze;
-	Param* paPhase;
 	Param* paPlay;
 	Param* paSustainLoop;
 	Param* paOffset;
@@ -490,7 +489,7 @@ class PlayHead {
 				state = STEPPING;
 			}
 			if (state == STEPPING) {
-				if ((xt == 0.0 || xt == 1.0) && (paPhase == 0.0f || paPhase == 1.0f)) {
+				if (xt == 0.0 || xt == 1.0) {
 					nodeTrigPulseGen->trigger(*nodeTrigDuration);
 				}
 			}
