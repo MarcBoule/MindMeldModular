@@ -488,6 +488,11 @@ class PlayHead {
 				// unsynced
 				state = STEPPING;
 			}
+			if (state == STEPPING) {
+				if (xt == 0.0 || xt == 1.0) {
+					nodeTrigPulseGen->trigger(*nodeTrigDuration);
+				}
+			}
 		}
 	}
 	
