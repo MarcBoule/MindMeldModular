@@ -502,16 +502,21 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 	if (channelActive) {				
 		// process playhead and get shape CV
 		lastProcessXt = playHead.process(chanCvs);
-		float shapeCv = evalShapeForProcess(lastProcessXt);
+		float shapeCv;
+		if (isForced0VWhenStopped() && getTrigMode() != TM_CV && playHead.getState() == PlayHead::STOPPED) {
+			shapeCv = 0.0f;
+		}
+		else {
+			shapeCv = evalShapeForProcess(lastProcessXt);
+			shapeCv = applyRange(shapeCv);
+		}
 
 		// CV OUTPUT
 		// --------
-		cvOutput->setVoltage(applyRange(shapeCv));
-		
+		cvOutput->setVoltage(shapeCv);
 		
 		// VCA
 		// --------
-		
 		if (getNodeTriggers() != 0) {
 			// needed for scope
 			vcaPreSize = 0;

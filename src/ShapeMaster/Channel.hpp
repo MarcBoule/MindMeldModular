@@ -891,9 +891,6 @@ class Channel {
 
 
 	float evalShapeForProcess(double xt) {
-		if (isForced0VWhenStopped() && !(playHead.getState() == PlayHead::STEPPING || playHead.getState() == PlayHead::HELD)) {
-			return 0.0f;
-		}
 		xt = applyWarp<double>(xt);
 		xt = applyPhase<double>(xt);
 		
