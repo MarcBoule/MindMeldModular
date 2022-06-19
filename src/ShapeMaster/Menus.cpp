@@ -737,6 +737,11 @@ void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4
 	nodetrigItem->channel = &(channels[chan]);
 	menu->addChild(nodetrigItem);
 
+	menu->addChild(createCheckMenuItem("Force 0V CV when stopped", "",
+		[=]() {return channels[chan].isForced0VWhenStopped();},
+		[=]() {channels[chan].toggleForced0VWhenStopped();}
+	));	
+
 	menu->addChild(createCheckMenuItem("Use sustain as channel reset", "",
 		[=]() {return channels[chan].isChannelResetOnSustain();},
 		[=]() {channels[chan].toggleChannelResetOnSustain();}

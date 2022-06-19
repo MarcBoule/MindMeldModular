@@ -79,6 +79,7 @@ void Channel::onReset(bool withParams) {
 	channelSettings2.cc4[2] = 0x1;// tooltip Y mode (1 is default volts, 0 is freq, 2 is notes)
 	channelSettings2.cc4[3] = 0x0;// decoupledFirstLast
 	channelSettings3.cc4[0] = 0;// 0 = none, 1 = node triggers
+	channelSettings3.cc4[1] = 0;// 0 =  normal, 1 = force 0V CV when not stepping
 	presetPath = "";
 	shapePath = "";
 	chanName = string::f("Channel %i", chanNum + 1);
@@ -524,14 +525,14 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 			else {
 				// node triggers
 				int pcDelta = shape.getPcDelta();
-				if (pcDelta != 0) {
+				if (pcDelta != 0 && getTrigMode() != TM_CV) {
 					bool reverse = playHead.getReverse();
 					if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
 						nodeTrigPulseGen.trigger(nodeTrigDuration);
 					}
-					if (getTrigMode() == TM_CV) {
-						nodeTrigPulseGen.trigger(nodeTrigDuration);
-					}
+					// if (getTrigMode() == TM_CV) {
+						// nodeTrigPulseGen.trigger(nodeTrigDuration);
+					// }
 				}
 				outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
 			}

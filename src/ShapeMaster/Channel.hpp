@@ -488,6 +488,9 @@ class Channel {
 		#endif
 		return channelSettings3.cc4[0];
 	}
+	bool isForced0VWhenStopped() {
+		return channelSettings3.cc4[1] != 0;
+	}
 	int8_t getPolyMode() {
 		return channelSettings.cc4[2];
 	}
@@ -723,6 +726,9 @@ class Channel {
 		channelSettings3.cc4[0] = nt;
 		nodeTrigPulseGen.reset();
 	}
+	void toggleForced0VWhenStopped() {
+		channelSettings3.cc4[1] ^= 0x1;
+	}
 	
 	int getVcaPreSize() {
 		return vcaPreSize;
@@ -885,6 +891,9 @@ class Channel {
 
 
 	float evalShapeForProcess(double xt) {
+		if (isForced0VWhenStopped() && !(playHead.getState() == PlayHead::STEPPING || playHead.getState() == PlayHead::HELD)) {
+			return 0.0f;
+		}
 		xt = applyWarp<double>(xt);
 		xt = applyPhase<double>(xt);
 		
