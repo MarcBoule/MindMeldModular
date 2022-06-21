@@ -2,6 +2,7 @@
 
 - ShapeMaster: Added vertical-only option in randomize menu
 - MixMaster: Fix track label tabbing cursor bug
+- ShapeMaster: Added channel option to force a 0V CV when stopped
 
 
 ### 2.1.0 (2022-03-26)

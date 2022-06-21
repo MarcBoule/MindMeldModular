@@ -79,7 +79,13 @@ void Channel::onReset(bool withParams) {
 	channelSettings2.cc4[2] = 0x1;// tooltip Y mode (1 is default volts, 0 is freq, 2 is notes)
 	channelSettings2.cc4[3] = 0x0;// decoupledFirstLast
 	channelSettings3.cc4[0] = 0;// 0 = none, 1 = node triggers
-	channelSettings3.cc4[1] = 0;// 0 =  normal, 1 = force 0V CV when not stepping
+	channelSettings3.cc4[1] = 0;// this will likely not be usable for a while since they were uninit :-(
+	channelSettings3.cc4[2] = 0;// idem
+	channelSettings3.cc4[3] = 0;// idem
+	channelSettings4.cc4[0] = 0;// 0 =  normal, 1 = force 0V CV when not stepping
+	channelSettings4.cc4[1] = 0;// unused
+	channelSettings4.cc4[2] = 0;// unused
+	channelSettings4.cc4[3] = 0;// unused
 	presetPath = "";
 	shapePath = "";
 	chanName = string::f("Channel %i", chanNum + 1);
@@ -143,6 +149,7 @@ json_t* Channel::dataToJsonChannel(bool withParams, bool withProUnsyncMatch, boo
 	json_object_set_new(channelJ, "channelSettings", json_integer(channelSettings.cc1));
 	json_object_set_new(channelJ, "channelSettings2", json_integer(channelSettings2.cc1));
 	json_object_set_new(channelJ, "channelSettings3", json_integer(channelSettings3.cc1));
+	json_object_set_new(channelJ, "channelSettings4", json_integer(channelSettings4.cc1));
 	json_object_set_new(channelJ, "presetPath", json_string(presetPath.c_str()));
 	json_object_set_new(channelJ, "shapePath", json_string(shapePath.c_str()));
 	if (withFullSettings) {
@@ -256,6 +263,9 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 			channelSettings3.cc1 = newSettings3.cc1;
 		}
 	}
+
+	json_t *channelSettings4J = json_object_get(channelJ, "channelSettings4");
+	if (channelSettings4J) channelSettings4.cc1 = json_integer_value(channelSettings4J);
 
 	json_t *presetPathJ = json_object_get(channelJ, "presetPath");
 	if (presetPathJ) presetPath = json_string_value(presetPathJ);
@@ -377,6 +387,7 @@ bool Channel::isDirty(Channel* refChan) {
 	// if (chanSettings.cc1 != refChan->chanSettings.cc1) return true;// 4x int comparison, but excluded from dirty comparison
 	// if (chanSettings2.cc1 != refChan->chanSettings2.cc1) return true;// 4x int comparison, but excluded from dirty comparison
 	// if (chanSettings3.cc1 != refChan->chanSettings3.cc1) return true;// 4x int comparison, but excluded from dirty comparison
+	// if (chanSettings4.cc1 != refChan->chanSettings4.cc1) return true;// 4x int comparison, but excluded from dirty comparison
 	// if (!(presetPath == refChan->presetPath)) return true;// text comp, not relevant for dirty comparison
 	// if (!(shapePath == refChan->shapePath)) return true;// text comp, not relevant for dirty comparison
 	// if (!(chanName == refChan->chanName)) return true;// text comp, not relevant for dirty comparison

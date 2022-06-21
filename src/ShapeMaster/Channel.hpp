@@ -100,6 +100,7 @@ class Channel {
 	PackedBytes4 channelSettings2;
 	private:
 	PackedBytes4 channelSettings3;
+	PackedBytes4 channelSettings4;
 	std::string presetPath;
 	std::string shapePath;
 	std::string chanName;
@@ -489,7 +490,7 @@ class Channel {
 		return channelSettings3.cc4[0];
 	}
 	bool isForced0VWhenStopped() {
-		return channelSettings3.cc4[1] != 0;
+		return channelSettings4.cc4[0] != 0;
 	}
 	int8_t getPolyMode() {
 		return channelSettings.cc4[2];
@@ -727,7 +728,7 @@ class Channel {
 		nodeTrigPulseGen.reset();
 	}
 	void toggleForced0VWhenStopped() {
-		channelSettings3.cc4[1] ^= 0x1;
+		channelSettings4.cc4[0] ^= 0x1;
 	}
 	
 	int getVcaPreSize() {
