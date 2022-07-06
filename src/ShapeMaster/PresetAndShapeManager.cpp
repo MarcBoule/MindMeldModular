@@ -322,17 +322,15 @@ struct SaveUserSubItem : MenuItem {
 		Channel* channel = this->channel;
 		Channel* channelDirtyCache = this->channelDirtyCache;
 		bool isPreset = this->isPreset;
-		async_dialog_filebrowser(true, dir.c_str(), text.c_str(), [channel, channelDirtyCache, isPreset](char* pathC) {
+		async_dialog_filebrowser(true, filename.c_str(), dir.c_str(), text.c_str(), [channel, channelDirtyCache, isPreset](char* pathC) {
 			pathSelected(channel, channelDirtyCache, isPreset, pathC);
 		});
 #else
 		osdialog_filters* filters = osdialog_filters_parse(isPreset ? PRESET_FILTER : SHAPE_FILTER);
-		DEFER({
-			osdialog_filters_free(filters);
-		});
 
 		char* pathC = osdialog_file(OSDIALOG_SAVE, dir.c_str(), filename.c_str(), filters);
 		pathSelected(channel, channelDirtyCache, isPreset, pathC);
+		osdialog_filters_free(filters);
 #endif
 	}
 
