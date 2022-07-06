@@ -512,6 +512,7 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 	// shape processing
 	if (channelActive) {				
 		// process playhead and get shape CV
+		double prelastProcessXt = lastProcessXt;
 		lastProcessXt = playHead.process(chanCvs);
 		float shapeCv;
 		if (isForced0VWhenStopped() && getTrigMode() != TM_CV && playHead.getState() == PlayHead::STOPPED) {
@@ -541,14 +542,23 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 			else {
 				// node triggers
 				int pcDelta = shape.getPcDelta();
-				if (pcDelta != 0 && getTrigMode() != TM_CV) {
-					bool reverse = playHead.getReverse();
-					if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
+				if (pcDelta != 0) {
+					if (getTrigMode() == TM_CV) {
 						nodeTrigPulseGen.trigger(nodeTrigDuration);
 					}
-					// if (getTrigMode() == TM_CV) {
-						// nodeTrigPulseGen.trigger(nodeTrigDuration);
-					// }
+					else {
+						bool reverse = playHead.getReverse();
+						if ( (reverse && pcDelta < 0) || (!reverse && pcDelta > 0) ) {
+							nodeTrigPulseGen.trigger(nodeTrigDuration);
+						}
+					}
+				}
+				else {
+					if (getTrigMode() == TM_CV) {
+						if ( (lastProcessXt == 0.0 && prelastProcessXt != 0.0) || (lastProcessXt == 1.0 && prelastProcessXt != 1.0) ) {
+							nodeTrigPulseGen.trigger(nodeTrigDuration);
+						}
+					}
 				}
 				outOutput->setVoltage(nodeTrigPulseGen.remaining > 0.f ? 10.0f : 0.0f);
 			}
