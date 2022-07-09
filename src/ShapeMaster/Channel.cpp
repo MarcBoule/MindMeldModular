@@ -555,7 +555,7 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 				}
 				else {
 					if (getTrigMode() == TM_CV) {
-						if ( (lastProcessXt == 0.0 && prelastProcessXt != 0.0) || (lastProcessXt == 1.0 && prelastProcessXt != 1.0) ) {
+						if ( (lastProcessXt < 0.0001 && prelastProcessXt >= 0.0001) || (lastProcessXt > 0.9999 && prelastProcessXt <= 0.9999) ) {
 							nodeTrigPulseGen.trigger(nodeTrigDuration);
 						}
 					}
