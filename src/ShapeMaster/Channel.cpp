@@ -10,10 +10,6 @@
 #include "PresetAndShapeManager.hpp"
 
 
-// bool isPreset[4] = {true, true, false, false};
-// bool isPrev[4] = {true, false, true, false};
-
-  
 
 void Channel::construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, std::vector<ParamQuantity*>* _paramQuantitiesSrc, PresetAndShapeManager* _presetAndShapeManager) {
 	chanNum = _chanNum;
@@ -537,7 +533,13 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 			
 			if (getNodeTriggers() > 1) {
 				// shape tracker
-				outOutput->setVoltage(((float)(shape.getPc())) * 0.01f);
+				float stVoltage = ((float)shape.getPc()) * 0.01f;
+				if (getTrigMode() == TM_CV) {
+					if ( (lastProcessXt < 0.0001 && prelastProcessXt >= 0.0001) || (lastProcessXt > 0.9999 && prelastProcessXt <= 0.9999) ) {
+						stVoltage += 0.002f;// special signal so that ShapeTracker will generate triggers on first/last nodes
+					}
+				}
+				outOutput->setVoltage(stVoltage);
 			}
 			else {
 				// node triggers

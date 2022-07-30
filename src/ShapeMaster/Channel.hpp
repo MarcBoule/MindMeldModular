@@ -688,13 +688,15 @@ class Channel {
 		if (!*running) {
 			return -1.0f;
 		}
-		if (playHead.getPlayMode() == PM_REV) {
-			if (lastProcessXt == 1.0f) {
+		if (playHead.getTrigMode() != TM_CV) {
+			if (playHead.getPlayMode() == PM_REV) {
+				if (lastProcessXt == 1.0f) {
+					return -1.0f;
+				}
+			}
+			else if (lastProcessXt == 0.0f) {
 				return -1.0f;
 			}
-		}
-		else if (lastProcessXt == 0.0f) {
-			return -1.0f;
 		}
 		return (float)lastProcessXt;
 	}
