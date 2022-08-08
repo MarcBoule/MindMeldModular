@@ -463,9 +463,10 @@ class PlayHead {
 	void startDelayed(bool allowRetrig) {
 		// pendingTrig can be set to 0 for immediate start (when offet is 0), which will implicitly happen on the same sample since channel code will call process() after having called startDelayed() in the same sample
 		// when startDelayed() is called and there is already a pendingTrig, the new start is simply ignored
-		if ( *running && localPlayButton && !localFreezeButton && 
-				pendingTrig == -1 && (allowRetrig || (state == STOPPED)) ) {
-			pendingTrig = (long)offsetSwingLoopsWithCv[0];//paOffset->getValue();
+		if ( *running && localPlayButton && !localFreezeButton && pendingTrig == -1) {
+			if (allowRetrig || state == STOPPED || xt > 0.9997) {
+				pendingTrig = (long)offsetSwingLoopsWithCv[0];//paOffset->getValue();
+			}
 		}
 	}
 	

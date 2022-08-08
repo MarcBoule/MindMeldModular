@@ -510,18 +510,18 @@ void Channel::process(bool fsDiv8, ChanCvs *chanCvs) {
 		// process playhead and get shape CV
 		double prelastProcessXt = lastProcessXt;
 		lastProcessXt = playHead.process(chanCvs);
-		float shapeCv;
+		float shapeCv;// should not have range applied to it
+		
+		// CV OUTPUT
+		// --------
 		if (isForced0VWhenStopped() && getTrigMode() != TM_CV && playHead.getState() == PlayHead::STOPPED) {
 			shapeCv = 0.0f;
+			cvOutput->setVoltage(0.0f);
 		}
 		else {
 			shapeCv = evalShapeForProcess(lastProcessXt);
-			shapeCv = applyRange(shapeCv);
+			cvOutput->setVoltage(applyRange(shapeCv));
 		}
-
-		// CV OUTPUT
-		// --------
-		cvOutput->setVoltage(shapeCv);
 		
 		// VCA
 		// --------

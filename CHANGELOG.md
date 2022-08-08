@@ -3,6 +3,7 @@
 - ShapeMaster: Added vertical-only option in randomize menu
 - MixMaster: Fix track label tabbing cursor bug
 - ShapeMaster: Added channel option to force a 0V CV when stopped
+- ShapeMaster: Added a very small grace period at the end of the shape for retriggering in T/G mode when retriggering is off
 
 
 ### 2.1.0 (2022-03-26)
