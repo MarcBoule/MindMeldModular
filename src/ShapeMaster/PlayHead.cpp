@@ -101,12 +101,13 @@ void PlayHead::initRun(bool withSlowSlew) {
 	// will autostart itself when in TM_AUTO mode (and conditions are met to start, like play, etc, see start())
 	if (withSlowSlew) {
 		slowSlewPulseGen.trigger(SLOW_SLEW_DURATION);
+		pendingTrig = -1;
 	}
 	stop();
 	cycleCount = 0;
 	lengthIndex = 0;
 	xt = 0.0;
-	pendingTrig = -1;
+	// pendingTrig = -1;// don't want to always do this, since it can kill a good pending trigger (do it above when slowSlew instead)
 	if (trigMode == TM_AUTO) {
 		start();
 	}
