@@ -245,8 +245,13 @@ struct MixMaster : Module {
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
+		// sendToMessageBus(true);// register by just writing data; true means doTrackMoveInit
+	}
+	void onAdd(const AddEvent& e) override {
+		// id only assigned when module has been added to the engine, so can't register switcher in module's constructor, must do it here:
 		sendToMessageBus(true);// register by just writing data; true means doTrackMoveInit
 	}
+
   
 	~MixMaster() {
 		if (id > -1) {
