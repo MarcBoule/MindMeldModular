@@ -95,7 +95,6 @@ void Channel::onReset(bool withParams) {
 void Channel::resetNonJson() {
 	sampleTime = 1.0 / (double)APP->engine->getSampleRate();
 	xover.reset();
-	setCrossoverCutoffFreq();
 	// lastCrossoverParamWithCv; automatically set in setCrossoverCutoffFreq()
 	hpFilter.reset();
 	setHPFCutoffSqFreq(hpfCutoffSqFreq);	
@@ -119,6 +118,7 @@ void Channel::resetNonJson() {
 	warpPhaseResponseAmountCvConnected = false;
 	xoverSlewWithCv = simd::float_4(paCrossover->getValue(), paHigh->getValue(), paLow->getValue(), paSlew->getValue());
 	xoverSlewCvConnected = false;
+	setCrossoverCutoffFreq();
 }
 
 

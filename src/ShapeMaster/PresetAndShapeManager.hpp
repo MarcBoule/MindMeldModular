@@ -35,9 +35,9 @@ class PresetAndShapeManager {
 	Channel* channelDirtyCacheSrc;
 	
 	// worker
-	int workType[8] = {WT_PREV_PRESET};// this value is not used
+	int workType[8] = {};// this value is not used
 	bool withHistory[8];
-	int8_t requestWork[8] = {WS_NONE};
+	int8_t requestWork[8] = {};
 	std::condition_variable cv;// https://thispointer.com//c11-multithreading-part-7-condition-variables-explained/
 	std::mutex mtx;
 	std::thread worker;// http://www.cplusplus.com/reference/thread/thread/thread/
