@@ -120,7 +120,8 @@ class TrackEq {
 		trackGainSlewer.setRiseFall(antipopSlewDb);
 		
 		// the following are just set here to dummy values since there are test and sets in their initializations further below, and this is just to get rid of uninit warning, good values will be set in init()'s onReset()
-		// trackActive = false;
+		trackActive = false;
+		dirty = 0xF;
 		bandActive = simd::float_4(0.0f);
 		freq = simd::float_4(0.0f);
 		gain = simd::float_4(0.0f);
