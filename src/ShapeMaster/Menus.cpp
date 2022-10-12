@@ -64,16 +64,29 @@ void createBackgroundMenu(ui::Menu* menu, Shape* shape, Vec normPos) {
 void captureNewTime(std::string* text, Channel* channel, int pt, float length) {
 	Shape* shape = channel->getShape();
 	Vec ptVec = shape->getPointVect(pt);
-	int newMins;
-	float newSecs;
-	if (std::sscanf(text->c_str(), "%i:%f", &newMins, &newSecs) >= 2) {
-		ptVec.x = ((float)newMins * 60.0f + newSecs) / length;
-		channel->setPointWithSafety(pt, ptVec, -1, -1);
+	if (channel->getTrigMode() == TM_CV) {
+		float newVolts;
+		if (std::sscanf(text->c_str(), "%f", &newVolts) == 1) {
+			if (channel->getBipolCvMode() != 0) {
+				newVolts += 5.0f;
+			}
+			newVolts /= 10.0f;
+			ptVec.x = clamp(newVolts, 0.0f, 1.0f);
+			channel->setPointWithSafety(pt, ptVec, -1, -1);
+		}		
 	}
-	else if (std::sscanf(text->c_str(), "%f", &newSecs) >= 1) {
-		ptVec.x = newSecs / length;
-		channel->setPointWithSafety(pt, ptVec, -1, -1);
-	}	
+	else {
+		int newMins;
+		float newSecs;
+		if (std::sscanf(text->c_str(), "%i:%f", &newMins, &newSecs) >= 2) {
+			ptVec.x = ((float)newMins * 60.0f + newSecs) / length;
+			channel->setPointWithSafety(pt, ptVec, -1, -1);
+		}
+		else if (std::sscanf(text->c_str(), "%f", &newSecs) >= 1) {
+			ptVec.x = newSecs / length;
+			channel->setPointWithSafety(pt, ptVec, -1, -1);
+		}		
+	}
 }
 
 void captureNewVolts(std::string* text, Channel* channel, int pt) {
@@ -89,7 +102,7 @@ void captureNewVolts(std::string* text, Channel* channel, int pt) {
 		channel->setPointWithSafety(pt, ptVec, -1, -1);
 	}
 	else {
-		float newVolts = stringToVoct(text);
+		newVolts = stringToVoct(text);
 		if (newVolts != -100.0f) {
 			ptVec.y = channel->applyInverseRange(newVolts);
 			channel->setPointWithSafety(pt, ptVec, -1, -1);
@@ -206,20 +219,31 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 
 	// Horiz.
 	float length;
-	#ifdef SM_PRO
-	if (channel->isSync()) {
-		length = channel->calcLengthSyncTime();
-	}
-	else 
-	#endif
-	{
-		length = channel->calcLengthUnsyncTime();
-	}
-	float time = length * ptVec.x;	
-	std::string timeText = timeToString(time, false);
-	
+	std::string timeText = "";
 	std::string timeLabel = "Horiz.: ";
-	timeLabel.append(timeText).append("s");
+	if (channel->getTrigMode() == TM_CV) {
+		length = ptVec.x * 10.0f;
+		if (channel->getBipolCvMode() != 0) {
+			length -= 5.0f;
+		}
+		timeText = string::f("%.4g", length);
+		timeLabel.append(timeText).append(" V");
+	}
+	else {
+		#ifdef SM_PRO
+		if (channel->isSync()) {
+			length = channel->calcLengthSyncTime();
+		}
+		else 
+		#endif
+		{
+			length = channel->calcLengthUnsyncTime();
+		}
+		float time = length * ptVec.x;	
+		std::string timeText = timeToString(time, false);
+		timeLabel.append(timeText).append(" s");
+	}
+	
 	menu->addChild(createMenuLabel(timeLabel));
 
 	TimeValueField* timeValueField = new TimeValueField;

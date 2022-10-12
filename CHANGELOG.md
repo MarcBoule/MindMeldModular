@@ -1,3 +1,8 @@
+### 2.1.2 (in development)
+
+- ShapeMaster: Change horizontal node tooltip and value entry from seconds to volts when in CV trig mode
+
+
 ### 2.1.1 (2022-10-04)
 
 - ShapeMaster: Added vertical-only option in randomize menu

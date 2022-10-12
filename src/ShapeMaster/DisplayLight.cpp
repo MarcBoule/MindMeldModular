@@ -400,19 +400,31 @@ void ShapeMasterDisplayLight::drawShape(const DrawArgs &args) {
 	if (setting2Src->cc4[3] != 0 && ptSelect >= 0 && ptSelect != MAX_PTS && font->handle >= 0) {
 		Vec ptVec = shape->getPointVect(ptSelect);
 		
-		float length;
-		#ifdef SM_PRO
-		if (channels[*currChan].isSync()) {
-			length = channels[*currChan].calcLengthSyncTime();
+		// horizontal label
+		float length = 0;
+		std::string timeText = "";
+		if (channels[*currChan].getTrigMode() == TM_CV) {
+			length = ptVec.x * 10.0f;
+			if (channels[*currChan].getBipolCvMode() != 0) {
+				length -= 5.0f;
+			}
+			timeText = string::f("%.3gV", length);
 		}
-		else 
-		#endif
-		{
-			length = channels[*currChan].calcLengthUnsyncTime();
+		else {
+			#ifdef SM_PRO
+			if (channels[*currChan].isSync()) {
+				length = channels[*currChan].calcLengthSyncTime();
+			}
+			else 
+			#endif
+			{
+				length = channels[*currChan].calcLengthUnsyncTime();
+			}
+			float time = length * ptVec.x;	
+			timeText = timeToString(time, true).append("s");
 		}
-		float time = length * ptVec.x;	
-		std::string timeText = timeToString(time, true).append("s");
-
+		
+		// vertical label
 		std::string voltRangedText;
 		float voltRanged = channels[*currChan].applyRange(ptVec.y);
 		int8_t tooltipVoltMode = channels[*currChan].getShowTooltipVoltsAs();
