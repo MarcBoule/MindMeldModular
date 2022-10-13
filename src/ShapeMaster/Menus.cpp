@@ -240,7 +240,7 @@ void createPointMenu(ui::Menu* menu, Channel* channel, int pt) {
 			length = channel->calcLengthUnsyncTime();
 		}
 		float time = length * ptVec.x;	
-		std::string timeText = timeToString(time, false);
+		timeText = timeToString(time, false);
 		timeLabel.append(timeText).append(" s");
 	}
 	
