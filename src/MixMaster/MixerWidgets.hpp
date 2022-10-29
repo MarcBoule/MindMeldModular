@@ -1196,9 +1196,10 @@ struct MmSmallFaderWithLink : MmSmallFader {
 			if (paramQuantity) {
 				int faderIndex = paramQuantity->paramId - baseFaderParamId;
 				if (isLinked(linkBitMaskSrc, faderIndex)) {
-					float v = paramQuantity->getScaledValue();
+					// float v = paramQuantity->getScaledValue();
 					float offsetY = handle->box.size.y / 2.0f;
-					float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
+					// float ypos = math::rescale(v, 0.f, 1.f, minHandlePos.y, maxHandlePos.y) + offsetY;
+					float ypos = handle->box.pos.y + offsetY;
 					
 					nvgBeginPath(args.vg);
 					nvgMoveTo(args.vg, 0, ypos);
