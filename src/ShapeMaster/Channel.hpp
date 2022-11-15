@@ -169,7 +169,7 @@ class Channel {
 	
 	json_t* dataToJsonChannel(bool withParams, bool withProUnsyncMatch, bool withFullSettings);
 	
-	bool dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirtyCacheLoad, bool withFullSettings);
+	bool dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirtyCacheLoad, bool withFullSettings, bool inclColAndNameWhenFullSettings = true);
 	
 	json_t* dataToJsonShape() {
 		return shape.dataToJsonShape();

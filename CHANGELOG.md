@@ -1,6 +1,7 @@
 ### 2.1.2 (in development)
 
 - ShapeMaster: Change horizontal node tooltip and value entry from seconds to volts when in CV trig mode
+- ShapeMaster: Remove channel color and name from channel paste
 
 
 ### 2.1.1 (2022-10-04)

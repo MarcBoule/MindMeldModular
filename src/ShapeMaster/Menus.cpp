@@ -518,7 +518,7 @@ struct PasteChanelItem : MenuItem {
 					WARN("IOP error no MindMeld-ShapeMaster-Clipboard-Channel present in clipboard");
 				}
 				else {
-					channelDestination->dataFromJsonChannel(channelJ, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS);
+					channelDestination->dataFromJsonChannel(channelJ, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS, false);
 					successPaste = true;
 				}
 			}	

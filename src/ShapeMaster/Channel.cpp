@@ -160,7 +160,7 @@ json_t* Channel::dataToJsonChannel(bool withParams, bool withProUnsyncMatch, boo
 }
 
 
-bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirtyCacheLoad, bool withFullSettings) {
+bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirtyCacheLoad, bool withFullSettings, bool inclColAndNameWhenFullSettings) {
 	// returns true when in free version we loaded a preset that has sync 
 	if (withParams) {
 		json_t *phaseJ = json_object_get(channelJ, "phase");
@@ -231,7 +231,9 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 		if (withFullSettings) {
 			// not saved with preset
 			channelSettings.cc4[0] = newSettings.cc4[0];
-			channelSettings.cc4[1] = newSettings.cc4[1];
+			if (inclColAndNameWhenFullSettings) {
+				channelSettings.cc4[1] = newSettings.cc4[1];// channel color
+			}
 			channelSettings.cc4[2] = newSettings.cc4[2];
 		}
 		channelSettings.cc4[3] = newSettings.cc4[3];
@@ -273,8 +275,10 @@ bool Channel::dataFromJsonChannel(json_t *channelJ, bool withParams, bool isDirt
 		json_t *gainAdjustVcaJ = json_object_get(channelJ, "gainAdjustVca");
 		if (gainAdjustVcaJ) gainAdjustVca = json_number_value(gainAdjustVcaJ);
 	
-		json_t *chanNameJ = json_object_get(channelJ, "chanName");
-		if (chanNameJ) chanName = json_string_value(chanNameJ);
+		if (inclColAndNameWhenFullSettings) {
+			json_t *chanNameJ = json_object_get(channelJ, "chanName");
+			if (chanNameJ) chanName = json_string_value(chanNameJ);
+		}
 	}
 	
 	randomSettings.reset();// legacy (for presets that didn't have random settings saved in them)
