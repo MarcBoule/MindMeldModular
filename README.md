@@ -180,7 +180,38 @@ The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](htt
 
 ![IM](res/img/PatchMaster.png)
 
-Configurable multi-controller with parameter mapping, and a Master channel strip for use with PatchMaster or standalone. Developed in collaboration with Omri Cohen ([video manual](TODO)).
+Configurable multi-controller with parameter mapping, and a Master channel strip for use with PatchMaster or standalone. Developed in collaboration with Omri Cohen ([video manual](https://www.youtube.com/watch?v=uyQhRD1sc0A)).
+
+PatchMaster is a performance controller for Rack. PatchMaster enables you to build custom interfaces made up of knobs, buttons and faders, with editable labels, to control the key parts of your patch.  PatchMaster allows you to simplify your patch, avoid all the clutter/distractions and focus only on what's important for performance.
+
+Three main use cases for PatchMaster:
+
+1. Use it as a performance controller for multi-track patches
+2. Use it to create an interface for synth emulations
+3. Use it to create macro controllers.
+
+### How does PatchMaster work?
+When you first instantiate PatchMaster it looks like a rather underwhelming 4hp strip with one knob and one button - but don't let that fool you - under the hood PatchMaster is a very powerful and flexible module. You can add whatever knob, button or fader controllers to PatchMaster you want and midi map them to controls on the modules in your patch. Each controller can be mapped to up to 4 different destinations with different ranges - so each controller can act as a macro. You can add as many instances of PatchMaster as you need and when you place PatchMaster modules next to each other they join together to look like a single module - it is a modular interface for your modular synth!
+
+Everything in PatchMaster is controlled through menus. There are two types of menu:
+
+1. Main panel menu for editing global settings of the module and adding new controllers and separators
+2. Controller menu for editing and mapping controllers
+
+### What kind of controllers are there?
+
+Knobs: Small, Medium or Large - Unipolar or Bipolar
+Buttons: Momentary, Latched, Latched with inverted light, Radio Trig, Radio Latched
+(Radio buttons are exclusive and need to be placed next to each other to work as a group)
+Faders: Large, X-Large, XX-Large
+
+### What are separators?
+
+Separators take the form of Divider Labels (for labelling sections of your control interface) or Blanks (used for spacing)
+
+### Master Chan
+
+The MasterChannel module is like the Master output on MixMaster mixers. This is useful if you don't need a mixer but still want a master output section for your synth emulation for example with a nice VU, soft clipping, DC blocking, mute and Fade etc - just like on MixMaster.
 
 
 <a id="routemaster"></a>
@@ -188,7 +219,7 @@ Configurable multi-controller with parameter mapping, and a Master channel strip
 
 ![IM](res/img/RouteMaster.png)
 
-5-channel signal switchers for use with PatchMaster or standalone. Developed in collaboration with Omri Cohen. The PatchMaster video linked above shows how to set up RouteMaster to work with PatchMaster, by using the "Radio button trig" buttons of PatchMaster.
+The RouteMaster modules are designed to work with PatchMaster (although they can also be used standalone). RouteMasters are switches but they are selectable, not sequential. The are two mono RouteMasters, a 5 in 1 out switch and a 1 in 5 out switch, and two stereo versions of the same. RouteMasters enable you to route signals in your patch and control them using radio buttons on PatchMaster - you can use the RM 5>1 switch to select which VCO wave you want to pass through, or use the 1>5 switch to select which FX you want to route your signal to for example. Developed in collaboration with Omri Cohen. The PatchMaster video linked above shows how to set up RouteMaster to work with PatchMaster, by using the "Radio button trig" buttons of PatchMaster.
 
 
 
