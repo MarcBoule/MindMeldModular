@@ -1004,6 +1004,11 @@ struct EqMasterWidget : ModuleWidget {
 		
 		// Freq, gain and q knobs
 		BandKnob* bandKnobs[12];
+		for (int i = 0; i < 4; i++) {
+			svgPanel->fb->addChild(createWidgetCentered<Dots8p0112Svg>(mm2px(Vec(ctrlX + ctrlDX * i, 91.2f))));
+			svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(ctrlX + ctrlDX * i + 11.04f, 101.78f))));
+			svgPanel->fb->addChild(createWidgetCentered<Dots8p0112Svg>(mm2px(Vec(ctrlX + ctrlDX * i, 112.37f))));
+		}
 		// freq
 		addParam(bandKnobs[0] = createParamCentered<EqFreqKnob<0>>(mm2px(Vec(ctrlX + ctrlDX * 0, 91.2f)), module, FREQ_PARAMS + 0));
 		addParam(bandKnobs[1] = createParamCentered<EqFreqKnob<1>>(mm2px(Vec(ctrlX + ctrlDX * 1, 91.2f)), module, FREQ_PARAMS + 1));
@@ -1066,6 +1071,7 @@ struct EqMasterWidget : ModuleWidget {
 		}
 		// Gain knob
 		TrackGainKnob* trackGainKnob;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(rightX, 67.0f))));
 		addParam(trackGainKnob = createParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, TRACK_GAIN_PARAM));
 		if (module) {
 			trackGainKnob->trackParamSrc = &(module->params[TRACK_PARAM]);

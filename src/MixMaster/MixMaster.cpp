@@ -1086,6 +1086,7 @@ struct MixMasterWidget : ModuleWidget {
 			addInput(inputWidgets[i + 16 * 3] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), module, TMixMaster::TRACK_PAN_INPUTS + i));			
 			// Pan knobs
 			MmSmallKnobGreyWithArc *panKnobTrack;
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8))));
 			addParam(panKnobTrack = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i));
 			if (module) {
 				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
@@ -1200,6 +1201,7 @@ struct MixMasterWidget : ModuleWidget {
 			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), module, TMixMaster::GROUP_PAN_INPUTS + i));			
 			// Pan knobs
 			MmSmallKnobGreyWithArc *panKnobGroup;
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8))));
 			addParam(panKnobGroup = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i));
 			if (module) {
 				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
@@ -1396,6 +1398,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			addInput(inputWidgets[i + N_TRK * 3] = createInputCentered<MmPort>(mm2px(Vec(xTrck1 + 12.7 * i, 40.5)), module, TMixMaster::TRACK_PAN_INPUTS + i));			
 			// Pan knobs
 			MmSmallKnobGreyWithArc *panKnobTrack;
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8))));
 			addParam(panKnobTrack = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i));
 			if (module) {
 				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
@@ -1505,6 +1508,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			addInput(createInputCentered<MmPort>(mm2px(Vec(xGrp1 + 12.7 * i, 40.5)), module, TMixMaster::GROUP_PAN_INPUTS + i));			
 			// Pan knobs
 			MmSmallKnobGreyWithArc *panKnobGroup;
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8))));
 			addParam(panKnobGroup = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i));
 			if (module) {
 				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);

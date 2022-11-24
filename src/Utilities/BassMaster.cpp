@@ -406,6 +406,7 @@ struct BassMasterWidget : ModuleWidget {
 		else {
 			setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMasterSnr.svg")));
 		}
+		SvgPanel* svgPanel = (SvgPanel*)getPanel();
  
 		// crossover knob
 		addParam(createParamCentered<MmBiggerKnobWhite>(mm2px(Vec(15.24, 22.98)), module, BassMaster<IS_JR>::CROSSOVER_PARAM));
@@ -431,6 +432,7 @@ struct BassMasterWidget : ModuleWidget {
 
 		// high width
 		MmKnobWithArc *highWidthKnob;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(7.5, 51.68 + 1))));
 		addParam(highWidthKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(7.5, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_WIDTH_PARAM));
 		if (module) {
 			highWidthKnob->paramWithCV = &(module->highWidth);
@@ -441,6 +443,7 @@ struct BassMasterWidget : ModuleWidget {
 		
 		// high gain
 		MmKnobWithArc *highGainKnob;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(22.9, 51.68 + 1))));
 		addParam(highGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(22.9, 51.68 + 1)), module, BassMaster<IS_JR>::HIGH_GAIN_PARAM));
 		if (module) {
 			highGainKnob->detailsShowSrc = &(module->detailsShow);
@@ -449,6 +452,7 @@ struct BassMasterWidget : ModuleWidget {
  
 		// low width
 		MmKnobWithArc *lowWidthKnob;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(7.5, 79.40 + 1))));
 		addParam(lowWidthKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(7.5, 79.40 + 1)), module, BassMaster<IS_JR>::LOW_WIDTH_PARAM));
 		if (module) {
 			lowWidthKnob->paramWithCV = &(module->lowWidth);
@@ -459,6 +463,7 @@ struct BassMasterWidget : ModuleWidget {
 		
 		// low gain
 		MmKnobWithArc *lowGainKnob;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(22.9, 79.40 + 1))));
 		addParam(lowGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(22.9, 79.40 + 1)), module, BassMaster<IS_JR>::LOW_GAIN_PARAM));
 		if (module) {
 			lowGainKnob->detailsShowSrc = &(module->detailsShow);
@@ -485,6 +490,7 @@ struct BassMasterWidget : ModuleWidget {
 						
 			// master gain
 			MmKnobWithArc *masterGainKnob;
+			svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(37.2, 66.09))));
 			addParam(masterGainKnob = createParamCentered<Mm8mmKnobGrayWithArcTopCentered>(mm2px(Vec(37.2, 66.09)), module, BassMaster<IS_JR>::GAIN_PARAM));
 			if (module) {
 				masterGainKnob->detailsShowSrc = &(module->detailsShow);
@@ -493,6 +499,7 @@ struct BassMasterWidget : ModuleWidget {
 			
 			// mix knob
 			MmKnobWithArc *mixKnob;
+			svgPanel->fb->addChild(createWidgetCentered<Dots8p0112Svg>(mm2px(Vec(37.2, 82.35))));
 			addParam(mixKnob = createParamCentered<Mm8mmKnobGrayWithArc>(mm2px(Vec(37.2, 82.35)), module, BassMaster<IS_JR>::MIX_PARAM));
 			if (module) {
 				mixKnob->detailsShowSrc = &(module->detailsShow);

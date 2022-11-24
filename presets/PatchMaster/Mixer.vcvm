@@ -1,0 +1,309 @@
+{
+  "plugin": "MindMeldModular",
+  "model": "PatchMaster",
+  "version": "2.1.1",
+  "params": [
+    {
+      "value": 0.0,
+      "id": 0
+    },
+    {
+      "value": 0.0,
+      "id": 1
+    },
+    {
+      "value": 0.0,
+      "id": 2
+    },
+    {
+      "value": 0.0,
+      "id": 3
+    },
+    {
+      "value": 0.5,
+      "id": 4
+    },
+    {
+      "value": 0.0,
+      "id": 5
+    },
+    {
+      "value": 0.0,
+      "id": 6
+    },
+    {
+      "value": 0.0,
+      "id": 7
+    }
+  ],
+  "data": {
+    "miscSettings": 65793,
+    "tileInfos": [
+      179,
+      179,
+      179,
+      179,
+      194,
+      51,
+      51,
+      51,
+      155,
+      155,
+      155,
+      155,
+      155,
+      155,
+      155,
+      155
+    ],
+    "tileNames": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "Mix",
+      "No name",
+      "No name",
+      "No name",
+      "Mixer",
+      "No name",
+      "No name",
+      "No name",
+      "No name",
+      "No name",
+      "No name",
+      "No name"
+    ],
+    "maps": [
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      },
+      {
+        "moduleId": -1,
+        "paramId": 0,
+        "rangeMax": 1.0,
+        "rangeMin": 0.0
+      }
+    ],
+    "tileOrders": [
+      8,
+      0,
+      1,
+      2,
+      3,
+      4,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "tileSettings": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "radioLit": 0
+  }
+}

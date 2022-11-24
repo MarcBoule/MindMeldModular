@@ -39,6 +39,34 @@ static const std::string dispColorNames[numDispThemes + 1] = {
 
 
 
+// Plain SvgWidgets
+
+struct Dots7p5Svg : SvgWidget {
+	Dots7p5Svg() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dots-7.5_120.svg")));
+	}
+};
+
+struct Dots7p5cSvg : SvgWidget {
+	Dots7p5cSvg() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dots-7.5c_120.svg")));
+	}
+};
+
+struct Dots8p0c112Svg : SvgWidget {
+	Dots8p0c112Svg() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dots-8.0c_112.svg")));
+	}
+};
+
+struct Dots8p0112Svg : SvgWidget {
+	Dots8p0112Svg() {
+		setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/dots-8.0_112.svg")));
+	}
+};
+
+
+
 // Variations on existing knobs, lights, etc
 
 // Ports

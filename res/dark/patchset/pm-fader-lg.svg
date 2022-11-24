@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.0 (4035a4f, 2020-05-01)" sodipodi:docname="pm-fader-lg.svg" version="1.1" viewBox="0 0 69.240942 100.01386" height="26.462mm" width="18.32mm" data-name="Layer 2" id="Layer_2">
+  <metadata id="metadata14141">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs id="defs14139" />
+  <sodipodi:namedview inkscape:current-layer="Layer_2" inkscape:window-maximized="0" inkscape:window-y="25" inkscape:window-x="0" inkscape:cy="37.5" inkscape:cx="25.950001" inkscape:zoom="6.3819457" units="mm" inkscape:document-units="mm" showgrid="false" id="namedview14137" inkscape:window-height="1066" inkscape:window-width="1169" inkscape:pageshadow="2" inkscape:pageopacity="0" guidetolerance="10" gridtolerance="10" objecttolerance="10" borderopacity="1" bordercolor="#666666" pagecolor="#ffffff" />
+  <g transform="scale(1.3341223,1.3335181)" data-name="Layer 2" id="Layer_2-2">
+    <path style="fill:#424242" d="m 1.5,0 h 48.9 c 0.8,0 1.5,0.7 1.5,1.5 v 72 c 0,0.8 -0.7,1.5 -1.5,1.5 H 1.5 C 0.7,75 0,74.3 0,73.5 V 1.5 C 0,0.7 0.7,0 1.5,0 Z" id="rect833" />
+    <g id="g14119">
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,15.5 h 2.9" id="path4304-3" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,19.9 h 2.9" id="path4304-3-5-3" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,24.3 h 2.9" id="path4304-3-5-3-6" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,28.7 h 2.9" id="path4304-3-5-3-6-3" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 16.3,33.1 h 4.8" id="path4304-3-5-3-6-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,37.5 h 2.9" id="path4304-3-5-3-6-8" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,41.9 h 2.9" id="path4304-3-5-3-6-0" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,46.3 h 2.9" id="path4304-3-5-3-6-1" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 18.3,50.7 h 2.9" id="path4304-3-0" />
+    </g>
+    <g id="g14131">
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,15.5 h 2.9" data-name="path4304-3" id="path4304-3-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,19.9 h 2.9" data-name="path4304-3-5-3" id="path4304-3-5-3-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,24.3 h 2.9" data-name="path4304-3-5-3-6" id="path14123" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,28.7 h 2.9" data-name="path4304-3-5-3-6-3" id="path4304-3-5-3-6-3-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.8,33.1 h 4.8" data-name="path4304-3-5-3-6-2" id="path4304-3-5-3-6-2-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,37.5 h 2.9" data-name="path4304-3-5-3-6-8" id="path4304-3-5-3-6-8-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,41.9 h 2.9" data-name="path4304-3-5-3-6-0" id="path4304-3-5-3-6-0-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,46.3 h 2.9" data-name="path4304-3-5-3-6-1" id="path4304-3-5-3-6-1-2" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:0.5669px;stroke-miterlimit:3" d="m 30.7,50.7 h 2.9" data-name="path4304-3-0" id="path4304-3-0-2" />
+    </g>
+    <path style="fill:#1a1a1a" d="m 24.7,15.5 h 2 V 51 h -2 z" id="rect2179" />
+    <path style="fill:#5e5e5e" d="m 26.7,15.5 h 0.6 V 51 h -0.6 z" id="rect2179-2" />
+  </g>
+</svg>

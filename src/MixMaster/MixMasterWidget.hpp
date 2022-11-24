@@ -170,6 +170,27 @@ void appendContextMenu(Menu *menu) override {
 }
 
 
+inline bool calcAuxPresent(Module* expModule) {
+	return (expModule && (
+			expModule->model == modelAuxExpander || 
+			expModule->model == modelAuxExpanderJr));
+}
+
+
+void draw(const DrawArgs& args) override {
+	if (module && calcAuxPresent(module->rightExpander.module)) {
+		DrawArgs newDrawArgs = args;
+		newDrawArgs.clipBox.size.x += mm2px(0.3f);// mixers panels have their base rectangle this much larger, to kill gap artifacts
+		ModuleWidget::draw(newDrawArgs);
+	}
+	else {
+		ModuleWidget::draw(args);
+	}
+}
+	
+
+
+
 void step() override {
 	if (module) {
 		TMixMaster* module = (TMixMaster*)(this->module);

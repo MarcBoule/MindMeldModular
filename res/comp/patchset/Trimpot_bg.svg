@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 25.2.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.0"
+   id="svg111794"
+   x="0px"
+   y="0px"
+   width="15.117"
+   height="15.117"
+   viewBox="0 0 15.116999 15.116999"
+   enable-background="new 0 0 17.85552 17.85938"
+   xml:space="preserve"
+   sodipodi:docname="Trimpot_bg.svg"
+   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs25" /><sodipodi:namedview
+   id="namedview23"
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1.0"
+   inkscape:pageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   showgrid="false"
+   inkscape:zoom="34.525112"
+   inkscape:cx="7.9217702"
+   inkscape:cy="9.8913511"
+   inkscape:window-width="1920"
+   inkscape:window-height="1057"
+   inkscape:window-x="-8"
+   inkscape:window-y="1072"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg111794" />
+<circle
+   fill="#0a0a0a"
+   cx="7.5584998"
+   cy="7.5584998"
+   r="7.5584998"
+   id="circle2"
+   style="stroke-width:1" />
+<linearGradient
+   id="SVGID_1_"
+   gradientUnits="userSpaceOnUse"
+   x1="-2317.6343"
+   y1="-3827.8528"
+   x2="-2301.4397"
+   y2="-3827.8528"
+   gradientTransform="matrix(0,0.84662613,-0.84662613,0,-3233.2017,1962.8729)">
+	<stop
+   offset="0"
+   style="stop-color:#FFFBFD"
+   id="stop4" />
+	<stop
+   offset="1"
+   style="stop-color:#000000"
+   id="stop6" />
+</linearGradient>
+<circle
+   fill="url(#SVGID_1_)"
+   cx="7.5584998"
+   cy="7.5584998"
+   r="6.8554025"
+   id="circle9"
+   style="fill:url(#SVGID_1_);stroke-width:1" />
+<linearGradient
+   id="SVGID_2_"
+   gradientUnits="userSpaceOnUse"
+   x1="183.81821"
+   y1="5065.8359"
+   x2="200.01283"
+   y2="5065.8359"
+   gradientTransform="matrix(3.1223893e-8,0.84662613,0.84662613,-3.1223893e-8,-4281.3106,-154.92204)">
+	<stop
+   offset="0"
+   style="stop-color:#FFFBFD"
+   id="stop11" />
+	<stop
+   offset="1"
+   style="stop-color:#2E2E2E"
+   id="stop13" />
+</linearGradient>
+<circle
+   fill="url(#SVGID_2_)"
+   cx="7.5584998"
+   cy="7.5584998"
+   r="6.8554025"
+   id="circle16"
+   style="fill:url(#SVGID_2_);stroke-width:1" />
+<circle
+   opacity="0.4"
+   enable-background="new    "
+   cx="7.5584998"
+   cy="7.5584998"
+   r="5.8462834"
+   id="circle18"
+   style="stroke-width:1" />
+<circle
+   opacity="0.43"
+   enable-background="new    "
+   cx="7.5584998"
+   cy="7.5584998"
+   r="5.8462834"
+   id="circle20"
+   style="stroke-width:1" />
+</svg>

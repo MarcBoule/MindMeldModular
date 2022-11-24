@@ -1,7 +1,9 @@
 ### 2.1.2 (in development)
 
-- ShapeMaster: Change horizontal node tooltip and value entry from seconds to volts when in CV trig mode
-- ShapeMaster: Remove channel color and name from channel paste
+- ShapeMaster: Changed horizontal node tooltip and value entry from seconds to volts when in CV trig mode
+- ShapeMaster: Removed channel color and name from channel paste
+- Added new modules: PatchMaster, RouteMasters (4 variants) and MasterChannel
+- Optimized knob indicator dots in panels SVGs (AuxSpanders, MixMasters, ShapeMaster, EqMaster, BassMasters)
 
 
 ### 2.1.1 (2022-10-04)

@@ -1021,6 +1021,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			
 			// Pan knobs
 			MmSmallKnobGreyWithArc *panKnobAux;
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * i, 62.83))));
 			addParam(panKnobAux = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(6.35 + 12.7 * i, 62.83)), module, TAuxExpander::GLOBAL_AUXPAN_PARAMS + i));
 			if (module) {
 				panKnobAux->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
@@ -1091,9 +1092,13 @@ struct AuxExpanderWidget : ModuleWidget {
 
 		// Global send knobs
 		MmKnobWithArc* sendKnobs[4];
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 0, 51.8))));
 		addParam(sendKnobs[0] = createParamCentered<MmSmallKnobRedWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 0, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 0));
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 1, 51.8))));
 		addParam(sendKnobs[1] = createParamCentered<MmSmallKnobOrangeWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 1, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 1));
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 2, 51.8))));
 		addParam(sendKnobs[2] = createParamCentered<MmSmallKnobBlueWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 2, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 2));
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 3, 51.8))));
 		addParam(sendKnobs[3] = createParamCentered<MmSmallKnobPurpleWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 3, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 3));
 		if (module) {
 			for (int k = 0; k < 4; k++) {
@@ -1117,6 +1122,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
 			}
 			// aux A send for tracks 1 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 14))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 0];
@@ -1125,6 +1131,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux B send for tracks 1 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 24.85))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 1));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 1];
@@ -1133,6 +1140,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux C send for tracks 1 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 35.7))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 2));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 2];
@@ -1141,6 +1149,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux D send for tracks 1 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 46.55))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 3));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 3];
@@ -1162,6 +1171,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for tracks 9 to 16
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 74.5))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 0));			
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 0];
@@ -1170,6 +1180,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux B send for tracks 9 to 16
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 85.35))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 1));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 1];
@@ -1178,6 +1189,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux C send for tracks 9 to 16
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 96.2))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 2));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 2];
@@ -1186,6 +1198,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux D send for tracks 9 to 16
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 107.05))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 8) * 4 + 3));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 8) * 4 + 3];
@@ -1211,6 +1224,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for groups 1 to 2
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 14))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(171.45 + 12.7 * i, 14)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 0));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 14 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 0));	
 			if (module) {
@@ -1220,6 +1234,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux B send for groups 1 to 2
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 24.85))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(171.45 + 12.7 * i, 24.85)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 1));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 24.85 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 1));	
 			if (module) {
@@ -1229,6 +1244,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux C send for groups 1 to 2
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 35.7))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(171.45 + 12.7 * i, 35.7)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 2));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 35.7 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 2));	
 			if (module) {
@@ -1238,6 +1254,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux D send for groups 1 to 2
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 46.55))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(171.45 + 12.7 * i, 46.55)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + i * 4 + 3));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 46.55 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + i * 4 + 3));	
 			if (module) {
@@ -1260,6 +1277,7 @@ struct AuxExpanderWidget : ModuleWidget {
 			}
 
 			// aux A send for groups 3 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 74.5))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(171.45 + 12.7 * i, 74.5)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 0));			
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 74.5 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 0));	
 			if (module) {
@@ -1269,6 +1287,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux B send for groups 3 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 85.35))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(171.45 + 12.7 * i, 85.35)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 1));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 85.35 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 1));	
 			if (module) {
@@ -1278,6 +1297,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux C send for groups 3 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 96.2))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(171.45 + 12.7 * i, 96.2)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 2));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 96.2 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 2));	
 			if (module) {
@@ -1287,6 +1307,7 @@ struct AuxExpanderWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux D send for groups 3 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(171.45 + 12.7 * i, 107.05))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(171.45 + 12.7 * i, 107.05)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + (i + 2) * 4 + 3));
 			addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(171.45 + 12.7 * i - redO - redOx, 107.05 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + (i + 2) * 4 + 3));	
 			if (module) {
@@ -1388,6 +1409,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			
 			// Pan knobs
 			MmSmallKnobGreyWithArc *panKnobAux;
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * i, 62.83))));
 			addParam(panKnobAux = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(6.35 + 12.7 * i, 62.83)), module, TAuxExpander::GLOBAL_AUXPAN_PARAMS + i));
 			if (module) {
 				panKnobAux->detailsShowSrc = &(module->colorAndCloak.cc4[detailsShow]);
@@ -1458,9 +1480,13 @@ struct AuxExpanderJrWidget : ModuleWidget {
 
 		// Global send knobs
 		MmKnobWithArc* sendKnobs[4];
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 0, 51.8))));
 		addParam(sendKnobs[0] = createParamCentered<MmSmallKnobRedWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 0, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 0));
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 1, 51.8))));
 		addParam(sendKnobs[1] = createParamCentered<MmSmallKnobOrangeWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 1, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 1));
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 2, 51.8))));
 		addParam(sendKnobs[2] = createParamCentered<MmSmallKnobBlueWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 2, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 2));
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(6.35 + 12.7 * 3, 51.8))));
 		addParam(sendKnobs[3] = createParamCentered<MmSmallKnobPurpleWithArcTopCentered>(mm2px(Vec(6.35 + 12.7 * 3, 51.8)), module, TAuxExpander::GLOBAL_AUXSEND_PARAMS + 3));
 		if (module) {
 			for (int k = 0; k < 4; k++) {
@@ -1484,6 +1510,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				trackAndGroupLabels[i]->dispColorLocalPtr = &(module->trackDispColsLocal[i >> 2].cc4[i & 0x3]);
 			}
 			// aux A send for tracks 1 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 14))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 14)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 0));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 0];
@@ -1492,6 +1519,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux B send for tracks 1 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 24.85))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 24.85)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 1));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 1];
@@ -1500,6 +1528,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux C send for tracks 1 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 35.7))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 35.7)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 2));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 2];
@@ -1508,6 +1537,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux D send for tracks 1 to 4
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 46.55))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 46.55)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + i * 4 + 3));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[i * 4 + 3];
@@ -1530,6 +1560,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			}
 
 			// aux A send for tracks 5 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 74.5))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(67.31 + 12.7 * i, 74.5)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 0));			
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 0];
@@ -1538,6 +1569,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux B send for tracks 5 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 85.35))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(67.31 + 12.7 * i, 85.35)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 1));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 1];
@@ -1546,6 +1578,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux C send for tracks 5 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 96.2))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(67.31 + 12.7 * i, 96.2)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 2));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 2];
@@ -1554,6 +1587,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 				newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 			}				
 			// aux D send for tracks 5 to 8
+			svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(67.31 + 12.7 * i, 107.05))));
 			addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(67.31 + 12.7 * i, 107.05)), module, TAuxExpander::TRACK_AUXSEND_PARAMS + (i + 4) * 4 + 3));
 			if (module) {
 				newArcKnob->paramWithCV = &module->indivTrackSendWithCv[(i + 4) * 4 + 3];
@@ -1580,6 +1614,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		}
 
 		// aux A send for group 1
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 14))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(xGrp1, 14)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 0));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 14 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 0));	
 		if (module) {
@@ -1589,6 +1624,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// aux B send for group 1
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 24.85))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(xGrp1, 24.85)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 1));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 24.85 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 1));	
 		if (module) {
@@ -1598,6 +1634,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// aux C send for group 1
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 35.7))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(xGrp1, 35.7)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 2));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 35.7 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 2));	
 		if (module) {
@@ -1607,6 +1644,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// aux D send for group 1
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 46.55))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(xGrp1, 46.55)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 3));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 46.55 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 3));	
 		if (module) {
@@ -1629,6 +1667,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 		}
 
 		// aux A send for group 2
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 74.5))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobRedWithArc>(mm2px(Vec(xGrp1, 74.5)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 4));			
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 74.5 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 4));	
 		if (module) {
@@ -1638,6 +1677,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// aux B send for group 2
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 85.35))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobOrangeWithArc>(mm2px(Vec(xGrp1, 85.35)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 5));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 85.35 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 5));	
 		if (module) {
@@ -1647,6 +1687,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// aux C send for group 2
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 96.2))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobBlueWithArc>(mm2px(Vec(xGrp1, 96.2)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 6));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 96.2 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 6));	
 		if (module) {
@@ -1656,6 +1697,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 			newArcKnob->cloakedModeSrc = &(module->colorAndCloak.cc4[cloakedMode]);
 		}				
 		// aux D send for group 2
+		svgPanel->fb->addChild(createWidgetCentered<Dots7p5Svg>(mm2px(Vec(xGrp1, 107.05))));
 		addParam(newArcKnob = createParamCentered<MmSmallKnobPurpleWithArc>(mm2px(Vec(xGrp1, 107.05)), module, TAuxExpander::GROUP_AUXSEND_PARAMS + 7));
 		addChild(createLightCentered<TinyLight<RedLight>>(mm2px(Vec(xGrp1 - redO - redOx, 107.05 + redO)), module, TAuxExpander::AUXSENDMUTE_GROUPED_RETURN_LIGHTS + 7));	
 		if (module) {

@@ -22,10 +22,13 @@ extern MixerMessageBus mixerMessageBus;
 
 
 // All modules that are part of pluginInstance go here
-extern Model *modelMixMasterJr;
-extern Model *modelAuxExpanderJr;
-extern Model *modelMixMaster;
-extern Model *modelAuxExpander;
+extern Model *modelPatchMaster;
+extern Model *modelPatchMasterBlank;
+extern Model *modelRouteMasterMono5to1;
+extern Model *modelRouteMasterStereo5to1;
+extern Model *modelRouteMasterMono1to5;
+extern Model *modelRouteMasterStereo1to5;
+extern Model *modelMasterChannel;
 extern Model *modelMeld;
 extern Model *modelUnmeld;
 extern Model *modelMSMelder;
@@ -34,12 +37,23 @@ extern Model *modelEqExpander;
 extern Model *modelBassMaster;
 extern Model *modelBassMasterJr;
 extern Model *modelShapeMaster;
-
+extern Model *modelMixMasterJr;
+extern Model *modelAuxExpanderJr;
+extern Model *modelMixMaster;
+extern Model *modelAuxExpander;
 
 
 // General constants
 
 // none
+
+
+
+// Global settings
+
+extern int8_t pmAllowMouseTileMove;// PatchMaster allow ctrl/cmd click to move tiles
+
+
 
 // General objects
 
@@ -223,6 +237,17 @@ struct PolyStereoItem : MenuItem {
 
 
 // General functions
+
+void readGlobalSettings();
+void writeGlobalSettings();
+inline bool isPmAllowMouseTileMove() {
+	return pmAllowMouseTileMove != 0;
+}
+inline void togglePmAllowMouseTileMove() {
+	pmAllowMouseTileMove ^= 0x1;
+	writeGlobalSettings();
+}
+
 
 // sort the 4 floats in a float_4 in ascending order starting with index 0
 // adapted from https://stackoverflow.com/questions/6145364/sort-4-number-with-few-comparisons

@@ -571,6 +571,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	addChild(smLabels[14] = createWidgetCentered<PlayModeLabel>(mm2px(Vec(34.9f + 12.12f, rowMid))));
 	// repetitions
 	addChild(smLabels[15] = createWidgetCentered<KnobLabelRepetitions>(mm2px(Vec(47.0f, rowBot))));
+	svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(34.95f, knob2Y))));
 	for (int c = 0; c < 8; c++) {
 		addParam(smKnobs[c][14] = createParamCentered<SmRepetitionsKnob>(mm2px(Vec(34.95f, knob2Y)), module, REPETITIONS_PARAM + c * NUM_CHAN_PARAMS));
 	}
@@ -579,9 +580,12 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	// Block 2 (length, offset, swing)
 	for (int c = 0; c < 8; c++) {
 		int cp = c * NUM_CHAN_PARAMS;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(63.2f, knob0Y))));
 		addParam(smKnobs[c][0] = createParamCentered<SmLengthSyncKnob>(mm2px(Vec(63.2f, knob0Y)), module, LENGTH_SYNC_PARAM + cp));
 		addParam(smKnobs[c][1] = createParamCentered<SmLengthUnsyncKnob>(mm2px(Vec(63.2f, knob0Y)), module, LENGTH_UNSYNC_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(74.25f, knob1Y))));
 		addParam(smKnobs[c][2] = createParamCentered<SmOffsetKnob>(mm2px(Vec(74.25f, knob1Y)), module, OFFSET_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(63.2f, knob2Y))));
 		addParam(smKnobs[c][3] = createParamCentered<SmSwingKnob>(mm2px(Vec(63.2f, knob2Y)), module, SWING_PARAM + cp));
 	}
 	// labels
@@ -597,8 +601,11 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	// Block 3 (phase, response, warp)
 	for (int c = 0; c < 8; c++) {
 		int cp = c * NUM_CHAN_PARAMS;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(91.0f, knob0Y))));
 		addParam(smKnobs[c][4] = createParamCentered<SmPhaseKnob>(mm2px(Vec(91.0f, knob0Y)), module, PHASE_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(102.04f, knob1Y))));
 		addParam(smKnobs[c][5] = createParamCentered<SmResponseKnob>(mm2px(Vec(102.04f, knob1Y)), module, RESPONSE_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(91.0f, knob2Y))));
 		addParam(smKnobs[c][6] = createParamCentered<SmWarpKnob>(mm2px(Vec(91.0f, knob2Y)), module, WARP_PARAM + cp));
 	}
 	// labels
@@ -610,8 +617,11 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	// Block 4 (amount, slew, smooth)
 	for (int c = 0; c < 8; c++) {
 		int cp = c * NUM_CHAN_PARAMS;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(118.79f, knob0Y))));
 		addParam(smKnobs[c][7] = createParamCentered<SmLevelKnob>(mm2px(Vec(118.79f, knob0Y)), module, AMOUNT_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(129.83f, knob1Y))));
 		addParam(smKnobs[c][8] = createParamCentered<SmSlewKnob>(mm2px(Vec(129.83f, knob1Y)), module, SLEW_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(118.79f, knob2Y))));
 		addParam(smKnobs[c][9] = createParamCentered<SmSmoothKnob>(mm2px(Vec(118.79f, knob2Y)), module, SMOOTH_PARAM + cp));
 	}
 	// labels
@@ -622,8 +632,11 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	// Block 5 (crossover, high, low)
 	for (int c = 0; c < 8; c++) {
 		int cp = c * NUM_CHAN_PARAMS;
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(146.61f, knob0Y))));
 		addParam(smKnobs[c][10] = createParamCentered<SmCrossoverKnob>(mm2px(Vec(146.61f, knob0Y)), module, CROSSOVER_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(157.65f, knob1Y))));
 		addParam(smKnobs[c][11] = createParamCentered<SmHighKnob>(mm2px(Vec(157.65f, knob1Y)), module, HIGH_PARAM + cp));
+		svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(146.61f, knob2Y))));
 		addParam(smKnobs[c][12] = createParamCentered<SmLowKnob>(mm2px(Vec(146.61f, knob2Y)), module, LOW_PARAM + cp));
 	}
 	// labels
@@ -703,7 +716,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		sidechainSettingsButton->currChan = &(module->currChan);
 		sidechainSettingsButton->channels = module->channels;
 	}
-
+	svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(173.05f, knob2Y))));
 	for (int c = 0; c < 8; c++) {
 		addParam(smKnobs[c][13] = createParamCentered<SmTrigLevelKnob>(mm2px(Vec(173.05f, knob2Y)), module, TRIGLEV_PARAM + c * NUM_CHAN_PARAMS));
 	}

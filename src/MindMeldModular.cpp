@@ -14,10 +14,15 @@ MixerMessageBus mixerMessageBus;
 void init(Plugin *p) {
 	pluginInstance = p;
 
-	p->addModel(modelMixMasterJr);
-	p->addModel(modelAuxExpanderJr);
-	p->addModel(modelMixMaster);
-	p->addModel(modelAuxExpander);
+	readGlobalSettings();
+
+	p->addModel(modelPatchMaster);
+	p->addModel(modelPatchMasterBlank);
+	p->addModel(modelRouteMasterMono5to1);
+	p->addModel(modelRouteMasterStereo5to1);
+	p->addModel(modelRouteMasterMono1to5);
+	p->addModel(modelRouteMasterStereo1to5);
+	p->addModel(modelMasterChannel);
 	p->addModel(modelMeld);
 	p->addModel(modelUnmeld);
 	p->addModel(modelMSMelder);
@@ -26,14 +31,76 @@ void init(Plugin *p) {
 	p->addModel(modelBassMaster);
 	p->addModel(modelBassMasterJr);
 	p->addModel(modelShapeMaster);
+	p->addModel(modelMixMasterJr);
+	p->addModel(modelAuxExpanderJr);
+	p->addModel(modelMixMaster);
+	p->addModel(modelAuxExpander);
 }
 
 
 // General objects
+
 // none
 
 
+
+// Global settings
+
+int8_t pmAllowMouseTileMove = 0;
+
+
+
 // General functions
+
+void readGlobalSettings() {
+	std::string settingsFilename = asset::user("MindMeldModular.json");
+	FILE *file = fopen(settingsFilename.c_str(), "r");
+	if (!file) {
+		pmAllowMouseTileMove = 0;
+		writeGlobalSettings();
+		return;
+	}
+	json_error_t error;
+	json_t *settingsJ = json_loadf(file, 0, &error);
+	if (!settingsJ) {
+		// invalid setting json file
+		fclose(file);
+		pmAllowMouseTileMove = 0;
+		writeGlobalSettings();
+		return;
+	}
+	
+	// pmAllowMouseTileMove
+	json_t *pmAllowMouseTileMoveJ = json_object_get(settingsJ, "pmAllowMouseTileMove");
+	if (pmAllowMouseTileMoveJ) {
+		pmAllowMouseTileMove = json_integer_value(pmAllowMouseTileMoveJ);
+	}
+	else {
+		pmAllowMouseTileMove = 0;
+	}
+	
+	fclose(file);
+	json_decref(settingsJ);
+	return;
+}
+
+
+void writeGlobalSettings() {
+	json_t *settingsJ = json_object();
+	
+	// pmAllowMouseTileMove
+	json_object_set_new(settingsJ, "pmAllowMouseTileMove", json_integer(pmAllowMouseTileMove));
+		
+	std::string settingsFilename = asset::user("MindMeldModular.json");
+	FILE *file = fopen(settingsFilename.c_str(), "w");
+	if (file) {
+		json_dumpf(settingsJ, file, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
+		fclose(file);
+	}
+	json_decref(settingsJ);
+}
+
+
 
 char noteLettersSharp[12] = {'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'};
 char noteLettersFlat [12] = {'C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'};

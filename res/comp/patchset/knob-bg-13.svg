@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="13mm"
+   height="13mm"
+   viewBox="0 0 49.133857 49.133857"
+   version="1.1"
+   id="svg856"
+   sodipodi:docname="knob-bg-13.svg"
+   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <metadata
+     id="metadata860">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     inkscape:document-rotation="0"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1709"
+     inkscape:window-height="964"
+     id="namedview858"
+     showgrid="false"
+     inkscape:document-units="mm"
+     units="mm"
+     inkscape:zoom="7.855186"
+     inkscape:cx="9.0386148"
+     inkscape:cy="48.121076"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg856"
+     inkscape:pagecheckerboard="0" />
+  <defs
+     id="defs850">
+    <linearGradient
+       id="linear-gradient"
+       x1="10.62992"
+       y1="310.25198"
+       x2="10.62992"
+       y2="331.51184"
+       gradientTransform="translate(0,-310.25198)"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0"
+         stop-color="#fff"
+         id="stop833" />
+      <stop
+         offset="0.20659"
+         stop-color="#bababa"
+         id="stop835" />
+      <stop
+         offset="0.41681"
+         stop-color="#7b7b7b"
+         id="stop837" />
+      <stop
+         offset="0.60903"
+         stop-color="#4a4a4a"
+         id="stop839" />
+      <stop
+         offset="0.77636"
+         stop-color="#262626"
+         id="stop841" />
+      <stop
+         offset="0.91237"
+         stop-color="#101010"
+         id="stop843" />
+      <stop
+         offset="1"
+         stop-color="#080808"
+         id="stop845" />
+      <stop
+         offset="1"
+         id="stop847" />
+    </linearGradient>
+  </defs>
+  <g
+     id="Layer_2"
+     data-name="Layer 2"
+     transform="matrix(2.2933335,0,0,2.2933335,0.18897638,0.18897637)"
+     style="stroke-width:0.620156">
+    <g
+       id="Layer_4"
+       data-name="Layer 4"
+       style="stroke-width:0.620156">
+      <circle
+         cx="10.62992"
+         cy="10.62992"
+         r="10.62992"
+         style="fill:url(#linear-gradient);stroke-width:0.620156"
+         id="circle852" />
+    </g>
+  </g>
+</svg>

@@ -14,32 +14,52 @@
 	"changelogUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/CHANGELOG.md",
 	"modules": [
 		{
-			"slug": "MixMasterJr",
-			"name": "MixMasterJr",
-			"description": "8-track stereo mixer with 2 group busses",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
-			"tags": ["Mixer"]
+			"slug": "PatchMaster",
+			"name": "PatchMaster",
+			"description": "Configurable multi-controller with parameter mapping",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/#patchmaster",
+			"tags": ["Controller"]
 		},
 		{
-			"slug": "AuxExpanderJr",
-			"name": "AuxSpanderJr",
-			"description": "4-aux FX bus expander for MixMasterJr",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
-			"tags": ["Mixer", "Expander"]
+			"slug": "PatchMasterBlank",
+			"name": "PatchMaster Vertical Separator",
+			"description": "Blank vertical separator for PatchMaster",
+			"tags": ["Blank"]
 		},
 		{
-			"slug": "MixMaster",
-			"name": "MixMaster",
-			"description": "16-track stereo mixer with 4 group busses",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
-			"tags": ["Mixer"]
+			"slug": "RouteMasterMono5to1",
+			"name": "RouteMaster 5->1 switch",
+			"description": "RouteMaster 5->1 switch (for use with PatchMaster)",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/#routemaster",
+			"tags": ["Controller", "Switch", "Polyphonic"]
 		},
 		{
-			"slug": "AuxExpander",
-			"name": "AuxSpander",
-			"description": "4-aux FX bus expander for MixMaster",
-			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
-			"tags": ["Mixer", "Expander"]
+			"slug": "RouteMasterStereo5to1",
+			"name": "RouteMaster 5->1 stereo switch",
+			"description": "RouteMaster 5->1 stereo switch (for use with PatchMaster)",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/#routemaster",
+			"tags": ["Controller", "Switch", "Polyphonic"]
+		},
+		{
+			"slug": "RouteMasterMono1to5",
+			"name": "RouteMaster 1->5 switch",
+			"description": "RouteMaster 1->5 switch (for use with PatchMaster)",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/#routemaster",
+			"tags": ["Controller", "Switch", "Polyphonic"]
+		},
+		{
+			"slug": "RouteMasterStereo1to5",
+			"name": "RouteMaster 1->5 stereo switch",
+			"description": "RouteMaster 1->5 stereo switch (for use with PatchMaster)",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/#routemaster",
+			"tags": ["Controller", "Switch", "Polyphonic"]
+		},
+		{
+			"slug": "MasterChannel",
+			"name": "MasterChannel",
+			"description": "Master channel strip (for use with PatchMaster or standalone)",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/#patchmaster",
+			"tags": ["Controller"]
 		},
 		{
 			"slug": "EqMaster",
@@ -52,7 +72,6 @@
 			"slug": "EqExpander",
 			"name": "EqSpander",
 			"description": "CV expander for EqMaster",
-			"manualUrl": "",
 			"tags": ["Equalizer", "Expander"]
 		},
 		{
@@ -94,6 +113,34 @@
 			"description": "Multi-Stage Envelope Generator (MSEG) / Complex LFO",
 			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-ShapeMaster-Manual-V1_0.pdf",
 			"tags": ["Envelope generator", "LFO", "Sequencer"]
+		},
+		{
+			"slug": "MixMasterJr",
+			"name": "MixMasterJr",
+			"description": "8-track stereo mixer with 2 group busses",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
+			"tags": ["Mixer"]
+		},
+		{
+			"slug": "AuxExpanderJr",
+			"name": "AuxSpanderJr",
+			"description": "4-aux FX bus expander for MixMasterJr",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
+			"tags": ["Mixer", "Expander"]
+		},
+		{
+			"slug": "MixMaster",
+			"name": "MixMaster",
+			"description": "16-track stereo mixer with 4 group busses",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
+			"tags": ["Mixer"]
+		},
+		{
+			"slug": "AuxExpander",
+			"name": "AuxSpander",
+			"description": "4-aux FX bus expander for MixMaster",
+			"manualUrl": "https://github.com/MarcBoule/MindMeldModular/tree/master/doc/MindMeld-MixMaster-Manual-V1_1_4.pdf",
+			"tags": ["Mixer", "Expander"]
 		}
 	]
 }

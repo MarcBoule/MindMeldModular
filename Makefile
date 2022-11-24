@@ -12,11 +12,11 @@ CXXFLAGS +=
 LDFLAGS +=
 
 # Add .cpp files to the build
-SOURCES += $(wildcard src/dsp/*.cpp) $(wildcard src/comp/*.cpp) $(wildcard src/Utilities/*.cpp) $(wildcard src/EqMaster/*.cpp) $(wildcard src/MixMaster/*.cpp) $(wildcard src/ShapeMaster/*.cpp) $(wildcard src/*.cpp) 
+SOURCES += $(wildcard src/dsp/*.cpp) $(wildcard src/comp/*.cpp) $(wildcard src/Utilities/*.cpp) $(wildcard src/EqMaster/*.cpp) $(wildcard src/MixMaster/*.cpp) $(wildcard src/ShapeMaster/*.cpp) $(wildcard src/PatchSet/*.cpp) $(wildcard src/*.cpp) 
 
 # Add files to the ZIP package when running `make dist`
 # The compiled plugin and "plugin.json" are automatically added.
-DISTRIBUTABLES += res
+DISTRIBUTABLES += res presets
 DISTRIBUTABLES += $(wildcard LICENSE*)
 
 # Include the Rack plugin Makefile framework

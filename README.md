@@ -37,6 +37,10 @@ The following modules are part of the MindMeld module pack:
 
 * [ShapeMaster](#shapemaster): Multi-stage envelope generator (MSEG) / complex LFO.
 
+* [PatchMaster / MasterChan](#patchmaster): Configurable multi-controller with parameter mapping and Master channel strip (for use with PatchMaster or standalone).
+
+* [RouteMaster](#routemaster): 5-channel signal switchers (for use with PatchMaster or standalone).
+
 
 <a id="mixmaster"></a>
 ## MixMaster
@@ -169,6 +173,23 @@ The ShapeMaster Pro (not shown) is a commercial plugin which adds the following 
 * ShapeTracker module - Shape section gate and trigger generator for ShapeMaster Pro
 
 The ShapeMaster Pro plugin can be purchased in the [VCV Rack plugin library](https://library.vcvrack.com/MindMeld-ShapeMasterPro).
+
+
+<a id="patchmaster"></a>
+## PatchMaster / MasterChan
+
+![IM](res/img/PatchMaster.png)
+
+Configurable multi-controller with parameter mapping, and a Master channel strip for use with PatchMaster or standalone. Developed in collaboration with Omri Cohen ([video manual](TODO)).
+
+
+<a id="routemaster"></a>
+## RouteMaster
+
+![IM](res/img/RouteMaster.png)
+
+5-channel signal switchers for use with PatchMaster or standalone. Developed in collaboration with Omri Cohen. The PatchMaster video linked above shows how to set up RouteMaster to work with PatchMaster, by using the "Radio button trig" buttons of PatchMaster.
+
 
 
 <a id="videos"></a>
