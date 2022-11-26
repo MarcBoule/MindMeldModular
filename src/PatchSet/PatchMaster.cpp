@@ -330,6 +330,7 @@ struct PatchMaster : Module {
 
 
 	void onRandomize() override {
+		sanitizeRadios();
 	}
 
 
@@ -2236,6 +2237,7 @@ struct PatchMasterWidget : ModuleWidget {
 							((SvgSwitch*)(tileControllers[t]))->momentary = newIsMoment;
 							if (module) {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->snapEnabled = true;
+								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->randomizeEnabled = !newIsMoment;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->defaultValue = 0.0f;
 								module->params[PatchMaster::TILE_PARAMS + t].setValue((module->params[PatchMaster::TILE_PARAMS + t].getValue() >= 0.5f && !newIsMoment) ? 1.0f : 0.0f);
 								((PmCtrlLightWidget*)tileControllerLights[t])->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
@@ -2254,6 +2256,7 @@ struct PatchMasterWidget : ModuleWidget {
 							}
 							if (module) {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->snapEnabled = false;
+								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->randomizeEnabled = true;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->resetEnabled = true;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->smoothEnabled = true;
 								float defVal = (ti & TI_TYPE_MASK) == TT_KNOB_C ? 0.5f : 0.0f;
@@ -2276,6 +2279,7 @@ struct PatchMasterWidget : ModuleWidget {
 							}
 							if (module) {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->snapEnabled = false;
+								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->randomizeEnabled = true;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->resetEnabled = true;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->smoothEnabled = true;
 								float defVal = (ti & TI_TYPE_MASK) == TT_FADER_C ? 0.5f : 0.0f;
