@@ -266,7 +266,8 @@ struct PatchMaster : Module {
 	TileOrders tileOrders;// managed by the ModuleWidget, only save/load/init in Module
 	
 	// No need to save, with reset
-	int learningId;
+	int learningId;	
+	int learningMap;
 	bool learnedParam;
 	int updateControllerLabelsRequest;// 0 when nothing to do, 1 for read meldName in widget
 	float oldParams[NUM_CTRL];
@@ -321,6 +322,7 @@ struct PatchMaster : Module {
 	}
 	void resetNonJson() {
 		learningId = -1;
+		learningMap = -1;
 		learnedParam = false;
 		updateControllerLabelsRequest = 1;
 		for (int cc = 0; cc < NUM_CTRL; cc++) {
@@ -677,6 +679,37 @@ struct PatchMaster : Module {
 		}
 	}
 	
+	
+	void startMapping(int tileNumber, int mapNumber, SvgWidget* tileBackgroundWidget) {
+		if (tileBackgroundWidget != NULL) {
+			APP->event->setSelectedWidget(tileBackgroundWidget);
+		}
+		APP->scene->rack->touchedParam = NULL;
+		
+		int id = tileNumber * 4 + mapNumber;
+		clearMap(id);
+		enableLearn(id);
+		learningMap = id;
+	}
+	
+	
+	void finishMapping(int tileNumber) {
+		if (tileNumber < NUM_CTRL) {
+			// Check if a ParamWidget was touched
+			ParamWidget* touchedParam = APP->scene->rack->touchedParam;
+			int id = learningMap;
+			if (touchedParam && id != -1 && (learningId == id)) {
+				APP->scene->rack->touchedParam = NULL;
+				int64_t moduleId = touchedParam->module->id;
+				int paramId = touchedParam->paramId;
+				learnParam(id, moduleId, paramId);
+			}
+			else {
+				disableLearn(id);
+			}
+		}
+	}
+
 
 	std::string getParamName(int id) {
 		// this method is by Andrew Belt, in MIDIMap.cpp
@@ -1200,7 +1233,6 @@ struct PmBgBase : SvgWidget {
 	int8_t* highlightTileMoveDir = NULL;
 	int tileNumber = 0;
 	int tileOrder = 0;
-	int* learningMapSrc = NULL;// stays NULL when tileNumber >= NUM_CTRL
 	float manualBgHeight = 0.0f;// need extra special height for manual tiles so as to not mess with box.size.y, since that is needed for proper tile moving outlines (and proper intertile space for right clickign the module bg to get module menu)
 	
 	// local
@@ -1226,23 +1258,16 @@ struct PmBgBase : SvgWidget {
 		}
 	};
 
+
 	// applies only to controller tiles (when tileNumber < NUM_CTRL)
 	struct StartMappingItem : MenuItem {
 		PatchMaster* module = NULL;
 		PmBgBase** tileBackgrounds = NULL;
-		int* learningMapSrc = NULL;
 		int tileNumber = 0;
 		int mapNumber = 0;
 		
 		void onAction(const event::Action &e) override {
-			int id = tileNumber * 4 + mapNumber;
-			module->clearMap(id);
-			APP->scene->rack->touchedParam = NULL;
-			module->enableLearn(id);
-			*learningMapSrc = id;
-			if (tileBackgrounds[tileNumber] != NULL) {
-				APP->event->setSelectedWidget(tileBackgrounds[tileNumber]);
-			}
+			module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
 			e.consume(this);// don't allow ctrl-click to keep menu open
 		}
 
@@ -1250,8 +1275,8 @@ struct PmBgBase : SvgWidget {
 			uint8_t ti = module->tileInfos.infos[tileNumber];
 			disabled = ((ti & TI_TYPE_MASK) == TT_SEP) || ((ti & TI_TYPE_MASK) == TT_BLANK) || !isTileVisible(ti);
 		}
-
 	};
+	
 	
 	// applies only to controller tiles (when tileNumber < NUM_CTRL)
 	struct UnmapItem : MenuItem {
@@ -1267,6 +1292,7 @@ struct PmBgBase : SvgWidget {
 			disabled = module->tileConfigs[tileNumber].parHandles[mapNumber].moduleId < 0;
 		}
 	};
+
 
 	// applies only to controller tiles (when tileNumber < NUM_CTRL)
 	struct RangeItem : MenuItem {
@@ -1335,23 +1361,12 @@ struct PmBgBase : SvgWidget {
 		}
 	};
 
+
 	// applies only to controller tiles (when tileNumber < NUM_CTRL)
 	void onDeselect(const DeselectEvent& e) override {
-		if (learningMapSrc && tileNumber < NUM_CTRL) {
-			// Check if a ParamWidget was touched
-			ParamWidget* touchedParam = APP->scene->rack->touchedParam;
-			int id = *learningMapSrc;
-			if (touchedParam && id != -1 && (module->learningId == id)) {
-				APP->scene->rack->touchedParam = NULL;
-				int64_t moduleId = touchedParam->module->id;
-				int paramId = touchedParam->paramId;
-				module->learnParam(id, moduleId, paramId);
-			}
-			else {
-				module->disableLearn(id);
-			}
-		}
+		module->finishMapping(tileNumber);
 	}	
+	
 	
 	// code below adapted from ParamWidget::ParamField() by Andrew Belt
 	struct TileNameValueField : ui::TextField {
@@ -1505,9 +1520,6 @@ struct PmBgBase : SvgWidget {
 			if (isCtrl) {
 				menu->addChild(new MenuSeparator());
 				menu->addChild(createMenuLabel("Mapping:"));
-				if (tileBackgrounds[tileNumber] != NULL) {
-					APP->event->setSelectedWidget(tileBackgrounds[tileNumber]);
-				}
 				for (int m = 0; m < 4; m++) {
 					menu->addChild(createSubmenuItem(string::f("Map %i", m + 1), "",
 						[=](Menu* menu) {			
@@ -1520,11 +1532,10 @@ struct PmBgBase : SvgWidget {
 							headMapItem->disabled = true;
 							menu->addChild(headMapItem);
 				
-							StartMappingItem *startMapItem = createMenuItem<StartMappingItem>("Start mapping", "");
+							StartMappingItem *startMapItem = createMenuItem<StartMappingItem>("Start mapping", string::f("Shift+%i", m + 1));
 							startMapItem->module = module;
 							startMapItem->tileNumber = tileNumber;
 							startMapItem->mapNumber = m;
-							startMapItem->learningMapSrc = learningMapSrc;
 							startMapItem->tileBackgrounds = tileBackgrounds;
 							startMapItem->box.size.x = std::max(150.0f, startMapItem->box.size.x);
 							menu->addChild(startMapItem);
@@ -1613,8 +1624,8 @@ struct PmBgBase : SvgWidget {
 
 	void onHoverKey(const event::HoverKey& e) override {
 		if (e.action == GLFW_PRESS) {
-			if (e.key == GLFW_KEY_D) {
-				if ((e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
+			if ((e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
+				if (e.key == GLFW_KEY_D) {
 					int tNew = module->findNextTile(tileNumber < NUM_CTRL);
 					if (tNew >= 0) {
 						module->duplicateTile(tileNumber, tileOrder, tNew);						
@@ -1622,12 +1633,16 @@ struct PmBgBase : SvgWidget {
 					e.consume(this);
 					return;
 				}
-				// else if ((e.mods & RACK_MOD_MASK) == (GLFW_MOD_SHIFT | GLFW_MOD_ALT)) {
-					// ((ChordKey*)module)->interopCopySeq();
-					// e.consume(this);
-					// return;
-				// }						
+				else if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
+					int mapNumber = e.key - GLFW_KEY_1;
+					module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
+				}
 			}
+			// else if ((e.mods & RACK_MOD_MASK) == (GLFW_MOD_SHIFT | GLFW_MOD_ALT)) {
+				// ((ChordKey*)module)->interopCopySeq();
+				// e.consume(this);
+				// return;
+			// }						
 		}
 		Widget::onHoverKey(e);
 	}	
@@ -1857,7 +1872,6 @@ struct PatchMasterWidget : ModuleWidget {
 	int8_t defaultColor = 0;// yellow, used when module == NULL
 
 	time_t oldTime = 0;
-	int learningMap = -1;
 	int8_t highlightTileMoveDest = -1;
 	int8_t highlightTileMoveDir = 0;// 0 = moving upwards, 1 = moving downwards
 	
@@ -2123,7 +2137,6 @@ struct PatchMasterWidget : ModuleWidget {
 					svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSeparatorBg>(mm2px(Vec(midX, y))));
 					tileBackgrounds[t]->box.pos.x = tileBackgrounds[t]->box.pos.x - tileBackgrounds[t]->box.size.x / 2.0f;
 					tileBackgrounds[t]->tileBackgrounds = tileBackgrounds;
-					tileBackgrounds[t]->learningMapSrc = &learningMap;
 					tileBackgrounds[t]->highlightTileMoveDest = &highlightTileMoveDest;
 					tileBackgrounds[t]->highlightTileMoveDir = &highlightTileMoveDir;
 					tileBackgrounds[t]->tileOrder = tview;
@@ -2165,7 +2178,6 @@ struct PatchMasterWidget : ModuleWidget {
 					}
 					tileBackgrounds[t]->box.pos.x = tileBackgrounds[t]->box.pos.x - tileBackgrounds[t]->box.size.x / 2.0f;
 					tileBackgrounds[t]->tileBackgrounds = tileBackgrounds;
-					tileBackgrounds[t]->learningMapSrc = &learningMap;
 					tileBackgrounds[t]->highlightTileMoveDest = &highlightTileMoveDest;
 					tileBackgrounds[t]->highlightTileMoveDir = &highlightTileMoveDir;
 					tileBackgrounds[t]->tileOrder = tview;
@@ -2265,7 +2277,6 @@ struct PatchMasterWidget : ModuleWidget {
 					}
 					tileBackgrounds[t]->box.pos.x = tileBackgrounds[t]->box.pos.x - tileBackgrounds[t]->box.size.x / 2.0f;
 					tileBackgrounds[t]->tileBackgrounds = tileBackgrounds;
-					tileBackgrounds[t]->learningMapSrc = &learningMap;
 					tileBackgrounds[t]->highlightTileMoveDest = &highlightTileMoveDest;
 					tileBackgrounds[t]->highlightTileMoveDir = &highlightTileMoveDir;
 					tileBackgrounds[t]->tileOrder = tview;
