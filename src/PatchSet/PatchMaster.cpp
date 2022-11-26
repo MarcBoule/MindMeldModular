@@ -733,6 +733,48 @@ struct PatchMaster : Module {
 		return retOrder;
 	}
 	
+	void deleteTile(int tileOrder) {
+		// reset maps of the tile number in question if it's a controller
+		int td = tileOrders.orders[tileOrder];// tile to delete
+		if (td < NUM_CTRL) {
+			tileConfigs[td].initAllExceptParHandles();
+			for (int m = 0; m < 4; m++) {
+				if (tileConfigs[td].parHandles[m].moduleId >= 0) {
+					clearMap(td * 4 + m);// parHandles
+				}
+			}					
+		}
+		// now remove it in the orders
+		int o = tileOrder + 1;
+		for ( ; o < NUM_CTRL + NUM_SEP; o++) {
+			tileOrders.orders[o - 1] = tileOrders.orders[o];
+			if (tileOrders.orders[o] == -1) {
+				break;
+			}
+		}
+		tileOrders.orders[o - 1] = -1;// only really needed when deleting a full orders array (with no -1 termination)
+		tileOrders.deleteLitForOrder(tileOrder);
+		// at this point two separarate radio groups could have been merged, so needs sanitizing
+		sanitizeRadios();		
+	}
+	
+	void duplicateTile(int tSrc, int oSrc, int tNew) {
+		// tSrc: tile number of current controller/separator we wish to duplicate
+		// oSrc: tile order of current controller/separator we wish to duplicate
+		// tNew: new tile number of potential controller/separator
+		
+		// create duplicate tile at end
+		uint8_t info = tileInfos.infos[tSrc];
+		float defPar = tSrc < NUM_CTRL ? paramQuantities[PatchMaster::TILE_PARAMS + tSrc]->defaultValue : 0.0f;
+		int oNew = modifyOrCreateNewTile(tNew, -1, info, defPar);// -1 means create
+		
+		// now move it if needed
+		if (oNew > oSrc + 1) {
+			tileOrders.moveIndex(oNew, oSrc + 1);
+			// sanitizeRadios(); this should not be needed
+		}
+	}
+	
 	void sanitizeRadios() {
 		// this will ensure exactly one lit bit is set in each group (group is a set of consecutive TT_BUTN_RL or TT_BUTN_RT)
 		// useful after a deleteOrder() or when an existing tile type has changed (that merges two groups for example)
@@ -1292,72 +1334,23 @@ struct PmBgBase : SvgWidget {
 		PatchMaster* module = NULL;
 		int tileOrder = 0;
 		void onAction(const event::Action &e) override {
-			// reset maps of the tile number in question if it's a controller
-			int td = module->tileOrders.orders[tileOrder];// tile to delete
-			if (td < NUM_CTRL) {
-				module->tileConfigs[td].initAllExceptParHandles();
-				for (int m = 0; m < 4; m++) {
-					if (module->tileConfigs[td].parHandles[m].moduleId >= 0) {
-						module->clearMap(td * 4 + m);// parHandles
-					}
-				}					
-			}
-			// now remove it in the orders
-			int o = tileOrder + 1;
-			for ( ; o < NUM_CTRL + NUM_SEP; o++) {
-				module->tileOrders.orders[o - 1] = module->tileOrders.orders[o];
-				if (module->tileOrders.orders[o] == -1) {
-					break;
-				}
-			}
-			module->tileOrders.orders[o - 1] = -1;// only really needed when deleting a full orders array (with no -1 termination)
-			module->tileOrders.deleteLitForOrder(tileOrder);
-			// at this point two separarate radio groups could have been merged, so needs sanitizing
-			module->sanitizeRadios();
+			module->deleteTile(tileOrder);
 			e.consume(this);// don't allow ctrl-click to keep menu open
 		}
 	};
 
-	struct DuplicateControllerItem : MenuItem {
+	struct DuplicateTileItem : MenuItem {
 		PatchMaster* module = NULL;
-		int tcSrc;// tile number of current controller we wish to duplicate
-		int ocSrc;// tile order of current controller we wish to duplicate
-		int tcNew;// new tile number of potential controller
+		int tSrc;// tile number of current controller/separator we wish to duplicate
+		int oSrc;// tile order of current controller/separator we wish to duplicate
+		int tNew;// new tile number of potential controller/separator
 
 		void onAction(const event::Action &e) override {
-			// create duplicate tile at end
-			uint8_t info = module->tileInfos.infos[tcSrc];
-			float defPar = module->paramQuantities[PatchMaster::TILE_PARAMS + tcSrc]->defaultValue;
-			int ocNew = module->modifyOrCreateNewTile(tcNew, -1, info, defPar);// -1 means create
-			
-			// now move it if needed
-			if (ocNew > ocSrc + 1) {
-				module->tileOrders.moveIndex(ocNew, ocSrc + 1);
-				// module->sanitizeRadios(); this should not be needed
-			}
+			module->duplicateTile(tSrc, oSrc, tNew);
 			e.consume(this);// don't allow ctrl-click to keep menu open when duplicate controller
 		}		
 	};
 	
-	struct DuplicateSeparatorItem : MenuItem {
-		PatchMaster* module = NULL;
-		int tcSrc;// tile number of current separator we wish to duplicate
-		int ocSrc;// tile order of current separator we wish to duplicate
-		int tsNew;// new tile number of potential separator
-
-		void onAction(const event::Action &e) override {
-			// create duplicate tile at end
-			uint8_t info = module->tileInfos.infos[tcSrc];
-			int ocNew = module->modifyOrCreateNewTile(tsNew, -1, info, 0.0f);// -1 means create, 0.0f is unused
-			
-			// now move it if needed
-			if (ocNew > ocSrc + 1) {
-				module->tileOrders.moveIndex(ocNew, ocSrc + 1);
-				// module->sanitizeRadios(); this should not be needed
-			}
-			e.consume(this);// don't allow ctrl-click to keep menu open when duplicate separator
-		}		
-	};
 	
 	void onButton(const event::Button &e) override {
 		int mods = APP->window->getMods();
@@ -1483,35 +1476,25 @@ struct PmBgBase : SvgWidget {
 			menu->addChild(hideItem);
 			
 			// duplicate tile
-			static const std::string duplicateStr("Duplicate");
+			int tNew = -1;
 			if (isCtrl) {
-				int tcNew = module->tileOrders.findNextControllerTileNumber();
-				if (tcNew < 0) {
-					menu->addChild(createMenuLabel(duplicateStr));
-				}
-				else {
-					DuplicateControllerItem *dcItem = createMenuItem<DuplicateControllerItem>(duplicateStr, "");
-					dcItem->module = module;
-					dcItem->tcSrc = tileNumber;
-					dcItem->ocSrc = tileOrder;
-					dcItem->tcNew = tcNew;
-					menu->addChild(dcItem);
-				}
+				tNew = module->tileOrders.findNextControllerTileNumber();
 			}
 			else {
-				int tsNew = module->tileOrders.findNextSeparatorTileNumber();
-				if (tsNew < 0) {
-					menu->addChild(createMenuLabel(duplicateStr));
-				}
-				else {
-					DuplicateSeparatorItem *dsItem = createMenuItem<DuplicateSeparatorItem>(duplicateStr, "");
-					dsItem->module = module;
-					dsItem->tcSrc = tileNumber;
-					dsItem->ocSrc = tileOrder;
-					dsItem->tsNew = tsNew;
-					menu->addChild(dsItem);
-				}
+				tNew = module->tileOrders.findNextSeparatorTileNumber();
+			}			
+			if (tNew < 0) {
+				menu->addChild(createMenuLabel("Duplicate [Maximum reached]"));
 			}
+			else {
+				DuplicateTileItem *dtItem = createMenuItem<DuplicateTileItem>("Duplicate", "Shift+D");
+				dtItem->module = module;
+				dtItem->tSrc = tileNumber;
+				dtItem->oSrc = tileOrder;
+				dtItem->tNew = tNew;
+				menu->addChild(dtItem);
+			}
+			
 			
 			// delete tile
 			menu->addChild(new MenuSeparator());	
@@ -1534,7 +1517,33 @@ struct PmBgBase : SvgWidget {
 		}
 		Widget::onButton(e);
 	}
-	
+
+	void onHoverKey(const event::HoverKey& e) override {
+		if (e.action == GLFW_PRESS) {
+			if (e.key == GLFW_KEY_D) {
+				if ((e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
+					int tNew = -1;
+					if (tileNumber < NUM_CTRL) {
+						tNew = module->tileOrders.findNextControllerTileNumber();
+					}
+					else {
+						tNew = module->tileOrders.findNextSeparatorTileNumber();
+					}			
+					if (tNew >= 0) {
+						module->duplicateTile(tileNumber, tileOrder, tNew);						
+					}					
+					e.consume(this);
+					return;
+				}
+				// else if ((e.mods & RACK_MOD_MASK) == (GLFW_MOD_SHIFT | GLFW_MOD_ALT)) {
+					// ((ChordKey*)module)->interopCopySeq();
+					// e.consume(this);
+					// return;
+				// }						
+			}
+		}
+		Widget::onHoverKey(e);
+	}	
 	
 	// returns -1 if mouse is not over any active tile, return order index if it is
 	// posY is vertical mouse pos in pixels, module space (so 0 = top and 380 = bot)

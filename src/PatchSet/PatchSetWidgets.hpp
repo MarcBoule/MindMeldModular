@@ -342,6 +342,11 @@ struct TileDisplaySep : LedDisplayChoice {
 		Widget::drawLayer(args, layer);
 		nvgResetScissor(args.vg);
 	}
+	
+	void onHoverKey(const HoverKeyEvent& e) override {
+		// don't want OpaqueWidget to consume this, so that the tile hotkeys can fall through the tile display labels
+	}
+
 };
 
 struct TileDisplayController : TileDisplaySep {
