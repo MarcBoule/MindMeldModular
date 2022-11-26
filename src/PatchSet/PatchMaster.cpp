@@ -367,7 +367,7 @@ struct PatchMaster : Module {
 	}
 
 
-	void pasteTileFromClipboard(int t) {
+	void pasteTileFromClipboard(int t, int o) {
 		const char* tileClip = glfwGetClipboardString(APP->window->win);
 
 		if (!tileClip) {
@@ -429,6 +429,10 @@ struct PatchMaster : Module {
 		if (tileSettingsJ) {
 			tileSettings.settings[t].cc1 = json_integer_value(tileSettingsJ);
 		}
+		
+		tileOrders.clearLitForOrder(o);
+		// needs sanitize (necessary when changing tile)
+		sanitizeRadios();
 	}
 
 	
@@ -700,12 +704,23 @@ struct PatchMaster : Module {
 	}	
 	
 	
+	void hideTile(int t) {
+		clearVisible(&(tileInfos.infos[t]));
+	}
+	
+	
+	void moveTile(int tileOrderFrom, int tileOrderTo) {
+		tileOrders.moveIndex(tileOrderFrom, tileOrderTo);
+		sanitizeRadios();
+	}
+
+	
 	int modifyOrCreateNewTile(int t, int order, uint8_t info, float defPar) {
-		// returns order (will ne a new order when create)
+		// returns order (will ne a new order when order == -1)
 		int retOrder = order;
 		
 		if (order == -1) {
-			// create new tile
+			// creating new tile
 			for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
 				if (tileOrders.orders[o] == -1) {
 					tileInfos.infos[t] = TI_VIS_MASK;
@@ -736,6 +751,12 @@ struct PatchMaster : Module {
 		tileInfos.infos[t] |= info;
 		if (t < NUM_CTRL) {
 			params[t].setValue(defPar);
+		}
+		
+		if (order != -1) {
+			// if changing existing tile
+			tileOrders.clearLitForOrder(order);
+			sanitizeRadios();
 		}
 		
 		return retOrder;
@@ -794,6 +815,63 @@ struct PatchMaster : Module {
 		if (oNew > oSrc + 1) {
 			tileOrders.moveIndex(oNew, oSrc + 1);
 			// sanitizeRadios(); this should not be needed
+		}
+	}
+	
+	
+	void radioTrigPressed(int tview) {
+		// tview: order of button that was pressed
+		
+		tileOrders.setLitForOrder(tview);
+		// force one-hot around order tview:
+		// up (no visibility check, since groups enforced without taking visibility into account)
+		for (int tv2 = tview + 1; tv2 < NUM_CTRL + NUM_SEP; tv2++) {
+			int8_t t2 = tileOrders.orders[tv2];
+			if (t2 == -1) {
+				break;
+			}
+			uint8_t ti2 = tileInfos.infos[t2];
+			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RT) {
+				tileOrders.clearLitForOrder(tv2);
+			}
+			else break;
+		}
+		// down (no visibility check, since groups enforced without taking visibility into account)
+		for (int tv2 = tview - 1; tv2 >= 0; tv2--) {
+			int8_t t2 = tileOrders.orders[tv2];
+			uint8_t ti2 = tileInfos.infos[t2];
+			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RT) {
+				tileOrders.clearLitForOrder(tv2);
+			}
+			else break;
+		}
+	}
+	
+	
+	void radioLatchedPressed(int tview) {
+		// tview: order of button that was pressed
+
+		// force one-hot around order tview:
+		// up (no visibility check, since groups enforced without taking visibility into account)
+		for (int tv2 = tview + 1; tv2 < NUM_CTRL + NUM_SEP; tv2++) {
+			int8_t t2 = tileOrders.orders[tv2];
+			if (t2 == -1) {
+				break;
+			}
+			uint8_t ti2 = tileInfos.infos[t2];
+			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RL) {
+				params[t2].setValue(0.0f);
+			}
+			else break;
+		}
+		// down (no visibility check, since groups enforced without taking visibility into account)
+		for (int tv2 = tview - 1; tv2 >= 0; tv2--) {
+			int t2 = tileOrders.orders[tv2];
+			uint8_t ti2 = tileInfos.infos[t2];
+			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RL) {
+				params[t2].setValue(0.0f);
+			}
+			else break;
 		}
 	}
 	
@@ -898,13 +976,8 @@ struct TileChoiceItem : MenuItem {
 	void onAction(const event::Action &e) override {
 		module->modifyOrCreateNewTile(t, order, info, defPar);
 		if (order == -1) {
-			e.consume(this);// don't allow ctrl-click to keep menu open when isCreate
-		}
-		else {
-			// changing existing tile
-			module->tileOrders.clearLitForOrder(order);
-			// needs sanitize (necessary when changing tile)
-			module->sanitizeRadios();
+			// if create, don't allow ctrl-click to keep menu open
+			e.consume(this);
 		}
 	}
 	
@@ -1316,8 +1389,7 @@ struct PmBgBase : SvgWidget {
 		int tileOrderTo = 0;
 
 		void onAction(const event::Action &e) override {
-			module->tileOrders.moveIndex(tileOrderFrom, tileOrderTo);
-			module->sanitizeRadios();
+			module->moveTile(tileOrderFrom, tileOrderTo);
 			e.consume(this);// don't allow ctrl-click to keep menu open
 		}
 
@@ -1346,9 +1418,10 @@ struct PmBgBase : SvgWidget {
 	};
 	
 	struct TileHideItem : MenuItem {
-		uint8_t* tileInfo = NULL;
+		PatchMaster* module = NULL;
+		int tileNumber = 0;
 		void onAction(const event::Action &e) override {
-			clearVisible(tileInfo);
+			module->hideTile(tileNumber);
 			e.consume(this);// don't allow ctrl-click to keep menu open
 		}
 	};
@@ -1370,7 +1443,7 @@ struct PmBgBase : SvgWidget {
 
 		void onAction(const event::Action &e) override {
 			module->duplicateTile(tSrc, oSrc, tNew);
-			e.consume(this);// don't allow ctrl-click to keep menu open when duplicate controller
+			e.consume(this);// don't allow ctrl-click to keep menu open
 		}		
 	};
 	
@@ -1486,16 +1559,14 @@ struct PmBgBase : SvgWidget {
 			// paste tile
 			menu->addChild(createMenuItem("Paste" + copyPastePostString, "",
 				[=]() {
-					module->pasteTileFromClipboard(tileNumber);
-					module->tileOrders.clearLitForOrder(tileOrder);
-					// needs sanitize (necessary when changing tile)
-					module->sanitizeRadios();
+					module->pasteTileFromClipboard(tileNumber, tileOrder);
 				}
 			));
 
 			// hide tile
 			TileHideItem *hideItem = createMenuItem<TileHideItem>("Hide (module menu to show)", "");
-			hideItem->tileInfo = &(module->tileInfos.infos[tileNumber]);
+			hideItem->module = module;
+			hideItem->tileNumber = tileNumber;
 			menu->addChild(hideItem);
 			
 			// duplicate tile
@@ -1511,7 +1582,6 @@ struct PmBgBase : SvgWidget {
 				dtItem->tNew = tNew;
 				menu->addChild(dtItem);
 			}
-			
 			
 			// delete tile
 			menu->addChild(new MenuSeparator());	
@@ -1533,7 +1603,8 @@ struct PmBgBase : SvgWidget {
 			}
 		}
 		Widget::onButton(e);
-	}
+	}// onButton()
+
 
 	void onHoverKey(const event::HoverKey& e) override {
 		if (e.action == GLFW_PRESS) {
@@ -1591,8 +1662,7 @@ struct PmBgBase : SvgWidget {
 			*highlightTileMoveDest = getMouseOverTile(onDragMovePosY);
 			*highlightTileMoveDir = deltaMouseY < 0.0f ? 0 : 1;// 0 = moving upwards, 1 = moving downwards
 			if (*highlightTileMoveDest != -1 && module) {
-				module->tileOrders.moveIndex(tileOrder, *highlightTileMoveDest);
-				module->sanitizeRadios();
+				module->moveTile(tileOrder, *highlightTileMoveDest);
 			}
 		}
 		highlightTileMoveSrc = false;
@@ -1639,7 +1709,7 @@ struct PmBgBase : SvgWidget {
 			nvgStroke(args.vg);
 		}
 	}
-};
+};// struct PmBgBase
 
 
 // TILE BACKGROUNDS
@@ -1914,7 +1984,7 @@ struct PatchMasterWidget : ModuleWidget {
 				}
 			));
 		}	
-	}
+	}// appendContextMenu()
 
 
 	PatchMasterWidget(PatchMaster *module) {
@@ -2417,7 +2487,7 @@ struct PatchMasterWidget : ModuleWidget {
 				}
 			}
 			
-			// radioTriggers for module->radioLit, and mapping and led button lights
+			// radioTriggers, mapping and led button lights
 			for (int tview = 0; tview < NUM_CTRL + NUM_SEP; tview++) {
 				int t = module->tileOrders.orders[tview];
 				if (t < 0) {
@@ -2425,55 +2495,14 @@ struct PatchMasterWidget : ModuleWidget {
 				}
 				if (t < NUM_CTRL) {
 					uint8_t ti = module->tileInfos.infos[t];
+					
+					// radio triggers
 					if (radioTriggers[t].process(module->params[t].getValue())) {
 						if ((ti & TI_TYPE_MASK) == TT_BUTN_RT) {
-							module->tileOrders.setLitForOrder(tview);
-							// force one-hot around order tview:
-							// up (no visibility check, since groups enforced without taking visibility into account)
-							for (int tv2 = tview + 1; tv2 < NUM_CTRL + NUM_SEP; tv2++) {
-								int8_t t2 = module->tileOrders.orders[tv2];
-								if (t2 == -1) {
-									break;
-								}
-								uint8_t ti2 = module->tileInfos.infos[t2];
-								if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RT) {
-									module->tileOrders.clearLitForOrder(tv2);
-								}
-								else break;
-							}
-							// down (no visibility check, since groups enforced without taking visibility into account)
-							for (int tv2 = tview - 1; tv2 >= 0; tv2--) {
-								int8_t t2 = module->tileOrders.orders[tv2];
-								uint8_t ti2 = module->tileInfos.infos[t2];
-								if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RT) {
-									module->tileOrders.clearLitForOrder(tv2);
-								}
-								else break;
-							}
+							module->radioTrigPressed(tview);
 						}
 						else if ((ti & TI_TYPE_MASK) == TT_BUTN_RL) {
-							// force one-hot around order tview:
-							// up (no visibility check, since groups enforced without taking visibility into account)
-							for (int tv2 = tview + 1; tv2 < NUM_CTRL + NUM_SEP; tv2++) {
-								int8_t t2 = module->tileOrders.orders[tv2];
-								if (t2 == -1) {
-									break;
-								}
-								uint8_t ti2 = module->tileInfos.infos[t2];
-								if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RL) {
-									module->params[t2].setValue(0.0f);
-								}
-								else break;
-							}
-							// down (no visibility check, since groups enforced without taking visibility into account)
-							for (int tv2 = tview - 1; tv2 >= 0; tv2--) {
-								int t2 = module->tileOrders.orders[tv2];
-								uint8_t ti2 = module->tileInfos.infos[t2];
-								if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RL) {
-									module->params[t2].setValue(0.0f);
-								}
-								else break;
-							}
+							module->radioLatchedPressed(tview);
 						}
 					}
 					if (isTileVisible(ti)) {
