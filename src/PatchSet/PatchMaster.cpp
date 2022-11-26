@@ -659,18 +659,15 @@ struct PatchMaster : Module {
 		int t = id / 4;
 		int m = id % 4;
 		APP->engine->updateParamHandle(&(tileConfigs[t].parHandles[m]), moduleId, paramId, true);
-		if (m == 0) {
+		if ( m == 0 && (isCtlrAKnob(tileInfos.infos[t]) || isCtlrAFader(tileInfos.infos[t])) ) {
 			// if first map of a tile, set the PM knob to the target knob's value
 			Module* tmodule = tileConfigs[t].parHandles[m].module;
 			if (tmodule) {
 				ParamQuantity* paramQuantity = tmodule->paramQuantities[paramId];
 				if (paramQuantity && paramQuantity->isBounded()) {
 					params[t].setValue(paramQuantity->getScaledValue());
-					// float value = math::rescale(params[cc].getValue(), 0.0f, 1.0f, tileConfigs[cc].rangeMin[m], tileConfigs[cc].rangeMax[m]);
-					// paramQuantity->setScaledValue(value);
 				}
 			}
-			
 		}
 		learnedParam = true;
 		commitLearn();
