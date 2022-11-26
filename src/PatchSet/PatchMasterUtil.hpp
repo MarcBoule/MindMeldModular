@@ -132,55 +132,6 @@ struct TileConfig {
 struct MappedParamQuantity : ParamQuantity {
 	ParamHandle* paramHandleMapDest = NULL;
 	
-	/*
-	std::string getDisplayValueString() override {
-		std::string ret = "";
-		
-		if (paramHandleMapDest && paramHandleMapDest->moduleId >= 0) {
-			ModuleWidget* mw = APP->scene->rack->getModule(paramHandleMapDest->moduleId);
-			if (mw) {
-				Module* m = mw->module;
-				if (m) {
-					int paramId = paramHandleMapDest->paramId;
-					if (paramId < (int) m->params.size()) {
-						ParamQuantity* paramQuantity = m->paramQuantities[paramId];
-						ret = paramQuantity->getDisplayValueString();
-					}
-				}
-			}
-		}
-		
-		if (ret == "") {
-			ret = ParamQuantity::getDisplayValueString();
-		}
-		return ret;
-	}
-	
-	
-	std::string getUnit() override {
-		std::string ret = "";
-		
-		if (paramHandleMapDest && paramHandleMapDest->moduleId >= 0) {
-			ModuleWidget* mw = APP->scene->rack->getModule(paramHandleMapDest->moduleId);
-			if (mw) {
-				Module* m = mw->module;
-				if (m) {
-					int paramId = paramHandleMapDest->paramId;
-					if (paramId < (int) m->params.size()) {
-						ParamQuantity* paramQuantity = m->paramQuantities[paramId];
-						ret = paramQuantity->getUnit();
-					}
-				}
-			}
-		}
-		
-		// if (ret == "") {// commented out since default unit specified in configParam below is already ""
-			// ret = ParamQuantity::getUnit();
-		// }
-		return ret;		
-	}
-	*/
-	
 	std::string getDescription() override {
 		std::string ret = "";
 		
