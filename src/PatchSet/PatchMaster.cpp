@@ -632,18 +632,22 @@ struct PatchMaster : Module {
 		learnedParam = false;
 		learningId = -1;
 	}
+	
+	
 	void enableLearn(int id) {
 		if (learningId != id) {
 			learningId = id;
 			learnedParam = false;
 		}
 	}
+	
 
 	void disableLearn(int id) {
 		if (learningId == id) {
 			learningId = -1;
 		}
 	}
+
 
 	void learnParam(int id, int64_t moduleId, int paramId) {
 		APP->engine->updateParamHandle(&(tileConfigs[id / 4].parHandles[id % 4]), moduleId, paramId, true);
@@ -652,11 +656,13 @@ struct PatchMaster : Module {
 		// updateMapLen();
 		oldParams[id / 4] = -1.0f;// force updating of new mapped knob in case we are in "on changes only" mode (not thread safe?)
 	}
+	
 
 	void clearMap(int id) {
 		learningId = -1;
 		APP->engine->updateParamHandle(&(tileConfigs[id / 4].parHandles[id % 4]), -1, 0, true);
 	}
+
 
 	void clearMaps_NoLock() {
 		learningId = -1;
@@ -666,6 +672,7 @@ struct PatchMaster : Module {
 			}
 		}
 	}
+	
 
 	std::string getParamName(int id) {
 		// this method is by Andrew Belt, in MIDIMap.cpp
@@ -691,6 +698,7 @@ struct PatchMaster : Module {
 		s += ")";
 		return s;
 	}	
+	
 	
 	int modifyOrCreateNewTile(int t, int order, uint8_t info, float defPar) {
 		// returns order (will ne a new order when create)
@@ -733,6 +741,19 @@ struct PatchMaster : Module {
 		return retOrder;
 	}
 	
+	
+	int findNextTile(bool isCtrl) {
+		int tNew = -1;
+		if (isCtrl) {
+			tNew = tileOrders.findNextControllerTileNumber();
+		}
+		else {
+			tNew = tileOrders.findNextSeparatorTileNumber();
+		}
+		return tNew;
+	}
+	
+	
 	void deleteTile(int tileOrder) {
 		// reset maps of the tile number in question if it's a controller
 		int td = tileOrders.orders[tileOrder];// tile to delete
@@ -758,6 +779,7 @@ struct PatchMaster : Module {
 		sanitizeRadios();		
 	}
 	
+	
 	void duplicateTile(int tSrc, int oSrc, int tNew) {
 		// tSrc: tile number of current controller/separator we wish to duplicate
 		// oSrc: tile order of current controller/separator we wish to duplicate
@@ -774,6 +796,7 @@ struct PatchMaster : Module {
 			// sanitizeRadios(); this should not be needed
 		}
 	}
+	
 	
 	void sanitizeRadios() {
 		// this will ensure exactly one lit bit is set in each group (group is a set of consecutive TT_BUTN_RL or TT_BUTN_RT)
@@ -1476,15 +1499,9 @@ struct PmBgBase : SvgWidget {
 			menu->addChild(hideItem);
 			
 			// duplicate tile
-			int tNew = -1;
-			if (isCtrl) {
-				tNew = module->tileOrders.findNextControllerTileNumber();
-			}
-			else {
-				tNew = module->tileOrders.findNextSeparatorTileNumber();
-			}			
+			int tNew = module->findNextTile(isCtrl);
 			if (tNew < 0) {
-				menu->addChild(createMenuLabel("Duplicate [Maximum reached]"));
+				menu->addChild(createMenuLabel("Duplicate"));
 			}
 			else {
 				DuplicateTileItem *dtItem = createMenuItem<DuplicateTileItem>("Duplicate", "Shift+D");
@@ -1522,13 +1539,7 @@ struct PmBgBase : SvgWidget {
 		if (e.action == GLFW_PRESS) {
 			if (e.key == GLFW_KEY_D) {
 				if ((e.mods & RACK_MOD_MASK) == GLFW_MOD_SHIFT) {
-					int tNew = -1;
-					if (tileNumber < NUM_CTRL) {
-						tNew = module->tileOrders.findNextControllerTileNumber();
-					}
-					else {
-						tNew = module->tileOrders.findNextSeparatorTileNumber();
-					}			
+					int tNew = module->findNextTile(tileNumber < NUM_CTRL);
 					if (tNew >= 0) {
 						module->duplicateTile(tileNumber, tileOrder, tNew);						
 					}					
@@ -1790,31 +1801,6 @@ struct PatchMasterWidget : ModuleWidget {
 	ModuleLightWidget* tileMappingLights[NUM_CTRL][4];// for mapping lights; dealloc/realloc
 
 
-	struct AddControllerItem : MenuItem {
-		PatchMaster* module = NULL;
-		int tc;// new tile number of potential controller
-
-		Menu *createChildMenu() override {
-			Menu *menu = new Menu;
-			createControllerChoiceMenuOne(menu, tc, -1, module);// -1 means need create
-			// correct radioLit bit cleared when create, so nothing to do here
-			return menu;
-		}
-	};
-
-	struct AddSeparatorItem : MenuItem {
-		PatchMaster* module = NULL;
-		int ts;// new tile number of potential separator
-
-		Menu *createChildMenu() override {
-			Menu *menu = new Menu;
-			createSeparatorChoiceMenuOne(menu, ts, -1, module);// -1 means need create
-			// correct radioLit bit cleared when create, so nothing to do here
-			return menu;
-		}
-	};
-
-
 	void appendContextMenu(Menu *menu) override {
 		PatchMaster *module = (PatchMaster*)(this->module);
 		assert(module);
@@ -1907,10 +1893,12 @@ struct PatchMasterWidget : ModuleWidget {
 			menu->addChild(createMenuLabel(newControllerStr));
 		}
 		else {
-			AddControllerItem *ac2Item = createMenuItem<AddControllerItem>(newControllerStr, RIGHT_ARROW);
-			ac2Item->module = module;
-			ac2Item->tc = tc;
-			menu->addChild(ac2Item);
+			menu->addChild(createSubmenuItem(newControllerStr, "",
+				[=](Menu* menu) {
+					createControllerChoiceMenuOne(menu, tc, -1, module);// -1 means need create
+					// correct radioLit bit cleared when create, so nothing to do here
+				}
+			));
 		}
 		
 		// add separator
@@ -1920,10 +1908,11 @@ struct PatchMasterWidget : ModuleWidget {
 			menu->addChild(createMenuLabel(newSeparatorStr));
 		}
 		else {
-			AddSeparatorItem *as2Item = createMenuItem<AddSeparatorItem>(newSeparatorStr, RIGHT_ARROW);
-			as2Item->module = module;
-			as2Item->ts = ts;
-			menu->addChild(as2Item);
+			menu->addChild(createSubmenuItem(newSeparatorStr, "",
+				[=](Menu* menu) {
+					createSeparatorChoiceMenuOne(menu, ts, -1, module);// -1 means need create
+				}
+			));
 		}	
 	}
 
@@ -2049,17 +2038,6 @@ struct PatchMasterWidget : ModuleWidget {
 					radioType = 0;
 				}
 			}
-			// old version
-			// if (tctrl == TT_BUTN_RT && hasRoom && tileVisible) {
-				// if (tviewRadio == -1) {
-					// tviewRadio = tview;
-				// }
-			// }
-			// else {
-				// if (tctrl != TT_BUTN_RT) {
-					// tviewRadio = -1;
-				// }
-			// }
 			
 			if (hasRoom && tileVisible) {
 				

@@ -115,6 +115,9 @@ struct PmSliderWithHighlight : MmSlider {
 		}
 		MmSlider::drawLayer(args, layer);
 	}
+	void onHoverKey(const HoverKeyEvent& e) override {
+		// don't want OpaqueWidget to consume this, so that the tile hotkeys can fall through the faders
+	}
 };
 
 struct PsLargeFader : PmSliderWithHighlight {
@@ -203,6 +206,9 @@ struct PmKnobWithArc : MmKnob {
 			}
 		}
 	}
+	void onHoverKey(const HoverKeyEvent& e) override {
+		// don't want OpaqueWidget to consume this, so that the tile hotkeys can fall through the knobs
+	}
 };
 
 
@@ -254,8 +260,14 @@ struct PmCtrlLightWidget : GrayModuleLightWidget {
 	
 };
 
+struct PmButton : SvgSwitch {
+	void onHoverKey(const HoverKeyEvent& e) override {
+		// don't want OpaqueWidget to consume this, so that the tile hotkeys can fall through the buttons
+	}
+};
 
-struct PmSmallButton : SvgSwitch {
+
+struct PmSmallButton : PmButton {
 	PmSmallButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/patchset/button-sm.svg")));
 		shadow->opacity = 0.0f;// Turn off shadows
@@ -271,7 +283,7 @@ struct PmSmallButtonLight : PmCtrlLightWidget {
 };
 
 
-struct PmMediumButton : SvgSwitch {
+struct PmMediumButton : PmButton {
 	PmMediumButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/patchset/button-md.svg")));
 		shadow->opacity = 0.0f;// Turn off shadows
@@ -287,7 +299,7 @@ struct PmMediumButtonLight : PmCtrlLightWidget {
 };
 
 
-struct PmLargeButton : SvgSwitch {
+struct PmLargeButton : PmButton {
 	PmLargeButton() {
 		addFrame(APP->window->loadSvg(asset::plugin(pluginInstance, "res/comp/patchset/button-lg.svg")));
 		shadow->opacity = 0.0f;// Turn off shadows
