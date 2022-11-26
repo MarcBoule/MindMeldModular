@@ -709,6 +709,11 @@ struct PatchMaster : Module {
 	}
 	
 	
+	void toggleTileVisibility(int t) {	
+		toggleVisible(&(tileInfos.infos[t]));
+	}
+	
+	
 	void moveTile(int tileOrderFrom, int tileOrderTo) {
 		tileOrders.moveIndex(tileOrderFrom, tileOrderTo);
 		sanitizeRadios();
@@ -1949,7 +1954,7 @@ struct PatchMasterWidget : ModuleWidget {
 					return isTileVisible(module->tileInfos.infos[t]);
 				},
 				[=]() {
-					toggleVisible(&(module->tileInfos.infos[t]));
+					module->toggleTileVisibility(t);
 				}
 			));
 		}
