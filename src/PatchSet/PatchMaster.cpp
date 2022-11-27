@@ -608,6 +608,9 @@ struct PatchMaster : Module {
 			if (t < NUM_CTRL) { 
 				tileConfigs[t].lit = 0;
 				oldParams[t] = -1.0f;// force resend of others in case "on changes only"
+				if (isButtonParamMomentary(tileInfos.infos[t])) {
+					tileConfigs[t].initAllExceptParHandles();
+				}
 			}
 			sanitizeRadios();
 		}
