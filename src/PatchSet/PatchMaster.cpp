@@ -368,6 +368,9 @@ struct PatchMaster : Module {
 			}
 		}
 	
+		// needs sanitize (necessary for old patches with former latched radios method)
+		sanitizeRadios();
+
 		resetNonJson();	
 	}
 
