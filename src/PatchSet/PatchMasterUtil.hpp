@@ -9,6 +9,10 @@
 
 #include "../MindMeldModular.hpp"
 
+static const int NUM_CTRL = 8;
+static const int NUM_SEP = 8;
+
+
 // tile info bitfield:
 // bits 0-3: type
 // bits 4-6: size
@@ -31,7 +35,7 @@ static const uint8_t TT_FADER_C = 0x08;// default center (TS_LARGE, TS_XLARGE an
 static const uint8_t TT_FADER_B = 0x09;// default bottom (TS_LARGE, TS_XLARGE and TS_XXLARGE)
 static const uint8_t TT_BLANK =   0x0A;// used for blank tile (a separator with no label)
 static const uint8_t TT_SEP =     0x0B;// used for separator
-static const uint8_t TT_BUTN_RL = 0x0C;// radio button latch (three sizes), is same as normal latch but kills similar neighbors when turned on
+static const uint8_t TT_BUTN_RL = 0x0C;// radio button latch (three sizes), same as TT_BUTN_RT but the mapping signal is kept high for the hot controller in the group
 
 // sizes:
 //   (can be "(x & ~TI_VIS_MASK) >> 4" to index TILE_HEIGHT, LABEL_DY, CTRL_DY
@@ -60,6 +64,7 @@ inline bool isCtlrAButton(uint8_t ti) {
 	uint8_t sz = (ti & TI_TYPE_MASK); 
 	return (sz >= TT_BUTN_M && sz <= TT_BUTN_RT) || sz == TT_BUTN_RL;}
 inline bool isCtlrAFader(uint8_t ti) {return (ti & TI_TYPE_MASK) == TT_FADER_C || (ti & TI_TYPE_MASK) == TT_FADER_B;}
+inline bool isButtonParamMomentary(uint8_t ti) {return ((ti & TI_TYPE_MASK) == TT_BUTN_M) || ((ti & TI_TYPE_MASK) == TT_BUTN_RT) || ((ti & TI_TYPE_MASK) == TT_BUTN_RL);}
 
 // size macros:
 inline uint8_t getSizeIndex(uint8_t ti) {return (ti & ~TI_VIS_MASK) >> 4;}
@@ -69,19 +74,195 @@ inline float getCtrlDy(uint8_t sizeIndex) {return CTRL_DY[sizeIndex];}
 
 
 
+struct TileInfos {
+	static const uint8_t defaultControllerInfo = TT_KNOB_L | TS_MEDIUM | TI_VIS_MASK;
+	static const uint8_t defaultSeparatorInfo = TT_SEP | TS_XSMALL | TI_VIS_MASK;
+	uint8_t infos[NUM_CTRL + NUM_SEP];// first are controllers, then separators (blanks are seps but with no label). The index number into this array is refered to as a tile number
+	
+	TileInfos() {
+		init();
+	}
+	
+	void init() {
+		// tiles 0 to NUM_CTRL - 1 are controllers
+		infos[0] = defaultControllerInfo;
+		infos[1] = TT_BUTN_M | TS_MEDIUM | TI_VIS_MASK; 
+		for (int ic = 2; ic < NUM_CTRL; ic++) {
+			infos[ic] = TT_KNOB_L | TS_MEDIUM;
+		}
+		// tile NUM_CTRL to NUM_SEP - 1 are separators (and blanks)
+		for (int is = NUM_CTRL; is < NUM_CTRL + NUM_SEP; is++) {
+			infos[is] = defaultSeparatorInfo; 
+		}
+	}
+	
+	void clear() {
+		for (int i = 0; i < NUM_CTRL + NUM_SEP; i++) {
+			infos[i] = 0;
+		}
+	}
+	
+	void copyFrom(TileInfos* src) {
+		for (int i = 0; i < NUM_CTRL + NUM_SEP; i++) {
+			infos[i] = src->infos[i];
+		}		
+	}
+};
+
+
+struct TileNames {
+	std::string names[NUM_CTRL + NUM_SEP];
+	
+	TileNames() {
+		init();
+	}
+	
+	void init() {
+		// tiles 0 to NUM_CTRL - 1 are controllers
+		names[0] = "Controller 1";
+		names[1] = "Controller 2";
+		for (int nc = 2; nc < NUM_CTRL; nc++) {
+			names[nc] = "No name";
+		}
+		// tile NUM_CTRL to NUM_SEP - 1 are separators (and blanks)
+		names[NUM_CTRL] = "PatchMaster";
+		for (int ns = NUM_CTRL + 1; ns < NUM_CTRL + NUM_SEP; ns++) {
+			names[ns] = "No name";
+		}
+	}
+};
+
+
+struct TileSettings {
+	static const int8_t defaultControlHighlightColor = 6; 
+	PackedBytes4 settings[NUM_CTRL + NUM_SEP];
+	
+	TileSettings() {
+		init();
+	}
+	
+	void initTile(int s) {
+		settings[s].cc4[0] = s < NUM_CTRL ? defaultControlHighlightColor : 0;// label color: blue for controllers, yellow for separators 
+		settings[s].cc4[1] = 0;// not used
+		settings[s].cc4[2] = 0;// not used
+		settings[s].cc4[3] = 0;// not used
+	}
+	
+	void init() {
+		for (int s = 0; s < NUM_CTRL + NUM_SEP; s++) {
+			initTile(s);
+		}
+	}
+};
+
+
+struct TileOrders {
+	int8_t orders[NUM_CTRL + NUM_SEP];// ordered list of tile numbers, as they would appear if all visible and enough space, terminated by -1 or implicit size of array when full (full = all available controllers and separators added, but likely not all shown in module widget though since no space)
+	// A tile number between 0 to NUM_CTRL - 1 indicates a controller
+	// A tile number between NUM_CTRL to NUM_CTRL + NUM_SEP - 1 indicates a separator tile (and blanks)
+	
+	
+	TileOrders() {
+		init();
+	}
+	
+	void init() {
+		orders[0] = NUM_CTRL;
+		orders[1] = 0;
+		orders[2] = 1;
+		for (int o = 3; o < NUM_CTRL + NUM_SEP; o++) {
+			orders[o] = -1;
+		}
+	}
+
+	void clear() {
+		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
+			orders[o] = 0;
+		}
+	}
+
+	void copyFrom(TileOrders* src) {
+		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
+			orders[o] = src->orders[o];
+		}	
+	}
+
+	void moveIndex(int src, int dest) {
+		int8_t tmp = orders[src];
+		if (src != dest) {
+			if (dest < src) {
+				for (int o = src - 1; o >= dest; o--) {
+					orders[o + 1] = orders[o];
+				}
+			}
+			else {
+				for (int o = src; o < dest; o++) {
+					orders[o] = orders[o + 1];
+				}	
+			}
+			orders[dest] = tmp;
+		}		
+	}
+	
+	int findNextControllerTileNumber() {
+		// returns -1 when all controllers already used
+		uint8_t used[NUM_CTRL] = {};
+		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
+			if (orders[o] == -1) {
+				break;
+			}
+			if (orders[o] < NUM_CTRL) {
+				used[orders[o]] = 1;
+			}	
+		}	
+		
+		for (int i = 0; i < NUM_CTRL; i++) {
+			if (used[i] == 0) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+	int findNextSeparatorTileNumber() {
+		// returns -1 when all separators already used
+		uint8_t used[NUM_SEP] = {};
+		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
+			if (orders[o] == -1) {
+				break;
+			}
+			if (orders[o] >= NUM_CTRL) {
+				used[orders[o] - NUM_CTRL] = 1;
+			}	
+		}	
+		
+		for (int i = 0; i < NUM_SEP; i++) {
+			if (used[i] == 0) {
+				return i + NUM_CTRL;
+			}
+		}
+		return -1;
+	}
+};
+
+
 struct TileConfig {
 	ParamHandle parHandles[4] = {};// 4 possible maps for a given tile's controller. no onReset needed, since it's constructor/destr. Do not copy or move these, they should be fixed location
 	float rangeMax[4] = {};
 	float rangeMin[4] = {};
+	uint8_t lit = 0;// this is a bool, used for radio buttons (both latched or trig)
+
 	
 	void initAllExceptParHandles() {
 		for (int m = 0; m < 4; m++) {
 			rangeMax[m] = 1.0f;
 			rangeMin[m] = 0.0f;
 		}
+		lit = 0;
 	}
 		
 	void toJson(json_t* pmTileJ) {
+		// used only when copy pasting tiles 
 		json_t* configsJ = json_array();
 		for (size_t m = 0; m < 4; m++) {
 			json_t* configJ = json_object();
@@ -91,9 +272,11 @@ struct TileConfig {
 			json_array_append_new(configsJ, configJ);
 		}
 		json_object_set_new(pmTileJ, "configs", configsJ);
+		// lit not copied
 	}
 	
 	void fromJson(json_t* pmTileJ) {
+		// used only when copy pasting tiles 
 		json_t* configsJ = json_object_get(pmTileJ, "configs");
 		if ( !configsJ || !json_is_array(configsJ) ) {
 			WARN("PatchMaster error patch-master-tile configs array malformed or missing");
@@ -124,6 +307,8 @@ struct TileConfig {
 			}
 			rangeMin[m] = json_number_value(rangeMinJ);
 		}
+		// lit not copied (but has to be reset)
+		lit = 0;
 	}
 };// struct TileConfig
 
@@ -157,7 +342,6 @@ struct MappedParamQuantity : ParamQuantity {
 				}
 			}
 		}
-		
 		
 		return ret;
 	}

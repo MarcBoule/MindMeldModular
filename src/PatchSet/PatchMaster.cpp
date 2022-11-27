@@ -12,223 +12,6 @@
 #include "PatchMasterUtil.hpp"
 
 
-static const int NUM_CTRL = 8;
-static const int NUM_SEP = 8;
-
-
-struct TileInfos {
-	static const uint8_t defaultControllerInfo = TT_KNOB_L | TS_MEDIUM | TI_VIS_MASK;
-	static const uint8_t defaultSeparatorInfo = TT_SEP | TS_XSMALL | TI_VIS_MASK;
-	uint8_t infos[NUM_CTRL + NUM_SEP];// first are controllers, then separators (blanks are seps but with no label). The index number into this array is refered to as a tile number
-	
-	TileInfos() {
-		init();
-	}
-	
-	void init() {
-		// tiles 0 to NUM_CTRL - 1 are controllers
-		infos[0] = defaultControllerInfo;
-		infos[1] = TT_BUTN_M | TS_MEDIUM | TI_VIS_MASK; 
-		for (int ic = 2; ic < NUM_CTRL; ic++) {
-			infos[ic] = TT_KNOB_L | TS_MEDIUM;
-		}
-		// tile NUM_CTRL to NUM_SEP - 1 are separators (and blanks)
-		for (int is = NUM_CTRL; is < NUM_CTRL + NUM_SEP; is++) {
-			infos[is] = defaultSeparatorInfo; 
-		}
-	}
-	
-	void clear() {
-		for (int i = 0; i < NUM_CTRL + NUM_SEP; i++) {
-			infos[i] = 0;
-		}
-	}
-	
-	void copyFrom(TileInfos* src) {
-		for (int i = 0; i < NUM_CTRL + NUM_SEP; i++) {
-			infos[i] = src->infos[i];
-		}		
-	}
-};
-
-
-struct TileNames {
-	std::string names[NUM_CTRL + NUM_SEP];
-	
-	TileNames() {
-		init();
-	}
-	
-	void init() {
-		// tiles 0 to NUM_CTRL - 1 are controllers
-		names[0] = "Controller 1";
-		names[1] = "Controller 2";
-		for (int nc = 2; nc < NUM_CTRL; nc++) {
-			names[nc] = "No name";
-		}
-		// tile NUM_CTRL to NUM_SEP - 1 are separators (and blanks)
-		names[NUM_CTRL] = "PatchMaster";
-		for (int ns = NUM_CTRL + 1; ns < NUM_CTRL + NUM_SEP; ns++) {
-			names[ns] = "No name";
-		}
-	}
-};
-
-
-struct TileSettings {
-	static const int8_t defaultControlHighlightColor = 6; 
-	PackedBytes4 settings[NUM_CTRL + NUM_SEP];
-	
-	TileSettings() {
-		init();
-	}
-	
-	void initTile(int s) {
-		settings[s].cc4[0] = s < NUM_CTRL ? defaultControlHighlightColor : 0;// label color: blue for controllers, yellow for separators 
-		settings[s].cc4[1] = 0;// not used
-		settings[s].cc4[2] = 0;// not used
-		settings[s].cc4[3] = 0;// not used
-	}
-	
-	void init() {
-		for (int s = 0; s < NUM_CTRL + NUM_SEP; s++) {
-			initTile(s);
-		}
-	}
-};
-
-struct TileOrders {
-	int8_t orders[NUM_CTRL + NUM_SEP];// ordered list of tile numbers, as they would appear if all visible and enough space, terminated by -1 or implicit size of array when full (full = all available controllers and separators added, but likely not all shown in module widget though since no space)
-	// A tile number between 0 to NUM_CTRL - 1 indicates a controller
-	// A tile number between NUM_CTRL to NUM_CTRL + NUM_SEP - 1 indicates a separator tile (and blanks)
-	uint16_t lit;// bit0 is orders[0], bit1 is orders[1], etc, must have room for NUM_CTRL + NUM_SEP
-	// the lit bitfield is indexed by order number, shows lit override resulting from radio buttons (more than one hot when two groups of radio-trig buttons)
-	
-	
-	TileOrders() {
-		init();
-	}
-	
-	void init() {
-		orders[0] = NUM_CTRL;
-		orders[1] = 0;
-		orders[2] = 1;
-		for (int o = 3; o < NUM_CTRL + NUM_SEP; o++) {
-			orders[o] = -1;
-		}
-		lit = 0;
-	}
-
-	void clear() {
-		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
-			orders[o] = 0;
-		}
-		lit = 0;
-	}
-
-	bool isLit(int o) {
-		return (lit & (0x1 << o)) != 0;
-	}
-	
-	void setLitForOrder(int o) {
-		lit |= (0x1 << o);
-	}
-	void clearLitForOrder(int o) {
-		lit &= ~(0x1 << o);
-	}
-	void writeLit(int o, bool val) {
-		clearLitForOrder(o);
-		if (val) {
-			setLitForOrder(o);
-		}
-	}
-	
-	void copyFrom(TileOrders* src) {
-		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
-			orders[o] = src->orders[o];
-		}	
-		lit = src->lit;
-	}
-
-	void moveIndex(int src, int dest) {
-		int8_t tmp = orders[src];
-		bool tmpLit = isLit(src);
-		if (src != dest) {
-			if (dest < src) {
-				for (int o = src - 1; o >= dest; o--) {
-					orders[o + 1] = orders[o];
-					writeLit(o + 1, isLit(o));
-				}
-			}
-			else {
-				for (int o = src; o < dest; o++) {
-					orders[o] = orders[o + 1];
-					writeLit(o, isLit(o + 1));
-				}	
-			}
-			orders[dest] = tmp;
-			writeLit(dest, tmpLit);
-		}		
-	}
-	
-	int findNextControllerTileNumber() {
-		// returns -1 when all controllers already used
-		uint8_t used[NUM_CTRL] = {};
-		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
-			if (orders[o] == -1) {
-				break;
-			}
-			if (orders[o] < NUM_CTRL) {
-				used[orders[o]] = 1;
-			}	
-		}	
-		
-		for (int i = 0; i < NUM_CTRL; i++) {
-			if (used[i] == 0) {
-				return i;
-			}
-		}
-		return -1;
-	}
-	
-	int findNextSeparatorTileNumber() {
-		// returns -1 when all separators already used
-		uint8_t used[NUM_SEP] = {};
-		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
-			if (orders[o] == -1) {
-				break;
-			}
-			if (orders[o] >= NUM_CTRL) {
-				used[orders[o] - NUM_CTRL] = 1;
-			}	
-		}	
-		
-		for (int i = 0; i < NUM_SEP; i++) {
-			if (used[i] == 0) {
-				return i + NUM_CTRL;
-			}
-		}
-		return -1;
-	}
-	
-	
-	void deleteLitForOrder(int o) {
-		// rightshift lit by 1, but keep bits 0 to o-1 intact if o > 0
-		uint16_t newLit = 0;
-		for (int i = 0; i < o; i++) {
-			newLit |= (lit & (0x1 << i));
-		}
-		for (int i = o; i < NUM_CTRL + NUM_SEP - 2; i++) {
-			newLit |= (lit & (0x1 << (i + 1))) >> 1;
-		}
-		lit = newLit;
-	}
-};
-
-
-//-----------------------------------------------------------------------------
-
-
 struct PatchMaster : Module {
 	
 	enum ParamIds {
@@ -432,7 +215,6 @@ struct PatchMaster : Module {
 			tileSettings.settings[t].cc1 = json_integer_value(tileSettingsJ);
 		}
 		
-		tileOrders.clearLitForOrder(o);
 		// needs sanitize (necessary when changing tile)
 		sanitizeRadios();
 	}
@@ -461,7 +243,7 @@ struct PatchMaster : Module {
 		}
 		json_object_set_new(rootJ, "tileNames", tileNamesJ);
 		
-		// TileConfigs[].parHandles[]
+		// TileConfigs[].parHandles[] and .rangeMin and .rangeMax
 		json_t* mapsJ = json_array();
 		for (int cc = 0; cc < NUM_CTRL; cc++) {
 			for (int m = 0; m < 4; m++) {
@@ -475,6 +257,13 @@ struct PatchMaster : Module {
 		}
 		json_object_set_new(rootJ, "maps", mapsJ);
 
+		// TileConfigs[].radioLit
+		json_t *tileLitsJ = json_array();
+		for (int cc = 0; cc < NUM_CTRL; cc++) {
+			json_array_insert_new(tileLitsJ, cc, json_integer(tileConfigs[cc].lit));
+		}	
+		json_object_set_new(rootJ, "radioLits", tileLitsJ);
+
 		// tileOrders
 		json_t *tileOrdersJ = json_array();
 		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
@@ -487,9 +276,6 @@ struct PatchMaster : Module {
 			json_array_insert_new(tileSettingsJ, s, json_integer(tileSettings.settings[s].cc1));
 		}	
 		json_object_set_new(rootJ, "tileSettings", tileSettingsJ);
-
-		// radioLit
-		json_object_set_new(rootJ, "radioLit", json_integer(tileOrders.lit));
 
 		return rootJ;
 	}
@@ -530,7 +316,7 @@ struct PatchMaster : Module {
 			}
 		}
 
-		// TileConfigs[].parHandles[]
+		// TileConfigs[].parHandles[] and .rangeMin and .rangeMax
 		json_t* mapsJ = json_object_get(rootJ, "maps");
 		if (mapsJ) {
 			json_t* mapJ;
@@ -552,6 +338,17 @@ struct PatchMaster : Module {
 			}
 		}
 		
+		// TileConfigs[].radioLit
+		json_t* tileLitsJ = json_object_get(rootJ, "radioLits");
+		if (tileLitsJ) {
+			for (int cc = 0; cc < NUM_CTRL; cc++) {
+				json_t *tileLitsArrayJ = json_array_get(tileLitsJ, cc);
+				if (tileLitsArrayJ)
+					tileConfigs[cc].lit = json_integer_value(tileLitsArrayJ);
+			}
+		}
+
+
 		// tileOrders
 		json_t *tileOrdersJ = json_object_get(rootJ, "tileOrders");
 		if (tileOrdersJ) {
@@ -569,12 +366,6 @@ struct PatchMaster : Module {
 				if (tileSettingsArrayJ)
 					tileSettings.settings[s].cc1 = json_integer_value(tileSettingsArrayJ);
 			}
-		}
-	
-		// radioLit
-		json_t *radioLitJ = json_object_get(rootJ, "radioLit");
-		if (radioLitJ) {
-			tileOrders.lit = json_integer_value(radioLitJ);
 		}
 	
 		resetNonJson();	
@@ -613,8 +404,15 @@ struct PatchMaster : Module {
 					int paramId = tileConfigs[cc].parHandles[m].paramId;
 					ParamQuantity* paramQuantity = module->paramQuantities[paramId];
 					if (paramQuantity && paramQuantity->isBounded()) {
-						float value = math::rescale(params[cc].getValue(), 0.0f, 1.0f, tileConfigs[cc].rangeMin[m], tileConfigs[cc].rangeMax[m]);
-						paramQuantity->setScaledValue(value);
+						float pmValue;
+						if ((tileInfos.infos[cc] & TI_TYPE_MASK) == TT_BUTN_RL) {
+							pmValue = (tileConfigs[cc].lit != 0 ? 1.0f : 0.0f);
+						}
+						else {
+							pmValue = params[cc].getValue();
+						}
+						float pmValueScaledAndRanged = math::rescale(pmValue, 0.0f, 1.0f, tileConfigs[cc].rangeMin[m], tileConfigs[cc].rangeMax[m]);
+						paramQuantity->setScaledValue(pmValueScaledAndRanged);
 					}
 				}
 			}
@@ -778,7 +576,6 @@ struct PatchMaster : Module {
 						tileOrders.orders[o + 1] = -1;
 					}
 					tileOrders.orders[o] = t;
-					tileOrders.clearLitForOrder(o);
 					
 					if (t >= NUM_CTRL) {
 						tileNames.names[t] = string::f("Separator %i", t - NUM_CTRL + 1);
@@ -805,7 +602,10 @@ struct PatchMaster : Module {
 		
 		if (order != -1) {
 			// if changing existing tile
-			tileOrders.clearLitForOrder(order);
+			if (t < NUM_CTRL) { 
+				tileConfigs[t].lit = 0;
+				oldParams[t] = -1.0f;// force resend of others in case "on changes only"
+			}
 			sanitizeRadios();
 		}
 		
@@ -845,7 +645,6 @@ struct PatchMaster : Module {
 			}
 		}
 		tileOrders.orders[o - 1] = -1;// only really needed when deleting a full orders array (with no -1 termination)
-		tileOrders.deleteLitForOrder(tileOrder);
 		// at this point two separarate radio groups could have been merged, so needs sanitizing
 		sanitizeRadios();		
 	}
@@ -869,10 +668,14 @@ struct PatchMaster : Module {
 	}
 	
 	
-	void radioTrigPressed(int tview) {
+	void radioPressed(int tview) {
 		// tview: order of button that was pressed
 		
-		tileOrders.setLitForOrder(tview);
+		int t = tileOrders.orders[tview];
+		tileConfigs[t].lit = 1;
+		oldParams[t] = -1.0f;// force resend of others in case "on changes only"
+		int8_t radioType = (tileInfos.infos[t] & TI_TYPE_MASK);
+		
 		// force one-hot around order tview:
 		// up (no visibility check, since groups enforced without taking visibility into account)
 		for (int tv2 = tview + 1; tv2 < NUM_CTRL + NUM_SEP; tv2++) {
@@ -881,8 +684,9 @@ struct PatchMaster : Module {
 				break;
 			}
 			uint8_t ti2 = tileInfos.infos[t2];
-			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RT) {
-				tileOrders.clearLitForOrder(tv2);
+			if ((ti2 & TI_TYPE_MASK) == radioType) {
+				tileConfigs[t2].lit = 0;
+				oldParams[t2] = -1.0f;// force resend of others in case "on changes only"
 			}
 			else break;
 		}
@@ -890,49 +694,19 @@ struct PatchMaster : Module {
 		for (int tv2 = tview - 1; tv2 >= 0; tv2--) {
 			int8_t t2 = tileOrders.orders[tv2];
 			uint8_t ti2 = tileInfos.infos[t2];
-			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RT) {
-				tileOrders.clearLitForOrder(tv2);
+			if ((ti2 & TI_TYPE_MASK) == radioType) {
+				tileConfigs[t2].lit = 0;
+				oldParams[t2] = -1.0f;// force resend of others in case "on changes only"
 			}
 			else break;
 		}
 	}
-	
-	
-	void radioLatchedPressed(int tview) {
-		// tview: order of button that was pressed
 
-		// force one-hot around order tview:
-		// up (no visibility check, since groups enforced without taking visibility into account)
-		for (int tv2 = tview + 1; tv2 < NUM_CTRL + NUM_SEP; tv2++) {
-			int8_t t2 = tileOrders.orders[tv2];
-			if (t2 == -1) {
-				break;
-			}
-			uint8_t ti2 = tileInfos.infos[t2];
-			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RL) {
-				params[t2].setValue(0.0f);
-			}
-			else break;
-		}
-		// down (no visibility check, since groups enforced without taking visibility into account)
-		for (int tv2 = tview - 1; tv2 >= 0; tv2--) {
-			int t2 = tileOrders.orders[tv2];
-			uint8_t ti2 = tileInfos.infos[t2];
-			if ((ti2 & TI_TYPE_MASK) == TT_BUTN_RL) {
-				params[t2].setValue(0.0f);
-			}
-			else break;
-		}
-	}
 	
-	
-	void sanitizeRadios() {
-		// this will ensure exactly one lit bit is set in each group (group is a set of consecutive TT_BUTN_RL or TT_BUTN_RT)
-		// useful after a deleteOrder() or when an existing tile type has changed (that merges two groups for example)
-		//   as a result of a tile paste, or tile type changed in tile menu
-		
-		// do radio trigs; this entails managing lit bits in tileOrders
+	void sanitizeRadiosOfType(int8_t radioType) {
+		// this entails managing lit bits in tileOrders
 		int lastGroupStart = -1;
+		int lastGroupStartTile = -1;
 		bool hasLit = false;
 		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
 			int8_t t = tileOrders.orders[o];
@@ -940,14 +714,16 @@ struct PatchMaster : Module {
 				break;
 			}
 			uint8_t ti = tileInfos.infos[t];
-			if ((ti & TI_TYPE_MASK) == TT_BUTN_RT) {
+			if ((ti & TI_TYPE_MASK) == radioType) {
 				if (lastGroupStart == -1) {
 					lastGroupStart = o;
+					lastGroupStartTile = t;
 					hasLit = false;
 				}
-				if (tileOrders.isLit(o)) {
+				if (tileConfigs[t].lit != 0) {
 					if (hasLit) {
-						 tileOrders.clearLitForOrder(o);
+						 tileConfigs[t].lit = 0;
+						 oldParams[t] = -1.0f;// force resend of others in case "on changes only"
 					}
 					else {
 						hasLit = true;
@@ -956,51 +732,30 @@ struct PatchMaster : Module {
 			}
 			else {
 				if (lastGroupStart != -1 && !hasLit) {
-					tileOrders.setLitForOrder(lastGroupStart);
+					tileConfigs[lastGroupStartTile].lit = 1;
+					oldParams[lastGroupStartTile] = -1.0f;// force resend of others in case "on changes only"
 				}
 				lastGroupStart = -1;
+				lastGroupStartTile = -1;
 				hasLit = false;
-				tileOrders.clearLitForOrder(o);// make sure to kill lit bit for non-TT_BUTN_RT, in case bug happens 
+				if ( (t < NUM_CTRL) && ((ti & TI_TYPE_MASK) != TT_BUTN_RL) && ((ti & TI_TYPE_MASK) != TT_BUTN_RT) ) {
+					tileConfigs[t].lit = 0;// should not be needed
+					oldParams[t] = -1.0f;// force resend of others in case "on changes only"
+				}
 			}
 		}
 		if (lastGroupStart != -1 && !hasLit) {
-			tileOrders.setLitForOrder(lastGroupStart);
-		}		
-		
-		// do radio latches; this entails managing params in module
-		lastGroupStart = -1;
-		hasLit = false;
-		for (int o = 0; o < NUM_CTRL + NUM_SEP; o++) {
-			int8_t t = tileOrders.orders[o];
-			if (t == -1) {
-				break;
-			}
-			uint8_t ti = tileInfos.infos[t];
-			if ((ti & TI_TYPE_MASK) == TT_BUTN_RL) {
-				if (lastGroupStart == -1) {
-					lastGroupStart = t;
-					hasLit = false;
-				}
-				if (params[t].getValue() >= 0.5f) {
-					if (hasLit) {
-						params[t].setValue(0.0f);
-					}
-					else {
-						hasLit = true;
-					}
-				}
-			}
-			else {
-				if (lastGroupStart != -1 && !hasLit) {
-					params[lastGroupStart].setValue(1.0f);
-				}
-				lastGroupStart = -1;
-				hasLit = false;
-			}
-		}
-		if (lastGroupStart != -1 && !hasLit) {
-			params[lastGroupStart].setValue(1.0f);
-		}			
+			tileConfigs[lastGroupStartTile].lit = 1;
+			oldParams[lastGroupStartTile] = -1.0f;// force resend of others in case "on changes only"
+		}	
+	}		
+	
+	void sanitizeRadios() {
+		// this will ensure exactly one lit bit is set in each group (group is a set of consecutive TT_BUTN_RL or TT_BUTN_RT)
+		// useful after a deleteOrder() or when an existing tile type has changed (that merges two groups for example)
+		//   as a result of a tile paste, or tile type changed in tile menu
+		sanitizeRadiosOfType(TT_BUTN_RT);
+		sanitizeRadiosOfType(TT_BUTN_RL);
 	}
 };// module
 
@@ -2197,7 +1952,7 @@ struct PatchMasterWidget : ModuleWidget {
 					tileBackgrounds[t]->tileNumber = t;
 				}
 				else {
-					// non separator tile
+					// controller tile
 					
 					// tile background
 					if (tsize == TS_XXLARGE) {
@@ -2318,7 +2073,7 @@ struct PatchMasterWidget : ModuleWidget {
 								addParam(tileControllers[t] = createParamCentered<PmSmallButton>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 								addChild(tileControllerLights[t] = createLightCentered<PmSmallButtonLight>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_LIGHTS + t));
 							}
-							bool newIsMoment = ((ti & TI_TYPE_MASK) == TT_BUTN_M) || ((ti & TI_TYPE_MASK) == TT_BUTN_RT);
+							bool newIsMoment = isButtonParamMomentary(ti);
 							((SvgSwitch*)(tileControllers[t]))->momentary = newIsMoment;
 							if (module) {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->snapEnabled = true;
@@ -2526,11 +2281,8 @@ struct PatchMasterWidget : ModuleWidget {
 					
 					// radio triggers
 					if (radioTriggers[t].process(module->params[t].getValue())) {
-						if ((ti & TI_TYPE_MASK) == TT_BUTN_RT) {
-							module->radioTrigPressed(tview);
-						}
-						else if ((ti & TI_TYPE_MASK) == TT_BUTN_RL) {
-							module->radioLatchedPressed(tview);
+						if ( ((ti & TI_TYPE_MASK) == TT_BUTN_RT) || ((ti & TI_TYPE_MASK) == TT_BUTN_RL) ) {
+							module->radioPressed(tview);
 						}
 					}
 					if (isTileVisible(ti)) {
@@ -2543,7 +2295,7 @@ struct PatchMasterWidget : ModuleWidget {
 						// led-button lights
 						if (isCtlrAButton(ti)) {
 							float lbv = module->params[t].getValue();
-							if (module->tileOrders.isLit(tview)) {
+							if (module->tileConfigs[t].lit != 0) {
 								lbv = 1.0f;
 							}
 							if ((ti & TI_TYPE_MASK) == TT_BUTN_I) {

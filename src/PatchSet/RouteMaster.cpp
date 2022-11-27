@@ -9,7 +9,6 @@
 
 #include "../MindMeldModular.hpp"
 #include "PatchSetWidgets.hpp"
-#include "PatchMasterUtil.hpp"
 
 
 static const uint8_t MAX_NUM = 5;// if more than 8, must bump up size of SwitcherMessage::labels array and change types uint8_t located here and in RouteMasterMessageBus
