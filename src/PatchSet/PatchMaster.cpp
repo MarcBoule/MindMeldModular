@@ -1338,22 +1338,22 @@ struct PmBgBase : SvgWidget {
 			menu->addChild(moveItem);
 
 			// copy tile
-			std::string copyPastePostString = isCtrl ? " controller (without maps)" : " separator";
-			menu->addChild(createMenuItem("Copy" + copyPastePostString, "",
+			std::string copyPastePostString = isCtrl ? " controller" : " separator";
+			menu->addChild(createMenuItem("Copy" + copyPastePostString, "Shift+C",
 				[=]() {
 					module->copyTileToClipboard(tileNumber);
 				}
 			));
 
 			// paste tile
-			menu->addChild(createMenuItem("Paste" + copyPastePostString, "",
+			menu->addChild(createMenuItem("Paste" + copyPastePostString, "Shift+V",
 				[=]() {
 					module->pasteTileFromClipboard(tileNumber, tileOrder);
 				}
 			));
 
 			// hide tile
-			TileHideItem *hideItem = createMenuItem<TileHideItem>("Hide (module menu to show)", "");
+			TileHideItem *hideItem = createMenuItem<TileHideItem>("Hide (main menu to show)", "Shift+H");
 			hideItem->module = module;
 			hideItem->tileNumber = tileNumber;
 			menu->addChild(hideItem);
@@ -1374,7 +1374,7 @@ struct PmBgBase : SvgWidget {
 			
 			// delete tile
 			menu->addChild(new MenuSeparator());	
-			DeleteTileItem *dtItem = createMenuItem<DeleteTileItem>("Delete", "Shift+K");
+			DeleteTileItem *dtItem = createMenuItem<DeleteTileItem>("Delete", "Shift+X");
 			dtItem->module = module;
 			dtItem->tileOrder = tileOrder;
 			menu->addChild(dtItem);
@@ -1410,8 +1410,17 @@ struct PmBgBase : SvgWidget {
 					int mapNumber = e.key - GLFW_KEY_1;
 					module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
 				}
-				else if (e.key == GLFW_KEY_K) {
+				else if (e.key == GLFW_KEY_X) {
 					module->deleteTile(tileOrder);
+				}
+				else if (e.key == GLFW_KEY_C) {
+					module->copyTileToClipboard(tileNumber);
+				}
+				else if (e.key == GLFW_KEY_V) {
+					module->pasteTileFromClipboard(tileNumber, tileOrder);
+				}
+				else if (e.key == GLFW_KEY_H) {
+					module->hideTile(tileNumber);
 				}
 			}
 			// else if ((e.mods & RACK_MOD_MASK) == (GLFW_MOD_SHIFT | GLFW_MOD_ALT)) {
