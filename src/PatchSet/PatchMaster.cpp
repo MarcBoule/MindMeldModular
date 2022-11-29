@@ -606,11 +606,11 @@ struct PatchMaster : Module {
 		if (order != -1) {
 			// if changing existing tile
 			if (t < NUM_CTRL) { 
-				tileConfigs[t].lit = 0;
-				oldParams[t] = -1.0f;// force resend of others in case "on changes only"
 				if (isButtonParamMomentary(tileInfos.infos[t])) {
 					tileConfigs[t].initAllExceptParHandles();
 				}
+				tileConfigs[t].lit = 0;
+				oldParams[t] = -1.0f;// force resend of others in case "on changes only"
 			}
 			sanitizeRadios();
 		}
@@ -1448,7 +1448,6 @@ struct PmBgBase : SvgWidget {
 	
 
 	void onDragEnd(const DragEndEvent& e) override {
-		// DEBUG("drag end");
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && highlightTileMoveSrc && highlightTileMoveDest) {
 			float deltaMouseY = APP->scene->rack->getMousePos().y - onButtonMouseY;
 			float onDragMovePosY = onButtonPosY + deltaMouseY;
@@ -2300,12 +2299,15 @@ struct PatchMasterWidget : ModuleWidget {
 						}
 						// led-button lights
 						if (isCtlrAButton(ti)) {
-							float lbv = module->params[t].getValue();
-							if (module->tileConfigs[t].lit != 0) {
-								lbv = 1.0f;
+							float lbv = 0.0f;
+							if ( ((ti & TI_TYPE_MASK) == TT_BUTN_RL) || ((ti & TI_TYPE_MASK) == TT_BUTN_RT) ) {
+								lbv = (module->tileConfigs[t].lit != 0 ? 1.0f : 0.0f);
 							}
-							if ((ti & TI_TYPE_MASK) == TT_BUTN_I) {
-								lbv = 1.0f - lbv;
+							else {
+								lbv = module->params[t].getValue();
+								if ((ti & TI_TYPE_MASK) == TT_BUTN_I) {
+									lbv = 1.0f - lbv;
+								}
 							}
 							module->lights[PatchMaster::TILE_LIGHTS + t].setBrightness(lbv);
 						}
