@@ -36,6 +36,7 @@ struct GlobalInfo {
 	int8_t groupedAuxReturnFeedbackProtection;
 	uint16_t ecoMode;// all 1's means yes, 0 means no
 	int8_t masterFaderScalesSends;// 1 = yes 
+	int8_t polySpreadVandP;// allow V and P poly spread of channel 1 to other channels
 	
 
 	// no need to save, with reset
@@ -185,6 +186,7 @@ struct GlobalInfo {
 		groupedAuxReturnFeedbackProtection = 1;// protection is on by default
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
 		masterFaderScalesSends = 0;// false by default
+		polySpreadVandP = 0;
 		resetNonJson();
 	}
 
@@ -254,6 +256,9 @@ struct GlobalInfo {
 
 		// masterFaderScalesSends
 		json_object_set_new(rootJ, "masterFaderScalesSends", json_integer(masterFaderScalesSends));
+
+		// polySpreadVandP
+		json_object_set_new(rootJ, "polySpreadVandP", json_integer(polySpreadVandP));
 
 		// linearVolCvInputs
 		json_object_set_new(rootJ, "linearVolCvInputs", json_integer(directOutPanStereoMomentCvLinearVol.cc4[3]));
@@ -366,6 +371,13 @@ struct GlobalInfo {
 		json_t *masterFaderScalesSendsJ = json_object_get(rootJ, "masterFaderScalesSends");
 		if (masterFaderScalesSendsJ)
 			masterFaderScalesSends = json_integer_value(masterFaderScalesSendsJ);
+		
+		// polySpreadVandP
+		json_t *polySpreadVandPJ = json_object_get(rootJ, "polySpreadVandP");
+		if (polySpreadVandPJ)
+			polySpreadVandP = json_integer_value(polySpreadVandPJ);
+		else 
+			polySpreadVandP = 0x1;// legacy
 		
 		// linearVolCvInputs
 		json_t *linearVolCvInputsJ = json_object_get(rootJ, "linearVolCvInputs");
@@ -1793,7 +1805,7 @@ struct MixerTrack {
 			if (inVol->isConnected()) {
 				volCvVoltage = inVol->getVoltage();
 			}
-			else if (inVolTrack1->getChannels() > trackNum) {
+			else if (gInfo->polySpreadVandP != 0 && inVolTrack1->getChannels() > trackNum) {
 				// poly spread track 1 when sufficient channels in the poly cable
 				volCvVoltage = inVolTrack1->getVoltage(trackNum);
 			}
@@ -1816,7 +1828,7 @@ struct MixerTrack {
 				pan += inPan->getVoltage() * 0.1f * panCvLevel;// CV is a -5V to +5V input
 				pan = clamp(pan, 0.0f, 1.0f);
 			}
-			else {
+			else if (gInfo->polySpreadVandP != 0) {
 				// poly spread track 1 when sufficient channels in the poly cable
 				panCvConnected = (inPanTrack1->getChannels() > trackNum);
 				if (panCvConnected) {

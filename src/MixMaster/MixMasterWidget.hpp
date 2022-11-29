@@ -111,6 +111,11 @@ void appendContextMenu(Menu *menu) override {
 	lincv0Item->linearVolCvInputsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[3]);
 	menu->addChild(lincv0Item);
 	
+	menu->addChild(createCheckMenuItem("Poly-spread V and P track 1", "",
+		[=]() {return module->gInfo.polySpreadVandP != 0;},
+		[=]() {module->gInfo.polySpreadVandP ^= 0x1;}
+	));
+
 	menu->addChild(createCheckMenuItem("Eco mode", "",
 		[=]() {return module->gInfo.ecoMode != 0;},
 		[=]() {module->gInfo.ecoMode = ~module->gInfo.ecoMode;}

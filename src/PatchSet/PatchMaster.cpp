@@ -401,18 +401,23 @@ struct PatchMaster : Module {
 				// On changes only
 				continue;
 			}
+			float pmValue = -10.0f;// signifies un-computed since PM parameters are always in the range 0 to 1
 			for (int m = 0; m < 4; m++) {
 				Module* module = tileConfigs[cc].parHandles[m].module;
 				if (module) {
 					int paramId = tileConfigs[cc].parHandles[m].paramId;
 					ParamQuantity* paramQuantity = module->paramQuantities[paramId];
 					if (paramQuantity && paramQuantity->isBounded()) {
-						float pmValue;
-						if ((tileInfos.infos[cc] & TI_TYPE_MASK) == TT_BUTN_RL) {
-							pmValue = (tileConfigs[cc].lit != 0 ? 1.0f : 0.0f);
-						}
-						else {
-							pmValue = params[cc].getValue();
+						if (pmValue == -10.0f) {
+							if ((tileInfos.infos[cc] & TI_TYPE_MASK) == TT_BUTN_RL) {
+								pmValue = (tileConfigs[cc].lit != 0 ? 1.0f : 0.0f);
+							}
+							else if ((tileInfos.infos[cc] & TI_TYPE_MASK) == TT_BUTN_RT) {
+								pmValue = (tileConfigs[cc].lit != 0 ? params[cc].getValue() : 0.0f);
+							}
+							else {
+								pmValue = params[cc].getValue();
+							}
 						}
 						float pmValueScaledAndRanged = math::rescale(pmValue, 0.0f, 1.0f, tileConfigs[cc].rangeMin[m], tileConfigs[cc].rangeMax[m]);
 						paramQuantity->setScaledValue(pmValueScaledAndRanged);
@@ -2308,6 +2313,11 @@ struct PatchMasterWidget : ModuleWidget {
 							int id = t * 4 + m;
 							module->lights[PatchMaster::MAP_LIGHTS + (t * 4 + m) * 2 + 0].setBrightness(module->tileConfigs[t].parHandles[m].moduleId >= 0 && module->learningId != id ? 1.0f : 0.0f);// green
 							module->lights[PatchMaster::MAP_LIGHTS + (t * 4 + m) * 2 + 1].setBrightness(module->learningId == id ? 1.0f : 0.0f);// red
+							
+							// also test for target module deleted
+							if (module->tileConfigs[t].parHandles[m].module == NULL && module->tileConfigs[t].parHandles[m].moduleId >= 0) {
+								module->clearMap(t * 4 + m);
+							}
 						}
 						// led-button lights
 						if (isCtlrAButton(ti)) {
@@ -2327,6 +2337,7 @@ struct PatchMasterWidget : ModuleWidget {
 				}
 			}
 		}			
+		
 		
 		ModuleWidget::step();
 	}// void step()
