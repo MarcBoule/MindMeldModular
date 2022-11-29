@@ -1374,7 +1374,7 @@ struct PmBgBase : SvgWidget {
 			
 			// delete tile
 			menu->addChild(new MenuSeparator());	
-			DeleteTileItem *dtItem = createMenuItem<DeleteTileItem>("Delete", "");
+			DeleteTileItem *dtItem = createMenuItem<DeleteTileItem>("Delete", "Shift+K");
 			dtItem->module = module;
 			dtItem->tileOrder = tileOrder;
 			menu->addChild(dtItem);
@@ -1409,6 +1409,9 @@ struct PmBgBase : SvgWidget {
 				else if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
 					int mapNumber = e.key - GLFW_KEY_1;
 					module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
+				}
+				else if (e.key == GLFW_KEY_K) {
+					module->deleteTile(tileOrder);
 				}
 			}
 			// else if ((e.mods & RACK_MOD_MASK) == (GLFW_MOD_SHIFT | GLFW_MOD_ALT)) {
