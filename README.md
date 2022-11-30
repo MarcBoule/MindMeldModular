@@ -186,28 +186,33 @@ PatchMaster is a performance controller for Rack. PatchMaster enables you to bui
 
 Three main use cases for PatchMaster:
 
-1. Use it as a performance controller for multi-track patches
-2. Use it to create an interface for synth emulations
+1. Use it as a performance controller for multi-track patches;
+2. Use it to create an interface for synth emulations;
 3. Use it to create macro controllers.
 
 ### How does PatchMaster work?
+
 When you first instantiate PatchMaster it looks like a rather underwhelming 4hp strip with one knob and one button - but don't let that fool you - under the hood PatchMaster is a very powerful and flexible module. You can add whatever knob, button or fader controllers to PatchMaster you want and midi map them to controls on the modules in your patch. Each controller can be mapped to up to 4 different destinations with different ranges - so each controller can act as a macro. You can add as many instances of PatchMaster as you need and when you place PatchMaster modules next to each other they join together to look like a single module - it is a modular interface for your modular synth!
 
 Everything in PatchMaster is controlled through menus. There are two types of menu:
 
-1. Main panel menu for editing global settings of the module and adding new controllers and separators
-2. Controller menu for editing and mapping controllers
+1. Main panel menu for editing global settings of the module and adding new controllers and separators;
+2. Controller menu for editing and mapping controllers.
 
 ### What kind of controllers are there?
 
 Knobs: Small, Medium or Large - Unipolar or Bipolar
 Buttons: Momentary, Latched, Latched with inverted light, Radio Trig, Radio Latched
 (Radio buttons are exclusive and need to be placed next to each other to work as a group)
-Faders: Large, X-Large, XX-Large
+Faders: Large, X-Large, XX-Large.
 
 ### What are separators?
 
-Separators take the form of Divider Labels (for labelling sections of your control interface) or Blanks (used for spacing)
+Separators take the form of Divider Labels (for labelling sections of your control interface) or Blanks (used for spacing).
+
+### Preserving mappings in saved selections
+
+In order to preserve mappings in saved selections, they should be recalled using Stoermelder's S++ module. Mappings are also preserved when using Stoermelder's Strip module.
 
 ### Master Chan
 
@@ -233,6 +238,7 @@ The RouteMaster modules are designed to work with PatchMaster (although they can
 * Eurikon (Latif Karoumi), [MindMeld ShapeTracker for ShapeMaster Pro - VCV Rack](https://www.youtube.com/watch?v=TjgMzYTY328)
 
 ### Tutorials
+* Omri Cohen, [MindMeld PatchMaster Overview and Tutorial](https://www.youtube.com/watch?v=uyQhRD1sc0A)
 * Omri Cohen, [MixMaster from MindMeld](https://www.youtube.com/watch?v=YcTPaG6N6nI)
 * Omri Cohen, [The Many Things You Can Do With ShapeMaster Pro from MindMeld](https://www.youtube.com/watch?v=GL6e4Mqqp2Y)
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
