@@ -1007,14 +1007,13 @@ void createSeparatorChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mod
 struct PmBgBase : SvgWidget {
 	PatchMaster* module = NULL;
 	PmBgBase** tileBackgrounds = NULL;
-	int8_t* highlightTileMoveDest = NULL;
-	int8_t* highlightTileMoveDir = NULL;
+	int8_t* highlightTileMoveSrc = NULL;// is an order
+	int8_t* highlightTileMoveDest = NULL;// is an order
 	int tileNumber = 0;
 	int tileOrder = 0;
 	float manualBgHeight = 0.0f;// need extra special height for manual tiles so as to not mess with box.size.y, since that is needed for proper tile moving outlines (and proper intertile space for right clickign the module bg to get module menu)
 	
 	// local
-	bool highlightTileMoveSrc = false;
 	float onButtonMouseY = 0.0f;// Y pixel position of button click in rack space, used for a delta in onDragMove
 	float onButtonPosY = 0.0f;// Y pixel position of button click in module; 0 = top, 380 = bot
 	
@@ -1391,7 +1390,7 @@ struct PmBgBase : SvgWidget {
 			if (isPmAllowMouseTileMove()) {
 				onButtonMouseY = APP->scene->rack->getMousePos().y;
 				onButtonPosY = box.pos.y + e.pos.y;
-				highlightTileMoveSrc = true;
+				*highlightTileMoveSrc = tileOrder;
 				e.consume(this);
 				return;
 			}
@@ -1414,18 +1413,28 @@ struct PmBgBase : SvgWidget {
 				else if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
 					int mapNumber = e.key - GLFW_KEY_1;
 					module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
+					e.consume(this);
+					return;
 				}
 				else if (e.key == GLFW_KEY_X) {
 					module->deleteTile(tileOrder);
+					e.consume(this);
+					return;
 				}
 				else if (e.key == GLFW_KEY_C) {
 					module->copyTileToClipboard(tileNumber);
+					e.consume(this);
+					return;
 				}
 				else if (e.key == GLFW_KEY_V) {
 					module->pasteTileFromClipboard(tileNumber, tileOrder);
+					e.consume(this);
+					return;
 				}
 				else if (e.key == GLFW_KEY_H) {
 					module->hideTile(tileNumber);
+					e.consume(this);
+					return;
 				}
 			}
 			// else if ((e.mods & RACK_MOD_MASK) == (GLFW_MOD_SHIFT | GLFW_MOD_ALT)) {
@@ -1458,7 +1467,6 @@ struct PmBgBase : SvgWidget {
 			float deltaMouseY = APP->scene->rack->getMousePos().y - onButtonMouseY;
 			float onDragMovePosY = onButtonPosY + deltaMouseY;
 			*highlightTileMoveDest = getMouseOverTile(onDragMovePosY);
-			*highlightTileMoveDir = deltaMouseY < 0.0f ? 0 : 1;// 0 = moving upwards, 1 = moving downwards
 		}
 		SvgWidget::onDragMove(e);
 	}
@@ -1469,12 +1477,12 @@ struct PmBgBase : SvgWidget {
 			float deltaMouseY = APP->scene->rack->getMousePos().y - onButtonMouseY;
 			float onDragMovePosY = onButtonPosY + deltaMouseY;
 			*highlightTileMoveDest = getMouseOverTile(onDragMovePosY);
-			*highlightTileMoveDir = deltaMouseY < 0.0f ? 0 : 1;// 0 = moving upwards, 1 = moving downwards
+			// *highlightTileMoveDir = deltaMouseY < 0.0f ? 0 : 1;// 0 = moving upwards, 1 = moving downwards
 			if (*highlightTileMoveDest != -1 && module) {
 				module->moveTile(tileOrder, *highlightTileMoveDest);
 			}
 		}
-		highlightTileMoveSrc = false;
+		*highlightTileMoveSrc = -1;
 		*highlightTileMoveDest = -1;
 		SvgWidget::onDragEnd(e);
 	}
@@ -1492,30 +1500,6 @@ struct PmBgBase : SvgWidget {
 		}
 		else {
 			SvgWidget::draw(args);
-		}
-		
-		if (highlightTileMoveSrc) {
-			nvgBeginPath(args.vg);
-			nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 1.25f);
-			nvgStrokeWidth(args.vg, 1.5f);		
-			nvgStrokeColor(args.vg, SCHEME_MM_BLUE_LOGO);
-			nvgStroke(args.vg);	
-		}
-		else  if (highlightTileMoveDest && *highlightTileMoveDest == tileOrder) {
-			nvgStrokeWidth(args.vg, 1.5f);		
-			nvgStrokeColor(args.vg, SCHEME_MM_RED_LOGO);
-			nvgBeginPath(args.vg);
-			nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, 1.25f);
-			nvgStroke(args.vg);
-			nvgBeginPath(args.vg);
-			nvgStrokeColor(args.vg, SCHEME_WHITE);
-			float ly = -mm2px(TILE_VMARGIN) / 2.0f;// moving up (line on top)
-			if (*highlightTileMoveDir != 0) {// 0 = moving upwards, 1 = moving downwards
-				ly = -ly + box.size.y;// moving down so line on bottom
-			}
-			nvgMoveTo(args.vg, 0, ly);
-			nvgLineTo(args.vg, box.size.x, ly);
-			nvgStroke(args.vg);
 		}
 	}
 };// struct PmBgBase
@@ -1661,8 +1645,8 @@ struct PatchMasterWidget : ModuleWidget {
 	int8_t defaultColor = 0;// yellow, used when module == NULL
 
 	time_t oldTime = 0;
+	int8_t highlightTileMoveSrc = -1;
 	int8_t highlightTileMoveDest = -1;
-	int8_t highlightTileMoveDir = 0;// 0 = moving upwards, 1 = moving downwards
 	
 	SvgPanel* svgPanel;
 	PanelBorder* panelBorder;
@@ -1804,10 +1788,10 @@ struct PatchMasterWidget : ModuleWidget {
 		panelBorder = findBorder(svgPanel->fb);
 					
 		// logo
-		svgPanel->addChild(logoSvg = createWidgetCentered<LogoSvg>(mm2px(Vec(midX, 123.32f))));
+		svgPanel->fb->addChild(logoSvg = createWidgetCentered<LogoSvg>(mm2px(Vec(midX, 123.32f))));
 		omriLogoSvg = createWidgetCentered<OmriLogoSvg>(mm2px(Vec(midX, 123.32f)));
 		omriLogoSvg->visible = false;
-		svgPanel->addChild(omriLogoSvg);
+		svgPanel->fb->addChild(omriLogoSvg);
 		
 		tileInfosLast.clear();// force all tiles to be re-populated (since 0 is impossible)
 		tileOrdersLast.clear();// impossible to have this, but will be set below in populateTiles()
@@ -1830,7 +1814,7 @@ struct PatchMasterWidget : ModuleWidget {
 	void deallocTile(int t) {
 		// dealloc for realloc
 		if (tileBackgrounds[t] != NULL) {
-			svgPanel->removeChild(tileBackgrounds[t]);
+			svgPanel->fb->removeChild(tileBackgrounds[t]);
 			delete tileBackgrounds[t];
 			tileBackgrounds[t] = NULL;
 		}
@@ -1923,11 +1907,11 @@ struct PatchMasterWidget : ModuleWidget {
 					// separator tile (tsize not checked since not necessary)
 					
 					// tile background
-					svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSeparatorBg>(mm2px(Vec(midX, y))));
+					svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmSeparatorBg>(mm2px(Vec(midX, y))));
 					tileBackgrounds[t]->box.pos.x = tileBackgrounds[t]->box.pos.x - tileBackgrounds[t]->box.size.x / 2.0f;
 					tileBackgrounds[t]->tileBackgrounds = tileBackgrounds;
+					tileBackgrounds[t]->highlightTileMoveSrc = &highlightTileMoveSrc;
 					tileBackgrounds[t]->highlightTileMoveDest = &highlightTileMoveDest;
-					tileBackgrounds[t]->highlightTileMoveDir = &highlightTileMoveDir;
 					tileBackgrounds[t]->tileOrder = tview;
 					tileBackgrounds[t]->module = module;
 					tileBackgrounds[t]->tileNumber = t;
@@ -1948,27 +1932,27 @@ struct PatchMasterWidget : ModuleWidget {
 					
 					// tile background
 					if (tsize == TS_LARGE) {
-						svgPanel->addChild(tileBackgrounds[t] = createWidget<PmBlankLargeBg>(mm2px(Vec(midX, y))));
+						svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmBlankLargeBg>(mm2px(Vec(midX, y))));
 					}
 					else if (tsize == TS_MEDIUM) {
-						svgPanel->addChild(tileBackgrounds[t] = createWidget<PmBlankMediumBg>(mm2px(Vec(midX, y))));
+						svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmBlankMediumBg>(mm2px(Vec(midX, y))));
 					}
 					else if (tsize == TS_SMALL) {
-						svgPanel->addChild(tileBackgrounds[t] = createWidget<PmBlankSmallBg>(mm2px(Vec(midX, y))));
+						svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmBlankSmallBg>(mm2px(Vec(midX, y))));
 					}
 					else if (tsize == TS_SMALLER) {
-						svgPanel->addChild(tileBackgrounds[t] = createWidget<PmBlankSmallerBg>(mm2px(Vec(midX, y))));
+						svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmBlankSmallerBg>(mm2px(Vec(midX, y))));
 					}
 					else if (tsize == TS_XSMALL) {
-						svgPanel->addChild(tileBackgrounds[t] = createWidget<PmBlankXSmallBg>(mm2px(Vec(midX, y))));
+						svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmBlankXSmallBg>(mm2px(Vec(midX, y))));
 					}
 					else {// tsize == TS_XXSMALL assumed
-						svgPanel->addChild(tileBackgrounds[t] = createWidget<PmBlankXXSmallBg>(mm2px(Vec(midX, y))));
+						svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmBlankXXSmallBg>(mm2px(Vec(midX, y))));
 					}
 					tileBackgrounds[t]->box.pos.x = tileBackgrounds[t]->box.pos.x - tileBackgrounds[t]->box.size.x / 2.0f;
 					tileBackgrounds[t]->tileBackgrounds = tileBackgrounds;
+					tileBackgrounds[t]->highlightTileMoveSrc = &highlightTileMoveSrc;
 					tileBackgrounds[t]->highlightTileMoveDest = &highlightTileMoveDest;
-					tileBackgrounds[t]->highlightTileMoveDir = &highlightTileMoveDir;
 					tileBackgrounds[t]->tileOrder = tview;
 					tileBackgrounds[t]->module = module;
 					tileBackgrounds[t]->tileNumber = t;
@@ -1980,36 +1964,36 @@ struct PatchMasterWidget : ModuleWidget {
 					if (tsize == TS_XXLARGE) {
 						// fader assumed (must create something)
 						if (tctrl == TT_FADER_C) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmLargeFaderBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmLargeFaderBg>(mm2px(Vec(midX, y))));
 						}
 						else {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmLargeFaderUnipolarBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmLargeFaderUnipolarBg>(mm2px(Vec(midX, y))));
 						}
 					}
 					else if (tsize == TS_XLARGE) {
 						// fader assumed (must create something)
 						if (tctrl == TT_FADER_C) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmMediumFaderBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmMediumFaderBg>(mm2px(Vec(midX, y))));
 						}
 						else {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmMediumFaderUnipolarBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmMediumFaderUnipolarBg>(mm2px(Vec(midX, y))));
 						}
 					}
 					else if (tsize == TS_LARGE) {
 						if (tctrl == TT_KNOB_C) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmLargeKnobBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmLargeKnobBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_KNOB_L) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmLargeKnobUnipolarBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmLargeKnobUnipolarBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_FADER_C) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSmallFaderBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmSmallFaderBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_FADER_B) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSmallFaderUnipolarBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmSmallFaderUnipolarBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_BUTN_RT || tctrl == TT_BUTN_RL) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmManualBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmManualBg>(mm2px(Vec(midX, y))));
 							tileBackgrounds[t]->box.size.y = mm2px(getHeight(tsize >> 4));
 							tileBackgrounds[t]->manualBgHeight = tileBackgrounds[t]->box.size.y;
 							if (tviewRadio != -1 && tviewRadio != tview && tctrl == radioType) {
@@ -2019,18 +2003,18 @@ struct PatchMasterWidget : ModuleWidget {
 							}
 						}
 						else {// remaining buttons assumed
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmLargeButtonBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmLargeButtonBg>(mm2px(Vec(midX, y))));
 						}							
 					}
 					else if (tsize == TS_MEDIUM) {
 						if (tctrl == TT_KNOB_C) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmMediumKnobBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmMediumKnobBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_KNOB_L) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmMediumKnobUnipolarBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmMediumKnobUnipolarBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_BUTN_RT || tctrl == TT_BUTN_RL) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmManualBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmManualBg>(mm2px(Vec(midX, y))));
 							tileBackgrounds[t]->box.size.y = mm2px(getHeight(tsize >> 4));
 							tileBackgrounds[t]->manualBgHeight = tileBackgrounds[t]->box.size.y;
 							if (tviewRadio != -1 && tviewRadio != tview && tctrl == radioType) {
@@ -2040,18 +2024,18 @@ struct PatchMasterWidget : ModuleWidget {
 							}
 						}
 						else {// remaining buttons assumed
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmMediumButtonBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmMediumButtonBg>(mm2px(Vec(midX, y))));
 						}							
 					}
 					else {// TM_SMALL assumed
 						if (tctrl == TT_KNOB_C) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSmallKnobBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmSmallKnobBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_KNOB_L) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSmallKnobUnipolarBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmSmallKnobUnipolarBg>(mm2px(Vec(midX, y))));
 						}
 						else if (tctrl == TT_BUTN_RT || tctrl == TT_BUTN_RL) {
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmManualBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmManualBg>(mm2px(Vec(midX, y))));
 							tileBackgrounds[t]->box.size.y = mm2px(getHeight(tsize >> 4));
 							tileBackgrounds[t]->manualBgHeight = tileBackgrounds[t]->box.size.y;
 							if (tviewRadio != -1 && tviewRadio != tview && tctrl == radioType) {
@@ -2061,13 +2045,13 @@ struct PatchMasterWidget : ModuleWidget {
 							}
 						}
 						else {// remaining buttons assumed
-							svgPanel->addChild(tileBackgrounds[t] = createWidget<PmSmallButtonBg>(mm2px(Vec(midX, y))));
+							svgPanel->fb->addChild(tileBackgrounds[t] = createWidget<PmSmallButtonBg>(mm2px(Vec(midX, y))));
 						}							
 					}
 					tileBackgrounds[t]->box.pos.x = tileBackgrounds[t]->box.pos.x - tileBackgrounds[t]->box.size.x / 2.0f;
 					tileBackgrounds[t]->tileBackgrounds = tileBackgrounds;
+					tileBackgrounds[t]->highlightTileMoveSrc = &highlightTileMoveSrc;
 					tileBackgrounds[t]->highlightTileMoveDest = &highlightTileMoveDest;
-					tileBackgrounds[t]->highlightTileMoveDir = &highlightTileMoveDir;
 					tileBackgrounds[t]->tileOrder = tview;
 					tileBackgrounds[t]->module = module;
 					tileBackgrounds[t]->tileNumber = t;
@@ -2180,6 +2164,41 @@ struct PatchMasterWidget : ModuleWidget {
 		}
 		else {
 			ModuleWidget::draw(args);
+		}
+		
+		// tile moving overlays
+		if (module && highlightTileMoveSrc != -1) {
+			// source tile
+			int ts = ((PatchMaster*)module)->tileOrders.orders[highlightTileMoveSrc];
+			if (tileBackgrounds[ts]) {
+				nvgBeginPath(args.vg);
+				nvgRoundedRect(args.vg, tileBackgrounds[ts]->box.pos.x, tileBackgrounds[ts]->box.pos.y, tileBackgrounds[ts]->box.size.x, tileBackgrounds[ts]->box.size.y, 1.25f);
+				nvgStrokeWidth(args.vg, 1.5f);		
+				nvgStrokeColor(args.vg, SCHEME_MM_BLUE_LOGO);
+				nvgStroke(args.vg);
+				
+				// destination tile
+				if (highlightTileMoveDest != -1 && highlightTileMoveDest != highlightTileMoveSrc) {
+					int td = ((PatchMaster*)module)->tileOrders.orders[highlightTileMoveDest];
+					if (tileBackgrounds[td]) {
+						nvgStrokeWidth(args.vg, 1.5f);		
+						nvgStrokeColor(args.vg, SCHEME_MM_RED_LOGO);
+						nvgBeginPath(args.vg);
+						nvgRoundedRect(args.vg, tileBackgrounds[td]->box.pos.x, tileBackgrounds[td]->box.pos.y, tileBackgrounds[td]->box.size.x, tileBackgrounds[td]->box.size.y, 1.25f);
+						nvgStroke(args.vg);
+						nvgBeginPath(args.vg);
+						nvgStrokeColor(args.vg, SCHEME_WHITE);
+						float ly = -mm2px(TILE_VMARGIN) / 2.0f;// moving up (line on top)
+						if (highlightTileMoveDest > highlightTileMoveSrc) {
+							ly = -ly + tileBackgrounds[td]->box.size.y;// moving down so line on bottom
+						}
+						ly += tileBackgrounds[td]->box.pos.y;
+						nvgMoveTo(args.vg, tileBackgrounds[td]->box.pos.x, ly);
+						nvgLineTo(args.vg, tileBackgrounds[td]->box.pos.x + tileBackgrounds[td]->box.size.x, ly);
+						nvgStroke(args.vg);
+					}
+				}
+			}
 		}
 	}
 	
