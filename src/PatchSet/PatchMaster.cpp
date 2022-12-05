@@ -671,6 +671,9 @@ struct PatchMaster : Module {
 		float defPar = tSrc < NUM_CTRL ? paramQuantities[PatchMaster::TILE_PARAMS + tSrc]->defaultValue : 0.0f;
 		int oNew = modifyOrCreateNewTile(tNew, -1, info, defPar);// -1 means create
 		
+		// with its settings
+		tileSettings.settings[tNew] = tileSettings.settings[tSrc];
+		
 		// now move it if needed
 		if (oNew > oSrc + 1) {
 			tileOrders.moveIndex(oNew, oSrc + 1);

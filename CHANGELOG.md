@@ -1,4 +1,9 @@
-### 2.2.0 (in development)
+### 2.2.1 (in development)
+
+- PatchMaster: Fixed tile color not copied when duplicating tiles
+
+
+### 2.2.0 (2022-12-03)
 
 - ShapeMaster: Changed horizontal node tooltip and value entry from seconds to volts when in CV trig mode
 - ShapeMaster: Removed channel color and name from channel paste
