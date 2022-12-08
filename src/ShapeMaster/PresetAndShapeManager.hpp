@@ -10,7 +10,6 @@
 
 #include <thread>
 #include <condition_variable>
-#include "rack.hpp"
 #include "osdialog.h"
 #include "Channel.hpp"
 
