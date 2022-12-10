@@ -30,13 +30,17 @@ void VuMeterBase::prepareYellowAndRedThresholds(float yellowMinDb, float redMinD
 }
 
 
-void VuMeterBase::processPeakHold() {// use APP->window->getLastFrameRate()
-	holdTimeRemainBeforeReset -= APP->window->getLastFrameDuration();
-	if ( holdTimeRemainBeforeReset < 0.0f ) {
-		holdTimeRemainBeforeReset = 2.0f;// in seconds
-		peakHold[0] = 0.0f;
-		peakHold[1] = 0.0f;
-	}		
+void VuMeterBase::processPeakHold() {
+	double lastFrameDur = APP->window->getLastFrameDuration();
+	if (std::isfinite(lastFrameDur)) {
+		holdTimeRemainBeforeReset -= lastFrameDur;
+		if ( holdTimeRemainBeforeReset < 0.0 ) {
+			holdTimeRemainBeforeReset = 2.0;// in seconds
+			peakHold[0] = 0.0f;
+			peakHold[1] = 0.0f;
+		}		
+	}
+	
 	for (int i = 0; i < 2; i++) {
 		if (VuMeterAllDual::getPeak(srcLevels, i) > peakHold[i]) {
 			peakHold[i] = VuMeterAllDual::getPeak(srcLevels, i);
@@ -175,7 +179,7 @@ void VuMeterBase::drawVuMaster(const DrawArgs &args, float vuValue, float posX, 
 		
 		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
 		float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
-		if (vuHeight >= redThreshold) holdTimeRemainBeforeReset = 2.0f;// in seconds
+		if (vuHeight >= redThreshold) holdTimeRemainBeforeReset = 2.0;// in seconds
 		if (!ghostMuteOn && (vuHeight >= redThreshold || peakHoldVal >= hardRedVoltage)) {
 			// Full red
 			nvgBeginPath(args.vg);
