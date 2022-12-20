@@ -89,7 +89,7 @@ struct PatchMaster : Module {
 		miscSettings.cc4[2] = 0x1;// 0 = eco mode off, 1 = eco level 1 (/4), 2 = eco level 2 (/128)
 		miscSettings.cc4[3] = 0x0;// transparent blanks
 		miscSettings2.cc4[0] = 0x1;// on changes only
-		miscSettings2.cc4[1] = 0x0;// unused
+		miscSettings2.cc4[1] = 0x0;// hide mapping indicators
 		miscSettings2.cc4[2] = 0x0;// unused
 		miscSettings2.cc4[3] = 0x0;// unused
 		tileInfos.init();
@@ -735,7 +735,8 @@ struct PatchMaster : Module {
 				break;
 			}
 			uint8_t ti = tileInfos.infos[t];
-			if ((ti & TI_TYPE_MASK) == radioType) {
+			uint8_t tctrl = ti & TI_TYPE_MASK;
+			if (tctrl == radioType) {
 				if (lastGroupStart == -1) {
 					lastGroupStart = o;
 					lastGroupStartTile = t;
@@ -759,7 +760,7 @@ struct PatchMaster : Module {
 				lastGroupStart = -1;
 				lastGroupStartTile = -1;
 				hasLit = false;
-				if ( (t < NUM_CTRL) && ((ti & TI_TYPE_MASK) != TT_BUTN_RL) && ((ti & TI_TYPE_MASK) != TT_BUTN_RT) ) {
+				if ( (t < NUM_CTRL) && (tctrl != TT_BUTN_RL) && (tctrl != TT_BUTN_RT) && (tctrl != TT_BUTN_MTL) ) {
 					tileConfigs[t].lit = 0;// should not be needed
 					oldParams[t] = -1.0f;// force resend of others in case "on changes only"
 				}
@@ -1311,6 +1312,15 @@ struct PmBgBase : SvgWidget {
 					));
 				}
 			}));	
+			
+			// toggle momentary-with-toggled-light
+			if ( (module->tileInfos.infos[tileNumber] & TI_TYPE_MASK) == TT_BUTN_MTL) {	
+				menu->addChild(createMenuItem("Toggle momentary light", "",
+					[=]() {
+						module->momentaryWithToggledLightPressed(tileOrder);
+					}
+				));
+			}
 
 			// mapping	
 			if (isCtrl) {
@@ -1690,9 +1700,15 @@ struct PatchMasterWidget : ModuleWidget {
 		menu->addChild(createMenuLabel("Settings:"));
 		
 		// show mapping lights
-		menu->addChild(createCheckMenuItem("Show mapping lights", "",
+		menu->addChild(createCheckMenuItem("Show mapping lights on PatchMaster", "",
 			[=]() {return module->miscSettings.cc4[1] != 0;},
 			[=]() {module->miscSettings.cc4[1] ^= 0x1;}
+		));
+
+		// hide mapping indicators
+		menu->addChild(createCheckMenuItem("Hide mapping indicators", "",
+			[=]() {return module->miscSettings2.cc4[1] != 0;},
+			[=]() {module->miscSettings2.cc4[1] ^= 0x1;}
 		));
 
 		// show knob arcs
@@ -2304,9 +2320,10 @@ struct PatchMasterWidget : ModuleWidget {
 					// param tooltips
 					module->paramQuantities[PatchMaster::TILE_PARAMS + ic]->name = module->tileNames.names[ic]; 
 					
-					// paramHandle texts
+					// paramHandle texts and indicators (show/hide)
 					for (int m = 0; m < 4; m++) {
 						module->tileConfigs[ic].parHandles[m].text = module->tileNames.names[ic];
+						module->tileConfigs[ic].parHandles[m].color = module->miscSettings2.cc4[1] != 0 ? color::BLACK_TRANSPARENT : SCHEME_MM_BLUE_LOGO;
 					}
 					
 					// show mapping lights

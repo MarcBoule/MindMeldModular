@@ -1,6 +1,8 @@
 ### 2.2.1 (in development)
 
 - PatchMaster: Fixed tile color not copied when duplicating tiles
+- PatchMaster: Added new button type (momentary with toggled light)
+- PatchMaster: Added option to hide mapping indicators
 
 
 ### 2.2.0 (2022-12-03)
