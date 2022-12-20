@@ -36,6 +36,7 @@ static const uint8_t TT_FADER_B = 0x09;// default bottom (TS_LARGE, TS_XLARGE an
 static const uint8_t TT_BLANK =   0x0A;// used for blank tile (a separator with no label)
 static const uint8_t TT_SEP =     0x0B;// used for separator
 static const uint8_t TT_BUTN_RL = 0x0C;// radio button latch (three sizes), same as TT_BUTN_RT but the mapping signal is kept high for the hot controller in the group
+static const uint8_t TT_BUTN_MTL = 0x0D;// momentary with toggled light (three sizes), like TT_BUTN_M but uses lit value that gets toggled on each click
 
 // sizes:
 //   (can be "(x & ~TI_VIS_MASK) >> 4" to index TILE_HEIGHT, LABEL_DY, CTRL_DY
@@ -61,10 +62,14 @@ inline void clearVisible(uint8_t* ti) {*ti &= ~TI_VIS_MASK;}
 // controller macros:
 inline bool isCtlrAKnob(uint8_t ti) {return (ti & TI_TYPE_MASK) >= TT_KNOB_C && (ti & TI_TYPE_MASK) <= TT_KNOB_L;}
 inline bool isCtlrAButton(uint8_t ti) {
-	uint8_t sz = (ti & TI_TYPE_MASK); 
-	return (sz >= TT_BUTN_M && sz <= TT_BUTN_RT) || sz == TT_BUTN_RL;}
+	uint8_t ty = (ti & TI_TYPE_MASK); 
+	return (ty >= TT_BUTN_M && ty <= TT_BUTN_RT) || ty == TT_BUTN_RL || ty == TT_BUTN_MTL;
+}
 inline bool isCtlrAFader(uint8_t ti) {return (ti & TI_TYPE_MASK) == TT_FADER_C || (ti & TI_TYPE_MASK) == TT_FADER_B;}
-inline bool isButtonParamMomentary(uint8_t ti) {return ((ti & TI_TYPE_MASK) == TT_BUTN_M) || ((ti & TI_TYPE_MASK) == TT_BUTN_RT) || ((ti & TI_TYPE_MASK) == TT_BUTN_RL);}
+inline bool isButtonParamMomentary(uint8_t ti) {
+	uint8_t ty = (ti & TI_TYPE_MASK); 
+	return ty == TT_BUTN_M || ty == TT_BUTN_RT || ty == TT_BUTN_RL || ty == TT_BUTN_MTL;
+}
 
 // size macros:
 inline uint8_t getSizeIndex(uint8_t ti) {return (ti & ~TI_VIS_MASK) >> 4;}
@@ -250,7 +255,7 @@ struct TileConfig {
 	ParamHandle parHandles[4] = {};// 4 possible maps for a given tile's controller. no onReset needed, since it's constructor/destr. Do not copy or move these, they should be fixed location
 	float rangeMax[4] = {};
 	float rangeMin[4] = {};
-	uint8_t lit = 0;// this is a bool, used for radio buttons (both latched or trig)
+	uint8_t lit = 0;// this is a 0 or 1, used for radio buttons (both latched or trig), and momentary-toggled-light
 
 	
 	void initAllExceptParHandles() {

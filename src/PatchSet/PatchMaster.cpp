@@ -257,7 +257,7 @@ struct PatchMaster : Module {
 		}
 		json_object_set_new(rootJ, "maps", mapsJ);
 
-		// TileConfigs[].radioLit
+		// TileConfigs[].lit
 		json_t *tileLitsJ = json_array();
 		for (int cc = 0; cc < NUM_CTRL; cc++) {
 			json_array_insert_new(tileLitsJ, cc, json_integer(tileConfigs[cc].lit));
@@ -338,7 +338,7 @@ struct PatchMaster : Module {
 			}
 		}
 		
-		// TileConfigs[].radioLit
+		// TileConfigs[].lit
 		json_t* tileLitsJ = json_object_get(rootJ, "radioLits");
 		if (tileLitsJ) {
 			for (int cc = 0; cc < NUM_CTRL; cc++) {
@@ -686,7 +686,7 @@ struct PatchMaster : Module {
 		// tview: order of button that was pressed
 		
 		int t = tileOrders.orders[tview];
-		tileConfigs[t].lit = 1;
+		tileConfigs[t].lit = 0x1;
 		oldParams[t] = -1.0f;// force resend of others in case "on changes only"
 		int8_t radioType = (tileInfos.infos[t] & TI_TYPE_MASK);
 		
@@ -714,6 +714,13 @@ struct PatchMaster : Module {
 			}
 			else break;
 		}
+	}
+	
+	
+	void momentaryWithToggledLightPressed(int tview) {
+		// tview: order of button that was pressed
+		int t = tileOrders.orders[tview];
+		tileConfigs[t].lit ^= 0x1;
 	}
 
 	
@@ -746,7 +753,7 @@ struct PatchMaster : Module {
 			}
 			else {
 				if (lastGroupStart != -1 && !hasLit) {
-					tileConfigs[lastGroupStartTile].lit = 1;
+					tileConfigs[lastGroupStartTile].lit = 0x1;
 					oldParams[lastGroupStartTile] = -1.0f;// force resend of others in case "on changes only"
 				}
 				lastGroupStart = -1;
@@ -759,7 +766,7 @@ struct PatchMaster : Module {
 			}
 		}
 		if (lastGroupStart != -1 && !hasLit) {
-			tileConfigs[lastGroupStartTile].lit = 1;
+			tileConfigs[lastGroupStartTile].lit = 0x1;
 			oldParams[lastGroupStartTile] = -1.0f;// force resend of others in case "on changes only"
 		}	
 	}		
@@ -865,6 +872,9 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 					newItem = createMenuItem<TileChoiceItem>("Momentary", "");
 					newItem->construct(module, t, o, TT_BUTN_M | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
+					newItem = createMenuItem<TileChoiceItem>("Momentary with toggled light", "");
+					newItem->construct(module, t, o, TT_BUTN_MTL | TS_SMALL, 0.0f);
+					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched", "");
 					newItem->construct(module, t, o, TT_BUTN_N | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
@@ -886,6 +896,9 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 					newItem = createMenuItem<TileChoiceItem>("Momentary", "");
 					newItem->construct(module, t, o, TT_BUTN_M | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
+					newItem = createMenuItem<TileChoiceItem>("Momentary with toggled light", "");
+					newItem->construct(module, t, o, TT_BUTN_MTL | TS_MEDIUM, 0.0f);
+					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched", "");
 					newItem->construct(module, t, o, TT_BUTN_N | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
@@ -906,6 +919,9 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Momentary", "");
 					newItem->construct(module, t, o, TT_BUTN_M | TS_LARGE, 0.0f);
+					menu->addChild(newItem);
+					newItem = createMenuItem<TileChoiceItem>("Momentary with toggled light", "");
+					newItem->construct(module, t, o, TT_BUTN_MTL | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched", "");
 					newItem->construct(module, t, o, TT_BUTN_N | TS_LARGE, 0.0f);
@@ -2070,11 +2086,11 @@ struct PatchMasterWidget : ModuleWidget {
 					// controller
 					if (tileControllers[t] == NULL) {
 						if (isCtlrAButton(ti)) {
-							if ((ti & TI_SIZE_MASK) == TS_LARGE) {
+							if (tsize == TS_LARGE) {
 								addParam(tileControllers[t] = createParamCentered<PmLargeButton>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 								addChild(tileControllerLights[t] = createLightCentered<PmLargeButtonLight>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_LIGHTS + t));
 							}
-							else if ((ti & TI_SIZE_MASK) == TS_MEDIUM) {
+							else if (tsize == TS_MEDIUM) {
 								addParam(tileControllers[t] = createParamCentered<PmMediumButton>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 								addChild(tileControllerLights[t] = createLightCentered<PmMediumButtonLight>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_LIGHTS + t));
 							}
@@ -2094,10 +2110,10 @@ struct PatchMasterWidget : ModuleWidget {
 							radioTriggers[t].reset();
 						}
 						else if (isCtlrAKnob(ti)) {
-							if ((ti & TI_SIZE_MASK) == TS_LARGE) {
+							if (tsize == TS_LARGE) {
 								addParam(tileControllers[t] = createParamCentered<PmLargeKnob>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 							}
-							else if ((ti & TI_SIZE_MASK) == TS_MEDIUM) {
+							else if (tsize == TS_MEDIUM) {
 								addParam(tileControllers[t] = createParamCentered<PmMediumKnob>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 							}
 							else {// TS_SMALL assumed
@@ -2116,10 +2132,10 @@ struct PatchMasterWidget : ModuleWidget {
 							}
 						}
 						else if (isCtlrAFader(ti)) { 
-							if ((ti & TI_SIZE_MASK) == TS_XXLARGE) {
+							if (tsize == TS_XXLARGE) {
 								addParam(tileControllers[t] = createParamCentered<PsXXLargeFader>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 							}
-							else if ((ti & TI_SIZE_MASK) == TS_XLARGE) {
+							else if (tsize == TS_XLARGE) {
 								addParam(tileControllers[t] = createParamCentered<PsXLargeFader>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_PARAMS + t));
 							}
 							else {// TS_LARGE assumed
@@ -2322,11 +2338,15 @@ struct PatchMasterWidget : ModuleWidget {
 				}
 				if (t < NUM_CTRL) {
 					uint8_t ti = module->tileInfos.infos[t];
+					uint8_t tctrl = ti & TI_TYPE_MASK;
 					
 					// radio triggers
 					if (radioTriggers[t].process(module->params[t].getValue())) {
-						if ( ((ti & TI_TYPE_MASK) == TT_BUTN_RT) || ((ti & TI_TYPE_MASK) == TT_BUTN_RL) ) {
+						if (tctrl == TT_BUTN_RT || tctrl == TT_BUTN_RL) {
 							module->radioPressed(tview);
+						}
+						else if (tctrl == TT_BUTN_MTL) {
+							module->momentaryWithToggledLightPressed(tview);
 						}
 					}
 					if (isTileVisible(ti)) {
@@ -2344,12 +2364,12 @@ struct PatchMasterWidget : ModuleWidget {
 						// led-button lights
 						if (isCtlrAButton(ti)) {
 							float lbv = 0.0f;
-							if ( ((ti & TI_TYPE_MASK) == TT_BUTN_RL) || ((ti & TI_TYPE_MASK) == TT_BUTN_RT) ) {
+							if (tctrl == TT_BUTN_RL || tctrl == TT_BUTN_RT || tctrl == TT_BUTN_MTL) {
 								lbv = (module->tileConfigs[t].lit != 0 ? 1.0f : 0.0f);
 							}
 							else {
 								lbv = module->params[t].getValue();
-								if ((ti & TI_TYPE_MASK) == TT_BUTN_I) {
+								if (tctrl == TT_BUTN_I) {
 									lbv = 1.0f - lbv;
 								}
 							}
