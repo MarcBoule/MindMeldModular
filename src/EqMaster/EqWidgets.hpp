@@ -966,7 +966,7 @@ struct TrackGainKnob : Mm8mmKnobGrayWithArcTopCentered {
 		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getSmoothValue());
+			trackEqsSrc[currTrk].setTrackGain(paramQuantity->getValue());
 		}
 	}
 };
@@ -1026,7 +1026,7 @@ struct EqFreqKnob : BandKnob {
 		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setFreq(BAND, paramQuantity->getSmoothValue());
+			trackEqsSrc[currTrk].setFreq(BAND, paramQuantity->getValue());
 		}
 	}
 };
@@ -1043,7 +1043,7 @@ struct EqGainKnob : BandKnob {
 		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setGain(BAND, paramQuantity->getSmoothValue());
+			trackEqsSrc[currTrk].setGain(BAND, paramQuantity->getValue());
 		}
 	}
 };
@@ -1059,7 +1059,7 @@ struct EqQKnob : BandKnob {
 		ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			int currTrk = (int)(trackParamSrc->getValue() + 0.5f);
-			trackEqsSrc[currTrk].setQ(BAND, paramQuantity->getSmoothValue());
+			trackEqsSrc[currTrk].setQ(BAND, paramQuantity->getValue());
 		}
 	}
 };
