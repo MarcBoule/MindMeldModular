@@ -420,7 +420,8 @@ struct PatchMaster : Module {
 							}
 						}
 						float pmValueScaledAndRanged = math::rescale(pmValue, 0.0f, 1.0f, tileConfigs[cc].rangeMin[m], tileConfigs[cc].rangeMax[m]);
-						paramQuantity->setScaledValue(pmValueScaledAndRanged);
+						// paramQuantity->setScaledValue(pmValueScaledAndRanged);// Behavior changed in Rack 2.3.0, until there is a setImmediateScaledValue(), we must implement our own equivalent of what is in Quantity::setScaledValue() and make it call setImmediateValue instead of setValue(), who's behavior has changed. See next line for new version.
+						paramQuantity->setImmediateValue(paramQuantity->fromScaled(pmValueScaledAndRanged));
 					}
 				}
 			}
@@ -471,7 +472,8 @@ struct PatchMaster : Module {
 			if (tmodule) {
 				ParamQuantity* paramQuantity = tmodule->paramQuantities[paramId];
 				if (paramQuantity && paramQuantity->isBounded()) {
-					params[t].setValue(paramQuantity->getScaledValue());
+					// params[t].setValue(paramQuantity->getScaledValue());// Behavior changed in Rack 2.3.0, until there is a getImmediateScaledValue(), we must implement our own equivalent of what is in Quantity::getScaledValue() and make it call getImmediateValue instead of getValue(), who's behavior has changed. See next line for new version.
+					params[t].setValue(paramQuantity->toScaled(paramQuantity->getImmediateValue()));
 				}
 			}
 		}
