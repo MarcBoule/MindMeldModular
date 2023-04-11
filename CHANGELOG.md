@@ -1,4 +1,14 @@
-### 2.2.1 (in development)
+### 2.2.3 (2023-04-11)
+
+- Fix issue with Schmitt trigger
+
+
+### 2.2.2 (2023-03-26)
+
+- PatchMaster: Fix issue with smooth parameter API change
+
+
+### 2.2.1 (2023-01-12)
 
 - PatchMaster: Fixed tile color not copied when duplicating tiles
 - PatchMaster: Added new button type (momentary with toggled light)
