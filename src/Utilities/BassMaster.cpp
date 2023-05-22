@@ -365,6 +365,21 @@ struct BassMasterWidget : ModuleWidget {
 		}
 	};	
 	
+	struct DispColorItem : MenuItem {
+		int8_t *srcColor;
+
+		Menu *createChildMenu() override {
+			Menu *menu = new Menu;
+			for (int i = 0; i < numDispThemes; i++) {		
+				menu->addChild(createCheckMenuItem(dispColorNames[i], "",
+					[=]() {return *srcColor == i;},
+					[=]() {*srcColor = i;}
+				));
+			}
+			return menu;
+		}
+	};
+	
 	void appendContextMenu(Menu *menu) override {		
 		BassMaster<IS_JR>* module = (BassMaster<IS_JR>*)(this->module);
 		assert(module);
@@ -381,7 +396,7 @@ struct BassMasterWidget : ModuleWidget {
 
 		menu->addChild(new MenuSeparator());
 
-		DispTwoColorItem *dispColItem = createMenuItem<DispTwoColorItem>("Display colour", RIGHT_ARROW);
+		DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
 		dispColItem->srcColor = &(module->miscSettings.cc4[0]);
 		menu->addChild(dispColItem);
 		
