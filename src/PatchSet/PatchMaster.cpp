@@ -64,7 +64,7 @@ struct PatchMaster : Module {
 				
 		for (int tc = 0; tc < NUM_CTRL; tc++) {
 			configParam<MappedParamQuantity>(TILE_PARAMS + tc, 0.0f, 1.0f, 0.0f, string::f("Controller %i", tc + 1), "");// all params assumed to be normalized, if not, must update code in createTileChoiceMenuOne()
-			((MappedParamQuantity*)paramQuantities[TILE_PARAMS + tc])->paramHandleMapDest = &(tileConfigs[tc].parHandles[0]);
+			(static_cast<MappedParamQuantity*>(paramQuantities[TILE_PARAMS + tc]))->paramHandleMapDest = &(tileConfigs[tc].parHandles[0]);
 			for (int m = 0; m < 4; m++) {
 				tileConfigs[tc].parHandles[m].color = SCHEME_MM_BLUE_LOGO;
 				APP->engine->addParamHandle(&(tileConfigs[tc].parHandles[m]));
@@ -83,7 +83,7 @@ struct PatchMaster : Module {
 	}
 
   
-	void onReset() override {
+	void onReset() override final {
 		miscSettings.cc4[0] = 0x1;// show knob arcs
 		miscSettings.cc4[1] = 0x1;// show mapping lights
 		miscSettings.cc4[2] = 0x1;// 0 = eco mode off, 1 = eco level 1 (/4), 2 = eco level 2 (/128)
@@ -320,7 +320,7 @@ struct PatchMaster : Module {
 		json_t* mapsJ = json_object_get(rootJ, "maps");
 		if (mapsJ) {
 			json_t* mapJ;
-			size_t mapIndex;
+			size_t mapIndex = 0;
 			json_array_foreach(mapsJ, mapIndex, mapJ) {
 				json_t* moduleIdJ = json_object_get(mapJ, "moduleId");
 				json_t* paramIdJ = json_object_get(mapJ, "paramId");
@@ -332,8 +332,8 @@ struct PatchMaster : Module {
 				tileConfigs[mapIndex / 4].rangeMin[mapIndex % 4] = json_number_value(rangeMinJ);
 				int64_t moduleId = json_integer_value(moduleIdJ);
 				int paramId = json_integer_value(paramIdJ);
-				if (mapIndex >= NUM_CTRL * 4 || moduleId < 0)
-					continue;
+				// if (mapIndex >= (NUM_CTRL * 4) || moduleId < 0)
+					// continue;
 				APP->engine->updateParamHandle_NoLock(&(tileConfigs[mapIndex / 4].parHandles[mapIndex % 4]), moduleId, paramId, false);
 			}
 		}
@@ -563,7 +563,7 @@ struct PatchMaster : Module {
 		int paramId = paramHandle->paramId;
 		if (paramId >= (int) m->params.size())
 			return "";
-		ParamQuantity* paramQuantity = m->paramQuantities[paramId];
+		const ParamQuantity* paramQuantity = m->paramQuantities[paramId];
 		std::string s;
 		s += paramQuantity->name;
 		s += " (";
@@ -1082,7 +1082,7 @@ struct PmBgBase : SvgWidget {
 		int mapNumber = 0;
 		
 		void onAction(const event::Action &e) override {
-			module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
+			module->startMapping(tileNumber, mapNumber, static_cast<SvgWidget*>(tileBackgrounds[tileNumber]));
 			e.consume(this);// don't allow ctrl-click to keep menu open
 		}
 
@@ -1285,9 +1285,9 @@ struct PmBgBase : SvgWidget {
 	
 	void onButton(const event::Button &e) override {
 		int mods = APP->window->getMods();
-		bool isCtrl = tileNumber < NUM_CTRL;
 		
 		if (e.button == GLFW_MOUSE_BUTTON_RIGHT && e.action == GLFW_PRESS) {
+			bool isCtrl = tileNumber < NUM_CTRL;
 			// APP->event->setSelectedWidget(this);
 			ui::Menu *menu = createMenu();
 					
@@ -1459,7 +1459,7 @@ struct PmBgBase : SvgWidget {
 				}
 				else if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
 					int mapNumber = e.key - GLFW_KEY_1;
-					module->startMapping(tileNumber, mapNumber, (SvgWidget*)tileBackgrounds[tileNumber]);
+					module->startMapping(tileNumber, mapNumber, static_cast<SvgWidget*>(tileBackgrounds[tileNumber]));
 					e.consume(this);
 					return;
 				}
@@ -1711,7 +1711,7 @@ struct PatchMasterWidget : ModuleWidget {
 
 
 	void appendContextMenu(Menu *menu) override {
-		PatchMaster *module = (PatchMaster*)(this->module);
+		PatchMaster *module = static_cast<PatchMaster*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -1837,7 +1837,7 @@ struct PatchMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/pm-bg.svg")));
-		svgPanel = (SvgPanel*)getPanel();
+		svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 					
 		// logo
@@ -2133,13 +2133,13 @@ struct PatchMasterWidget : ModuleWidget {
 								addChild(tileControllerLights[t] = createLightCentered<PmSmallButtonLight>(mm2px(Vec(midX, y + getCtrlDy(sizeIndex))), module, PatchMaster::TILE_LIGHTS + t));
 							}
 							bool newIsMoment = isButtonParamMomentary(ti);
-							((SvgSwitch*)(tileControllers[t]))->momentary = newIsMoment;
+							(static_cast<SvgSwitch*>(tileControllers[t]))->momentary = newIsMoment;
 							if (module) {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->snapEnabled = true;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->randomizeEnabled = !newIsMoment;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->defaultValue = 0.0f;
 								module->params[PatchMaster::TILE_PARAMS + t].setValue((module->params[PatchMaster::TILE_PARAMS + t].getValue() >= 0.5f && !newIsMoment) ? 1.0f : 0.0f);
-								((PmCtrlLightWidget*)tileControllerLights[t])->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
+								(static_cast<PmCtrlLightWidget*>(tileControllerLights[t]))->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
 							}
 							radioTriggers[t].reset();
 						}
@@ -2160,9 +2160,9 @@ struct PatchMasterWidget : ModuleWidget {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->smoothEnabled = true;
 								float defVal = (ti & TI_TYPE_MASK) == TT_KNOB_C ? 0.5f : 0.0f;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->defaultValue = defVal;
-								((PmKnobWithArc*)tileControllers[t])->arcColor = &(module->tileSettings.settings[t].cc4[0]);
-								((PmKnobWithArc*)tileControllers[t])->showArc = &(module->miscSettings.cc4[0]);
-								((PmKnobWithArc*)tileControllers[t])->topCentered = ((ti & TI_TYPE_MASK) == TT_KNOB_C);
+								(static_cast<PmKnobWithArc*>(tileControllers[t]))->arcColor = &(module->tileSettings.settings[t].cc4[0]);
+								(static_cast<PmKnobWithArc*>(tileControllers[t]))->showArc = &(module->miscSettings.cc4[0]);
+								(static_cast<PmKnobWithArc*>(tileControllers[t]))->topCentered = ((ti & TI_TYPE_MASK) == TT_KNOB_C);
 							}
 						}
 						else if (isCtlrAFader(ti)) { 
@@ -2183,7 +2183,7 @@ struct PatchMasterWidget : ModuleWidget {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->smoothEnabled = true;
 								float defVal = (ti & TI_TYPE_MASK) == TT_FADER_C ? 0.5f : 0.0f;
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->defaultValue = defVal;
-								((PmSliderWithHighlight*)tileControllers[t])->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
+								(static_cast<PmSliderWithHighlight*>(tileControllers[t]))->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
 							}
 						}
 					}
@@ -2222,7 +2222,7 @@ struct PatchMasterWidget : ModuleWidget {
 		// tile moving overlays
 		if (module && highlightTileMoveSrc != -1) {
 			// source tile
-			int ts = ((PatchMaster*)module)->tileOrders.orders[highlightTileMoveSrc];
+			int ts = (static_cast<PatchMaster*>(module))->tileOrders.orders[highlightTileMoveSrc];
 			if (tileBackgrounds[ts]) {
 				nvgBeginPath(args.vg);
 				nvgRoundedRect(args.vg, tileBackgrounds[ts]->box.pos.x, tileBackgrounds[ts]->box.pos.y, tileBackgrounds[ts]->box.size.x, tileBackgrounds[ts]->box.size.y, 1.25f);
@@ -2232,7 +2232,7 @@ struct PatchMasterWidget : ModuleWidget {
 				
 				// destination tile
 				if (highlightTileMoveDest != -1 && highlightTileMoveDest != highlightTileMoveSrc) {
-					int td = ((PatchMaster*)module)->tileOrders.orders[highlightTileMoveDest];
+					int td = static_cast<PatchMaster*>(module)->tileOrders.orders[highlightTileMoveDest];
 					if (tileBackgrounds[td]) {
 						nvgStrokeWidth(args.vg, 1.5f);		
 						nvgStrokeColor(args.vg, SCHEME_MM_RED_LOGO);
@@ -2258,7 +2258,7 @@ struct PatchMasterWidget : ModuleWidget {
 
 	void step() override {
 		if (module) {
-			PatchMaster* module = (PatchMaster*)(this->module);
+			PatchMaster* module = static_cast<PatchMaster*>(this->module);
 			
 			// see if layout needs updating
 			bool needsLayoutUpdate = false;

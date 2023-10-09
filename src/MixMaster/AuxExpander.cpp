@@ -224,7 +224,7 @@ struct AuxExpander : Module {
 		onReset();
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		for (int i = 0; i < 4; i++) {
 			aux[i].onReset();
 			momentCvRetMuteLocal.cc4[i] = 1;
@@ -545,7 +545,7 @@ struct AuxExpander : Module {
 		
 		motherPresent = (leftExpander.module && leftExpander.module->model == (N_TRK == 16 ? modelMixMaster : modelMixMasterJr));
 		
-		AfmExpInterface *messagesFromMother = (AfmExpInterface*)leftExpander.consumerMessage;
+		AfmExpInterface *messagesFromMother = static_cast<AfmExpInterface*>(leftExpander.consumerMessage);
 		
 		if (refresh.processInputs()) {
 			processMuteSoloCvTriggers();
@@ -704,7 +704,7 @@ struct AuxExpander : Module {
 			// To Mother
 			// ***********
 			
-			MfaExpInterface *messagesToMother = (MfaExpInterface*)leftExpander.module->rightExpander.producerMessage;
+			MfaExpInterface *messagesToMother = static_cast<MfaExpInterface*>(leftExpander.module->rightExpander.producerMessage);
 			
 			messagesToMother->updateSlow = refresh.refreshCounter == 0;
 			if (messagesToMother->updateSlow) {
@@ -791,15 +791,15 @@ struct AuxExpander : Module {
 
 
 	void writeTrackParams(int trk, float* bufDest) {
-		for (int aux = 0; aux < 4; aux++) {
-			bufDest[aux] = params[TRACK_AUXSEND_PARAMS + (trk << 2) + aux].getValue();
+		for (int i = 0; i < 4; i++) {
+			bufDest[i] = params[TRACK_AUXSEND_PARAMS + (trk << 2) + i].getValue();
 		}
 		bufDest[4] = params[TRACK_AUXMUTE_PARAMS + trk].getValue();
 	}
 	
 	void readTrackParams(int trk, float* bufSrc) {
-		for (int aux = 0; aux < 4; aux++) {
-			params[TRACK_AUXSEND_PARAMS + (trk << 2) + aux].setValue(bufSrc[aux]);
+		for (int i = 0; i < 4; i++) {
+			params[TRACK_AUXSEND_PARAMS + (trk << 2) + i].setValue(bufSrc[i]);
 		}
 		params[TRACK_AUXMUTE_PARAMS + trk].setValue(bufSrc[4]);
 	}
@@ -881,32 +881,32 @@ struct AuxExpander : Module {
 		}
 		// return mutes and solos
 		if (inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].isConnected()) {
-			for (int aux = 0; aux < 4; aux++) {
+			for (int i = 0; i < 4; i++) {
 				// mutes
-				state = muteSoloCvTriggers[aux + (N_TRK + N_GRP)].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux));
+				state = muteSoloCvTriggers[i + (N_TRK + N_GRP)].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(i));
 				if (state != 0) {
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvRetMuteLocal.cc4[aux] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvRetMuteLocal.cc4[i] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
-							float newParam = 1.0f - params[GLOBAL_AUXMUTE_PARAMS + aux].getValue();// toggle
-							params[GLOBAL_AUXMUTE_PARAMS + aux].setValue(newParam);
+							float newParam = 1.0f - params[GLOBAL_AUXMUTE_PARAMS + i].getValue();// toggle
+							params[GLOBAL_AUXMUTE_PARAMS + i].setValue(newParam);
 						};
 					}
 					else {
-						params[GLOBAL_AUXMUTE_PARAMS + aux].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+						params[GLOBAL_AUXMUTE_PARAMS + i].setValue(state == 1 ? 1.0f : 0.0f);// gate level
 					}
 				}
 				
 				// solos
-				state = muteSoloCvTriggers[aux + (N_TRK + N_GRP) + 4].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(aux + 4));
+				state = muteSoloCvTriggers[i + (N_TRK + N_GRP) + 4].process(inputs[POLY_BUS_MUTE_SOLO_CV_INPUT].getVoltage(i + 4));
 				if (state != 0) {
-					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvRetSoloLocal.cc4[aux] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? momentCvRetSoloLocal.cc4[i] : directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
-							float newParam = 1.0f - params[GLOBAL_AUXSOLO_PARAMS + aux].getValue();// toggle
-							params[GLOBAL_AUXSOLO_PARAMS + aux].setValue(newParam);
+							float newParam = 1.0f - params[GLOBAL_AUXSOLO_PARAMS + i].getValue();// toggle
+							params[GLOBAL_AUXSOLO_PARAMS + i].setValue(newParam);
 						};
 					}
 					else {
-						params[GLOBAL_AUXSOLO_PARAMS + aux].setValue(state == 1 ? 1.0f : 0.0f);// gate level
+						params[GLOBAL_AUXSOLO_PARAMS + i].setValue(state == 1 ? 1.0f : 0.0f);// gate level
 					}
 				}
 				
@@ -980,7 +980,7 @@ struct AuxExpanderWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/auxspander.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 
 
@@ -1368,7 +1368,7 @@ struct AuxExpanderJrWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/auxspander-jr.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 
 

@@ -15,34 +15,34 @@ struct AuxspanderAux {
 	
 	// need to save, with reset
 	private:
-	float hpfCutoffFreq;// always use getter and setter since tied to Biquad
-	float lpfCutoffFreq;// always use getter and setter since tied to Biquad
+	float hpfCutoffFreq = 0.0f;// always use getter and setter since tied to Biquad
+	float lpfCutoffFreq = 0.0f;// always use getter and setter since tied to Biquad
 	public:
-	float stereoWidth;// 0 to 1.0f; 0 is mono, 1 is stereo
+	float stereoWidth = 0.0f;// 0 to 1.0f; 0 is mono, 1 is stereo
 
 	// no need to save, with reset
-	bool stereo;
+	bool stereo = false;
 	private:
 	ButterworthThirdOrder hpFilter[2];// 18dB/oct
 	ButterworthSecondOrder lpFilter[2];// 12db/oct
-	float sampleTime;
+	float sampleTime = 0.0f;
 	SlewLimiterSingle stereoWidthSlewer;
 	public:
 
 	// no need to save, no reset
-	int auxNum;
-	char *auxLabel;
+	int auxNum = 0;
+	char *auxLabel = nullptr;
 	std::string ids;
-	Input *inSig;
-	int8_t *vuColorThemeLocal;
-	int8_t *directOutsModeLocal;
-	int8_t *panLawStereoLocal;
-	int8_t *dispColorAuxLocal;
-	float *panCvLevel;
-	float *auxFadeRatesAndProfile;
-	Param *trackAuxSendParam;// all spaced out by 4, N_TRK of them
-	Param *groupAuxSendParam;// all spaced out by 4, N_GRP of them
-	Param *globalAuxParam;// all spaced out by 4: mute, solo, group, send, pan, return
+	Input *inSig = nullptr;
+	int8_t *vuColorThemeLocal = nullptr;
+	int8_t *directOutsModeLocal = nullptr;
+	int8_t *panLawStereoLocal = nullptr;
+	int8_t *dispColorAuxLocal = nullptr;
+	float *panCvLevel = nullptr;
+	float *auxFadeRatesAndProfile = nullptr;
+	Param *trackAuxSendParam = nullptr;// all spaced out by 4, N_TRK of them
+	Param *groupAuxSendParam = nullptr;// all spaced out by 4, N_GRP of them
+	Param *globalAuxParam = nullptr;// all spaced out by 4: mute, solo, group, send, pan, return
 	
 
 	void construct(int _auxNum, Input *_inputs, Param *_params, char* _auxLabel, int8_t *_vuColorThemeLocal, int8_t *_directOutsModeLocal, int8_t *_panLawStereoLocal, int8_t *_dispColorAuxLocal, float *_panCvLevel, float *_auxFadeRatesAndProfile) {

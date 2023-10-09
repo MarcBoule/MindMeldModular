@@ -73,7 +73,7 @@ struct PsBlueLight : GrayModuleLightWidget {
 };
 
 
-inline bool calcFamilyPresent(Module* expModule, bool includeBlank = true) {
+inline bool calcFamilyPresent(const Module* expModule, bool includeBlank = true) {
 	return (expModule && (
 			expModule->model == modelMasterChannel || 
 			expModule->model == modelPatchMaster || 

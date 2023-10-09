@@ -69,20 +69,20 @@ struct LPFCutoffParamQuantity : ParamQuantity {
 
 struct CvAndFadePointerBase : TransparentWidget {
 	// instantiator must setup:
-	Param *srcParam;// to know where the fader is
-	float *srcParamWithCV = NULL;// for cv pointer, NULL indicates when cv pointers are not used (no cases so far)
-	PackedBytes4* colorAndCloak;// cv pointers have same color as displays
-	float *srcFadeGain = NULL;// to know where to position the pointer, NULL indicates when fader pointers are not used (aux ret faders for example)
-	float *srcFadeRate;// mute when < minFadeRate, fade when >= minFadeRate
-	int8_t* dispColorLocalPtr;
+	Param *srcParam = nullptr;// to know where the fader is
+	float *srcParamWithCV = nullptr;// for cv pointer, NULL indicates when cv pointers are not used (no cases so far)
+	PackedBytes4* colorAndCloak = nullptr;// cv pointers have same color as displays
+	float *srcFadeGain = nullptr;// to know where to position the pointer, NULL indicates when fader pointers are not used (aux ret faders for example)
+	float *srcFadeRate = nullptr;// mute when < minFadeRate, fade when >= minFadeRate
+	int8_t* dispColorLocalPtr = nullptr;
 	
 	// derived class must setup:
 	// box.size // inherited from TransparentWidget, no need to declare
-	float faderMaxLinearGain;
-	int faderScalingExponent;
+	float faderMaxLinearGain = 0.0f;
+	int faderScalingExponent = 0;
 	
 	// local 
-	float maxTFader;
+	float maxTFader = 0.0f;
 
 	
 	void prepareMaxFader() {
@@ -182,10 +182,10 @@ struct CvAndFadePointerAuxRet : CvAndFadePointerBase {
 // --------------------
 
 struct TrackAndGroupLabel : LedDisplayChoice {
-	int8_t *trackOrGroupMomentCvSendMutePtr;
-	PackedBytes4* directOutPanStereoMomentCvLinearVol = NULL;
-	int8_t* dispColorPtr = NULL;
-	int8_t* dispColorLocalPtr;
+	int8_t *trackOrGroupMomentCvSendMutePtr = nullptr;
+	PackedBytes4* directOutPanStereoMomentCvLinearVol = nullptr;
+	int8_t* dispColorPtr = nullptr;
+	int8_t* dispColorLocalPtr = nullptr;
 	
 	TrackAndGroupLabel() {
 		box.size = mm2px(Vec(14.6f, 5.0f));
@@ -236,9 +236,9 @@ struct TrackAndGroupLabel : LedDisplayChoice {
 struct GroupSelectDisplay : ParamWidget {
 	LedDisplayChoice ldc;
 	int oldDispColor = -1;
-	PackedBytes4 *srcColor = NULL;
-	int8_t* srcColorLocal;
-	int numGroups;// N_GRP
+	PackedBytes4 *srcColor = nullptr;
+	int8_t* srcColorLocal = nullptr;
+	int numGroups = 0;// N_GRP
 	
 	GroupSelectDisplay() {
 		box.size = Vec(15, 16);
@@ -298,8 +298,8 @@ struct GroupSelectDisplay : ParamWidget {
 // --------------------
 
 struct MmGroupMinusButtonNotify : MmGroupMinusButtonNoParam {
-	Param* sourceParam = NULL;// param that is mapped to this
-	float numGroups;// (float)N_GRP
+	Param* sourceParam = nullptr;// param that is mapped to this
+	float numGroups = 0;// (float)N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		MmGroupMinusButtonNoParam::onChange(e);
@@ -314,8 +314,8 @@ struct MmGroupMinusButtonNotify : MmGroupMinusButtonNoParam {
 
 
 struct MmGroupPlusButtonNotify : MmGroupPlusButtonNoParam {
-	Param* sourceParam = NULL;// param that is mapped to this
-	int numGroups;// N_GRP
+	Param* sourceParam = nullptr;// param that is mapped to this
+	int numGroups = 0;// N_GRP
 	
 	void onChange(const event::Change &e) override {// called after value has changed
 		MmGroupPlusButtonNoParam::onChange(e);
@@ -336,7 +336,7 @@ static const NVGcolor muteFadeOnCols[2] = {nvgRGB(0xD4, 0x13, 0X08), nvgRGB(0xFF
 
 struct SvgSwitchDual : SvgSwitch {
 
-	float* type = NULL;// mute when < minFadeRate, fade when >= minFadeRate
+	float* type = nullptr;// mute when < minFadeRate, fade when >= minFadeRate
     float oldType = -1.0f;
 	std::vector<std::shared_ptr<Svg>> framesAll;
 	std::vector<std::string> frameAltNames;
@@ -424,8 +424,8 @@ struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 	int oldDispColor = -1;
 	
 	// user must setup
-	int8_t *dispColorGlobalSrc = NULL;
-	int8_t *dispColorLocalSrc;
+	int8_t *dispColorGlobalSrc = nullptr;
+	int8_t *dispColorLocalSrc = nullptr;
 	
 	
 	MmSmallKnobGreyWithArc() {
@@ -458,9 +458,9 @@ struct MmSmallKnobGreyWithArc : MmKnobWithArc {
 struct EditableDisplayBase : LedDisplayTextField {
 	int numChars = 4;
 	bool doubleClick = false;
-	Widget* tabNextFocus = NULL;
-	PackedBytes4* colorAndCloak = NULL;
-	int8_t* dispColorLocal;
+	Widget* tabNextFocus = nullptr;
+	PackedBytes4* colorAndCloak = nullptr;
+	int8_t* dispColorLocal = nullptr;
 
 	EditableDisplayBase() {
 		box.size = mm2px(Vec(12.0f, 5.0f));// svg is 10.6 wide
@@ -540,21 +540,21 @@ struct EditableDisplayBase : LedDisplayTextField {
 // --------------------
 
 struct MasterDisplay : EditableDisplayBase {
-	bool* dcBlock;
-	int* clipping;
-	float* fadeRate;
-	float* fadeProfile;
-	int8_t* vuColorThemeLocal;
-	PackedBytes4* directOutPanStereoMomentCvLinearVol;
-	int8_t* momentCvMuteLocal;
-	int8_t* momentCvDimLocal;
-	int8_t* momentCvMonoLocal;
-	int8_t* chainOnly;
-	float* dimGain;
-	char* masterLabel;
-	float* dimGainIntegerDB;
-	int64_t* idSrc;
-	int8_t* masterFaderScalesSendsSrc;
+	bool* dcBlock = nullptr;
+	int* clipping = nullptr;
+	float* fadeRate = nullptr;
+	float* fadeProfile = nullptr;
+	int8_t* vuColorThemeLocal = nullptr;
+	PackedBytes4* directOutPanStereoMomentCvLinearVol = nullptr;
+	int8_t* momentCvMuteLocal = nullptr;
+	int8_t* momentCvDimLocal = nullptr;
+	int8_t* momentCvMonoLocal = nullptr;
+	int8_t* chainOnly = nullptr;
+	float* dimGain = nullptr;
+	char* masterLabel = nullptr;
+	float* dimGainIntegerDB = nullptr;
+	int64_t* idSrc = nullptr;
+	int8_t* masterFaderScalesSendsSrc = nullptr;
 	
 	MasterDisplay() {
 		numChars = 6;
@@ -1123,7 +1123,7 @@ struct MmSoloButtonMutex : MmSoloButton {
 			else {
 				soloMutexUnclickMemorySize = -1;// nothing in soloMutexUnclickMemory
 				if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
-					ParamQuantity* paramQuantity = getParamQuantity();
+					const ParamQuantity* paramQuantity = getParamQuantity();
 					for (int i = 0; i < (numTracks + numGroups); i++) {
 						if (i != paramQuantity->paramId - baseSoloParamId) {
 							soloParams[i].setValue(0.0f);
@@ -1149,7 +1149,7 @@ struct MmMuteFadeButtonWithClear : MmMuteFadeButton {
 	void onButton(const event::Button &e) override {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
-				ParamQuantity* paramQuantity = getParamQuantity();
+				const ParamQuantity* paramQuantity = getParamQuantity();
 				for (int i = 0; i < (numTracksAndGroups); i++) {
 					if (i != paramQuantity->paramId - baseMuteParamId) {
 						muteParams[i].setValue(0.0f);
@@ -1173,7 +1173,7 @@ struct MmSmallFaderWithLink : MmSmallFader {
 	int baseFaderParamId;
 	
 	void onButton(const event::Button &e) override {
-		ParamQuantity* paramQuantity = getParamQuantity();
+		const ParamQuantity* paramQuantity = getParamQuantity();
 		int faderIndex = paramQuantity->paramId - baseFaderParamId;
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL) {
@@ -1192,7 +1192,7 @@ struct MmSmallFaderWithLink : MmSmallFader {
 
 	void drawLayer(const DrawArgs &args, int layer) override {
 		if (layer == 1) {
-			ParamQuantity* paramQuantity = getParamQuantity();
+			const ParamQuantity* paramQuantity = getParamQuantity();
 			if (paramQuantity) {
 				int faderIndex = paramQuantity->paramId - baseFaderParamId;
 				if (isLinked(linkBitMaskSrc, faderIndex)) {

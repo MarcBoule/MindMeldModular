@@ -55,7 +55,7 @@ struct AuxspanderInterchangeItem : MenuItem {
 
 
 void appendContextMenu(Menu *menu) override {		
-	TAuxExpander* module = (TAuxExpander*)(this->module);
+	TAuxExpander* module = static_cast<TAuxExpander*>(this->module);
 	assert(module);
 	
 	AuxspanderInterchangeItem *interchangeItem = createMenuItem<AuxspanderInterchangeItem>("AuxSpander swap", RIGHT_ARROW);
@@ -67,7 +67,7 @@ void appendContextMenu(Menu *menu) override {
 
 void step() override {
 	if (module) {
-		TAuxExpander* module = (TAuxExpander*)(this->module);
+		TAuxExpander* module = static_cast<TAuxExpander*>(this->module);
 		
 		// Labels (pull from module)
 		if (module->updateAuxLabelRequest != 0) {// pull request from module
@@ -90,7 +90,7 @@ void step() override {
 		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 			panelBorder->box.pos.x = -newSizeAdd;
 			panelBorder->box.size.x = (box.size.x + newSizeAdd);
-			SvgPanel* svgPanel = (SvgPanel*)getPanel();
+			SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 			svgPanel->fb->dirty = true;
 		}
 		

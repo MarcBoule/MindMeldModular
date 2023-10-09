@@ -124,21 +124,21 @@ struct McCore {
 	// none
 	
 	// need to save, with reset
-	bool dcBlock;
-	int clipping; // 0 is soft, 1 is hard (must be single ls bit)
-	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile; // exp when +1, lin when 0, log when -1
-	int8_t vuColorThemeLocal;
-	int8_t dispColorLocal;
-	int8_t momentCvMuteLocal;
-	int8_t momentCvDimLocal;
-	int8_t momentCvMonoLocal;
-	float dimGain;// slider uses this gain, but displays it in dB instead of linear
+	bool dcBlock = false;
+	int clipping = 0; // 0 is soft, 1 is hard (must be single ls bit)
+	float fadeRate = 0.0f; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float fadeProfile = 0.0f; // exp when +1, lin when 0, log when -1
+	int8_t vuColorThemeLocal = 0;
+	int8_t dispColorLocal = 0;
+	int8_t momentCvMuteLocal = 0;
+	int8_t momentCvDimLocal = 0;
+	int8_t momentCvMonoLocal = 0;
+	float dimGain = 0.0f;// slider uses this gain, but displays it in dB instead of linear
 	std::string masterLabel;
 	
 	// no need to save, with reset
 	private:
-	float mute;
+	float mute = 0.0f;
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	// float volCv;
 	public:
@@ -148,22 +148,22 @@ struct McCore {
 	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
-	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float target;// used detect button press (needed to reset fadeGainXr and VUs)
-	float fadeGainX;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
-	float fadeGainXr;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
-	float fadeGainScaled;
-	float paramWithCV;
-	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
+	float fadeGain = 0.0f; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float target = 0.0f;// used detect button press (needed to reset fadeGainXr and VUs)
+	float fadeGainX = 0.0f;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
+	float fadeGainXr = 0.0f;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
+	float fadeGainScaled = 0.0f;
+	float paramWithCV = 0.0f;
+	float dimGainIntegerDB = 0.0f;// corresponds to dimGain, converted to dB, then rounded, then back to linear
 
 	// no need to save, no reset
-	McGlobalInfo *gInfo;
-	Param *params;
+	McGlobalInfo *gInfo = nullptr;
+	Param *params = nullptr;
 
 	float calcFadeGain() {return params[McGlobalInfo::MAIN_MUTE_PARAM].getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return fadeRate >= GlobalConst::minFadeRate;}
 
-
+	
 	void construct(McGlobalInfo *_gInfo, Param *_params) {
 		gInfo = _gInfo;
 		params = _params;
@@ -520,7 +520,7 @@ struct MasterChannel : Module {
 		onReset();
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		gInfo.onReset();
 		master.onReset();
 		resetNonJson(false);
@@ -647,7 +647,7 @@ struct MasterChannelWidget : ModuleWidget {
 	
 	
 	void appendContextMenu(Menu *menu) override {
-		MasterChannel *module = (MasterChannel*)(this->module);
+		MasterChannel *module = static_cast<MasterChannel*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -705,7 +705,7 @@ struct MasterChannelWidget : ModuleWidget {
 
 		// Main panels from Inkscape
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/master-channel.svg")));
-		svgPanel = (SvgPanel*)getPanel();
+		svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 		static constexpr float midX = 25.4f / 2.0f;
 		
@@ -785,7 +785,7 @@ struct MasterChannelWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			MasterChannel* module = (MasterChannel*)(this->module);
+			MasterChannel* module = static_cast<MasterChannel*>(this->module);
 			
 			// Track labels (pull from module)
 			if (module->updateTrackLabelRequest != 0) {// pull request from module

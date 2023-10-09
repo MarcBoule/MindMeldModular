@@ -126,7 +126,7 @@ struct RouteMaster : Module {
 		onReset();
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		sel = 0;
 		name = defaultName;
 		for (int i = 0; i < MAX_NUM; i++) {
@@ -339,7 +339,7 @@ struct RouteMasterWidget : ModuleWidget {
 	
 	
 	void appendContextMenu(Menu *menu) override {
-		RouteMaster<INS, OUTS, WIDTH> *module = (RouteMaster<INS, OUTS, WIDTH>*)(this->module);
+		RouteMaster<INS, OUTS, WIDTH> *module = static_cast<RouteMaster<INS, OUTS, WIDTH>*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -399,7 +399,7 @@ struct RouteMasterWidget : ModuleWidget {
 				setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/RouteMaster5to1stereo.svg")));
 			}
 		}
-		svgPanel = (SvgPanel*)getPanel();
+		svgPanel = static_cast<SvgPanel*>(getPanel());
 
 		static constexpr float midX = (WIDTH == 1 ? 10.16f : 15.24f);
 		static constexpr float lofsx = 6.5f;// light offset x
@@ -490,7 +490,7 @@ struct RouteMasterWidget : ModuleWidget {
 
 	void step() override {
 		if (module) {
-			RouteMaster<INS, OUTS, WIDTH>* module = (RouteMaster<INS, OUTS, WIDTH>*)(this->module);
+			RouteMaster<INS, OUTS, WIDTH>* module = static_cast<RouteMaster<INS, OUTS, WIDTH>*>(this->module);
 			
 			// Update all labels at 1Hz (don't do port tooltips)
 			time_t currentTime = time(0);
@@ -501,7 +501,7 @@ struct RouteMasterWidget : ModuleWidget {
 					// allow get labels from mappings
 					for (int i = 0; i < MAX_NUM; i++) {
 						int paramId = RouteMaster<INS, OUTS, WIDTH>::SEL_PARAMS + i;
-						engine::ParamHandle* paramHandle = module ? APP->engine->getParamHandle(module->id, paramId) : NULL;
+						const ParamHandle* paramHandle = module ? APP->engine->getParamHandle(module->id, paramId) : NULL;
 						if (paramHandle) {
 							module->labels[i] = paramHandle->text;
 						}

@@ -1,3 +1,8 @@
+### 2.4.0 (in development)
+
+- Fix code warnings using Cppcheck
+
+
 ### 2.2.3 (2023-04-11)
 
 - Fix issue with Schmitt trigger
