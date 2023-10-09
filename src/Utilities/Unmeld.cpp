@@ -67,7 +67,7 @@ struct Unmeld : Module {
 		facePlate = 0;
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -163,7 +163,7 @@ struct UnmeldWidget : ModuleWidget {
 	PortWidget* pwPolyIn;
 		
 	void appendContextMenu(Menu *menu) override {
-		Unmeld *module = (Unmeld*)(this->module);
+		Unmeld *module = static_cast<Unmeld*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -205,15 +205,15 @@ struct UnmeldWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			Unmeld* unmeldModule = (Unmeld*)module;
+			Unmeld* unmeldModule = static_cast<Unmeld*>(module);
 			int facePlate = unmeldModule->facePlate;
 			
 			// test input cable to see where it's connected, if to a MM mixer/auxspander, then auto-set the faceplate
 			std::vector<CableWidget*> cablesOnPolyIn = APP->scene->rack->getCablesOnPort(pwPolyIn);
 			for (CableWidget* cw : cablesOnPolyIn) {
-				Cable* cable = cw->getCable();
+				const Cable* cable = cw->getCable();
 				if (cable) {
-					Module* srcModule = cable->outputModule;
+					const Module* srcModule = cable->outputModule;
 					if (srcModule) {
 						if (srcModule->model == modelMixMaster) {
 							if (cable->outputId >= 5 && cable->outputId <= 7) {
@@ -242,7 +242,7 @@ struct UnmeldWidget : ModuleWidget {
 				if (svgs[facePlate] == NULL) {
 					svgs[facePlate] = APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate]));
 				}
-				SvgPanel* panel = (SvgPanel*)getPanel();
+				SvgPanel* panel = static_cast<SvgPanel*>(getPanel());
 				panel->setBackground(svgs[facePlate]);
 				panel->fb->dirty = true;
 				

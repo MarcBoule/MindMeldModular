@@ -81,7 +81,7 @@ struct MSMelder : Module {
 		onReset();
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {

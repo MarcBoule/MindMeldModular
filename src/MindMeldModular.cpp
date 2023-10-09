@@ -125,7 +125,7 @@ void printNote(float cvVal, char* text, bool sharp) {// text must be at least 5 
 	// octave number
 	int octave = offsetScaledRounded / 12  -20 + 4;
 	if (octave >= 0 && octave <= 9) {
-		char octChar[2] = {((char)(octave % 10 + 0x30)), 0};
+		const char octChar[2] = {((char)(octave % 10 + 0x30)), 0};
 		strcat(text, octChar);
 	}
 	
@@ -201,7 +201,7 @@ std::string timeToString(float timeVal, bool lowPrecision) {
 }
 
 
-float stringToVoct(std::string* noteText) {
+float stringToVoct(const std::string* noteText) {
 	// returns -100.0f if parsing error
 
 	static const float whiteKeysVocts[7] = {9.0f/12.0f, 11.0f/12.0f, 0.0f, 2.0f/12.0f, 4.0f/12.0f, 5.0f/12.0f, 7.0f/12.0f};// A, B, C, D, E, F, G

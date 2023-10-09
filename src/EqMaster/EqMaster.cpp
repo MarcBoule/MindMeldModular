@@ -99,7 +99,7 @@ struct EqMaster : Module {
 	}
 	
 	float *allocateAndCalcWindowFunc() {
-		float *buf = (float*)pffft_aligned_malloc(FFT_N_2 * 4);
+		float *buf = static_cast<float*>(pffft_aligned_malloc(FFT_N_2 * 4));
 		for (unsigned int i = 0; i < (FFT_N_2 / 4); i++) {
 			simd::float_4 p = {(float)(i * 4 + 0), (float)(i * 4 + 1), (float)(i * 4 + 2), (float)(i * 4 + 3)};
 			p /= (float)(FFT_N - 1);
@@ -153,12 +153,12 @@ struct EqMaster : Module {
 		onReset();
 		
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
-		fftIn[0] = (float*)pffft_aligned_malloc(FFT_N * 4);
-		fftIn[1] = (float*)pffft_aligned_malloc(FFT_N * 4);
-		fftIn[2] = (float*)pffft_aligned_malloc(FFT_N * 4);
-		fftOut = (float*)pffft_aligned_malloc(FFT_N * 4);
-		drawBuf = (float*)pffft_aligned_malloc(FFT_N * 4);
-		drawBufLin = (float*)pffft_aligned_malloc(FFT_N_2 * 4);
+		fftIn[0] = static_cast<float*>(pffft_aligned_malloc(FFT_N * 4));
+		fftIn[1] = static_cast<float*>(pffft_aligned_malloc(FFT_N * 4));
+		fftIn[2] = static_cast<float*>(pffft_aligned_malloc(FFT_N * 4));
+		fftOut = static_cast<float*>(pffft_aligned_malloc(FFT_N * 4));
+		drawBuf = static_cast<float*>(pffft_aligned_malloc(FFT_N * 4));
+		drawBufLin = static_cast<float*>(pffft_aligned_malloc(FFT_N_2 * 4));
 		for (int i = 0; i < FFT_N_2; i++) {
 			drawBuf[i] = -1.0f;
 			drawBufLin[i] = 0.0f;
@@ -183,7 +183,7 @@ struct EqMaster : Module {
 		pffft_aligned_free(windowFunc);
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		mappedId = 0;
 		initTrackLabelsAndColors();
 		for (int t = 0; t < 24; t++) {
@@ -594,7 +594,7 @@ struct EqMaster : Module {
 				}
 			}
 			if (decayFactor != noDecay) {
-				for (int i = 0; i < compactedSize; i++) {
+				for (i = 0; i < compactedSize; i++) {
 					if (fftOut[i] > drawBufLin[i]) {
 						drawBufLin[i] = fftOut[i];
 					}
@@ -632,8 +632,8 @@ struct EqMaster : Module {
 		// From Eq-Expander
 		if (expPresentRight || expPresentLeft) {
 			MfeExpInterface *messagesFromExpander = expPresentRight ? // use only when expander present
-											(MfeExpInterface*)rightExpander.consumerMessage :
-											(MfeExpInterface*)leftExpander.consumerMessage;
+											static_cast<MfeExpInterface*>(rightExpander.consumerMessage) :
+											static_cast<MfeExpInterface*>(leftExpander.consumerMessage);
 			
 			// track band values
 			int index6 = clamp(messagesFromExpander->trackCvsIndex6, 0, 5);
@@ -668,7 +668,7 @@ struct EqMaster : Module {
 		for (int i = 0; i < 3; i++) {
 			if (inputs[SIG_INPUTS + i].isConnected()) {
 				for (int t = 0; t < 8; t++) {
-					float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
+					const float* in = inputs[SIG_INPUTS + i].getVoltages((t << 1) + 0);
 					float out[2];
 					bool globalEnable = params[GLOBAL_BYPASS_PARAM].getValue() < 0.5f;
 					trackEqs[(i << 3) + t].process(out, in, globalEnable);
@@ -836,7 +836,7 @@ struct EqMasterWidget : ModuleWidget {
 	// --------------------
 
 	void appendContextMenu(Menu *menu) override {		
-		EqMaster* module = (EqMaster*)(this->module);
+		EqMaster* module = static_cast<EqMaster*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -885,7 +885,7 @@ struct EqMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/eqmaster.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 		
 		
@@ -1086,7 +1086,7 @@ struct EqMasterWidget : ModuleWidget {
 	}
 	
 	void step() override {
-		EqMaster* module = (EqMaster*)(this->module);
+		EqMaster* module = static_cast<EqMaster*>(this->module);
 		if (module) {
 			int trk = module->getSelectedTrack();			
 	
@@ -1228,7 +1228,7 @@ struct EqMasterWidget : ModuleWidget {
 			if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 				panelBorder->box.pos.x = (newSizeAdd == 3 ? -3 : 0);
 				panelBorder->box.size.x = (box.size.x + newSizeAdd);
-				SvgPanel* svgPanel = (SvgPanel*)getPanel();
+				SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 				svgPanel->fb->dirty = true;
 			}
 		}

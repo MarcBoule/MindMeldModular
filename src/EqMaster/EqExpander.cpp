@@ -53,7 +53,7 @@ struct EqExpander : Module {
 	}
   
   
-	void onReset() override {
+	void onReset() override final {
 		resetNonJson();
 	}
 	void resetNonJson() {
@@ -92,8 +92,8 @@ struct EqExpander : Module {
 			// ***********
 			
 			MfeExpInterface *messagesToMother =  motherPresentLeft ? 
-										(MfeExpInterface*)leftExpander.module->rightExpander.producerMessage :
-										(MfeExpInterface*)rightExpander.module->leftExpander.producerMessage;
+										static_cast<MfeExpInterface*>(leftExpander.module->rightExpander.producerMessage) :
+										static_cast<MfeExpInterface*>(rightExpander.module->leftExpander.producerMessage);
 			
 			messagesToMother->trackCvsIndex6 = refreshCounter6;
 			messagesToMother->trackEnableIndex = refreshCounter25;
@@ -147,7 +147,7 @@ struct EqExpanderWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/EqSpander.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 		
 		addInput(createInputCentered<MmPortGold>(mm2px(Vec(12.87f, 17.75f)), module, EqExpander::ACTIVE_CV_INPUTS + 0));		
@@ -170,7 +170,7 @@ struct EqExpanderWidget : ModuleWidget {
 
 	void step() override {
 		if (module) {
-			EqExpander* module = (EqExpander*)this->module;
+			const EqExpander* module = static_cast<EqExpander*>(this->module);
 	
 			// Borders			
 			int newSizeAdd = 0;
@@ -183,7 +183,7 @@ struct EqExpanderWidget : ModuleWidget {
 			if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 				panelBorder->box.pos.x = (newSizeAdd == 3 ? -3 : 0);
 				panelBorder->box.size.x = (box.size.x + newSizeAdd);
-				SvgPanel* svgPanel = (SvgPanel*)getPanel();
+				SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 				svgPanel->fb->dirty = true;
 			}
 		}

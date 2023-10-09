@@ -17,13 +17,13 @@
 // --------------------
 
 struct TrackLabel : LedDisplayChoice {
-	int8_t *trackLabelColorsSrc = NULL;
-	int8_t *bandLabelColorsSrc;
-	int64_t *mappedId;
-	char *trackLabelsSrc;
-	Param *trackParamSrc;
-	TrackEq *trackEqsSrc;
-	int* updateTrackLabelRequestSrc = NULL;
+	int8_t *trackLabelColorsSrc = nullptr;
+	int8_t *bandLabelColorsSrc = nullptr;
+	int64_t *mappedId = nullptr;
+	char *trackLabelsSrc = nullptr;
+	Param *trackParamSrc = nullptr;
+	TrackEq *trackEqsSrc = nullptr;
+	int* updateTrackLabelRequestSrc = nullptr;
 
 	TrackLabel() {
 		box.size = mm2px(Vec(10.6f, 5.0f));
@@ -106,11 +106,11 @@ struct BandLabelBase : widget::OpaqueWidget {
 	// This struct is adapted from Rack's LedDisplayChoice in app/LedDisplay.{c,h}pp
 
 	// user must set up
-	int8_t* bandLabelColorsSrc = NULL;
-	Param* trackParamSrc = NULL;
-	TrackEq *trackEqsSrc;
-	int band;
-	int8_t *showFreqAsNotesSrc;// used by freq labels only (derived class)
+	int8_t* bandLabelColorsSrc = nullptr;
+	Param* trackParamSrc = nullptr;
+	TrackEq *trackEqsSrc = nullptr;
+	int band = 0;
+	int8_t *showFreqAsNotesSrc = nullptr;// used by freq labels only (derived class)
 	
 	// local
 	std::string text;
@@ -452,10 +452,10 @@ struct ShowBandCurvesButtons : OpaqueWidget {
 
 struct BigNumbersEq : TransparentWidget {
 	// user must set up
-	Param* trackParamSrc = NULL;
-	TrackEq* trackEqsSrc;
-	int* lastMovedKnobIdSrc;
-	time_t* lastMovedKnobTimeSrc;
+	Param* trackParamSrc = nullptr;
+	TrackEq* trackEqsSrc = nullptr;
+	int* lastMovedKnobIdSrc = nullptr;
+	time_t* lastMovedKnobTimeSrc = nullptr;
 	
 	
 	// local
@@ -528,28 +528,28 @@ struct EqCurveAndGrid : TransparentWidget {
 	static constexpr float minDb = -20.0f;
 	static constexpr float maxDb = 20.0f;
 	static const int numDrawSteps = 200;
-	float stepLogFreqs[numDrawSteps + 4 + 1];// 4 for cursors, 1 since will loop with "<= numDrawSteps"
+	float stepLogFreqs[numDrawSteps + 4 + 1] = {};// 4 for cursors, 1 since will loop with "<= numDrawSteps"
 	simd::float_4 stepDbs[numDrawSteps + 4 + 1];// 4 for cursors, 1 since will loop with "<= numDrawSteps"
 	
 	// user must set up
-	Param *trackParamSrc = NULL;
-	TrackEq *trackEqsSrc;
-	PackedBytes4 *miscSettingsSrc;
-	PackedBytes4 *miscSettings2Src;
-	Param *globalBypassParamSrc;
-	simd::float_4 *bandParamsWithCvs;// [0] = freq, [1] = gain, [2] = q
-	bool *bandParamsCvConnected;
-	float *drawBuf;// store log magnitude only in first half, log freq in second half
-	int *drawBufSize;
-	int* lastMovedKnobIdSrc;
-	time_t* lastMovedKnobTimeSrc;
+	Param *trackParamSrc = nullptr;
+	TrackEq *trackEqsSrc = nullptr;
+	PackedBytes4 *miscSettingsSrc = nullptr;
+	PackedBytes4 *miscSettings2Src = nullptr;
+	Param *globalBypassParamSrc = nullptr;
+	simd::float_4 *bandParamsWithCvs = nullptr;// [0] = freq, [1] = gain, [2] = q
+	bool *bandParamsCvConnected = nullptr;
+	float *drawBuf = nullptr;// store log magnitude only in first half, log freq in second half
+	int *drawBufSize = nullptr;
+	int* lastMovedKnobIdSrc = nullptr;
+	time_t* lastMovedKnobTimeSrc = nullptr;
 	
 	// internal
 	QuattroBiQuadCoeff drawEq;
 	std::shared_ptr<Font> font;
 	std::string fontPath;
-	float sampleRate;// use only in scope of it being set in draw()
-	int currTrk;// use only in scope of it being set in draw()
+	float sampleRate = 0.0f;// use only in scope of it being set in draw()
+	int currTrk = 0;// use only in scope of it being set in draw()
 	NVGcolor bandColors[4] = {nvgRGB(146, 32, 22), nvgRGB(0, 155, 137), nvgRGB(50, 99, 148),nvgRGB(111, 81, 113)};
 		
 	
@@ -877,18 +877,18 @@ struct TrackKnob : MmBigKnobWhite {
 	static constexpr float dotSize = 1.1f;
 
 	// user must setup:
-	int* updateTrackLabelRequestSrc = NULL;
-	TrackEq* trackEqsSrc;
-	Input* polyInputs;
+	int* updateTrackLabelRequestSrc = nullptr;
+	TrackEq* trackEqsSrc = nullptr;
+	Input* polyInputs = nullptr;
 	
 	// internal
 	int refresh;// 0 to 23
 	int numTracks;// typically 24
 	Vec cVec;
 	float totAng;
-	float px[24];
-	float py[24];
-	bool nonDefaultState[24];
+	float px[24] = {};
+	float py[24] = {};
+	bool nonDefaultState[24] = {};
 	
 	
 	TrackKnob() {
@@ -973,13 +973,13 @@ struct TrackGainKnob : Mm8mmKnobGrayWithArcTopCentered {
 
 struct BandKnob : MmKnobWithArc {
 	// user must setup 
-	Param* trackParamSrc;
-	TrackEq* trackEqsSrc = NULL;
-	int* lastMovedKnobIdSrc;
-	time_t* lastMovedKnobTimeSrc;
+	Param* trackParamSrc = nullptr;
+	TrackEq* trackEqsSrc = nullptr;
+	int* lastMovedKnobIdSrc = nullptr;
+	time_t* lastMovedKnobTimeSrc = nullptr;
 	
 	// auto setup 
-	int band;
+	int band = 0;
 	
 	
 	void loadGraphics(int _band) {
@@ -1007,7 +1007,7 @@ struct BandKnob : MmKnobWithArc {
 	
 	void onDragMove(const event::DragMove& e) override {
 		MmKnobWithArc::onDragMove(e);
-		ParamQuantity* paramQuantity = getParamQuantity();
+		const ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			*lastMovedKnobIdSrc = paramQuantity->paramId;
 			*lastMovedKnobTimeSrc = time(0);
@@ -1084,9 +1084,9 @@ struct ActiveSwitch : MmSwitch {
 };
 
 struct BandSwitch : SvgSwitchWithHalo {
-	Param* trackParamSrc;
-	Param* freqActiveParamsSrc;
-	TrackEq* trackEqsSrc;
+	Param* trackParamSrc = nullptr;
+	Param* freqActiveParamsSrc = nullptr;
+	TrackEq* trackEqsSrc = nullptr;
 	float preSoloStates[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 	int soloedBand = -1;
 
@@ -1131,7 +1131,7 @@ struct BandActiveSwitch : BandSwitch {
 		if (e.button == GLFW_MOUSE_BUTTON_LEFT && e.action == GLFW_PRESS) {
 			if ((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 				// solo
-				if ((soloedBand == -1) || (soloedBand != -1 && soloedBand != BAND)) {// entering solo
+				if (soloedBand != BAND) {// entering solo
 					soloedBand = BAND;
 					for (int b = 0; b < 4; b++) {// save all states, turn on selected band and turn off all other bands
 						preSoloStates[b] = freqActiveParamsSrc[b].getValue();
@@ -1160,9 +1160,9 @@ struct BandActiveSwitch : BandSwitch {
 };
 
 struct PeakShelfBase : app::SvgSwitch {
-	Param* trackParamSrc;
-	TrackEq* trackEqsSrc;
-	bool isLF;
+	Param* trackParamSrc = nullptr;
+	TrackEq* trackEqsSrc = nullptr;
+	bool isLF = false;
 };
 struct PeakSwitch : PeakShelfBase {
 	PeakSwitch() {

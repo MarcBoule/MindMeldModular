@@ -20,11 +20,11 @@ class QuattroBiQuadCoeff {
 	protected: 
 	
 	// coefficients
-	simd::float_4 b0;
-	simd::float_4 b1;
-	simd::float_4 b2;
-	simd::float_4 a1;
-	simd::float_4 a2;
+	simd::float_4 b0 = simd::float_4(0.0f);
+	simd::float_4 b1 = simd::float_4(0.0f);
+	simd::float_4 b2 = simd::float_4(0.0f);
+	simd::float_4 a1 = simd::float_4(0.0f);
+	simd::float_4 a2 = simd::float_4(0.0f);
 	
 	
 	public: 
@@ -37,7 +37,7 @@ class QuattroBiQuadCoeff {
 	};
 	
 	
-	void setParameters(int i, Type type, float nfc, float V, float Q) {
+	virtual void setParameters(int i, Type type, float nfc, float V, float Q) {
 		// i: eq index (0 to 3),
 		// type: type of filter/eq
 		// nfc: normalized cutoff frequency (fc/sampleRate)
@@ -139,7 +139,7 @@ class QuattroBiQuadCoeff {
 		aSum[0] += a2 * z[0];
 		aSum[1] += a2 * z[1];
 		
-		simd::float_4 num[2] = {bSum[0] * aSum[0] +	bSum[1] * aSum[1],  bSum[1] * aSum[0] - bSum[0] * aSum[1]};
+		const simd::float_4 num[2] = {bSum[0] * aSum[0] +	bSum[1] * aSum[1],  bSum[1] * aSum[0] - bSum[0] * aSum[1]};
 		simd::float_4 denom = aSum[0] * aSum[0] + aSum[1] * aSum[1];
 		simd::float_4 norm = simd::hypot(num[0] / denom,  num[1] / denom);
 		return 20.0f * simd::log10(norm);// return in dB
@@ -152,16 +152,16 @@ class QuattroBiQuadCoeff {
 class QuattroBiQuad : public QuattroBiQuadCoeff {
 	
 	// input/output shift registers
-	simd::float_4 x0L, x0R;// input is x0[0]
-	simd::float_4 x1L, x1R;
-	simd::float_4 x2L, x2R;
-	simd::float_4 y0L, y0R;// output is y0[3]
-	simd::float_4 y1L, y1R;
-	simd::float_4 y2L, y2R;
+	simd::float_4 x0L = simd::float_4(0.0f), x0R = simd::float_4(0.0f);// input is x0[0]
+	simd::float_4 x1L = simd::float_4(0.0f), x1R = simd::float_4(0.0f);
+	simd::float_4 x2L = simd::float_4(0.0f), x2R = simd::float_4(0.0f);
+	simd::float_4 y0L = simd::float_4(0.0f), y0R = simd::float_4(0.0f);// output is y0[3]
+	simd::float_4 y1L = simd::float_4(0.0f), y1R = simd::float_4(0.0f);
+	simd::float_4 y2L = simd::float_4(0.0f), y2R = simd::float_4(0.0f);
 	
 	// other
-	bool optResetDone;
-	int8_t gainsDifferentThanOne; // 4 ls bits are bool bits, when all zero, can bypass y0 math
+	bool optResetDone = false;
+	int8_t gainsDifferentThanOne = 0; // 4 ls bits are bool bits, when all zero, can bypass y0 math
 	
 	
 	public:
@@ -185,7 +185,7 @@ class QuattroBiQuad : public QuattroBiQuadCoeff {
 	}
 	
 	
-	void setParameters(int i, Type type, float f, float V, float Q) {
+	void setParameters(int i, Type type, float f, float V, float Q) override {
 		// type: type of filter/eq
 		// i: eq index (0 to 3),
 		// f: normalized frequency (fc/sampleRate)
@@ -201,7 +201,7 @@ class QuattroBiQuad : public QuattroBiQuadCoeff {
 	}
 	
 
-	void process(float* out, float* in) {
+	void process(float* out, const float* in) {
 		if (gainsDifferentThanOne == 0) {
 			if (!optResetDone) {
 				x2L = 0.0f;

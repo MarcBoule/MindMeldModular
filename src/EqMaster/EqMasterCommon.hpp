@@ -71,17 +71,17 @@ static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);
 class TrackEq {
 	static constexpr float antipopSlewLogHz = 8.0f;// calibrated to properly slew a log(Hz) float in the rough range 1.3f to 4.3f (but less since freq knobs not full spectrum)
 	static constexpr float antipopSlewDb = 200.0f;// calibrated to properly slew a dB float in the range -20.0f to 20.0f for antipop
-	int trackNum;
-	float sampleRate;
-	float sampleTime;
-	uint32_t *cvConnected;
+	int trackNum = 0;
+	float sampleRate = 0.0f;
+	float sampleTime = 0.0f;
+	uint32_t *cvConnected = nullptr;
 	
 	// automatically managed internally by member functions
 	int dirty;// 4 bits, one for each band (automatically managed by member methods, no need to handle in init() and copyFrom())
 	QuattroBiQuad::Type bandTypes[4]; // only [0] and [3] are dependants, [1] and [2] are set to their permanent values in init()
 	
 	// need saving
-	bool trackActive;
+	bool trackActive = false;
 	simd::float_4 bandActive;// 0.0f or 1.0f values: frequency band's eq is active, one for LF, LMF, HMF, HF
 	simd::float_4 freq;// in log(Hz) to match params, converted to scaled linear freq before pushing params to eq
 	simd::float_4 gain;// in dB to match params, is converted to linear before pushing params to eqs
@@ -115,6 +115,7 @@ class TrackEq {
 		bandTypes[1] = QuattroBiQuad::PEAK;
 		bandTypes[2] = QuattroBiQuad::PEAK;
 		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first init() will call setLowPeak()
+		trackGain = 0.0f;
 		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
 		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
 		trackGainSlewer.setRiseFall(antipopSlewDb);
@@ -291,7 +292,7 @@ class TrackEq {
 		if (trackGain != DEFAULT_trackGain) return true;
 		return false;
 	}
-	void process(float* out, float* in, bool globalEnable) {
+	void process(float* out, const float* in, bool globalEnable) {
 		bool _cvConnected = getCvConnected();
 		
 		// freq slewers with freq cvs

@@ -114,7 +114,7 @@ struct BassMaster : Module {
 		onReset();
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		params[SLOPE_PARAM].setValue(DEFAULT_SLOPE);// need this since no wigdet exists
 		miscSettings.cc4[0] = 0;// display label colours
 		miscSettings.cc4[1] = 0;// polyStereo
@@ -381,7 +381,7 @@ struct BassMasterWidget : ModuleWidget {
 	};
 	
 	void appendContextMenu(Menu *menu) override {		
-		BassMaster<IS_JR>* module = (BassMaster<IS_JR>*)(this->module);
+		BassMaster<IS_JR>* module = static_cast<BassMaster<IS_JR>*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -421,7 +421,7 @@ struct BassMasterWidget : ModuleWidget {
 		else {
 			setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/BassMasterSnr.svg")));
 		}
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
  
 		// crossover knob
 		addParam(createParamCentered<MmBiggerKnobWhite>(mm2px(Vec(15.24, 22.98)), module, BassMaster<IS_JR>::CROSSOVER_PARAM));
@@ -528,7 +528,7 @@ struct BassMasterWidget : ModuleWidget {
 	}
 	
 	void step() override {
-		BassMaster<IS_JR>* module = (BassMaster<IS_JR>*)(this->module);
+		BassMaster<IS_JR>* module = static_cast<BassMaster<IS_JR>*>(this->module);
 		if (module) {
 			bassMasterLabels[0]->text = string::f("%.1f",   math::normalizeZero(module->crossover));
 			bassMasterLabels[1]->text = string::f("%.1f",   math::normalizeZero(module->params[BassMaster<IS_JR>::HIGH_WIDTH_PARAM].getValue() * 100.0f));

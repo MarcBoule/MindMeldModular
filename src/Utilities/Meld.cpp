@@ -95,7 +95,7 @@ struct Meld : Module {
 		onReset();
 	}
   
-	void onReset() override {
+	void onReset() override final {
 		for (int trk = 0; trk < 8; trk++) {
 			bypassState[trk] = 0;
 		}
@@ -317,7 +317,7 @@ struct MeldWidget : ModuleWidget {
 	};
 
 	void appendContextMenu(Menu *menu) override {
-		Meld *module = (Meld*)(this->module);
+		Meld *module = static_cast<Meld*>(this->module);
 		assert(module);
 
 		menu->addChild(new MenuSeparator());
@@ -375,15 +375,15 @@ struct MeldWidget : ModuleWidget {
 	
 	void step() override {
 		if (module) {
-			Meld* meldModule = (Meld*)module;
+			Meld* meldModule = static_cast<Meld*>(module);
 			int facePlate = meldModule->facePlate;
 			
 			// test output cable to see where it's connected, if to a MM mixer/auxspander, then auto-set the faceplate
 			std::vector<CableWidget*> cablesOnPolyOut = APP->scene->rack->getCablesOnPort(pwPolyOut);
 			for (CableWidget* cw : cablesOnPolyOut) {
-				Cable* cable = cw->getCable();
+				const Cable* cable = cw->getCable();
 				if (cable) {
-					Module* destModule = cable->inputModule;
+					const Module* destModule = cable->inputModule;
 					if (destModule) {
 						if (destModule->model == modelMixMaster) {
 							if (cable->inputId >= 74 && cable->inputId <= 76) {
@@ -443,7 +443,7 @@ struct MeldWidget : ModuleWidget {
 				if (svgs[facePlate] == NULL) {
 					svgs[facePlate] = APP->window->loadSvg(asset::plugin(pluginInstance, facePlateFileNames[facePlate]));
 				}
-				SvgPanel* panel = (SvgPanel*)getPanel();
+				SvgPanel* panel = static_cast<SvgPanel*>(getPanel());
 				panel->setBackground(svgs[facePlate]);
 				panel->fb->dirty = true;
 				

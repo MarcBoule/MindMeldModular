@@ -24,14 +24,14 @@ struct MessageBase {
 
 struct MixerMessage : MessageBase {
 	// GUI elements:
-	bool isJr;
-	char trkGrpAuxLabels[(16 + 4 + 4) * 4];
-	int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
-	int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
+	bool isJr = false;
+	char trkGrpAuxLabels[(16 + 4 + 4) * 4] = {};
+	int8_t vuColors[1 + 16 + 4 + 4] = {};// room for global, tracks, groups, aux
+	int8_t dispColors[1 + 16 + 4 + 4] = {};// room for global, tracks, groups, aux
 	// Track move elements:
 	union tmU {
 		int8_t tmSep[4];// 0 is has move (0=no, 1=yes), 1 is src, 2 is dest, 3 is rotating tag (0 to 15, 15 being arbitrary choice)
-		int32_t tmTot;
+		int32_t tmTot = 0;
 	};
 	tmU tm;
 };
@@ -42,7 +42,7 @@ struct MixerMessageBus {
 	std::unordered_map<int64_t, MixerMessage> memberData;// first value is a "Module::id + 1" (so that 0 = deregistered, instead of -1)
 
 
-	void send(int64_t id, char* masterLabel, char* trackLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors, bool doTrackMoveInit) {
+	void send(int64_t id, const char* masterLabel, const char* trackLabels, const char* auxLabels, const int8_t *_vuColors, const int8_t *_dispColors, bool doTrackMoveInit) {
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
@@ -61,7 +61,7 @@ struct MixerMessageBus {
 			memberData[id].tm.tmTot = 0;
 		}
 	}
-	void sendJr(int64_t id, char* masterLabel, char* trackLabels, char* groupLabels, char* auxLabels, int8_t *_vuColors, int8_t *_dispColors, bool doTrackMoveInit) {// does not write to tracks 9-16 and groups 3-4 when jr.
+	void sendJr(int64_t id, const char* masterLabel, const char* trackLabels, const char* groupLabels, const char* auxLabels, const int8_t *_vuColors, const int8_t *_dispColors, bool doTrackMoveInit) {// does not write to tracks 9-16 and groups 3-4 when jr.
 		std::lock_guard<std::mutex> lock(memberMutex);
 		memberData[id].id = id;
 		memcpy(memberData[id].name, masterLabel, 6);
