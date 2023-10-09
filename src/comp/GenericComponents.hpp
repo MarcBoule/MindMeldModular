@@ -357,15 +357,15 @@ struct MmKnobWithArc : MmKnob {
 	static constexpr float TOP_ANGLE = 3.0f * float(M_PI) / 2.0f;
 
 	// derived class must setup
-	NVGcolor arcColor;
+	NVGcolor arcColor = nvgRGB(0, 0, 0);
 	bool topCentered = false;
 	bool rightWhenNottopCentered = false;
 
 	// user must setup
-	float *paramWithCV = NULL;
-	bool *paramCvConnected;
-	int8_t *detailsShowSrc;
-	int8_t *cloakedModeSrc;
+	float *paramWithCV = nullptr;
+	bool *paramCvConnected = nullptr;
+	int8_t *detailsShowSrc = nullptr;
+	int8_t *cloakedModeSrc = nullptr;
 
 	
 	void drawArc(const DrawArgs &args, float a0, float a1, NVGcolor* color);

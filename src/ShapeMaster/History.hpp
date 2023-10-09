@@ -22,7 +22,7 @@ struct ShapeMaster;
 
 
 struct RunChange : ModuleAction {
-	ShapeMaster* shapeMasterSrc;
+	ShapeMaster* shapeMasterSrc = nullptr;
 	void undo() override;
 	void redo() override;
 	RunChange() {
@@ -32,9 +32,9 @@ struct RunChange : ModuleAction {
 
 
 struct ChannelNumChange : ModuleAction {
-	int* currChanSrc;
-	int oldChanNum;
-	int newChanNum;
+	int* currChanSrc = nullptr;
+	int oldChanNum = 0;
+	int newChanNum = 0;
 	void undo() override;
 	void redo() override;
 	ChannelNumChange() {
@@ -51,9 +51,9 @@ class Channel;
 
 
 struct TrigModeChange : ModuleAction {
-	Channel* channelSrc;
-	int8_t oldTrigMode;
-	int8_t newTrigMode;
+	Channel* channelSrc = nullptr;
+	int8_t oldTrigMode = 0;
+	int8_t newTrigMode = 0;
 	void undo() override;
 	void redo() override;
 	TrigModeChange() {
@@ -63,9 +63,9 @@ struct TrigModeChange : ModuleAction {
 
 
 struct PlayModeChange : ModuleAction {
-	Channel* channelSrc;
-	int8_t oldPlayMode;
-	int8_t newPlayMode;
+	Channel* channelSrc = nullptr;
+	int8_t oldPlayMode = 0;
+	int8_t newPlayMode = 0;
 	void undo() override;
 	void redo() override;
 	PlayModeChange() {
@@ -75,9 +75,9 @@ struct PlayModeChange : ModuleAction {
 
 
 struct BipolCvModeChange : ModuleAction {
-	Channel* channelSrc;
-	int8_t oldBipolCvMode;
-	int8_t newBipolCvMode;
+	Channel* channelSrc = nullptr;
+	int8_t oldBipolCvMode = 0;
+	int8_t newBipolCvMode = 0;
 	void undo() override;
 	void redo() override;
 	BipolCvModeChange() {
@@ -87,9 +87,9 @@ struct BipolCvModeChange : ModuleAction {
 
 
 struct SyncLengthChange : ModuleAction {
-	Param* lengthSyncParamSrc;
-	float oldSyncLength;
-	float newSyncLength;
+	Param* lengthSyncParamSrc = nullptr;
+	float oldSyncLength = 0.0f;
+	float newSyncLength = 0.0f;
 	void undo() override;
 	void redo() override;
 	SyncLengthChange() {
@@ -98,9 +98,9 @@ struct SyncLengthChange : ModuleAction {
 };
 
 struct UnsyncLengthChange : ModuleAction {
-	Param* lengthUnsyncParamSrc;
-	float oldUnsyncLength;
-	float newUnsyncLength;
+	Param* lengthUnsyncParamSrc = nullptr;
+	float oldUnsyncLength = 0.0f;
+	float newUnsyncLength = 0.0f;
 	void undo() override;
 	void redo() override;
 	UnsyncLengthChange() {
@@ -110,9 +110,9 @@ struct UnsyncLengthChange : ModuleAction {
 
 
 struct GridXChange : ModuleAction {
-	Channel* channelSrc;
-	uint8_t oldGridX;
-	uint8_t newGridX;
+	Channel* channelSrc = nullptr;
+	uint8_t oldGridX = 0;
+	uint8_t newGridX = 0;
 	void undo() override;
 	void redo() override;
 	GridXChange() {
@@ -122,9 +122,9 @@ struct GridXChange : ModuleAction {
 
 
 struct RangeIndexChange : ModuleAction {
-	Channel* channelSrc;
-	int8_t oldRangeIndex;
-	int8_t newRangeIndex;
+	Channel* channelSrc = nullptr;
+	int8_t oldRangeIndex = 0;
+	int8_t newRangeIndex = 0;
 	void undo() override;
 	void redo() override;
 	RangeIndexChange() {
@@ -134,9 +134,9 @@ struct RangeIndexChange : ModuleAction {
 
 
 struct ChannelChange : ModuleAction {
-	Channel* channelSrc;
-	json_t* oldJson;
-	json_t* newJson;
+	Channel* channelSrc = nullptr;
+	json_t* oldJson = nullptr;
+	json_t* newJson = nullptr;
 	void undo() override;
 	void redo() override;
 	ChannelChange() {
@@ -157,23 +157,23 @@ class Shape;
 
 
 struct ShapeCompleteChange : ModuleAction {
-	Shape* shapeSrc;
-	Shape* oldShape;
-	Shape* newShape;
+	Shape* shapeSrc = nullptr;
+	Shape* oldShape = nullptr;
+	Shape* newShape = nullptr;
 	void undo() override;
 	void redo() override;
 	ShapeCompleteChange() {
 		name = "change shape";// provisional
-		oldShape = NULL;
-		newShape = NULL;
+		oldShape = nullptr;
+		newShape = nullptr;
 	}
 	~ShapeCompleteChange();
 };
 
 
 struct InvertOrReverseChange : ModuleAction {
-	Shape* shapeSrc;
-	bool isReverse;
+	Shape* shapeSrc = nullptr;
+	bool isReverse = false;
 	void undo() override;
 	void redo() override;
 	InvertOrReverseChange() {
@@ -183,9 +183,9 @@ struct InvertOrReverseChange : ModuleAction {
 
 
 struct InsertPointChange : ModuleAction {
-	Shape* shapeSrc;
+	Shape* shapeSrc = nullptr;
 	Vec newPointVec;
-	int newPt;
+	int newPt = 0;
 	void undo() override;
 	void redo() override;
 	InsertPointChange() {
@@ -194,11 +194,11 @@ struct InsertPointChange : ModuleAction {
 };
 
 struct DeletePointChange : ModuleAction {
-	Shape* shapeSrc;
+	Shape* shapeSrc = nullptr;
 	Vec oldPointVec;
-	float oldCtrl;
-	int8_t oldType;
-	int oldPt;
+	float oldCtrl = 0.0f;
+	int8_t oldType = 0;
+	int oldPt = 0;
 	void undo() override;
 	void redo() override;
 	DeletePointChange() {
@@ -208,12 +208,12 @@ struct DeletePointChange : ModuleAction {
 
 
 struct TypeAndCtrlChange : ModuleAction {
-	Shape* shapeSrc;
-	int pt;
-	float oldCtrl;
-	int8_t oldType;
-	float newCtrl;
-	int8_t newType;
+	Shape* shapeSrc = nullptr;
+	int pt = 0;
+	float oldCtrl = 0.0f;
+	int8_t oldType = 0;
+	float newCtrl = 0.0f;
+	int8_t newType = 0;
 	void undo() override;
 	void redo() override;
 	TypeAndCtrlChange() {
@@ -231,10 +231,10 @@ enum DragMiscChangeIds {DM_POINT, DM_CTRL, DM_LOOP};
 
 struct DragMiscChange : ModuleAction {
 	// not all dragTypes use all fields below
-	Channel* channelSrc;
-	Shape* shapeSrc;
-	int dragType;
-	int pt;
+	Channel* channelSrc = nullptr;
+	Shape* shapeSrc = nullptr;
+	int dragType = 0;
+	int pt = 0;
 	Vec oldVec;	
 	Vec newVec;	
 	void undo() override;
@@ -246,12 +246,12 @@ struct DragMiscChange : ModuleAction {
 
 
 struct PresetOrShapeChange : ModuleAction {
-	bool isPreset;
+	bool isPreset = false;
 	// not all dragTypes use all fields below
-	Channel* channelSrc;
-	Shape* shapeSrc;
-	json_t* oldJson;
-	json_t* newJson;
+	Channel* channelSrc = nullptr;
+	Shape* shapeSrc = nullptr;
+	json_t* oldJson = nullptr;
+	json_t* newJson = nullptr;
 	void undo() override;
 	void redo() override;
 	PresetOrShapeChange() {
@@ -265,10 +265,10 @@ struct PresetOrShapeChange : ModuleAction {
 
 
 struct PresetOrShapeLoad : ModuleAction {
-	bool isPreset;
-	Channel* channelSrc;
-	json_t* oldJson;
-	json_t* newJson;
+	bool isPreset = false;
+	Channel* channelSrc = nullptr;
+	json_t* oldJson = nullptr;
+	json_t* newJson = nullptr;
 	std::string oldShapePath;
 	std::string newShapePath;
 	void undo() override;

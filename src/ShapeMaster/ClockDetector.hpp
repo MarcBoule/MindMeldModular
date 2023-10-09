@@ -26,13 +26,18 @@ class ClockDetector {
 	float sampleRate;
 	double sampleTime;
 	int32_t clockCount;// timestamp for each clock edge (0 is not an actual registered clock edge but does represent implicit edge when run is turned on)
+	int32_t clockSampleTotal;
 	int32_t clockSampleMem[CLOCK_MEM_MAX];
 	int clockSampleMemHead;
-	int32_t clockSampleTotal;
 	bool clockEdgeDetected;
 	
 	
 	public:
+	
+	
+	ClockDetector() {
+		onReset();
+	}
 	
 	void onReset() {
 		ppqn = 48;

@@ -12,10 +12,10 @@
 
 
 class ButterworthSecondOrder {
-	float b[3];// coefficients b0, b1 and b2
-	float a[3 - 1];// coefficients a1 and a2
-	float x[3 - 1];
-	float y[3 - 1];
+	float b[3] = {};// coefficients b0, b1 and b2
+	float a[3 - 1] = {};// coefficients a1 and a2
+	float x[3 - 1] = {};
+	float y[3 - 1] = {};
 	float midCoef = float(M_SQRT2);
 	
 	public:

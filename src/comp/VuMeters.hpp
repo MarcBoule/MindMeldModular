@@ -53,10 +53,10 @@ struct VuMeterAllDual {
 		// return std::sqrt(vuValues[VU_RMS_L + chan]);
 	// }
 	
-	static float getPeak(float *srcLevelsPtr, int chan) {
+	static float getPeak(const float *srcLevelsPtr, int chan) {
 		return srcLevelsPtr[VU_PEAK_L + chan];
 	}
-	static float getRms(float *srcLevelsPtr, int chan) {
+	static float getRms(const float *srcLevelsPtr, int chan) {
 		return std::sqrt(srcLevelsPtr[VU_RMS_L + chan]);
 	}
 };
@@ -113,24 +113,24 @@ struct VuMeterBase : OpaqueWidget {
 
 	
 	// instantiator must setup:
-	float *srcLevels;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
-	float *srcMuteGhost = NULL;// when this is non-null and 0.0f, we should switch to gray (ghost) color
-	int8_t *colorThemeGlobal;
-	int8_t *colorThemeLocal;
+	float *srcLevels = nullptr;// from 0 to 10 V, with 10 V = 0dB (since -10 to 10 is the max)
+	float *srcMuteGhost = nullptr;// when this is non-null and 0.0f, we should switch to gray (ghost) color
+	int8_t *colorThemeGlobal = nullptr;
+	int8_t *colorThemeLocal = nullptr;
 	
 	// derived class must setup:
-	float gapX;// in px
-	float barX;// in px
-	float barY;// in px
+	float gapX = 0.0f;// in px
+	float barX = 0.0f;// in px
+	float barY = 0.0f;// in px
 	// box.size // inherited from OpaqueWidget, no need to declare
-	int8_t* isMasterTypeSrc = NULL;// no need to setup when track-type only
+	int8_t* isMasterTypeSrc = nullptr;// no need to setup when track-type only
 	
 	// local 
 	float peakHold[2] = {0.0f, 0.0f};
 	double holdTimeRemainBeforeReset = 0.0;
-	float yellowThreshold;// in px, before vertical inversion
-	float redThreshold;// in px, before vertical inversion
-	int colorTheme;
+	float yellowThreshold = 0.0f;// in px, before vertical inversion
+	float redThreshold = 0.0f;// in px, before vertical inversion
+	int colorTheme = 0;
 	float hardRedVoltage = 10.0f;
 
 	
@@ -174,7 +174,7 @@ struct VuMeterTrack : VuMeterBase {//
 // --------------------
 
 struct VuMeterMaster : VuMeterBase {
-	int* clippingPtr;
+	int* clippingPtr = nullptr;
 	int oldClipping = 1;
 	int8_t isMasterType = 1;
 	
@@ -216,8 +216,8 @@ struct VuMeterAux : VuMeterTrack {//
 };
 
 struct VuMeterEq : VuMeterTrack {
-	int8_t* trackVuColorsSrc = NULL;
-	Param* trackParamSrc;
+	int8_t* trackVuColorsSrc = nullptr;
+	Param* trackParamSrc = nullptr;
 
 	void setColor() override {
 		if (trackVuColorsSrc) {
@@ -228,7 +228,7 @@ struct VuMeterEq : VuMeterTrack {
 };
 
 struct VuMeterBassMono : VuMeterTrack {
-	int8_t* bassVuColorsSrc = NULL;
+	int8_t* bassVuColorsSrc = nullptr;
 
 	void setColor() override {
 		if (bassVuColorsSrc) {

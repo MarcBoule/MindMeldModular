@@ -49,19 +49,19 @@ struct ShapeMaster : Module {
 	// none
 
 	// Need to save, with reset
-	bool running;
+	bool running = false;
 	ClockDetector clockDetector;
 	PackedBytes4 miscSettings;
 	PackedBytes4 miscSettings2;
 	PackedBytes4 miscSettings3;
 	RandomSettings randomSettings;
-	float lineWidth;
+	float lineWidth = 0.0f;
 	Channel channels[8];
-	int currChan;
+	int currChan = 0;
 
 
 	// No need to save, with reset
-	long clockIgnoreOnReset;
+	long clockIgnoreOnReset = 0;
 	ScopeBuffers scopeBuffers;
 	
 	// No need to save, no reset
@@ -71,13 +71,12 @@ struct ShapeMaster : Module {
 	float resetLight = 0.0f;
 	bool expPresentLeft = false;
 	bool expPresentRight = false;
-	uint32_t sosEosEoc;// always set up in this.process(), and channel/playhead should only use in process() scope
+	uint32_t sosEosEoc = 0;// always set up in this.process(), and channel/playhead should only use in process() scope
 	dsp::SchmittTrigger runTrigger;
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger resetTrigger;
 	PresetAndShapeManager presetAndShapeManager;
 	Channel channelDirtyCache;
-	// json_t* channelCopyPasteCache = NULL;
 	Param channelDirtyCacheParams[NUM_CHAN_PARAMS] = {};
 
 
@@ -128,14 +127,14 @@ struct ShapeMaster : Module {
 
 struct ShapeMasterWidget : ModuleWidget {
 	int oldVisibleChannel = 0;// corresponds to what constructor will show
-	SmKnob* smKnobs[8][NUM_KNOB_PARAMS];// index [0][0] is chan 0 length knob synced, index [0][1] is chan 0 length knob unsync
-	SvgSwitch* smButtons[8][NUM_BUTTON_PARAMS];// index [0][0] is chan 0 play, index [0][1] is chan 0 freeze
-	PresetOrShapeArrowButton* arrowButtons[8][NUM_ARROW_PARAMS];
+	SmKnob* smKnobs[8][NUM_KNOB_PARAMS] = {};// index [0][0] is chan 0 length knob synced, index [0][1] is chan 0 length knob unsync
+	SvgSwitch* smButtons[8][NUM_BUTTON_PARAMS] = {};// index [0][0] is chan 0 play, index [0][1] is chan 0 freeze
+	PresetOrShapeArrowButton* arrowButtons[8][NUM_ARROW_PARAMS] = {};
 	DisplayInfo displayInfo;
 	bool presetOrShapeDirty = false;
 	bool unsupportedSync = false;
 	int stepDivider = 0;
-	PanelBorder* panelBorder;
+	PanelBorder* panelBorder = nullptr;
 
 
 	void appendContextMenu(Menu *menu) override;

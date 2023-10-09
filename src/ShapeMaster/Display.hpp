@@ -21,16 +21,16 @@ struct ShapeMasterDisplayLight : TransparentWidget {
 	static const int SHAPE_PTS = 300;// shadow memory, divide into this many segments
 	
 	// user must set up
-	int* currChan = NULL;
-	Channel* channels;
-	DisplayInfo* displayInfo;
-	PackedBytes4 *settingSrc;// cc4[2] is scope settings, cc4[3] is show points
-	PackedBytes4 *setting2Src;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
-	PackedBytes4 *setting3Src;// cc4[2] is cloaked
-	float* lineWidthSrc;
-	int* dragPtSelect;// from ShapeMasterDisplay
-	int* hoverPtSelect;// from ShapeMasterDisplay
-	ScopeBuffers* scopeBuffers;	
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
+	DisplayInfo* displayInfo = nullptr;
+	PackedBytes4 *settingSrc = nullptr;// cc4[2] is scope settings, cc4[3] is show points
+	PackedBytes4 *setting2Src = nullptr;// cc4[0] is global inverted shadow, [2] is show channel names, [3] is point tooltip
+	PackedBytes4 *setting3Src = nullptr;// cc4[2] is cloaked
+	float* lineWidthSrc = nullptr;
+	int* dragPtSelect = nullptr;// from ShapeMasterDisplay
+	int* hoverPtSelect = nullptr;// from ShapeMasterDisplay
+	ScopeBuffers* scopeBuffers = nullptr;	
 	
 
 	// internal
@@ -38,9 +38,9 @@ struct ShapeMasterDisplayLight : TransparentWidget {
 	Vec canvas;
 	std::shared_ptr<Font> font;
 	std::string fontPath;
-	float shaY[SHAPE_PTS + 1];// points of the shadow curve, with an extra element for last end point
-	int numGridXmajorX;
-	float gridXmajorX[16];
+	float shaY[SHAPE_PTS + 1] = {};// points of the shadow curve, with an extra element for last end point
+	int numGridXmajorX = 0;
+	float gridXmajorX[16] = {};
 
 
 	ShapeMasterDisplayLight() {
@@ -122,28 +122,28 @@ struct ShapeMasterDisplay : OpaqueWidget {
 	static constexpr float LOOP_GRAB_X = 3.0f;
 	
 	// user must set up
-	int* currChan = NULL;
-	Channel* channels;
-	float* lineWidthSrc;
-	float* shaY;// from ShapeMasterDisplayLight
-	PackedBytes4 *setting3Src;// cc4[2] is cloaked
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
+	float* lineWidthSrc = nullptr;
+	float* shaY = nullptr;// from ShapeMasterDisplayLight
+	PackedBytes4 *setting3Src = nullptr;// cc4[2] is cloaked
 	
 	// internal
-	float dragStartPosY;// used only when dragging control points
+	float dragStartPosY = 0.0f;// used only when dragging control points
 	Vec onButtonPos;// used only for onDoubleClick() and onDragStart()
-	ShapeCompleteChange* dragHistoryStep = NULL;
-	DragMiscChange* dragHistoryMisc = NULL;
+	ShapeCompleteChange* dragHistoryStep = nullptr;
+	DragMiscChange* dragHistoryMisc = nullptr;
 	int dragPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when dragging normal point, [-MAX_PTS:-1] when dragging ctrl point
 	int altSelect = 0;// alternate select 0=none, 1=loopEndAndSustain, 2=loopStart, this is only used when dragPtSelect == MAX_PTS; if other altSelects are added, review code since != 0 currently assumes 1 or 2 
 	int hoverPtSelect = MAX_PTS;// MAX_PTS when none, [0:MAX_PTS-1] when hovering normal point, [-MAX_PTS:-1] when hovering ctrl point
 	float loopSnapTargetCV = -1.0f;// used only when altSelect != 0;
 	int matchPtExtraGp = 0;// used in matchPtExtra() as a memory for its guess point;
 	int mouseStepGp = 0;// used in onDragMove() to improve guess point; using hoverPtMouse is not perfect (not synced when move mouse fast)
-	float onButtonOrigCtrl;// only used when hoverPtSelect < 0
+	float onButtonOrigCtrl = 0.0f;// only used when hoverPtSelect < 0
 	Vec margins;
 	Vec canvas;
-	float grabX;
-	float grabY;
+	float grabX = 0.0f;
+	float grabY = 0.0f;
 
 
 	ShapeMasterDisplay() {

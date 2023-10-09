@@ -12,8 +12,8 @@
 class FirstOrderCoefficients {
 	protected: 
 
-	float b[2];// coefficients b0, b1
-	float a;// coefficient a1
+	float b[2] = {};// coefficients b0, b1
+	float a = 0.0f;// coefficient a1
 	
 	
 	public: 
@@ -41,7 +41,10 @@ class FirstOrderFilter : public FirstOrderCoefficients {
 	float y;
 	
 	public: 
-		
+	
+	FirstOrderFilter() {
+		reset();
+	}
 	void reset() {
 		x = 0.0f;
 		y = 0.0f;
@@ -61,6 +64,9 @@ class FirstOrderStereoFilter : public FirstOrderCoefficients {
 	
 	public: 
 		
+	FirstOrderStereoFilter() {
+		reset();
+	}
 	void reset() {
 		x[0] = 0.0f;
 		x[1] = 0.0f;
@@ -68,7 +74,7 @@ class FirstOrderStereoFilter : public FirstOrderCoefficients {
 		y[1] = 0.0f;
 	}
 	
-	void process(float* out, float* in) {
+	void process(float* out, const float* in) {
 		y[0] = b[0] * in[0] + b[1] * x[0] - a * y[0];
 		y[1] = b[0] * in[1] + b[1] * x[1] - a * y[1];
 		x[0] = in[0];

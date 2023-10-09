@@ -366,7 +366,7 @@ void Shape::copyShapeTo(Shape* destShape) {
 }
 
 
-void Shape::pasteShapeFrom(Shape* srcShape) {
+void Shape::pasteShapeFrom(const Shape* srcShape) {
 	lockShapeBlocking();
 	memcpy(points, srcShape->points, sizeof(Vec) * srcShape->numPts);
 	memcpy(ctrl, srcShape->ctrl, sizeof(float) * srcShape->numPts);
@@ -442,7 +442,7 @@ void Shape::invertShape() {
 }
 
 
-float calcRandCv(RandomSettings* randomSettings, float restCv, int rangeValue) {
+float calcRandCv(const RandomSettings* randomSettings, float restCv, int rangeValue) {
 	// return restCv when zeroV's random decides it
 	float zeroOrMaxTestRnd = random::uniform() * 100.0f;
 	if (zeroOrMaxTestRnd < randomSettings->zeroV) {
@@ -464,7 +464,7 @@ float calcRandCv(RandomSettings* randomSettings, float restCv, int rangeValue) {
 		scale = 0xFFF;
 	}
 	
-	int8_t packedScaleNotes[12];// contains numbers from 0 to 11, but only those that are part of the chosen scale
+	int8_t packedScaleNotes[12] = {};// contains numbers from 0 to 11, but only those that are part of the chosen scale
 	int numPackedScaleNotes = 0;
 	for (int i = 0; i < 12; i++) {
 		if (((scale >> i) & 0x1) != 0) {
@@ -487,7 +487,7 @@ struct SegmentPair {
 	int16_t isStep;
 };
 
-void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast) {
+void Shape::randomizeShape(const RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast) {
 	if (randomSettings->deltaMode != 0) {
 		// delta mode randomization (aka vertical randomization)
 		std::vector<SegmentPair> ptSeg;
@@ -731,7 +731,7 @@ void Shape::randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t
 }
 
 
-bool Shape::isDirty(Shape* refShape) {
+bool Shape::isDirty(const Shape* refShape) {
 	if (numPts != refShape->numPts) {
 		return true;
 	}

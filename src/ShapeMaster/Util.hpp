@@ -74,8 +74,8 @@ enum SmOutputIds {
 
 struct TrigExpInterface {
 	// start of sustain, end of sustain, end of cycle
-	uint32_t sosEosEoc;// 31:24 is exclude eoc from OR [7..0]; 23:0 is [SOS_7..SOS_0; EOS_7..EOS_0; EOC_7..EOC_0] 
-	// exlusion must be valid anytime an EOC bit is set
+	uint32_t sosEosEoc = 0;// 31:24 is exclude eoc from OR [7..0]; 23:0 is [SOS_7..SOS_0; EOS_7..EOS_0; EOC_7..EOC_0] 
+	// exclusion must be valid anytime an EOC bit is set
 };
 
 
@@ -88,6 +88,21 @@ struct ChanCvs {
 	
 	uint16_t trigs;// [0]: chan reset, [1-2]: prev-next preset, [3-4]: prev-next shape, [5-6]: play rise-fall, [7-8] freeze rise-fall [9-11]: rev inv rand
 	uint16_t info;// [0]: hasWarpPhasRespAmnt, [1]: hasXoverSlew, [2]: hasOffsetSwingLoops, [3]: has length unsync, [4]: has length sync
+	
+	ChanCvs() {
+		clearall();
+	}
+	
+	void clearall() {
+		warpPhasRespAmnt = 0.0f;
+		xoverSlew = 0.0f;
+		offsetSwingLoops = 0.0f;
+		lengthUnsync = 0.0f;
+		lengthSync = 0.0f;
+		
+		trigs = 0;
+		info = 0;		
+	}
 	
 	
 	// Setters
@@ -215,7 +230,13 @@ struct ChanCvs {
 
 
 struct CvExpInterface {
-	ChanCvs chanCvs[8];
+	ChanCvs chanCvs[8] = {};
+	
+	void clearall() {
+		for (int i = 0; i < 8; i++) {
+			chanCvs[i].clearall();
+		}
+	}
 };
 
 

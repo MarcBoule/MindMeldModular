@@ -48,8 +48,8 @@ void Bjorklund::iter(){
     reverse(sequence.begin(), sequence.end());
     
     //position correction. some of result of algorithm is one step rotated.
-    int zeroCount =0;
     if(sequence.at(0) != 1) {
+		int zeroCount =0;
         do {
             zeroCount ++;
         } while(sequence.at(zeroCount) == 0);

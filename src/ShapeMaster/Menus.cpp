@@ -61,7 +61,7 @@ void createBackgroundMenu(ui::Menu* menu, Shape* shape, Vec normPos) {
 // Normal point menus
 // --------------------
 
-void captureNewTime(std::string* text, Channel* channel, int pt, float length) {
+void captureNewTime(const std::string* text, Channel* channel, int pt, float length) {
 	Shape* shape = channel->getShape();
 	Vec ptVec = shape->getPointVect(pt);
 	if (channel->getTrigMode() == TM_CV) {
@@ -89,7 +89,7 @@ void captureNewTime(std::string* text, Channel* channel, int pt, float length) {
 	}
 }
 
-void captureNewVolts(std::string* text, Channel* channel, int pt) {
+void captureNewVolts(const std::string* text, Channel* channel, int pt) {
 	Shape* shape = channel->getShape();
 	Vec ptVec = shape->getPointVect(pt);
 	float newVolts;
@@ -709,7 +709,7 @@ struct ChanNameField : ui::TextField {
 	}
 };
 
-void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, bool* running) {
+void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, const PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, bool* running) {
 	ChanNameField* chanNameField = new ChanNameField;
 	chanNameField->box.size.x = 100;
 	chanNameField->setChannel(&(channels[chan]));

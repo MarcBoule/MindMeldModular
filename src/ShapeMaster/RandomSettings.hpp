@@ -34,6 +34,10 @@ struct RandomSettings {
 	int8_t quantized;
 	int8_t deltaMode;
 	
+	RandomSettings() {
+		reset();
+	}
+	
 	void reset() {
 		numNodesMin = RAND_NODES_MIN_DEF;
 		numNodesMax = RAND_NODES_MAX_DEF;
@@ -110,7 +114,7 @@ struct RandomSettings {
 		if (deltaModeJ) deltaMode = json_integer_value(deltaModeJ);
 	}
 	
-	bool isDirty(RandomSettings* refRand) {
+	bool isDirty(const RandomSettings* refRand) {
 		if (std::round(numNodesMin) != std::round(refRand->numNodesMin)) return true;// float value with decimals, but meaning is int
 		if (std::round(numNodesMax) != std::round(refRand->numNodesMax)) return true;// float value with decimals, but meaning is int
 		if (std::round(ctrlMax * 10.0f) != std::round(refRand->ctrlMax * 10.0f)) return true;// percent comparison to one decimal

@@ -15,14 +15,11 @@ class Bjorklund{
 
 	public:
 
-	Bjorklund(){};
-	
-	~Bjorklund(){
-		remainder.clear();
-		count.clear();
-		sequence.clear();
+	Bjorklund() {
+		lengthOfSeq = 0;
+		pulseAmt = 0;
 	};
-
+	
 	void init(int step, int pulse);
 	
 	void print();

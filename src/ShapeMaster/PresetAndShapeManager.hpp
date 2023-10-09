@@ -30,18 +30,18 @@ class PresetAndShapeManager {
 	// general
 	std::vector<std::string> factoryPresetVector;
 	std::vector<std::string> factoryShapeVector;
-	Channel* channels;
-	Channel* channelDirtyCacheSrc;
+	Channel* channels = nullptr;
+	Channel* channelDirtyCacheSrc =  nullptr;
 	
 	// worker
 	int workType[8] = {};// this value is not used
-	bool withHistory[8];
+	bool withHistory[8] = {};
 	int8_t requestWork[8] = {};
 	std::condition_variable cv;// https://thispointer.com//c11-multithreading-part-7-condition-variables-explained/
 	std::mutex mtx;
 	std::thread worker;// http://www.cplusplus.com/reference/thread/thread/thread/
 	bool requestStop = false;
-	Context* context;
+	Context* context = nullptr;
 		
 	// other
 	PackedBytes4* miscSettings3;

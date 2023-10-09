@@ -55,7 +55,7 @@ void VuMeterBase::drawLayer(const DrawArgs &args, int layer) {
 		
 		setColor();
 		
-		if (isMasterTypeSrc != NULL && *isMasterTypeSrc == 1) {
+		if (isMasterTypeSrc != nullptr && *isMasterTypeSrc == 1) {
 			// PEAK
 			drawVuMaster(args, VuMeterAllDual::getPeak(srcLevels, 0), 0, 0);
 			drawVuMaster(args, VuMeterAllDual::getPeak(srcLevels, 1), barX + gapX, 0);
@@ -97,7 +97,7 @@ void VuMeterBase::drawVu(const DrawArgs &args, float vuValue, float posX, int co
 		vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 		vuHeight *= barY;
 
-		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
+		bool ghostMuteOn = (srcMuteGhost != nullptr && *srcMuteGhost == 0.0f);
 		NVGcolor colTop = ghostMuteOn ? VU_GRAY_TOP[colorIndex] : VU_THEMES_TOP[colorTheme][colorIndex];
 		NVGcolor colBot = ghostMuteOn ? VU_GRAY_BOT[colorIndex] : VU_THEMES_BOT[colorTheme][colorIndex];
 		NVGpaint gradGreen = nvgLinearGradient(args.vg, 0, barY - redThreshold, 0, barY, colTop, colBot);
@@ -135,7 +135,7 @@ void VuMeterBase::drawPeakHold(const DrawArgs &args, float holdValue, float posX
 		vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 		vuHeight *= barY;
 		
-		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
+		bool ghostMuteOn = (srcMuteGhost != nullptr && *srcMuteGhost == 0.0f);
 		if (vuHeight >= redThreshold) {
 			// Yellow-Red gradient
 			NVGcolor colTopRed = ghostMuteOn ? VU_GRAY_TOP[1] : VU_RED[1];
@@ -177,7 +177,7 @@ void VuMeterBase::drawVuMaster(const DrawArgs &args, float vuValue, float posX, 
 		vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 		vuHeight *= barY;
 		
-		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
+		bool ghostMuteOn = (srcMuteGhost != nullptr && *srcMuteGhost == 0.0f);
 		float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
 		if (vuHeight >= redThreshold) holdTimeRemainBeforeReset = 2.0;// in seconds
 		if (!ghostMuteOn && (vuHeight >= redThreshold || peakHoldVal >= hardRedVoltage)) {
@@ -230,7 +230,7 @@ void VuMeterBase::drawPeakHoldMaster(const DrawArgs &args, float holdValue, floa
 		vuHeight = std::min(vuHeight, 1.0f);// normalized is now clamped
 		vuHeight *= barY;
 		
-		bool ghostMuteOn = (srcMuteGhost != NULL && *srcMuteGhost == 0.0f);
+		bool ghostMuteOn = (srcMuteGhost != nullptr && *srcMuteGhost == 0.0f);
 		float peakHoldVal = (posX == 0 ? peakHold[0] : peakHold[1]);
 		if (!ghostMuteOn && (vuHeight >= redThreshold || peakHoldVal >= hardRedVoltage)) {
 			// Full red

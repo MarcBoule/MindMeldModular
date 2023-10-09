@@ -424,15 +424,15 @@ class Shape {
 	
 	void copyShapeTo(Shape* destShape);
 
-	void pasteShapeFrom(Shape* srcShape);
+	void pasteShapeFrom(const Shape* srcShape);
 	
 	void reverseShape();
 	
 	void invertShape();
 	
-	void randomizeShape(RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast);
+	void randomizeShape(const RandomSettings* randomSettings, uint8_t gridX, int8_t rangeIndex, bool decoupledFirstLast);
 	
-	bool isDirty(Shape* refShape);
+	bool isDirty(const Shape* refShape);
 };
 
 

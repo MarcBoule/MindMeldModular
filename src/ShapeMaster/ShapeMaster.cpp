@@ -195,7 +195,7 @@ void ShapeMaster::process(const ProcessArgs &args) {
 	#ifdef SM_PRO
 	expPresentRight = (rightExpander.module && rightExpander.module->model == modelShapeMasterTriggerExpander);
 	expPresentLeft = (leftExpander.module && leftExpander.module->model == modelShapeMasterCvExpander);	
-	CvExpInterface *cvExp = expPresentLeft ? (CvExpInterface*)leftExpander.consumerMessage : NULL;
+	CvExpInterface *cvExp = expPresentLeft ? static_cast<CvExpInterface*>(leftExpander.consumerMessage) : NULL;
 	#include "../Pro1.hpp"
 	#else
 	expPresentRight = false;
@@ -279,7 +279,7 @@ void ShapeMaster::process(const ProcessArgs &args) {
 	// To Trig Expander
 	#ifdef SM_PRO
 	if (rightExpander.module && rightExpander.module->model == modelShapeMasterTriggerExpander) {
-		TrigExpInterface* messagesToExpander = (TrigExpInterface*)(rightExpander.module->leftExpander.producerMessage);
+		TrigExpInterface* messagesToExpander = static_cast<TrigExpInterface*>(rightExpander.module->leftExpander.producerMessage);
 		messagesToExpander->sosEosEoc = sosEosEoc;
 		rightExpander.module->leftExpander.messageFlipRequested = true;
 	}

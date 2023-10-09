@@ -50,16 +50,16 @@ struct ScopeSettingsButtons : OpaqueWidget {
 	const std::string textStrings[4] = {"SCOPE:", "OFF", "VCA", "SIDECHAIN"};
 
 	// user must set up
-	int8_t *settingSrc = NULL;
-	int* currChan = NULL;
-	Channel* channels;
-	ScopeBuffers* scopeBuffers;
+	int8_t *settingSrc = nullptr;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
+	ScopeBuffers* scopeBuffers = nullptr;
 	
 	// local
 	std::shared_ptr<Font> font;
 	std::string fontPath;
 	NVGcolor colorOff;
-	float textWidthsPx[5];
+	float textWidthsPx[5] = {};
 	
 	
 	ScopeSettingsButtons() {
@@ -153,15 +153,15 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 	const std::string textStrings[5] = {"COPY", "PASTE", "REVERSE", "INVERT", "RANDOM"};
 	
 	// user must set up
-	int* currChan = NULL;
-	Channel* channels;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
 	
 	// local
 	std::shared_ptr<Font> font;
 	std::string fontPath;
 	NVGcolor colorOff;
-	int buttonPressed;// -1 when nothing pressed, button index when a button is pressed
-	float textWidthsPx[5];
+	int buttonPressed = -1;// -1 when nothing pressed, button index when a button is pressed
+	float textWidthsPx[5] = {};
 	// Shape shapeCpBuffer;
 	
 	
@@ -351,9 +351,9 @@ struct ProSvgWithMessage : ProSvg {
 
 struct BigNumbers : TransparentWidget {
 	// user must set up
-	int* currChan = NULL;
-	Channel* channels;
-	DisplayInfo* displayInfo;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
+	DisplayInfo* displayInfo = nullptr;
 	
 	
 	// local
@@ -376,7 +376,7 @@ struct BigNumbers : TransparentWidget {
 			if (!(font = APP->window->loadFont(fontPath))) {
 				return;
 			}
-			if (currChan != NULL) {
+			if (currChan != nullptr) {
 				time_t currTime = time(0);
 				if (currTime - displayInfo->lastMovedKnobTime < 4) {
 					int srcId = displayInfo->lastMovedKnobId;
@@ -451,9 +451,9 @@ struct SmLabelBase : widget::OpaqueWidget {
 	// This struct is adapted from Rack's LedDisplayChoice in app/LedDisplay.{c,h}pp
 
 	// user must set up
-	int8_t* knobLabelColorsSrc = NULL;
-	int* currChan = NULL;
-	Channel* channels;
+	int8_t* knobLabelColorsSrc = nullptr;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
 
 	// local
 	std::string text;
@@ -762,9 +762,9 @@ struct RangeLabel : SmLabelBase {
 struct PresetLabel : SmLabelBase {
 	const std::string defaultLabelText = "Select Preset";
 	
-	PresetAndShapeManager* presetAndShapeManager = NULL;
-	bool* presetOrShapeDirty = NULL;
-	bool* unsupportedSync = NULL;
+	PresetAndShapeManager* presetAndShapeManager = nullptr;
+	bool* presetOrShapeDirty = nullptr;
+	bool* unsupportedSync = nullptr;
 	
 	PresetLabel() {
 		box.size = mm2px(Vec(40.0f - 4.5f * 2.0f, 5.0f));// room for arrow buttons
@@ -781,10 +781,10 @@ struct PresetLabel : SmLabelBase {
 			else {
 				text = system::getFilename(text);// string::filenameBase(string::filename(text));
 				text.erase(text.end() - 5, text.end());// remove extension
-				if (presetOrShapeDirty != NULL && *presetOrShapeDirty) {
+				if (presetOrShapeDirty != nullptr && *presetOrShapeDirty) {
 					text.insert(0, "*");
 				}
-				else if (unsupportedSync != NULL && *unsupportedSync) {
+				else if (unsupportedSync != nullptr && *unsupportedSync) {
 					text.insert(0, "\u00B0");
 				}
 			}
@@ -809,8 +809,8 @@ struct PresetLabel : SmLabelBase {
 struct ShapeLabel : SmLabelBase {
 	const std::string defaultLabelText = "Select Shape";
 	
-	PresetAndShapeManager* presetAndShapeManager = NULL;
-	bool* presetOrShapeDirty = NULL;
+	PresetAndShapeManager* presetAndShapeManager = nullptr;
+	bool* presetOrShapeDirty = nullptr;
 	
 	ShapeLabel() {
 		box.size = mm2px(Vec(40.0f - 4.5f * 2.0f, 5.0f));// room for arrow buttons
@@ -827,7 +827,7 @@ struct ShapeLabel : SmLabelBase {
 			else {
 				text = system::getFilename(text);// string::filenameBase(string::filename(text));
 				text.erase(text.end() - 5, text.end());// remove extension
-				if (presetOrShapeDirty != NULL && *presetOrShapeDirty) {
+				if (presetOrShapeDirty != nullptr && *presetOrShapeDirty) {
 					text.insert(0, "*");
 				}
 			}
@@ -850,9 +850,9 @@ struct ShapeLabel : SmLabelBase {
 	}
 };
 struct PresetOrShapeArrowButton : Switch {
-	bool* buttonPressedSrc = NULL;
-	PresetAndShapeManager* presetAndShapeManager;
-	int chanNum;
+	bool* buttonPressedSrc = nullptr;
+	PresetAndShapeManager* presetAndShapeManager = nullptr;
+	int chanNum = 0;
 	
 	PresetOrShapeArrowButton() {
 		momentary = true;
@@ -887,8 +887,8 @@ struct PresetOrShapeArrowButton : Switch {
 
 
 struct KnobLabelLength : SmLabelBase {
-	Param* lengthSyncParamSrc = NULL;// must update this knob when menu is used to select a new sync ratio. this is actually the sync length param for channel 0, must index accordingly for other channels
-	Param* lengthUnsyncParamSrc = NULL;// must update this knob when menu is used to select a new unsynced length. this is actually the unsync length param for channel 0, must index accordingly for other channels
+	Param* lengthSyncParamSrc = nullptr;// must update this knob when menu is used to select a new sync ratio. this is actually the sync length param for channel 0, must index accordingly for other channels
+	Param* lengthUnsyncParamSrc = nullptr;// must update this knob when menu is used to select a new unsynced length. this is actually the unsync length param for channel 0, must index accordingly for other channels
 	
 	const Vec triSize = mm2px(Vec(1.5f, 1.2f));
 	const float triMarginX = mm2px(0.7f);
@@ -904,7 +904,7 @@ struct KnobLabelLength : SmLabelBase {
 	void draw(const DrawArgs &args) override {
 		SmLabelBase::draw(args);
 		// draw downward triangle size-permitting
-		if (text.size() <= 4 && currChan != NULL && channels[*currChan].isSync()) {
+		if (text.size() <= 4 && currChan != nullptr && channels[*currChan].isSync()) {
 			nvgBeginPath(args.vg);
 			nvgMoveTo(args.vg, box.size.x - triMarginX - triSize.x, box.size.y * 0.55f - triSize.y * 0.5f);
 			nvgLineTo(args.vg, box.size.x - triMarginX, box.size.y * 0.55f - triSize.y * 0.5f);
@@ -1074,12 +1074,12 @@ struct KnobLabelTrigLevel : SmLabelBase {
 
 
 struct SmChannelButton : OpaqueWidget {
-	Channel* channels;
-	int* currChan = NULL;
-	PackedBytes4* miscSettings2GlobalSrc = NULL;
-	bool* trigExpPresentSrc = NULL;
+	Channel* channels = nullptr;
+	int* currChan = nullptr;
+	PackedBytes4* miscSettings2GlobalSrc = nullptr;
+	bool* trigExpPresentSrc = nullptr;
 	int lastChan = -1;
-	bool* running;
+	bool* running = nullptr;
 
 	widget::FramebufferWidget* fb;
 	widget::SvgWidget* sw;
@@ -1185,8 +1185,8 @@ struct SmChannelButton : OpaqueWidget {
 // };
 
 struct SmPlayButton : MmPlayButton {
-	int* currChan;
-	Channel* channels;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
 
 	void onDragStart(const event::DragStart& e) override {
 		ParamQuantity* paramQuantity = getParamQuantity();
@@ -1213,7 +1213,7 @@ struct SmPlayButton : MmPlayButton {
 typedef MmFreezeButton SmFreezeButton;
 
 struct SmRunButton : LedButton2 {
-	ShapeMaster* shapeMasterSrc;
+	ShapeMaster* shapeMasterSrc = nullptr;
 	void onDragStart(const event::DragStart& e) override {
 		LedButton2::onDragStart(e);
 		ParamQuantity* paramQuantity = getParamQuantity();
@@ -1229,8 +1229,8 @@ struct SmRunButton : LedButton2 {
 };
 
 struct SmLoopButton : MmLoopButton {
-	int* currChan;
-	Channel* channels;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
 	
 	void onDragStart(const event::DragStart& e) override {		
 		bool maxChanged = false;
@@ -1259,10 +1259,10 @@ struct SmLoopButton : MmLoopButton {
 };
 
 struct SmSyncButton : MmSyncButton {
-	int* currChan;
-	Channel* channels;
-	Input* inClock;
-	DisplayInfo* displayInfo;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
+	Input* inClock = nullptr;
+	DisplayInfo* displayInfo = nullptr;
 	
 	
 	void onDragStart(const event::DragStart& e) override {		
@@ -1297,8 +1297,8 @@ typedef MmHeadphonesButton SmAuditionScButton;
 
 
 struct SmSidechainSettingsButton : MmGearButton {
-	int* currChan;
-	Channel* channels;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;
 
 	void onButton(const event::Button& e) override {
 		if (e.action == GLFW_PRESS && (e.button == GLFW_MOUSE_BUTTON_LEFT)) {			
@@ -1315,13 +1315,13 @@ struct SmSidechainSettingsButton : MmGearButton {
 
 
 struct SmKnob : Mm8mmKnobGrayWithArc {
-	int* currChan;
-	Channel* channels;// will likely need this for CV arcs
-	DisplayInfo* displayInfo;
+	int* currChan = nullptr;
+	Channel* channels = nullptr;// will likely need this for CV arcs
+	DisplayInfo* displayInfo = nullptr;
 	
 	void onDragMove(const event::DragMove& e) override {
 		MmKnobWithArc::onDragMove(e);
-		ParamQuantity* paramQuantity = getParamQuantity();
+		const ParamQuantity* paramQuantity = getParamQuantity();
 		if (paramQuantity) {
 			displayInfo->lastMovedKnobId = paramQuantity->paramId % NUM_CHAN_PARAMS;
 			displayInfo->lastMovedKnobTime = time(0);

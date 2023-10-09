@@ -61,7 +61,7 @@ struct InvShadowItem : MenuItem {
 	}
 };
 
-void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, bool* running);
+void createChannelMenu(ui::Menu* menu, Channel* channels, int chan, const PackedBytes4* miscSettings2GlobalSrc, bool trigExpPresent, bool* running);
 
 
 
