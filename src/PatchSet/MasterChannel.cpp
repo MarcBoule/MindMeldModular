@@ -46,6 +46,11 @@ struct McGlobalInfo {
 
 	// no need to save, no reset
 	// none
+	
+	
+	McGlobalInfo() {
+		onReset();
+	}
 		
 	void onReset() {
 		directOutPanStereoMomentCvLinearVol.cc4[0] = 3; // directOutsMode: post-solo by default
@@ -124,21 +129,21 @@ struct McCore {
 	// none
 	
 	// need to save, with reset
-	bool dcBlock = false;
-	int clipping = 0; // 0 is soft, 1 is hard (must be single ls bit)
-	float fadeRate = 0.0f; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile = 0.0f; // exp when +1, lin when 0, log when -1
-	int8_t vuColorThemeLocal = 0;
-	int8_t dispColorLocal = 0;
-	int8_t momentCvMuteLocal = 0;
-	int8_t momentCvDimLocal = 0;
-	int8_t momentCvMonoLocal = 0;
-	float dimGain = 0.0f;// slider uses this gain, but displays it in dB instead of linear
+	bool dcBlock;
+	int clipping; // 0 is soft, 1 is hard (must be single ls bit)
+	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float fadeProfile; // exp when +1, lin when 0, log when -1
+	int8_t vuColorThemeLocal;
+	int8_t dispColorLocal;
+	int8_t momentCvMuteLocal;
+	int8_t momentCvDimLocal;
+	int8_t momentCvMonoLocal;
+	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	std::string masterLabel;
 	
 	// no need to save, with reset
 	private:
-	float mute = 0.0f;
+	float mute;
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	// float volCv;
 	public:
@@ -148,28 +153,32 @@ struct McCore {
 	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
-	float fadeGain = 0.0f; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float target = 0.0f;// used detect button press (needed to reset fadeGainXr and VUs)
-	float fadeGainX = 0.0f;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
-	float fadeGainXr = 0.0f;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
-	float fadeGainScaled = 0.0f;
-	float paramWithCV = 0.0f;
-	float dimGainIntegerDB = 0.0f;// corresponds to dimGain, converted to dB, then rounded, then back to linear
+	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float target;// used detect button press (needed to reset fadeGainXr and VUs)
+	float fadeGainX;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
+	float fadeGainXr;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
+	float fadeGainScaled;
+	float paramWithCV;
+	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
 
 	// no need to save, no reset
 	McGlobalInfo *gInfo = nullptr;
 	Param *params = nullptr;
 
+
+
 	float calcFadeGain() {return params[McGlobalInfo::MAIN_MUTE_PARAM].getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return fadeRate >= GlobalConst::minFadeRate;}
 
 	
-	void construct(McGlobalInfo *_gInfo, Param *_params) {
+	McCore(McGlobalInfo *_gInfo, Param *_params) {
 		gInfo = _gInfo;
 		params = _params;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		dcBlockerStereo.setParameters(true, 0.1f);
+		
+		onReset();
 	}
 
 
@@ -191,10 +200,10 @@ struct McCore {
 
 	void resetNonJson() {
 		mute = 0.0f;
-		gainMatrix = 0.0f;
+		gainMatrix = simd::float_4(0.0f);
 		gainMatrixSlewers.reset();
 		muteSlewer.reset();
-		setupDcBlocker();
+		setupDcBlocker();// dcBlockerStereo
 		dcBlockerStereo.reset();
 		vu.reset();
 		fadeGain = calcFadeGain();
@@ -492,7 +501,7 @@ struct MasterChannel : Module {
 	RefreshCounter refresh;	
 	
 	
-	MasterChannel() {
+	MasterChannel() : master(&gInfo, &params[0]) {
 		config(McGlobalInfo::NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		
 		// Fader
@@ -513,10 +522,7 @@ struct MasterChannel : Module {
 
 		configBypass(IN_INPUTS + 0, OUT_OUTPUTS + 0);
 		configBypass(IN_INPUTS + 1, OUT_OUTPUTS + 1);
-		
-		// gInfo.construct();
-		master.construct(&gInfo, &params[0]);
-		
+				
 		onReset();
 	}
   

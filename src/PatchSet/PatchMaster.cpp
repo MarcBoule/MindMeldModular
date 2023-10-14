@@ -34,7 +34,7 @@ struct PatchMaster : Module {
 	};
 
 	// Constants
-	NVGcolor paramCol = nvgRGB(0xff, 0xff, 0x40);
+	const NVGcolor paramCol = nvgRGB(0xff, 0xff, 0x40);
 	
 	// Need to save, no reset
 	// none
@@ -804,7 +804,7 @@ struct PatchMaster : Module {
 
 
 struct TileChoiceItem : MenuItem {
-	PatchMaster* module = NULL;
+	PatchMaster* module = nullptr;
 	int t = -1;
 	int order = -1;
 	uint8_t info = 0;

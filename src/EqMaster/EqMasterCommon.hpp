@@ -15,7 +15,7 @@ struct MfeExpInterface {// for messages to mother from expander
 	int trackCvsIndex6 = 0;
 	int trackEnableIndex = 0;
 	int trackCvsConnected = 0;// only 4 lsbits used
-	float trackCvs[16 * 4] = {0.0f};// room for 4 poly cables
+	float trackCvs[16 * 4] = {};// room for 4 poly cables
 	float trackEnable = 0.0f;// one of the 24+1 enable cvs
 };
 	
@@ -71,17 +71,17 @@ static const NVGcolor SCHEME_GRAY = nvgRGB(130, 130, 130);
 class TrackEq {
 	static constexpr float antipopSlewLogHz = 8.0f;// calibrated to properly slew a log(Hz) float in the rough range 1.3f to 4.3f (but less since freq knobs not full spectrum)
 	static constexpr float antipopSlewDb = 200.0f;// calibrated to properly slew a dB float in the range -20.0f to 20.0f for antipop
-	int trackNum = 0;
-	float sampleRate = 0.0f;
-	float sampleTime = 0.0f;
-	uint32_t *cvConnected = nullptr;
+	int trackNum;
+	float sampleRate;
+	float sampleTime;
+	uint32_t *cvConnected;
 	
 	// automatically managed internally by member functions
 	int dirty;// 4 bits, one for each band (automatically managed by member methods, no need to handle in init() and copyFrom())
-	QuattroBiQuad::Type bandTypes[4]; // only [0] and [3] are dependants, [1] and [2] are set to their permanent values in init()
+	QuattroBiQuad::Type bandTypes[4]; // only [0] and [3] are dependents, [1] and [2] are set to their permanent values in init()
 	
 	// need saving
-	bool trackActive = false;
+	bool trackActive;
 	simd::float_4 bandActive;// 0.0f or 1.0f values: frequency band's eq is active, one for LF, LMF, HMF, HF
 	simd::float_4 freq;// in log(Hz) to match params, converted to scaled linear freq before pushing params to eq
 	simd::float_4 gain;// in dB to match params, is converted to linear before pushing params to eqs
@@ -101,7 +101,7 @@ class TrackEq {
 	simd::float_4 gainCv;// adding-type cvs
 	simd::float_4 qCv;// adding-type cvs
 
-	// dependants
+	// dependents
 	QuattroBiQuad eqs;
 	TSlewLimiterSingle<simd::float_4> freqSlewers;// in log(Hz)
 	TSlewLimiterSingle<simd::float_4> gainSlewers;// in dB
@@ -110,44 +110,29 @@ class TrackEq {
 	
 	public:
 	
-	TrackEq() {
-		lowPeak = !DEFAULT_lowPeak;// to force bandTypes[0] to be set when first init() will call setLowPeak()
+	TrackEq(int _trackNum, float _sampleRate, uint32_t *_cvConnected) {
+		trackNum = _trackNum;
+		updateSampleRate(_sampleRate);// sampleRate, sampleTime
+		cvConnected = _cvConnected;
+		
+		dirty = 0xF;
 		bandTypes[1] = QuattroBiQuad::PEAK;
 		bandTypes[2] = QuattroBiQuad::PEAK;
-		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first init() will call setLowPeak()
-		trackGain = 0.0f;
-		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
-		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
-		trackGainSlewer.setRiseFall(antipopSlewDb);
 		
-		// the following are just set here to dummy values since there are test and sets in their initializations further below, and this is just to get rid of uninit warning, good values will be set in init()'s onReset()
 		trackActive = false;
-		dirty = 0xF;
 		bandActive = simd::float_4(0.0f);
 		freq = simd::float_4(0.0f);
 		gain = simd::float_4(0.0f);
 		q = simd::float_4(0.0f);
-	}
-	
-	void init(int _trackNum, float _sampleRate, uint32_t *_cvConnected) {
-		trackNum = _trackNum;
-		sampleRate = _sampleRate;
-		sampleTime = 1.0f / sampleRate;
-		cvConnected = _cvConnected;
+		lowPeak = !DEFAULT_lowPeak;// to force bandTypes[0] to be set when first onReset() will call setLowPeak()
+		highPeak = !DEFAULT_highPeak;// to force bandTypes[3] to be set when first onReset() will call setLowPeak()
+		freqSlewers.setRiseFall(simd::float_4(antipopSlewLogHz)); // slew rate is in input-units per second (ex: V/s)
+		gainSlewers.setRiseFall(simd::float_4(antipopSlewDb)); // slew rate is in input-units per second (ex: V/s)
+		trackGainSlewer.setRiseFall(antipopSlewDb);
 		
 		onReset();
-		
-		// don't need saving
-		freqCv = 0.0f;
-		gainCv = 0.0f;
-		qCv = 0.0f;
-		
-		// dependants
-		eqs.reset();
-		freqSlewers.reset();
-		gainSlewers.reset();
-		trackGainSlewer.reset();
 	}
+	
 	void onReset() {
 		// need saving
 		setTrackActive(DEFAULT_trackActive);
@@ -156,13 +141,25 @@ class TrackEq {
 			setFreq(i, DEFAULT_logFreq[i]);
 			setGain(i, DEFAULT_gain);
 			setQ(i, DEFAULT_q[i]);
-			freqCvAtten[i] = 1.0f;
-			gainCvAtten[i] = 1.0f;
-			qCvAtten[i] = 1.0f;
 		}
 		setLowPeak(DEFAULT_lowPeak);
 		setHighPeak(DEFAULT_highPeak);
 		setTrackGain(DEFAULT_trackGain);
+		
+		freqCvAtten = simd::float_4(1.0f);
+		gainCvAtten = simd::float_4(1.0f);
+		qCvAtten = simd::float_4(1.0f);
+
+		// don't need saving
+		freqCv = 0.0f;
+		gainCv = 0.0f;
+		qCv = 0.0f;
+		
+		// dependents
+		eqs.reset();
+		freqSlewers.reset();
+		gainSlewers.reset();
+		trackGainSlewer.reset();
 	}
 
 	bool getTrackActive() {return trackActive;}

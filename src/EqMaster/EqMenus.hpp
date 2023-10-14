@@ -164,7 +164,7 @@ struct CopyTrackSettingsItem : MenuItem {
 
 void moveTrack(TrackEq *trackEqsSrc, int trackNumSrc, int trackNumDest) {
 	// does not check for trackNumSrc == trackNumDest
-	TrackEq buffer1;
+	TrackEq buffer1(0, 0.0f, nullptr);
 	
 	buffer1.copyFrom(&trackEqsSrc[trackNumSrc]);
 	if (trackNumDest < trackNumSrc) {

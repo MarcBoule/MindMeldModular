@@ -44,8 +44,8 @@ struct PatchMasterBlank : Module {
 struct PatchMasterBlankWidget : ModuleWidget {
 	SvgPanel* svgPanel;
 	PanelBorder* panelBorder;
-	std::shared_ptr<window::Svg> svgs[2] = {};
-	int lastFacePlate = 0;
+	std::shared_ptr<window::Svg> svgs[2];
+	int lastFacePlate;
 
 	void appendContextMenu(Menu *menu) override {
 		PatchMasterBlank *module = static_cast<PatchMasterBlank*>(this->module);
@@ -63,10 +63,12 @@ struct PatchMasterBlankWidget : ModuleWidget {
 
 	PatchMasterBlankWidget(PatchMasterBlank *module) {
 		setModule(module);
-        svgs[0] = APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/pm-vsep-bg.svg"));
-		setPanel(svgs[0]);
 		svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
+        svgs[0] = APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/pm-vsep-bg.svg"));
+		setPanel(svgs[0]);
+		svgs[1] = nullptr;
+		lastFacePlate = 0;
 	}
 	
 	
@@ -91,7 +93,7 @@ struct PatchMasterBlankWidget : ModuleWidget {
 			if (facePlate != lastFacePlate) {
 				lastFacePlate = facePlate;
 				
-				if (svgs[1] == NULL) {
+				if (svgs[1] == nullptr) {
 					svgs[1] = APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/pm-vsep-bg-noline.svg"));
 				}
 				SvgPanel* panel = static_cast<SvgPanel*>(getPanel());

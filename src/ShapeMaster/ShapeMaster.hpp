@@ -147,7 +147,7 @@ struct ShapeMasterWidget : ModuleWidget {
 	void onHoverKey(const event::HoverKey& e) override {
 		if (e.action == GLFW_PRESS) {
 			if ( e.key == GLFW_KEY_L && ((e.mods & RACK_MOD_CTRL) != 0) ) {
-				ShapeMaster *module = dynamic_cast<ShapeMaster*>(this->module);
+				ShapeMaster *module = static_cast<ShapeMaster*>(this->module);
 				module->miscSettings2.cc4[2] ^= 0x1;
 				e.consume(this);
 				return;

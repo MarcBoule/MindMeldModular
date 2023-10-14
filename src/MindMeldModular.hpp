@@ -180,7 +180,7 @@ struct SlewLimiterFast {
 };
 
 struct HoldDetect {
-	long modeHoldDetect;// 0 when not detecting, downward counter when detecting
+	long modeHoldDetect = 0l;// 0 when not detecting, downward counter when detecting
 	
 	void reset() {
 		modeHoldDetect = 0l;
@@ -207,7 +207,7 @@ struct HoldDetect {
 };
 
 struct DispTwoColorItem : MenuItem {
-	int8_t *srcColor;
+	int8_t *srcColor = nullptr;
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;
@@ -225,7 +225,7 @@ struct DispTwoColorItem : MenuItem {
 
 // poly stereo menu item
 struct PolyStereoItem : MenuItem {
-	int8_t *polyStereoSrc;
+	int8_t *polyStereoSrc = nullptr;
 
 	Menu *createChildMenu() override {
 		Menu *menu = new Menu;

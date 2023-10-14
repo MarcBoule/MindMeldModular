@@ -33,7 +33,7 @@ struct EqMaster : Module {
 	MfeExpInterface expMessages[2];// messages from eq-expander, see enum in EqCommon.hpp
 
 	// Constants
-	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
+	const int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 	int8_t cloakedMode = 0x0;
 
 	// Need to save, no reset
@@ -44,7 +44,7 @@ struct EqMaster : Module {
 	char trackLabels[24 * 4 + 1];// needs to be saved in case we are detached
 	int8_t trackLabelColors[24];
 	int8_t trackVuColors[24];
-	TrackEq trackEqs[24];
+	std::vector<TrackEq> trackEqs;// size 24
 	PackedBytes4 miscSettings;// cc4[0] is ShowBandCurvesEQ, cc4[1] is fft type (0 = off, 1 = pre, 2 = post, 3 = freeze), cc4[2] is momentaryCvButtons (1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)), cc4[3] is detailsShow
 	PackedBytes4 miscSettings2;// cc4[0] is band label colours, cc4[1] is decay rate (0 = slow, 1 = med, 2 = fast), cc[2] is hide eq curves when bypassed, cc[3] is unused
 	PackedBytes4 showFreqAsNotes;
@@ -150,7 +150,11 @@ struct EqMaster : Module {
 			configBypass(SIG_INPUTS + i, SIG_OUTPUTS + i);
 		}
 		
-		onReset();
+		trackEqs.reserve(24);
+		float sr = APP->engine->getSampleRate();
+		for (int t = 0; t < 24; t++) {
+			trackEqs.push_back(TrackEq(t, sr, &cvConnected));
+		}
 		
 		ffts = pffft_new_setup(FFT_N, PFFFT_REAL);
 		fftIn[0] = static_cast<float*>(pffft_aligned_malloc(FFT_N * 4));
@@ -164,6 +168,8 @@ struct EqMaster : Module {
 			drawBufLin[i] = 0.0f;
 		}
 		windowFunc = allocateAndCalcWindowFunc();
+		
+		onReset();
 	}
   
 	~EqMaster() {
@@ -185,15 +191,15 @@ struct EqMaster : Module {
   
 	void onReset() override final {
 		mappedId = 0;
-		initTrackLabelsAndColors();
+		initTrackLabelsAndColors();// trackLabels[], trackLabelColors[], trackVuColors[]
 		for (int t = 0; t < 24; t++) {
-			trackEqs[t].init(t, APP->engine->getSampleRate(), &cvConnected);
+			trackEqs[t].onReset();
 		}
 		miscSettings.cc4[0] = 0x1;// show band curves by default
 		miscSettings.cc4[1] = SPEC_MASK_ON | SPEC_MASK_POST;
 		miscSettings.cc4[2] = 0x1; // momentary by default
 		miscSettings.cc4[3] = 0x7; // detailsShow
-		miscSettings2.cc4[0] = 0;// band label colours
+		miscSettings2.cc4[0] = 0;// band label colors
 		miscSettings2.cc4[1] = 2;// decay rate fast
 		miscSettings2.cc4[2] = 0;// hide eq curves when bypassed
 		miscSettings2.cc4[3] = 0;// unused
@@ -900,7 +906,7 @@ struct EqMasterWidget : ModuleWidget {
 			trackLabel->mappedId = &(module->mappedId);
 			trackLabel->trackLabelsSrc = module->trackLabels;
 			trackLabel->trackParamSrc = &(module->params[TRACK_PARAM]);
-			trackLabel->trackEqsSrc = module->trackEqs;
+			trackLabel->trackEqsSrc = &(module->trackEqs[0]);
 			trackLabel->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
 		}
 		// Track knob
@@ -908,7 +914,7 @@ struct EqMasterWidget : ModuleWidget {
 		addParam(trackKnob = createParamCentered<TrackKnob>(mm2px(Vec(leftX, 22.7f)), module, TRACK_PARAM));
 		if (module) {
 			trackKnob->updateTrackLabelRequestSrc = &(module->updateTrackLabelRequest);
-			trackKnob->trackEqsSrc = module->trackEqs;
+			trackKnob->trackEqsSrc = &(module->trackEqs[0]);
 			trackKnob->polyInputs = &(module->inputs[EqMaster::SIG_INPUTS]);
 		}
 		// Active switch
@@ -916,7 +922,7 @@ struct EqMasterWidget : ModuleWidget {
 		addParam(activeSwitch = createParamCentered<ActiveSwitch>(mm2px(Vec(leftX, 48.775f)), module, TRACK_ACTIVE_PARAM));
 		if (module) {
 			activeSwitch->trackParamSrc = &(module->params[TRACK_PARAM]);
-			activeSwitch->trackEqsSrc = module->trackEqs;
+			activeSwitch->trackEqsSrc = &(module->trackEqs[0]);
 		}
 		// Global bypass switch
 		addParam(createParamCentered<MmBypassButton>(mm2px(Vec(leftX, 67.7f)), module, GLOBAL_BYPASS_PARAM));
@@ -943,7 +949,7 @@ struct EqMasterWidget : ModuleWidget {
 		addChild(eqCurveAndGrid = createWidgetCentered<EqCurveAndGrid>(mm2px(Vec(71.12f, 45.47f - 0.5f))));
 		if (module) {
 			eqCurveAndGrid->trackParamSrc = &(module->params[TRACK_PARAM]);
-			eqCurveAndGrid->trackEqsSrc = module->trackEqs;
+			eqCurveAndGrid->trackEqsSrc = &(module->trackEqs[0]);
 			eqCurveAndGrid->miscSettingsSrc = &(module->miscSettings);
 			eqCurveAndGrid->miscSettings2Src = &(module->miscSettings2);
 			eqCurveAndGrid->globalBypassParamSrc = &(module->params[GLOBAL_BYPASS_PARAM]);
@@ -960,7 +966,7 @@ struct EqMasterWidget : ModuleWidget {
 		addChild(bigNumbersEq = createWidgetCentered<BigNumbersEq>(mm2px(Vec(71.12f, 68.0f))));
 		if (module) {
 			bigNumbersEq->trackParamSrc = &(module->params[TRACK_PARAM]);
-			bigNumbersEq->trackEqsSrc = module->trackEqs;
+			bigNumbersEq->trackEqsSrc = &(module->trackEqs[0]);
 			bigNumbersEq->lastMovedKnobIdSrc = &lastMovedKnobId;
 			bigNumbersEq->lastMovedKnobTimeSrc = &lastMovedKnobTime;
 		}
@@ -983,7 +989,7 @@ struct EqMasterWidget : ModuleWidget {
 		if (module) {
 			for (int b = 0; b < 4; b++) {
 				peakShelfSwitches[b]->trackParamSrc = &(module->params[TRACK_PARAM]);
-				peakShelfSwitches[b]->trackEqsSrc = module->trackEqs;
+				peakShelfSwitches[b]->trackEqsSrc = &(module->trackEqs[0]);
 				peakShelfSwitches[b]->isLF = (b < 2);
 			}
 		}
@@ -998,7 +1004,7 @@ struct EqMasterWidget : ModuleWidget {
 			for (int b = 0; b < 4; b++) {
 				bandSwitches[b]->trackParamSrc = &(module->params[TRACK_PARAM]);
 				bandSwitches[b]->freqActiveParamsSrc = &(module->params[FREQ_ACTIVE_PARAMS]);
-				bandSwitches[b]->trackEqsSrc = module->trackEqs;
+				bandSwitches[b]->trackEqsSrc = &(module->trackEqs[0]);
 			}
 		}	
 		
@@ -1032,7 +1038,7 @@ struct EqMasterWidget : ModuleWidget {
 				bandKnobs[c]->cloakedModeSrc = &cloakedMode;
 				bandKnobs[c]->detailsShowSrc = &(module->miscSettings.cc4[3]);
 				bandKnobs[c]->trackParamSrc = &(module->params[TRACK_PARAM]);
-				bandKnobs[c]->trackEqsSrc = module->trackEqs;
+				bandKnobs[c]->trackEqsSrc = &(module->trackEqs[0]);
 				bandKnobs[c]->lastMovedKnobIdSrc = & lastMovedKnobId;
 				bandKnobs[c]->lastMovedKnobTimeSrc = &lastMovedKnobTime;
 			}
@@ -1049,7 +1055,7 @@ struct EqMasterWidget : ModuleWidget {
 			for (int i = 0; i < 12; i++) {
 				bandLabels[i]->bandLabelColorsSrc = &(module->miscSettings2.cc4[0]);
 				bandLabels[i]->trackParamSrc = &(module->params[TRACK_PARAM]);
-				bandLabels[i]->trackEqsSrc = module->trackEqs;
+				bandLabels[i]->trackEqsSrc = &(module->trackEqs[0]);
 				bandLabels[i]->band = (i % 4);
 			}
 			for (int i = 0; i < 4; i++) {
@@ -1075,7 +1081,7 @@ struct EqMasterWidget : ModuleWidget {
 		addParam(trackGainKnob = createParamCentered<TrackGainKnob>(mm2px(Vec(rightX, 67.0f)), module, TRACK_GAIN_PARAM));
 		if (module) {
 			trackGainKnob->trackParamSrc = &(module->params[TRACK_PARAM]);
-			trackGainKnob->trackEqsSrc = module->trackEqs;
+			trackGainKnob->trackEqsSrc = &(module->trackEqs[0]);
 			trackGainKnob->detailsShowSrc = &(module->miscSettings.cc4[3]);
 			trackGainKnob->cloakedModeSrc = &(module->cloakedMode);			
 		}		
@@ -1179,7 +1185,7 @@ struct EqMasterWidget : ModuleWidget {
 						if (message.tm.tmSep[0] != 0 && message.tm.tmTot != module->lastTrackMove) {
 							// has valid and fresh move
 							module->lastTrackMove = message.tm.tmTot;// avoids doing the move again until a new fresh move is detected
-							moveTrack(module->trackEqs, message.tm.tmSep[1], message.tm.tmSep[2]);
+							moveTrack(&(module->trackEqs[0]), message.tm.tmSep[1], message.tm.tmSep[2]);
 							// DEBUG("Track move from %i to %i", message.tm.tmSep[1], message.tm.tmSep[2]);
 						}
 						
