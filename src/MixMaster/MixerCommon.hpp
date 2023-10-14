@@ -26,7 +26,7 @@ enum GTOL_IDS {
 struct GlobalToLocalOp {
 	int8_t opCodeMixer = GTOL_NOP;;// see GTOL_IDS
 	int8_t opCodeExpander = GTOL_NOP;// see GTOL_IDS
-	int8_t operand;// the global value that we want to be set in all the local values
+	int8_t operand = 0;// the global value that we want to be set in all the local values
 		
 	void setOp(int8_t _opCode, int8_t _operand) {
 		operand = _operand;// set this first for safe thread behavior
@@ -43,21 +43,21 @@ template <int N_TRK, int N_GRP>
 struct TAfmExpInterface {// messages to expander from mother (data is in expander, mother writes into expander)
 	// Fast (sample-rate)	
 	bool updateSlow = false;
-	float auxSends[(N_TRK + N_GRP) * 2] = {0.0f};
+	float auxSends[(N_TRK + N_GRP) * 2] = {};
 	int vuIndex = 0;
-	float vuValues[4] = {0.0f};
+	float vuValues[4] = {};
 	
 	// Slow (sample-rate / 256), no need to init
 	PackedBytes4 colorAndCloak;
 	PackedBytes4 directOutPanStereoMomentCvLinearVol;
-	uint32_t muteAuxSendWhenReturnGrouped;
-	uint16_t ecoMode;// all 1's means yes, 0 means no
-	int32_t trackMoveInAuxRequest;// 0 when nothing to do, {dest,src} packed when a move is requested
-	int8_t trackOrGroupResetInAux;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
-	alignas(4) char trackLabels[4 * (N_TRK + N_GRP)];
+	uint32_t muteAuxSendWhenReturnGrouped = 0;
+	uint16_t ecoMode = 0;// all 1's means yes, 0 means no
+	int32_t trackMoveInAuxRequest = 0;// 0 when nothing to do, {dest,src} packed when a move is requested
+	int8_t trackOrGroupResetInAux = 0;// -1 when nothing to do, 0 to N_TRK-1 for track reset, N_TRK to N_TRK+N_GRP-1 for group reset 
+	alignas(4) char trackLabels[4 * (N_TRK + N_GRP)] = {};
 	PackedBytes4 trackDispColsLocal[N_TRK / 4 + 1];// only valid when colorAndCloak.cc4[dispColorGlobal] >= numDispThemes
-	float auxRetFadeGains[4];
-	float srcMuteGhost[4];
+	float auxRetFadeGains[4] = {};
+	float srcMuteGhost[4] = {};
 	GlobalToLocalOp globalToLocalOp;
 };
 
@@ -65,16 +65,16 @@ struct TAfmExpInterface {// messages to expander from mother (data is in expande
 struct MfaExpInterface {// messages to mother from expander (data is in mother, expander writes into mother)
 	// Fast (sample-rate)	
 	bool updateSlow = false;
-	float auxReturns[8] = {0.0f};
-	float auxRetFaderPanFadercv[12] = {0.0f};
+	float auxReturns[8] = {};
+	float auxRetFaderPanFadercv[12] = {};
 	
 	// Slow (sample-rate / 256), no need to init
 	PackedBytes4 directOutsModeLocalAux;
 	PackedBytes4 stereoPanModeLocalAux;
 	PackedBytes4 auxVuColors;
 	PackedBytes4 auxDispColors;
-	float values20[20];// Aux mute, solo, group, fade rate, fade profile; 4 consective floats for each (one per aux)
-	alignas(4) char auxLabels[4 * 4];
+	float values20[20] = {};// Aux mute, solo, group, fade rate, fade profile; 4 consective floats for each (one per aux)
+	alignas(4) char auxLabels[4 * 4] = {};
 };
 
 
@@ -137,37 +137,37 @@ float updateFadeGain(float fadeGain, float target, float *fadeGainX, float *fade
 
 struct TrackSettingsCpBuffer {
 	// first level of copy paste (copy copy-paste of track settings)
-	float gainAdjust;
-	float fadeRate;
-	float fadeProfile;
-	float hpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
-	float lpfCutoffFreq;// !! user must call filters' setCutoffs manually when copy pasting these
-	int8_t directOutsMode;
-	int8_t auxSendsMode;
-	int8_t panLawStereo;
-	int8_t vuColorThemeLocal;
-	int8_t filterPos;
-	int8_t dispColorLocal;
-	int8_t momentCvMuteLocal;
-	int8_t momentCvSoloLocal;
-	int8_t polyStereo;
-	float panCvLevel;
-	float stereoWidth;
-	int8_t invertInput;
-	bool linkedFader;
+	float gainAdjust = 0.0f;
+	float fadeRate = 0.0f;
+	float fadeProfile = 0.0f;
+	float hpfCutoffFreq = 0.0f;// !! user must call filters' setCutoffs manually when copy pasting these
+	float lpfCutoffFreq = 0.0f;// !! user must call filters' setCutoffs manually when copy pasting these
+	int8_t directOutsMode = 0;
+	int8_t auxSendsMode = 0;
+	int8_t panLawStereo = 0;
+	int8_t vuColorThemeLocal = 0;
+	int8_t filterPos = 0;
+	int8_t dispColorLocal = 0;
+	int8_t momentCvMuteLocal = 0;
+	int8_t momentCvSoloLocal = 0;
+	int8_t polyStereo = 0;
+	float panCvLevel = 0.0f;
+	float stereoWidth = 0.0f;
+	int8_t invertInput = 0;
+	bool linkedFader = false;
 
 	// second level of copy paste (for track re-ordering)
-	float paGroup;
-	float paFade;
-	float paMute;
-	float paSolo;
-	float paPan;
-	char trackName[4];// track names are not null terminated in MixerTracks
-	float fadeGain;
-	float target;
-	float fadeGainX;
-	float fadeGainXr;
-	float fadeGainScaled;
+	float paGroup = 0.0f;
+	float paFade = 0.0f;
+	float paMute = 0.0f;
+	float paSolo = 0.0f;
+	float paPan = 0.0f;
+	char trackName[4] = {};// track names are not null terminated in MixerTracks
+	float fadeGain = 0.0f;
+	float target = 0.0f;
+	float fadeGainX = 0.0f;
+	float fadeGainXr = 0.0f;
+	float fadeGainScaled = 0.0f;
 };
 
 

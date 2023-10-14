@@ -803,9 +803,13 @@ struct TrackDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
-		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
+		// (*((uint32_t*)(tracks[trackNumSrc].trackName))) = 0x20202020;
+		int i = 0;
+		for ( ;i < std::min(4, (int)text.length()); i++) {
 			tracks[trackNumSrc].trackName[i] = text[i];
+		}
+		for ( ;i < 4; i++) {
+			tracks[trackNumSrc].trackName[i] = 0x20;
 		}
 		EditableDisplayBase::onChange(e);
 	};
@@ -936,9 +940,13 @@ struct GroupDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
-		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
+		// (*((uint32_t*)(srcGroup->groupName))) = 0x20202020;
+		int i = 0;
+		for ( ;i < std::min(4, (int)text.length()); i++) {
 			srcGroup->groupName[i] = text[i];
+		}
+		for ( ;i < 4; i++) {
+			srcGroup->groupName[i] = 0x20;
 		}
 		EditableDisplayBase::onChange(e);
 	};
@@ -1056,9 +1064,13 @@ struct AuxDisplay : EditableDisplayBase {
 		EditableDisplayBase::onButton(e);
 	}
 	void onChange(const event::Change &e) override {
-		(*((uint32_t*)(auxName))) = 0x20202020;
-		for (int i = 0; i < std::min(4, (int)text.length()); i++) {
+		// (*((uint32_t*)(auxName))) = 0x20202020;
+		int i = 0;
+		for ( ;i < std::min(4, (int)text.length()); i++) {
 			auxName[i] = text[i];
+		}
+		for ( ;i < 4; i++) {
+			auxName[i] = 0x20;
 		}
 		EditableDisplayBase::onChange(e);
 	};

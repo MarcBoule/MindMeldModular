@@ -58,7 +58,7 @@ extern int8_t pmAllowMouseTileMove;// PatchMaster allow ctrl/cmd click to move t
 // General objects
 
 union PackedBytes4 {
-	int32_t cc1;
+	int32_t cc1 = 0;
 	int8_t cc4[4];
 };
 

@@ -75,7 +75,7 @@ struct AuxExpander : Module {
 	int8_t momentCvGroupMuteLocal[N_GRP];
 	float auxFadeRatesAndProfiles[8];// first 4 are fade rates, last 4 are fade profiles, all same standard as mixmaster
 	alignas(4) char auxLabels[4 * 4 + 4];// 4 chars per label, 4 aux labels, null terminate the end the whole array only, pad with three extra chars for alignment
-	AuxspanderAux aux[4];
+	std::vector<AuxspanderAux> aux;// size 4
 	float panCvLevels[4];// 0 to 1.0f
 
 	// No need to save, with reset
@@ -83,7 +83,7 @@ struct AuxExpander : Module {
 	int updateAuxLabelRequest;// 0 when nothing to do, 1 for read names in widget
 	int refreshCounter20;
 	float srcLevelsVus[4][4];// first index is aux number, 2nd index is a vuValue (organized according to VuMeters::VuIds)
-	float paramRetFaderWithCv[4];// for cv pointers in aux retrun faders 
+	float paramRetFaderWithCv[4];// for cv pointers in aux return faders 
 	simd::float_4 globalSendsWithCV;
 	bool globalSendsCvConnected;
 	float indivTrackSendWithCv[N_TRK * 4];
@@ -217,8 +217,10 @@ struct AuxExpander : Module {
 			groupSendVcaGains[i] = simd::float_4::zero();
 		}
 		auxLabels[4 * 4] = 0;
+		
+		aux.reserve(4);
 		for (int i = 0; i < 4; i++) {
-			aux[i].construct(i, &inputs[0], &params[0], &(auxLabels[4 * i]), &vuColorThemeLocal.cc4[i], &directOutsModeLocal.cc4[i], &panLawStereoLocal.cc4[i], &dispColorAuxLocal.cc4[i], &panCvLevels[i], &auxFadeRatesAndProfiles[i]);
+			aux.push_back(AuxspanderAux(i, &inputs[0], &params[0], &(auxLabels[4 * i]), &vuColorThemeLocal.cc4[i], &directOutsModeLocal.cc4[i], &panLawStereoLocal.cc4[i], &dispColorAuxLocal.cc4[i], &panCvLevels[i], &auxFadeRatesAndProfiles[i]));
 		}
 		
 		onReset();

@@ -63,11 +63,11 @@ struct PatchMasterBlankWidget : ModuleWidget {
 
 	PatchMasterBlankWidget(PatchMasterBlank *module) {
 		setModule(module);
-		svgPanel = static_cast<SvgPanel*>(getPanel());
-		panelBorder = findBorder(svgPanel->fb);
         svgs[0] = APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/patchset/pm-vsep-bg.svg"));
 		setPanel(svgs[0]);
 		svgs[1] = nullptr;
+		svgPanel = static_cast<SvgPanel*>(getPanel());
+		panelBorder = findBorder(svgPanel->fb);
 		lastFacePlate = 0;
 	}
 	

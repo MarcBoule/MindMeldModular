@@ -75,7 +75,7 @@ struct MixMaster : Module {
 	MfaExpInterface rightMessages[2];// messages from aux-expander, see MixerCommon.hpp
 
 	// Constants
-	int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
+	const int numChannels16 = 16;// avoids warning that happens when hardcode 16 (static const or directly use 16 in code below)
 
 	// Need to save, no reset
 	// none
