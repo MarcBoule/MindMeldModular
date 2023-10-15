@@ -63,6 +63,7 @@ struct McGlobalInfo {
 		colorAndCloak.cc4[detailsShow] = 0x7;
 		symmetricalFade = false;
 		ecoMode = 0xFFFF;// all 1's means yes, 0 means no
+		
 		resetNonJson();
 	}
 
@@ -129,21 +130,21 @@ struct McCore {
 	// none
 	
 	// need to save, with reset
-	bool dcBlock = false;
-	int clipping = 0; // 0 is soft, 1 is hard (must be single ls bit)
-	float fadeRate = 0.0f; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
-	float fadeProfile = 0.0f; // exp when +1, lin when 0, log when -1
-	int8_t vuColorThemeLocal = 0;
-	int8_t dispColorLocal = 0;
-	int8_t momentCvMuteLocal = 0;
-	int8_t momentCvDimLocal = 0;
-	int8_t momentCvMonoLocal = 0;
-	float dimGain = 0.0f;// slider uses this gain, but displays it in dB instead of linear
+	bool dcBlock;
+	int clipping; // 0 is soft, 1 is hard (must be single ls bit)
+	float fadeRate; // mute when < minFadeRate, fade when >= minFadeRate. This is actually the fade time in seconds
+	float fadeProfile; // exp when +1, lin when 0, log when -1
+	int8_t vuColorThemeLocal;
+	int8_t dispColorLocal;
+	int8_t momentCvMuteLocal;
+	int8_t momentCvDimLocal;
+	int8_t momentCvMonoLocal;
+	float dimGain;// slider uses this gain, but displays it in dB instead of linear
 	std::string masterLabel;
 	
 	// no need to save, with reset
 	private:
-	float mute = 0.0f;
+	float mute;
 	simd::float_4 gainMatrix;// L, R, RinL, LinR (used for fader-mono block)
 	// float volCv;
 	public:
@@ -153,13 +154,13 @@ struct McCore {
 	FirstOrderStereoFilter dcBlockerStereo;// 6dB/oct
 	public:
 	VuMeterAllDual vu;// use mix[0..1]
-	float fadeGain = 0.0f; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
-	float target = 0.0f;// used detect button press (needed to reset fadeGainXr and VUs)
-	float fadeGainX = 0.0f;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
-	float fadeGainXr = 0.0f;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
-	float fadeGainScaled = 0.0f;
-	float paramWithCV = 0.0f;
-	float dimGainIntegerDB = 0.0f;// corresponds to dimGain, converted to dB, then rounded, then back to linear
+	float fadeGain; // target of this gain is the value of the mute/fade button's param (i.e. 0.0f or 1.0f)
+	float target;// used detect button press (needed to reset fadeGainXr and VUs)
+	float fadeGainX;// absolute X value of fade, between 0.0f and 1.0f (for symmetrical fade)
+	float fadeGainXr;// reset X value of fade, between 0.0f and 1.0f (for asymmetrical fade)
+	float fadeGainScaled;
+	float paramWithCV;
+	float dimGainIntegerDB;// corresponds to dimGain, converted to dB, then rounded, then back to linear
 
 	// no need to save, no reset
 	McGlobalInfo *gInfo = nullptr;
@@ -170,12 +171,14 @@ struct McCore {
 	bool isFadeMode() {return fadeRate >= GlobalConst::minFadeRate;}
 
 	
-	void construct(McGlobalInfo *_gInfo, Param *_params) {
+	McCore(McGlobalInfo *_gInfo, Param *_params) {
 		gInfo = _gInfo;
 		params = _params;
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
 		dcBlockerStereo.setParameters(true, 0.1f);
+		
+		onReset();
 	}
 
 
@@ -488,8 +491,8 @@ struct MasterChannel : Module {
 	// none
 	
 	// Need to save, with reset
-	McGlobalInfo gInfo;
-	McCore master;
+	McGlobalInfo* gInfo;
+	McCore* master;
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -520,21 +523,26 @@ struct MasterChannel : Module {
 		configBypass(IN_INPUTS + 0, OUT_OUTPUTS + 0);
 		configBypass(IN_INPUTS + 1, OUT_OUTPUTS + 1);
 		
-		master.construct(&gInfo, &params[0]);
+		gInfo = new McGlobalInfo();
+		master = new McCore(gInfo, &params[0]);
 				
 		onReset();
 	}
+	~MasterChannel() {
+		delete gInfo;
+		delete master;
+	}
   
 	void onReset() override final {
-		gInfo.onReset();
-		master.onReset();
+		gInfo->onReset();
+		master->onReset();
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
 		updateTrackLabelRequest = 1;
 		if (recurseNonJson) {
-			gInfo.resetNonJson();
-			master.resetNonJson();
+			gInfo->resetNonJson();
+			master->resetNonJson();
 		}
 	}
 
@@ -547,10 +555,10 @@ struct MasterChannel : Module {
 		json_t *rootJ = json_object();
 		
 		// gInfo
-		gInfo.dataToJson(rootJ);
+		gInfo->dataToJson(rootJ);
 
 		// master
-		master.dataToJson(rootJ);
+		master->dataToJson(rootJ);
 
 		return rootJ;
 	}
@@ -558,18 +566,18 @@ struct MasterChannel : Module {
 
 	void dataFromJson(json_t *rootJ) override {
 		// gInfo
-		gInfo.dataFromJson(rootJ);
+		gInfo->dataFromJson(rootJ);
 
 		// master
-		master.dataFromJson(rootJ);
+		master->dataFromJson(rootJ);
 
 		resetNonJson(true);	
 	}
 
 
 	void onSampleRateChange() override {
-		gInfo.sampleTime = APP->engine->getSampleTime();
-		master.onSampleRateChange();
+		gInfo->sampleTime = APP->engine->getSampleTime();
+		master->onSampleRateChange();
 	}
 	
 
@@ -584,14 +592,14 @@ struct MasterChannel : Module {
 		// McGlobalInfo
 		// none
 		
-		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo.ecoMode);
-		bool ecoStagger4 = (gInfo.ecoMode == 0 || ecoCode == 3);
+		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo->ecoMode);
+		bool ecoStagger4 = (gInfo->ecoMode == 0 || ecoCode == 3);
 
 		// Master
 		float mix[2];
 		mix[0] = inputs[IN_INPUTS + 0].getVoltageSum();
 		mix[1] = inputs[IN_INPUTS + 1].isConnected() ? inputs[IN_INPUTS + 1].getVoltageSum() : mix[0];
-		master.process(mix, ecoStagger4);
+		master->process(mix, ecoStagger4);
 		
 		// Set master outputs
 		outputs[OUT_OUTPUTS + 0].setVoltage(mix[0]);
@@ -624,7 +632,7 @@ struct MasterChannelWidget : ModuleWidget {
 
 		NameOrLabelValueField(MasterChannel* _module) {
 			module = _module;
-			text = module->master.masterLabel;
+			text = module->master->masterLabel;
 			selectAll();
 		}
 
@@ -636,7 +644,7 @@ struct MasterChannelWidget : ModuleWidget {
 
 		void onSelectKey(const event::SelectKey& e) override {
 			if (e.action == GLFW_RELEASE){// && (e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER)) {
-				module->master.masterLabel = text;
+				module->master->masterLabel = text;
 				module->updateTrackLabelRequest = 1;
 				if (e.key == GLFW_KEY_ENTER || e.key == GLFW_KEY_KP_ENTER) {
 					ui::MenuOverlay* overlay = getAncestorOfType<ui::MenuOverlay>();
@@ -664,41 +672,41 @@ struct MasterChannelWidget : ModuleWidget {
 		menu->addChild(nameValueField);	
 
 		menu->addChild(createCheckMenuItem("Symmetrical fades", "",
-			[=]() {return module->gInfo.symmetricalFade;},
-			[=]() {module->gInfo.symmetricalFade = !module->gInfo.symmetricalFade;}
+			[=]() {return module->gInfo->symmetricalFade;},
+			[=]() {module->gInfo->symmetricalFade = !module->gInfo->symmetricalFade;}
 		));
 		
-		FadeRateSlider *fadeSlider = new FadeRateSlider(&(module->master.fadeRate));
+		FadeRateSlider *fadeSlider = new FadeRateSlider(&(module->master->fadeRate));
 		fadeSlider->box.size.x = 200.0f;
 		menu->addChild(fadeSlider);
 		
-		FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(module->master.fadeProfile));
+		FadeProfileSlider *fadeProfSlider = new FadeProfileSlider(&(module->master->fadeProfile));
 		fadeProfSlider->box.size.x = 200.0f;
 		menu->addChild(fadeProfSlider);
 		
-		DimGainSlider *dimSliderItem = new DimGainSlider(&(module->master.dimGain), &(module->master.dimGainIntegerDB));
+		DimGainSlider *dimSliderItem = new DimGainSlider(&(module->master->dimGain), &(module->master->dimGainIntegerDB));
 		dimSliderItem->box.size.x = 200.0f;
 		menu->addChild(dimSliderItem);
 		
 		menu->addChild(createCheckMenuItem("DC blocker", "",
-			[=]() {return module->master.dcBlock;},
-			[=]() {module->master.dcBlock = !module->master.dcBlock;}
+			[=]() {return module->master->dcBlock;},
+			[=]() {module->master->dcBlock = !module->master->dcBlock;}
 		));
 		
 		ClippingItem *clipItem = createMenuItem<ClippingItem>("Clipping", RIGHT_ARROW);
-		clipItem->clippingSrc = &(module->master.clipping);
+		clipItem->clippingSrc = &(module->master->clipping);
 		menu->addChild(clipItem);
 		
 		VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU Colour", RIGHT_ARROW);
-		vuColItem->srcColor = &(module->master.vuColorThemeLocal);
+		vuColItem->srcColor = &(module->master->vuColorThemeLocal);
 		vuColItem->isGlobal = false;
 		menu->addChild(vuColItem);
 
 		menu->addChild(createSubmenuItem("Display colour", "", [=](Menu* menu) {
 			for (int i = 0; i < numPsColors; i++) {
 				menu->addChild(createCheckMenuItem(psColorNames[i], "",
-					[=]() {return module->master.dispColorLocal == i;},
-					[=]() {module->master.dispColorLocal = i;}
+					[=]() {return module->master->dispColorLocal == i;},
+					[=]() {module->master->dispColorLocal = i;}
 				));
 			}
 		}));			
@@ -732,9 +740,9 @@ struct MasterChannelWidget : ModuleWidget {
 		
 		// Master label
 		addChild(masterDisplay = createWidgetCentered<TileDisplaySep>(mm2px(Vec(midX, 31.36f))));
-		masterDisplay->text = module ? module->master.masterLabel : defLabelName;
+		masterDisplay->text = module ? module->master->masterLabel : defLabelName;
 		if (module) {
-			masterDisplay->dispColor = &(module->master.dispColorLocal);
+			masterDisplay->dispColor = &(module->master->dispColorLocal);
 		}
 		else {
 			masterDisplay->dispColor = &defaultColor;
@@ -745,19 +753,19 @@ struct MasterChannelWidget : ModuleWidget {
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(midX + jkoX + 0.05f - 5.35f, 70.3f)));
-			newVU->srcLevels = module->master.vu.vuValues;
-			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
-			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
-			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
-			newVU->clippingPtr = &(module->master.clipping);
+			newVU->srcLevels = module->master->vu.vuValues;
+			newVU->srcMuteGhost = &(module->master->fadeGainScaled);
+			newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
+			newVU->colorThemeLocal = &(module->master->vuColorThemeLocal);
+			newVU->clippingPtr = &(module->master->clipping);
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(midX + jkoX + 0.05f - 5.35f - 3.4f, 70.3f)));
 			newFP->srcParam = &(module->params[McGlobalInfo::MAIN_FADER_PARAM]);
-			newFP->srcParamWithCV = &(module->master.paramWithCV);
-			newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
-			newFP->srcFadeGain = &(module->master.fadeGain);
-			newFP->srcFadeRate = &(module->master.fadeRate);
+			newFP->srcParamWithCV = &(module->master->paramWithCV);
+			newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
+			newFP->srcFadeGain = &(module->master->fadeGain);
+			newFP->srcFadeRate = &(module->master->fadeRate);
 			addChild(newFP);				
 		}
 		
@@ -765,7 +773,7 @@ struct MasterChannelWidget : ModuleWidget {
 		MmMuteFadeButton* newMuteFade;
 		addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(midX, 109.8f)), module, McGlobalInfo::MAIN_MUTE_PARAM));
 		if (module) {
-			newMuteFade->type = &(module->master.fadeRate);
+			newMuteFade->type = &(module->master->fadeRate);
 		}
 		
 		// Master dim
@@ -795,7 +803,7 @@ struct MasterChannelWidget : ModuleWidget {
 			// Track labels (pull from module)
 			if (module->updateTrackLabelRequest != 0) {// pull request from module
 				// master display
-				masterDisplay->text = module->master.masterLabel;
+				masterDisplay->text = module->master->masterLabel;
 				module->updateTrackLabelRequest = 0;// all done pulling
 			}
 			
@@ -840,21 +848,21 @@ struct MasterChannelWidget : ModuleWidget {
 				char strBuf[32];
 
 				// Fader
-				snprintf(strBuf, 32, "%s level", module->master.masterLabel.c_str());
+				snprintf(strBuf, 32, "%s level", module->master->masterLabel.c_str());
 				module->paramQuantities[McGlobalInfo::MAIN_FADER_PARAM]->name = strBuf;
 				// Mute/fade
-				if (module->master.isFadeMode()) {
-					snprintf(strBuf, 32, "%s fade", module->master.masterLabel.c_str());
+				if (module->master->isFadeMode()) {
+					snprintf(strBuf, 32, "%s fade", module->master->masterLabel.c_str());
 				}
 				else {
-					snprintf(strBuf, 32, "%s mute", module->master.masterLabel.c_str());
+					snprintf(strBuf, 32, "%s mute", module->master->masterLabel.c_str());
 				}
 				module->paramQuantities[McGlobalInfo::MAIN_MUTE_PARAM]->name = strBuf;
 				// Dim
-				snprintf(strBuf, 32, "%s dim", module->master.masterLabel.c_str());
+				snprintf(strBuf, 32, "%s dim", module->master->masterLabel.c_str());
 				module->paramQuantities[McGlobalInfo::MAIN_DIM_PARAM]->name = strBuf;
 				// Mono
-				snprintf(strBuf, 32, "%s mono", module->master.masterLabel.c_str());
+				snprintf(strBuf, 32, "%s mono", module->master->masterLabel.c_str());
 				module->paramQuantities[McGlobalInfo::MAIN_MONO_PARAM]->name = strBuf;
 
 				// module->outputInfos[TMixMaster::MAIN_OUTPUTS + 0]->name = "Main left";

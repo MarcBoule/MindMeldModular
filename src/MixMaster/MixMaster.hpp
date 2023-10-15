@@ -52,7 +52,7 @@ struct GlobalInfo {
 	Param *paGroup;// all 16 (8) group numbers are here (track)
 	float *values20;
 	float maxTGFader;
-	float fadeRates[N_TRK + N_GRP];// reset and json done in tracks and groups. fade rates for tracks and groups
+	float fadeRates[N_TRK + N_GRP] = {};// reset and json done in tracks and groups. fade rates for tracks and groups
 	int groupUsage[N_GRP + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mutually exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
 
 	
@@ -154,13 +154,15 @@ struct GlobalInfo {
 		}
 	}	
 	
-	void construct(Param *_params, float* _values20) {
+	GlobalInfo(Param *_params, float* _values20) {
 		paMute = &_params[TRACK_MUTE_PARAMS];
 		paSolo = &_params[TRACK_SOLO_PARAMS];
 		paFade = &_params[TRACK_FADER_PARAMS];
 		paGroup = &_params[GROUP_SELECT_PARAMS];
 		values20 = _values20;
 		maxTGFader = std::pow(GlobalConst::trkAndGrpFaderMaxLinearGain, 1.0f / GlobalConst::trkAndGrpFaderScalingExponent);
+		
+		onReset();
 	}	
 	
 	void onReset() {

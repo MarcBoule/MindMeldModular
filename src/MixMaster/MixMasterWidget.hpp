@@ -70,55 +70,55 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(createMenuLabel("Audio settings"));
 	
 	FilterPosItem *filterPosItem = createMenuItem<FilterPosItem>("Filters", RIGHT_ARROW);
-	filterPosItem->filterPosSrc = &(module->gInfo.filterPos);
+	filterPosItem->filterPosSrc = &(module->gInfo->filterPos);
 	filterPosItem->isGlobal = true;
 	filterPosItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(filterPosItem);
 	
 	PanLawMonoItem *panLawMonoItem = createMenuItem<PanLawMonoItem>("Mono pan law", RIGHT_ARROW);
-	panLawMonoItem->panLawMonoSrc = &(module->gInfo.panLawMono);
+	panLawMonoItem->panLawMonoSrc = &(module->gInfo->panLawMono);
 	menu->addChild(panLawMonoItem);
 	
 	PanLawStereoItem *panLawStereoItem = createMenuItem<PanLawStereoItem>("Stereo pan mode", RIGHT_ARROW);
-	panLawStereoItem->panLawStereoSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[1]);
+	panLawStereoItem->panLawStereoSrc = &(module->gInfo->directOutPanStereoMomentCvLinearVol.cc4[1]);
 	panLawStereoItem->isGlobal = true;
 	panLawStereoItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(panLawStereoItem);
 	
 	ChainItem *chainItem = createMenuItem<ChainItem>("Chain input", RIGHT_ARROW);
-	chainItem->chainModeSrc = &(module->gInfo.chainMode);
+	chainItem->chainModeSrc = &(module->gInfo->chainMode);
 	menu->addChild(chainItem);
 	
 	DirectOutsModeItem *directOutsItem = createMenuItem<DirectOutsModeItem>("Direct outs", RIGHT_ARROW);
-	directOutsItem->tapModePtr = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[0]);
+	directOutsItem->tapModePtr = &(module->gInfo->directOutPanStereoMomentCvLinearVol.cc4[0]);
 	directOutsItem->isGlobal = true;
 	directOutsItem->localOp = &(module->globalToLocalOp);
-	directOutsItem->directOutsSkipGroupedTracksPtr = &(module->gInfo.directOutsSkipGroupedTracks);
+	directOutsItem->directOutsSkipGroupedTracksPtr = &(module->gInfo->directOutsSkipGroupedTracks);
 	menu->addChild(directOutsItem);
 	
 	MomentaryCvModeItem *momentItem = createMenuItem<MomentaryCvModeItem>("Mute/Solo CV", RIGHT_ARROW);
-	momentItem->momentaryCvButtonsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]);
+	momentItem->momentaryCvButtonsSrc = &(module->gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]);
 	momentItem->isGlobal = true;
 	momentItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(momentItem);
 
 	FadeSettingsItem *fadItem = createMenuItem<FadeSettingsItem>("Fades", RIGHT_ARROW);
-	fadItem->symmetricalFadeSrc = &(module->gInfo.symmetricalFade);
-	fadItem->fadeCvOutsWithVolCvSrc = &(module->gInfo.fadeCvOutsWithVolCv);
+	fadItem->symmetricalFadeSrc = &(module->gInfo->symmetricalFade);
+	fadItem->fadeCvOutsWithVolCvSrc = &(module->gInfo->fadeCvOutsWithVolCv);
 	menu->addChild(fadItem);
 	
 	LinCvItem *lincv0Item = createMenuItem<LinCvItem>("Vol CV inputs", RIGHT_ARROW);
-	lincv0Item->linearVolCvInputsSrc = &(module->gInfo.directOutPanStereoMomentCvLinearVol.cc4[3]);
+	lincv0Item->linearVolCvInputsSrc = &(module->gInfo->directOutPanStereoMomentCvLinearVol.cc4[3]);
 	menu->addChild(lincv0Item);
 	
 	menu->addChild(createCheckMenuItem("Poly-spread V and P track 1", "",
-		[=]() {return module->gInfo.polySpreadVandP != 0;},
-		[=]() {module->gInfo.polySpreadVandP ^= 0x1;}
+		[=]() {return module->gInfo->polySpreadVandP != 0;},
+		[=]() {module->gInfo->polySpreadVandP ^= 0x1;}
 	));
 
 	menu->addChild(createCheckMenuItem("Eco mode", "",
-		[=]() {return module->gInfo.ecoMode != 0;},
-		[=]() {module->gInfo.ecoMode = ~module->gInfo.ecoMode;}
+		[=]() {return module->gInfo->ecoMode != 0;},
+		[=]() {module->gInfo->ecoMode = ~module->gInfo->ecoMode;}
 	));
 
 	if (module->auxExpanderPresent) {
@@ -127,19 +127,19 @@ void appendContextMenu(Menu *menu) override {
 		menu->addChild(createMenuLabel("AuxSpander"));
 		
 		AuxSendsItem *auxSendsItem = createMenuItem<AuxSendsItem>("Aux sends", RIGHT_ARROW);
-		auxSendsItem->tapModePtr = &(module->gInfo.auxSendsMode);
+		auxSendsItem->tapModePtr = &(module->gInfo->auxSendsMode);
 		auxSendsItem->isGlobal = true;
 		auxSendsItem->localOp = &(module->globalToLocalOp);
-		auxSendsItem->groupsControlTrackSendLevelsSrc = &(module->gInfo.groupsControlTrackSendLevels);
+		auxSendsItem->groupsControlTrackSendLevelsSrc = &(module->gInfo->groupsControlTrackSendLevels);
 		menu->addChild(auxSendsItem);
 		
 		AuxReturnItem *auxRetunsItem = createMenuItem<AuxReturnItem>("Aux returns", RIGHT_ARROW);
-		auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo.auxReturnsMutedWhenMainSolo);
-		auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo.auxReturnsSolosMuteDry);
+		auxRetunsItem->auxReturnsMutedWhenMainSoloPtr = &(module->gInfo->auxReturnsMutedWhenMainSolo);
+		auxRetunsItem->auxReturnsSolosMuteDryPtr = &(module->gInfo->auxReturnsSolosMuteDry);
 		menu->addChild(auxRetunsItem);
 	
 		AuxRetFbProtItem *fbpItem = createMenuItem<AuxRetFbProtItem>("Routing returns to groups", RIGHT_ARROW);
-		fbpItem->groupedAuxReturnFeedbackProtectionSrc = &(module->gInfo.groupedAuxReturnFeedbackProtection);
+		fbpItem->groupedAuxReturnFeedbackProtectionSrc = &(module->gInfo->groupedAuxReturnFeedbackProtection);
 		menu->addChild(fbpItem);
 	}
 	
@@ -149,28 +149,28 @@ void appendContextMenu(Menu *menu) override {
 	menu->addChild(createMenuLabel("Visual settings"));
 	
 	DispColorItem *dispColItem = createMenuItem<DispColorItem>("Display colour", RIGHT_ARROW);
-	dispColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+	dispColItem->srcColor = &(module->gInfo->colorAndCloak.cc4[dispColorGlobal]);
 	dispColItem->isGlobal = true;
 	dispColItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(dispColItem);
 	
 	VuColorItem *vuColItem = createMenuItem<VuColorItem>("VU colour", RIGHT_ARROW);
-	vuColItem->srcColor = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+	vuColItem->srcColor = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 	vuColItem->isGlobal = true;
 	vuColItem->localOp = &(module->globalToLocalOp);
 	menu->addChild(vuColItem);
 	
 	KnobArcShowItem *knobArcShowItem = createMenuItem<KnobArcShowItem>("Knob arcs", RIGHT_ARROW);
-	knobArcShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+	knobArcShowItem->srcDetailsShow = &(module->gInfo->colorAndCloak.cc4[detailsShow]);
 	menu->addChild(knobArcShowItem);
 	
 	CvPointerShowItem *cvPointerShowItem = createMenuItem<CvPointerShowItem>("Fader CV pointers", RIGHT_ARROW);
-	cvPointerShowItem->srcDetailsShow = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
+	cvPointerShowItem->srcDetailsShow = &(module->gInfo->colorAndCloak.cc4[detailsShow]);
 	menu->addChild(cvPointerShowItem);
 	
 	menu->addChild(createCheckMenuItem("Cloaked mode", "",
-		[=]() {return module->gInfo.colorAndCloak.cc4[cloakedMode];},
-		[=]() {module->gInfo.colorAndCloak.cc4[cloakedMode] ^= 0xFF;}
+		[=]() {return module->gInfo->colorAndCloak.cc4[cloakedMode];},
+		[=]() {module->gInfo->colorAndCloak.cc4[cloakedMode] ^= 0xFF;}
 	));
 }
 

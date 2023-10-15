@@ -82,7 +82,7 @@ struct MixMaster : Module {
 	
 	// Need to save, with reset
 	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 4];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only, pad with three extra chars for alignment
-	GlobalInfo gInfo;
+	GlobalInfo* gInfo;
 	MixerTrack tracks[N_TRK];
 	MixerGroup groups[N_GRP];
 	std::vector<MixerAux> aux;// size 4
@@ -121,8 +121,8 @@ struct MixMaster : Module {
 	void sendToMessageBus(bool doTrackMoveInit) { 
 		int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
 		int8_t dispColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
-		vuColors[0] = gInfo.colorAndCloak.cc4[vuColorGlobal];
-		dispColors[0] = gInfo.colorAndCloak.cc4[dispColorGlobal];
+		vuColors[0] = gInfo->colorAndCloak.cc4[vuColorGlobal];
+		dispColors[0] = gInfo->colorAndCloak.cc4[dispColorGlobal];
 		if (vuColors[0] >= numVuThemes) {
 			for (int t = 0; t < N_TRK; t++) {
 				vuColors[1 + t] = tracks[t].vuColorThemeLocal;
@@ -230,19 +230,19 @@ struct MixMaster : Module {
 		}
 		snprintf(auxLabels, 4 * 4 + 1, "AUXAAUXBAUXCAUXD");
 
-		gInfo.construct(&params[0], values20);
+		gInfo = new GlobalInfo(&params[0], values20);
 		trackLabels[4 * (N_TRK + N_GRP)] = 0;
 		for (int i = 0; i < N_TRK; i++) {
-			tracks[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
+			tracks[i].construct(i, gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
 		}
 		for (int i = 0; i < N_GRP; i++) {
-			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
+			groups[i].construct(i, gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
 		}
 		aux.reserve(4);
 		for (int i = 0; i < 4; i++) {
-			aux.push_back(MixerAux(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]));
+			aux.push_back(MixerAux(i, gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]));
 		}
-		master.construct(&gInfo, &params[0], &inputs[0]);
+		master.construct(gInfo, &params[0], &inputs[0]);
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
@@ -255,6 +255,7 @@ struct MixMaster : Module {
 
   
 	~MixMaster() {
+		delete gInfo;
 		if (id > -1) {
 			mixerMessageBus.deregisterMember(id + 1);
 		}
@@ -262,7 +263,7 @@ struct MixMaster : Module {
 
 	
 	void onReset() override final {
-		gInfo.onReset();
+		gInfo->onReset();
 		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].onReset();
 		}
@@ -281,7 +282,7 @@ struct MixMaster : Module {
 		trackMoveInAuxRequest = 0;
 		trackOrGroupResetInAux = -1;
 		if (recurseNonJson) {
-			gInfo.resetNonJson();
+			gInfo->resetNonJson();
 			for (int i = 0; i < N_TRK; i++) {
 				tracks[i].resetNonJson();
 			}
@@ -311,7 +312,7 @@ struct MixMaster : Module {
 		json_object_set_new(rootJ, "trackLabels", json_string(trackLabels));
 		
 		// gInfo
-		gInfo.dataToJson(rootJ);
+		gInfo->dataToJson(rootJ);
 
 		// tracks
 		for (int i = 0; i < N_TRK; i++) {
@@ -345,7 +346,7 @@ struct MixMaster : Module {
 		}
 		
 		// gInfo
-		gInfo.dataFromJson(rootJ, nTrkSrc, nGrpSrc);
+		gInfo->dataFromJson(rootJ, nTrkSrc, nGrpSrc);
 
 		// tracks
 		for (int i = 0; i < std::min(N_TRK, nTrkSrc); i++) {
@@ -509,7 +510,7 @@ struct MixMaster : Module {
 
 
 	void onSampleRateChange() override {
-		gInfo.sampleTime = APP->engine->getSampleTime();
+		gInfo->sampleTime = APP->engine->getSampleTime();
 		for (int trk = 0; trk < N_TRK; trk++) {
 			tracks[trk].onSampleRateChange();
 		}
@@ -554,23 +555,23 @@ struct MixMaster : Module {
 			
 			// Tracks
 			int trackToProcess = (N_TRK == 16 ? sixteenCount : (sixteenCount & 0x7));
-			gInfo.updateSoloBit(trackToProcess);
+			gInfo->updateSoloBit(trackToProcess);
 			tracks[trackToProcess].updateSlowValues();// a track is updated once every 16 passes in input proceesing
 			// Groups
 			if ( (sixteenCount & 0x3) == 0) {// a group is updated once every 16 passes in input proceesing
 				int groupToProcess = sixteenCount >> (4 - N_GRP / 2);
-				gInfo.updateSoloBit(N_TRK + groupToProcess);
+				gInfo->updateSoloBit(N_TRK + groupToProcess);
 				groups[groupToProcess].updateSlowValues();
 			}
 			// Aux
 			if ( auxExpanderPresent && ((sixteenCount & 0x3) == 1) ) {// an aux is updated once every 16 passes in input proceesing
-				gInfo.updateReturnSoloBits();
+				gInfo->updateReturnSoloBits();
 				aux[sixteenCount >> 2].updateSlowValues();
 			}
 			// Master
 			if ((sixteenCount & 0x3) == 2) {// master and groupUsage updated once every 4 passes in input proceesing
 				master.updateSlowValues();
-				gInfo.updateGroupUsage();
+				gInfo->updateGroupUsage();
 			}
 			
 			processMuteSoloCvTriggers();
@@ -578,8 +579,8 @@ struct MixMaster : Module {
 		
 		
 		// ecoCode: cycles from 0 to 3 in eco mode, stuck at 0 when full power mode
-		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo.ecoMode);
-		bool ecoStagger4 = (gInfo.ecoMode == 0 || ecoCode == 3);
+		uint16_t ecoCode = (refresh.refreshCounter & 0x3 & gInfo->ecoMode);
+		bool ecoStagger4 = (gInfo->ecoMode == 0 || ecoCode == 3);
 				
 	
 		//********** Outputs **********
@@ -599,13 +600,13 @@ struct MixMaster : Module {
 		// Aux return when group
 		if (auxExpanderPresent) {
 			muteAuxSendWhenReturnGrouped = 0;
-			bool ecoStagger3 = (gInfo.ecoMode == 0 || ecoCode == 2);
+			bool ecoStagger3 = (gInfo->ecoMode == 0 || ecoCode == 2);
 			for (int auxi = 0; auxi < 4; auxi++) {
 				int auxGroup = aux[auxi].getAuxGroup();
 				if (auxGroup != 0) {
 					auxGroup--;
 					aux[auxi].process(&groupTaps[auxGroup << 1], &auxRetFadePanFadecv[auxi], ecoStagger3);// stagger 3
-					if (gInfo.groupedAuxReturnFeedbackProtection != 0) {
+					if (gInfo->groupedAuxReturnFeedbackProtection != 0) {
 						muteAuxSendWhenReturnGrouped |= (0x1 << ((auxGroup << 2) + auxi));
 					}
 				}
@@ -613,7 +614,7 @@ struct MixMaster : Module {
 		}
 		
 		// Groups (at this point, all groups's tap0 are setup and ready)
-		bool ecoStagger2 = (gInfo.ecoMode == 0 || ecoCode == 1);
+		bool ecoStagger2 = (gInfo->ecoMode == 0 || ecoCode == 1);
 		for (int i = 0; i < N_GRP; i++) {
 			groups[i].process(mix, ecoStagger2);// stagger 2
 		}
@@ -623,13 +624,13 @@ struct MixMaster : Module {
 			memcpy(auxTaps, auxReturns, 8 * 4);		
 			
 			// Mute tracks/groups when soloing aux returns
-			float newMuteTrackWhenSoloAuxRet = (gInfo.returnSoloBitMask != 0 && gInfo.auxReturnsSolosMuteDry != 0) ? 0.0f : 1.0f;
+			float newMuteTrackWhenSoloAuxRet = (gInfo->returnSoloBitMask != 0 && gInfo->auxReturnsSolosMuteDry != 0) ? 0.0f : 1.0f;
 			muteTrackWhenSoloAuxRetSlewer.process(args.sampleTime, newMuteTrackWhenSoloAuxRet);
 			mix[0] *= muteTrackWhenSoloAuxRetSlewer.out;
 			mix[1] *= muteTrackWhenSoloAuxRetSlewer.out;
 			
 			// Aux returns when no group
-			bool ecoStagger3 = (gInfo.ecoMode == 0 || ecoCode == 2);
+			bool ecoStagger3 = (gInfo->ecoMode == 0 || ecoCode == 2);
 			for (int auxi = 0; auxi < 4; auxi++) {
 				if (aux[auxi].getAuxGroup() == 0) {
 					aux[auxi].process(mix, &auxRetFadePanFadecv[auxi], ecoStagger3);// stagger 3
@@ -678,17 +679,17 @@ struct MixMaster : Module {
 			// Slow
 			messageToExpander->updateSlow = refresh.refreshCounter == 0;
 			if (messageToExpander->updateSlow) {
-				messageToExpander->colorAndCloak.cc1 = gInfo.colorAndCloak.cc1;
-				messageToExpander->directOutPanStereoMomentCvLinearVol.cc1 = gInfo.directOutPanStereoMomentCvLinearVol.cc1;
+				messageToExpander->colorAndCloak.cc1 = gInfo->colorAndCloak.cc1;
+				messageToExpander->directOutPanStereoMomentCvLinearVol.cc1 = gInfo->directOutPanStereoMomentCvLinearVol.cc1;
 				messageToExpander->muteAuxSendWhenReturnGrouped = muteAuxSendWhenReturnGrouped;
-				messageToExpander->ecoMode = gInfo.ecoMode;
+				messageToExpander->ecoMode = gInfo->ecoMode;
 				messageToExpander->trackMoveInAuxRequest = trackMoveInAuxRequest;
 				trackMoveInAuxRequest = 0;
 				messageToExpander->trackOrGroupResetInAux = trackOrGroupResetInAux;
 				trackOrGroupResetInAux = -1;
 				memcpy(messageToExpander->trackLabels, trackLabels, ((N_TRK + N_GRP) << 2));
 				
-				if (gInfo.colorAndCloak.cc4[dispColorGlobal] >= numDispThemes) {
+				if (gInfo->colorAndCloak.cc4[dispColorGlobal] >= numDispThemes) {
 					PackedBytes4 tmpDispCols[N_TRK / 4 + 1];
 					for (int i = 0; i < (N_TRK / 4); i++) {
 						for (int j = 0; j < 4; j++) {
@@ -743,7 +744,7 @@ struct MixMaster : Module {
 			outputs[FADE_CV_OUTPUT].setChannels(N_TRK == 16 ? numChannels16 : 8);
 			for (int trk = 0; trk < N_TRK; trk++) {
 				float outV = tracks[trk].fadeGain * 10.0f;
-				if (gInfo.fadeCvOutsWithVolCv) {
+				if (gInfo->fadeCvOutsWithVolCv) {
 					outV *= tracks[trk].volCv;
 				}
 				outputs[FADE_CV_OUTPUT].setVoltage(outV, trk);
@@ -756,11 +757,11 @@ struct MixMaster : Module {
 		// auxSends[] has room for 16+4 or 8+2 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 				
-		float masterGain = gInfo.masterFaderScalesSends == 0 ? 1.0f : (master.gainMatrixSlewers.out[1] + master.gainMatrixSlewers.out[2]) * master.chainGainAndMuteSlewers.out[2];
+		float masterGain = gInfo->masterFaderScalesSends == 0 ? 1.0f : (master.gainMatrixSlewers.out[1] + master.gainMatrixSlewers.out[2]) * master.chainGainAndMuteSlewers.out[2];
 		
 		// tracks
-		if ( gInfo.auxSendsMode < 4 && gInfo.masterFaderScalesSends == 0 && (gInfo.groupsControlTrackSendLevels == 0 || gInfo.groupUsage[N_GRP] == 0) ) {
-			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << (3 + N_TRK / 8)], (N_TRK * 2) * 4);
+		if ( gInfo->auxSendsMode < 4 && gInfo->masterFaderScalesSends == 0 && (gInfo->groupsControlTrackSendLevels == 0 || gInfo->groupUsage[N_GRP] == 0) ) {
+			memcpy(auxSends, &trackTaps[gInfo->auxSendsMode << (3 + N_TRK / 8)], (N_TRK * 2) * 4);
 		}
 		else {			
 			for (int trk = 0; trk < N_TRK; trk++) {
@@ -769,7 +770,7 @@ struct MixMaster : Module {
 				float trackL = trackTaps[tapIndex + (trk << 1) + 0];
 				float trackR = trackTaps[tapIndex + (trk << 1) + 1];
 				int trkGroup;
-				if (gInfo.groupsControlTrackSendLevels != 0 && (trkGroup = (int)(tracks[trk].paGroup->getValue() + 0.5f)) != 0) {
+				if (gInfo->groupsControlTrackSendLevels != 0 && (trkGroup = (int)(tracks[trk].paGroup->getValue() + 0.5f)) != 0) {
 					trkGroup--;
 					simd::float_4 sigs(trackL, trackR, trackR, trackL);
 					sigs = sigs * groups[trkGroup].gainMatrixSlewers.out;
@@ -788,8 +789,8 @@ struct MixMaster : Module {
 		}
 		
 		// groups
-		if (gInfo.auxSendsMode < 4 && gInfo.masterFaderScalesSends == 0) {
-			memcpy(&auxSends[N_TRK * 2], &groupTaps[gInfo.auxSendsMode << (1 + N_GRP / 2)], (N_GRP * 2) * 4);
+		if (gInfo->auxSendsMode < 4 && gInfo->masterFaderScalesSends == 0) {
+			memcpy(&auxSends[N_TRK * 2], &groupTaps[gInfo->auxSendsMode << (1 + N_GRP / 2)], (N_GRP * 2) * 4);
 		}
 		else {
 			for (int grp = 0; grp < N_GRP; grp++) {
@@ -808,16 +809,16 @@ struct MixMaster : Module {
 			outputs[DIRECT_OUTPUTS + outi].setChannels(numChannels16);
 
 			for (unsigned int i = 0; i < 8; i++) {
-				if (gInfo.directOutsSkipGroupedTracks != 0 && tracks[base + i].paGroup->getValue() >= 0.5f) {
+				if (gInfo->directOutsSkipGroupedTracks != 0 && tracks[base + i].paGroup->getValue() >= 0.5f) {
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i);
 					outputs[DIRECT_OUTPUTS + outi].setVoltage(0.0f, 2 * i + 1);
 				}
 				else {
-					int tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4 ? gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] : tracks[base + i].directOutsMode;
+					int tapIndex = gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] < 4 ? gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] : tracks[base + i].directOutsMode;
 					int offset = (tapIndex << (3 + N_TRK / 8)) + ((base + i) << 1);
 					float leftSig = trackTaps[offset + 0];
 					float rightSig = (tapIndex < 2 && !inputs[((base + i) << 1) + 1].isConnected()) ? 0.0f : trackTaps[offset + 1];
-					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					if (auxExpanderPresent && gInfo->auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						leftSig *= muteTrackWhenSoloAuxRetSlewer.out;
 						rightSig *= muteTrackWhenSoloAuxRetSlewer.out;
 					}
@@ -834,9 +835,9 @@ struct MixMaster : Module {
 			outputs[outputNum].setChannels(auxExpanderPresent ? numChannels16 : 8);
 
 			// Groups
-			int tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0];			
-			if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
-				if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+			int tapIndex = gInfo->directOutPanStereoMomentCvLinearVol.cc4[0];			
+			if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
+				if (auxExpanderPresent && gInfo->auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 					for (unsigned int i = 0; i < N_GRP; i++) {
 						int offset = (tapIndex << (1 + N_GRP / 2)) + (i << 1);
 						outputs[outputNum].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
@@ -851,7 +852,7 @@ struct MixMaster : Module {
 				for (unsigned int i = 0; i < N_GRP; i++) {
 					tapIndex = groups[i].directOutsMode;
 					int offset = (tapIndex << (1 + N_GRP / 2)) + (i << 1);
-					if (auxExpanderPresent && gInfo.auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
+					if (auxExpanderPresent && gInfo->auxReturnsSolosMuteDry != 0 && tapIndex == 3) {
 						outputs[outputNum].setVoltage(groupTaps[offset + 0] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i);
 						outputs[outputNum].setVoltage(groupTaps[offset + 1] * muteTrackWhenSoloAuxRetSlewer.out, 2 * i + 1);
 					}
@@ -865,8 +866,8 @@ struct MixMaster : Module {
 			// Aux
 			// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other direct outs
 			if (auxExpanderPresent) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
-					tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0];
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
+					tapIndex = gInfo->directOutPanStereoMomentCvLinearVol.cc4[0];
 					memcpy(outputs[outputNum].getVoltages(8), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
 				else {// per aux direct outs
@@ -909,7 +910,7 @@ struct MixMaster : Module {
 				// track mutes
 				state = muteSoloCvTriggers[trk].process(inputs[TRACK_MUTESOLO_INPUTS + 0].getVoltage(trk));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? tracks[trk].momentCvMuteLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? tracks[trk].momentCvMuteLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_MUTE_PARAMS + trk].getValue();// toggle
 							params[TRACK_MUTE_PARAMS + trk].setValue(newParam);
@@ -927,7 +928,7 @@ struct MixMaster : Module {
 				// track solos
 				state = muteSoloCvTriggers[trk + N_TRK].process(inputs[soloInputNum].getVoltage((N_TRK == 16 ? 0 : 8) + trk));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? tracks[trk].momentCvSoloLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? tracks[trk].momentCvSoloLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[TRACK_SOLO_PARAMS + trk].getValue();// toggle
 							params[TRACK_SOLO_PARAMS + trk].setValue(newParam);
@@ -944,7 +945,7 @@ struct MixMaster : Module {
 				// group mutes
 				state = muteSoloCvTriggers[grp + N_TRK * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? groups[grp].momentCvMuteLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? groups[grp].momentCvMuteLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_MUTE_PARAMS + grp].getValue();// toggle
 							params[GROUP_MUTE_PARAMS + grp].setValue(newParam);
@@ -957,7 +958,7 @@ struct MixMaster : Module {
 				// group solos 
 				state = muteSoloCvTriggers[grp + N_TRK * 2 + N_GRP].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(grp + N_GRP));
 				if (state != 0) {
-					if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? groups[grp].momentCvSoloLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+					if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? groups[grp].momentCvSoloLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 						if (state == 1) {
 							float newParam = 1.0f - params[GROUP_SOLO_PARAMS + grp].getValue();// toggle
 							params[GROUP_SOLO_PARAMS + grp].setValue(newParam);
@@ -971,7 +972,7 @@ struct MixMaster : Module {
 			// master mute
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2));
 			if (state != 0) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMuteLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMuteLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MUTE_PARAM].getValue();// toggle
 						params[MAIN_MUTE_PARAM].setValue(newParam);
@@ -984,7 +985,7 @@ struct MixMaster : Module {
 			// master dim
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 1));
 			if (state != 0) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvDimLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvDimLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_DIM_PARAM].getValue();// toggle
 						params[MAIN_DIM_PARAM].setValue(newParam);
@@ -997,7 +998,7 @@ struct MixMaster : Module {
 			// master mono
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 2));
 			if (state != 0) {
-				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMonoLocal : gInfo.directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMonoLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MONO_PARAM].getValue();// toggle
 						params[MAIN_MONO_PARAM].setValue(newParam);
@@ -1057,7 +1058,7 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(trackDisplays[i] = createWidget<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i - 5.3, 2.2))));
 			if (module) {
 				// trackDisplays[i]->tabNextFocus = // done after the for loop
-				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
+				trackDisplays[i]->colorAndCloak = &(module->gInfo->colorAndCloak);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
 				trackDisplays[i]->tracks = module->tracks;
 				trackDisplays[i]->trackNumSrc = i;
@@ -1090,11 +1091,11 @@ struct MixMasterWidget : ModuleWidget {
 			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8))));
 			addParam(panKnobTrack = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i));
 			if (module) {
-				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
-				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
+				panKnobTrack->detailsShowSrc = &(module->gInfo->colorAndCloak.cc4[detailsShow]);
+				panKnobTrack->cloakedModeSrc = &(module->gInfo->colorAndCloak.cc4[cloakedMode]);
 				panKnobTrack->paramWithCV = &(module->tracks[i].pan);
 				panKnobTrack->paramCvConnected = &(module->tracks[i].panCvConnected);
-				panKnobTrack->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobTrack->dispColorGlobalSrc = &(module->gInfo->colorAndCloak.cc4[dispColorGlobal]);
 				panKnobTrack->dispColorLocalSrc = &(module->tracks[i].dispColorLocal);
 			}
 			
@@ -1102,20 +1103,20 @@ struct MixMasterWidget : ModuleWidget {
 			MmSmallFaderWithLink *newFader;
 			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i));
 			if (module) {
-				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->linkBitMaskSrc = &(module->gInfo->linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = module->tracks[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->tracks[i].fadeGainScaledWithSolo);
-				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TMixMaster::TRACK_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
-				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+				newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				newFP->srcFadeRate = module->tracks[i].fadeRate;
 				newFP->dispColorLocalPtr = &(module->tracks[i].dispColorLocal);
@@ -1157,7 +1158,7 @@ struct MixMasterWidget : ModuleWidget {
 			GroupSelectDisplay* groupSelectDisplay;
 			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
 			if (module) {
-				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
+				groupSelectDisplay->srcColor = &(module->gInfo->colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
 				groupSelectDisplay->numGroups = N_GRP;
 			}
@@ -1180,7 +1181,7 @@ struct MixMasterWidget : ModuleWidget {
 			addChild(groupDisplays[i] = createWidget<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i - 5.3, 21.0))));
 			if (module) {
 				// groupDisplays[i]->tabNextFocus = // done after the for loop
-				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
+				groupDisplays[i]->colorAndCloak = &(module->gInfo->colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
@@ -1205,11 +1206,11 @@ struct MixMasterWidget : ModuleWidget {
 			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8))));
 			addParam(panKnobGroup = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i));
 			if (module) {
-				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
-				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
+				panKnobGroup->detailsShowSrc = &(module->gInfo->colorAndCloak.cc4[detailsShow]);
+				panKnobGroup->cloakedModeSrc = &(module->gInfo->colorAndCloak.cc4[cloakedMode]);
 				panKnobGroup->paramWithCV = &(module->groups[i].pan);
 				panKnobGroup->paramCvConnected = &(module->groups[i].panCvConnected);
-				panKnobGroup->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobGroup->dispColorGlobalSrc = &(module->gInfo->colorAndCloak.cc4[dispColorGlobal]);
 				panKnobGroup->dispColorLocalSrc = &(module->groups[i].dispColorLocal);
 			}
 			
@@ -1217,20 +1218,20 @@ struct MixMasterWidget : ModuleWidget {
 			MmSmallFaderWithLink *newFader;
 			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i));		
 			if (module) {
-				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->linkBitMaskSrc = &(module->gInfo->linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = module->groups[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->groups[i].fadeGainScaled);
-				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TMixMaster::GROUP_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
-				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+				newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				newFP->srcFadeRate = module->groups[i].fadeRate;
 				newFP->dispColorLocalPtr = &(module->groups[i].dispColorLocal);
@@ -1274,7 +1275,7 @@ struct MixMasterWidget : ModuleWidget {
 			masterDisplay->fadeRate = &(module->master.fadeRate);
 			masterDisplay->fadeProfile = &(module->master.fadeProfile);
 			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
-			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo.directOutPanStereoMomentCvLinearVol);
+			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo->directOutPanStereoMomentCvLinearVol);
 			masterDisplay->momentCvMuteLocal = &(module->master.momentCvMuteLocal);
 			masterDisplay->momentCvDimLocal = &(module->master.momentCvDimLocal);
 			masterDisplay->momentCvMonoLocal = &(module->master.momentCvMonoLocal);
@@ -1283,9 +1284,9 @@ struct MixMasterWidget : ModuleWidget {
 			masterDisplay->dimGain = &(module->master.dimGain);
 			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
-			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+			masterDisplay->colorAndCloak = &(module->gInfo->colorAndCloak);
 			masterDisplay->idSrc = &(module->id);
-			masterDisplay->masterFaderScalesSendsSrc = &(module->gInfo.masterFaderScalesSends);
+			masterDisplay->masterFaderScalesSendsSrc = &(module->gInfo->masterFaderScalesSends);
 		}
 		
 		// Master fader
@@ -1295,7 +1296,7 @@ struct MixMasterWidget : ModuleWidget {
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
 			newVU->srcLevels = module->master.vu.vuValues;
 			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
-			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+			newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			newVU->clippingPtr = &(module->master.clipping);
 			addChild(newVU);
@@ -1303,7 +1304,7 @@ struct MixMasterWidget : ModuleWidget {
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[TMixMaster::MAIN_FADER_PARAM]);
 			newFP->srcParamWithCV = &(module->master.paramWithCV);
-			newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+			newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
 			newFP->srcFadeGain = &(module->master.fadeGain);
 			newFP->srcFadeRate = &(module->master.fadeRate);
 			addChild(newFP);				
@@ -1369,7 +1370,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			addChild(trackDisplays[i] = createWidget<TrackDisplay<TMixMaster::MixerTrack>>(mm2px(Vec(xTrck1 + 12.7 * i - 5.3, 2.2))));
 			if (module) {
 				// trackDisplays[i]->tabNextFocus = // done after the for loop
-				trackDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
+				trackDisplays[i]->colorAndCloak = &(module->gInfo->colorAndCloak);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
 				trackDisplays[i]->tracks = module->tracks;
 				trackDisplays[i]->trackNumSrc = i;
@@ -1402,11 +1403,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8))));
 			addParam(panKnobTrack = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xTrck1 + 12.7 * i, 51.8)), module, TMixMaster::TRACK_PAN_PARAMS + i));
 			if (module) {
-				panKnobTrack->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
-				panKnobTrack->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
+				panKnobTrack->detailsShowSrc = &(module->gInfo->colorAndCloak.cc4[detailsShow]);
+				panKnobTrack->cloakedModeSrc = &(module->gInfo->colorAndCloak.cc4[cloakedMode]);
 				panKnobTrack->paramWithCV = &(module->tracks[i].pan);
 				panKnobTrack->paramCvConnected = &(module->tracks[i].panCvConnected);
-				panKnobTrack->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobTrack->dispColorGlobalSrc = &(module->gInfo->colorAndCloak.cc4[dispColorGlobal]);
 				panKnobTrack->dispColorLocalSrc = &(module->tracks[i].dispColorLocal);
 			}
 			
@@ -1414,20 +1415,20 @@ struct MixMasterJrWidget : ModuleWidget {
 			MmSmallFaderWithLink *newFader;
 			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xTrck1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::TRACK_FADER_PARAMS + i));
 			if (module) {
-				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->linkBitMaskSrc = &(module->gInfo->linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xTrck1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = module->tracks[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->tracks[i].fadeGainScaledWithSolo);
-				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->tracks[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerTrack *newFP = createWidgetCentered<CvAndFadePointerTrack>(mm2px(Vec(xTrck1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TMixMaster::TRACK_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->tracks[i].paramWithCV);
-				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+				newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
 				newFP->srcFadeGain = &(module->tracks[i].fadeGain);
 				newFP->srcFadeRate = module->tracks[i].fadeRate;
 				newFP->dispColorLocalPtr = &(module->tracks[i].dispColorLocal);
@@ -1469,7 +1470,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			GroupSelectDisplay* groupSelectDisplay;
 			addParam(groupSelectDisplay = createParamCentered<GroupSelectDisplay>(mm2px(Vec(xTrck1 + 12.7 * i, 123.1)), module, TMixMaster::GROUP_SELECT_PARAMS + i));
 			if (module) {
-				groupSelectDisplay->srcColor = &(module->gInfo.colorAndCloak);
+				groupSelectDisplay->srcColor = &(module->gInfo->colorAndCloak);
 				groupSelectDisplay->srcColorLocal = &(module->tracks[i].dispColorLocal);
 				groupSelectDisplay->numGroups = N_GRP;
 			}
@@ -1487,7 +1488,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			addChild(groupDisplays[i] = createWidget<GroupDisplay<TMixMaster::MixerGroup>>(mm2px(Vec(xGrp1 + 12.7 * i - 5.3, 21.0))));
 			if (module) {
 				// groupDisplays[i]->tabNextFocus = // done after the for loop
-				groupDisplays[i]->colorAndCloak = &(module->gInfo.colorAndCloak);
+				groupDisplays[i]->colorAndCloak = &(module->gInfo->colorAndCloak);
 				groupDisplays[i]->dispColorLocal = &(module->groups[i].dispColorLocal);
 				groupDisplays[i]->srcGroup = &(module->groups[i]);
 				groupDisplays[i]->updateTrackLabelRequestPtr = &(module->updateTrackLabelRequest);
@@ -1512,11 +1513,11 @@ struct MixMasterJrWidget : ModuleWidget {
 			svgPanel->fb->addChild(createWidgetCentered<Dots7p5cSvg>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8))));
 			addParam(panKnobGroup = createParamCentered<MmSmallKnobGreyWithArc>(mm2px(Vec(xGrp1 + 12.7 * i, 51.8)), module, TMixMaster::GROUP_PAN_PARAMS + i));
 			if (module) {
-				panKnobGroup->detailsShowSrc = &(module->gInfo.colorAndCloak.cc4[detailsShow]);
-				panKnobGroup->cloakedModeSrc = &(module->gInfo.colorAndCloak.cc4[cloakedMode]);
+				panKnobGroup->detailsShowSrc = &(module->gInfo->colorAndCloak.cc4[detailsShow]);
+				panKnobGroup->cloakedModeSrc = &(module->gInfo->colorAndCloak.cc4[cloakedMode]);
 				panKnobGroup->paramWithCV = &(module->groups[i].pan);
 				panKnobGroup->paramCvConnected = &(module->groups[i].panCvConnected);
-				panKnobGroup->dispColorGlobalSrc = &(module->gInfo.colorAndCloak.cc4[dispColorGlobal]);
+				panKnobGroup->dispColorGlobalSrc = &(module->gInfo->colorAndCloak.cc4[dispColorGlobal]);
 				panKnobGroup->dispColorLocalSrc = &(module->groups[i].dispColorLocal);
 			}
 			
@@ -1524,20 +1525,20 @@ struct MixMasterJrWidget : ModuleWidget {
 			MmSmallFaderWithLink *newFader;
 			addParam(newFader = createParamCentered<MmSmallFaderWithLink>(mm2px(Vec(xGrp1 + 3.67 + 12.7 * i, 81.2)), module, TMixMaster::GROUP_FADER_PARAMS + i));		
 			if (module) {
-				newFader->linkBitMaskSrc = &(module->gInfo.linkBitMask);
+				newFader->linkBitMaskSrc = &(module->gInfo->linkBitMask);
 				newFader->baseFaderParamId = TMixMaster::TRACK_FADER_PARAMS;
 				// VU meters
 				VuMeterTrack *newVU = createWidgetCentered<VuMeterTrack>(mm2px(Vec(xGrp1 + 12.7 * i, 81.2)));
 				newVU->srcLevels = module->groups[i].vu.vuValues;
 				newVU->srcMuteGhost = &(module->groups[i].fadeGainScaled);
-				newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+				newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 				newVU->colorThemeLocal = &(module->groups[i].vuColorThemeLocal);
 				addChild(newVU);
 				// Fade pointers
 				CvAndFadePointerGroup *newFP = createWidgetCentered<CvAndFadePointerGroup>(mm2px(Vec(xGrp1 - 2.95 + 12.7 * i, 81.2)));
 				newFP->srcParam = &(module->params[TMixMaster::GROUP_FADER_PARAMS + i]);
 				newFP->srcParamWithCV = &(module->groups[i].paramWithCV);
-				newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+				newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
 				newFP->srcFadeGain = &(module->groups[i].fadeGain);
 				newFP->srcFadeRate = module->groups[i].fadeRate;
 				newFP->dispColorLocalPtr = &(module->groups[i].dispColorLocal);
@@ -1581,7 +1582,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			masterDisplay->fadeRate = &(module->master.fadeRate);
 			masterDisplay->fadeProfile = &(module->master.fadeProfile);
 			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);		
-			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo.directOutPanStereoMomentCvLinearVol);
+			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo->directOutPanStereoMomentCvLinearVol);
 			masterDisplay->momentCvMuteLocal = &(module->master.momentCvMuteLocal);
 			masterDisplay->momentCvDimLocal = &(module->master.momentCvDimLocal);
 			masterDisplay->momentCvMonoLocal = &(module->master.momentCvMonoLocal);
@@ -1590,9 +1591,9 @@ struct MixMasterJrWidget : ModuleWidget {
 			masterDisplay->dimGain = &(module->master.dimGain);
 			masterDisplay->masterLabel = module->master.masterLabel;
 			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
-			masterDisplay->colorAndCloak = &(module->gInfo.colorAndCloak);
+			masterDisplay->colorAndCloak = &(module->gInfo->colorAndCloak);
 			masterDisplay->idSrc = &(module->id);
-			masterDisplay->masterFaderScalesSendsSrc = &(module->gInfo.masterFaderScalesSends);
+			masterDisplay->masterFaderScalesSendsSrc = &(module->gInfo->masterFaderScalesSends);
 		}
 		
 		// Master fader
@@ -1602,7 +1603,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82 - 12.7 * 10, 70.3)));
 			newVU->srcLevels = module->master.vu.vuValues;
 			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
-			newVU->colorThemeGlobal = &(module->gInfo.colorAndCloak.cc4[vuColorGlobal]);
+			newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
 			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
 			newVU->clippingPtr = &(module->master.clipping);
 			addChild(newVU);
@@ -1610,7 +1611,7 @@ struct MixMasterJrWidget : ModuleWidget {
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 12.7 * 10 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[TMixMaster::MAIN_FADER_PARAM]);
 			newFP->srcParamWithCV = &(module->master.paramWithCV);
-			newFP->colorAndCloak = &(module->gInfo.colorAndCloak);
+			newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
 			newFP->srcFadeGain = &(module->master.fadeGain);
 			newFP->srcFadeRate = &(module->master.fadeRate);
 			addChild(newFP);				
