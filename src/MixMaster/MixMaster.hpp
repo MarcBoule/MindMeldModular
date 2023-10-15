@@ -440,11 +440,12 @@ struct MixerMaster {
 	Input *inChain;
 	Input *inVol;
 
+
 	float calcFadeGain() {return params[MAIN_MUTE_PARAM].getValue() >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return fadeRate >= GlobalConst::minFadeRate;}
 
 
-	void construct(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
+	MixerMaster(GlobalInfo *_gInfo, Param *_params, Input *_inputs) {
 		gInfo = _gInfo;
 		params = _params;
 		inChain = &_inputs[CHAIN_INPUTS];
@@ -452,6 +453,8 @@ struct MixerMaster {
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		chainGainAndMuteSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewFast)); // slew rate is in input-units per second (ex: V/s)
 		dcBlockerStereo.setParameters(true, 0.1f);
+		
+		onReset();
 	}
 
 

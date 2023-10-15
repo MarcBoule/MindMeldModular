@@ -203,7 +203,7 @@ void step() override {
 		// Track labels (pull from module)
 		if (module->updateTrackLabelRequest != 0) {// pull request from module
 			// master display
-			masterDisplay->text = std::string(&(module->master.masterLabel[0]), 6);
+			masterDisplay->text = std::string(&(module->master->masterLabel[0]), 6);
 			// track displays
 			for (int trk = 0; trk < N_TRK; trk++) {
 				trackDisplays[trk]->text = std::string(&(module->trackLabels[trk * 4]), 4);
@@ -234,7 +234,7 @@ void step() override {
 					for (int i = 0; i < N_GRP; i++) {
 						module->groups[i].vuColorThemeLocal = module->globalToLocalOp.operand;
 					}
-					module->master.vuColorThemeLocal = module->globalToLocalOp.operand;
+					module->master->vuColorThemeLocal = module->globalToLocalOp.operand;
 					break;
 				}
 				case (GTOL_LABELCOL) : {
@@ -244,7 +244,7 @@ void step() override {
 					for (int i = 0; i < N_GRP; i++) {
 						module->groups[i].dispColorLocal = module->globalToLocalOp.operand;
 					}
-					module->master.dispColorLocal = module->globalToLocalOp.operand;
+					module->master->dispColorLocal = module->globalToLocalOp.operand;
 					break;
 				}
 				case (GTOL_STEREOPAN) : {
@@ -292,9 +292,9 @@ void step() override {
 						module->groups[i].momentCvMuteLocal = module->globalToLocalOp.operand;
 						module->groups[i].momentCvSoloLocal = module->globalToLocalOp.operand;
 					}
-					module->master.momentCvMuteLocal = module->globalToLocalOp.operand;
-					module->master.momentCvDimLocal = module->globalToLocalOp.operand;
-					module->master.momentCvMonoLocal = module->globalToLocalOp.operand;
+					module->master->momentCvMuteLocal = module->globalToLocalOp.operand;
+					module->master->momentCvDimLocal = module->globalToLocalOp.operand;
+					module->master->momentCvMonoLocal = module->globalToLocalOp.operand;
 					break;
 				}
 			}
@@ -371,12 +371,12 @@ void step() override {
 				snprintf(strBuf, 32, "%s LPF cutoff", groupLabel.c_str());
 				module->paramQuantities[TMixMaster::GROUP_LPCUT_PARAMS + i]->name = strBuf;
 			}
-			std::string masterLabel = std::string(module->master.masterLabel, 6);
+			std::string masterLabel = std::string(module->master->masterLabel, 6);
 			// Fader
 			snprintf(strBuf, 32, "%s level", masterLabel.c_str());
 			module->paramQuantities[TMixMaster::MAIN_FADER_PARAM]->name = strBuf;
 			// Mute/fade
-			if (module->master.isFadeMode()) {
+			if (module->master->isFadeMode()) {
 				snprintf(strBuf, 32, "%s fade", masterLabel.c_str());
 			}
 			else {

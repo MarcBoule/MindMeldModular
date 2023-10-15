@@ -86,7 +86,7 @@ struct MixMaster : Module {
 	MixerTrack tracks[N_TRK];
 	MixerGroup groups[N_GRP];
 	std::vector<MixerAux> aux;// size 4
-	MixerMaster master;
+	MixerMaster* master;
 	
 	// No need to save, with reset
 	int updateTrackLabelRequest;// 0 when nothing to do, 1 for read names in widget
@@ -116,7 +116,7 @@ struct MixMaster : Module {
 	float values20[20];// slow expander
 	alignas(4) char auxLabels[4 * 4 + 4];// slow expander
 	GlobalToLocalOp globalToLocalOp;
-		
+
 		
 	void sendToMessageBus(bool doTrackMoveInit) { 
 		int8_t vuColors[1 + 16 + 4 + 4];// room for global, tracks, groups, aux
@@ -147,10 +147,10 @@ struct MixMaster : Module {
 		}
 		
 		if (N_TRK < 16) {
-			mixerMessageBus.sendJr(id + 1, master.masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels, vuColors, dispColors, doTrackMoveInit);
+			mixerMessageBus.sendJr(id + 1, master->masterLabel, trackLabels, &(trackLabels[N_TRK * 4]), auxLabels, vuColors, dispColors, doTrackMoveInit);
 		}
 		else {
-			mixerMessageBus.send(id + 1, master.masterLabel, trackLabels, auxLabels, vuColors, dispColors, doTrackMoveInit);
+			mixerMessageBus.send(id + 1, master->masterLabel, trackLabels, auxLabels, vuColors, dispColors, doTrackMoveInit);
 		}
 	}
 	
@@ -242,7 +242,7 @@ struct MixMaster : Module {
 		for (int i = 0; i < 4; i++) {
 			aux.push_back(MixerAux(i, gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]));
 		}
-		master.construct(gInfo, &params[0], &inputs[0]);
+		master = new MixerMaster(gInfo, &params[0], &inputs[0]);
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
 		onReset();
 
@@ -256,6 +256,7 @@ struct MixMaster : Module {
   
 	~MixMaster() {
 		delete gInfo;
+		delete master;
 		if (id > -1) {
 			mixerMessageBus.deregisterMember(id + 1);
 		}
@@ -273,7 +274,7 @@ struct MixMaster : Module {
 		for (int i = 0; i < 4; i++) {
 			aux[i].onReset();
 		}
-		master.onReset();
+		master->onReset();
 		resetNonJson(false);
 	}
 	void resetNonJson(bool recurseNonJson) {
@@ -292,7 +293,7 @@ struct MixMaster : Module {
 			for (int i = 0; i < 4; i++) {
 				aux[i].resetNonJson();
 			}
-			master.resetNonJson();
+			master->resetNonJson();
 		}
 		for (int i = 0; i < 20; i++) {
 			values20[i] = 0.0f;
@@ -327,7 +328,7 @@ struct MixMaster : Module {
 			aux[i].dataToJson(rootJ);
 		}
 		// master
-		master.dataToJson(rootJ);
+		master->dataToJson(rootJ);
 		
 		return rootJ;
 	}
@@ -361,7 +362,7 @@ struct MixMaster : Module {
 			aux[i].dataFromJson(rootJ);
 		}
 		// master
-		master.dataFromJson(rootJ);
+		master->dataFromJson(rootJ);
 		
 		resetNonJson(true);
 	}
@@ -517,7 +518,7 @@ struct MixMaster : Module {
 		for (int grp = 0; grp < N_GRP; grp++) {
 			groups[grp].onSampleRateChange();
 		}
-		master.onSampleRateChange();
+		master->onSampleRateChange();
 	}
 	
 
@@ -570,7 +571,7 @@ struct MixMaster : Module {
 			}
 			// Master
 			if ((sixteenCount & 0x3) == 2) {// master and groupUsage updated once every 4 passes in input proceesing
-				master.updateSlowValues();
+				master->updateSlowValues();
 				gInfo->updateGroupUsage();
 			}
 			
@@ -638,7 +639,7 @@ struct MixMaster : Module {
 			}
 		}
 		// Master
-		master.process(mix, ecoStagger4);// stagger 4
+		master->process(mix, ecoStagger4);// stagger 4
 		
 		// Set master outputs
 		outputs[MAIN_OUTPUTS + 0].setVoltage(mix[0]);
@@ -757,7 +758,7 @@ struct MixMaster : Module {
 		// auxSends[] has room for 16+4 or 8+2 stereo values of the sends to the aux panel (Trk1L, Trk1R, Trk2L, Trk2R ... Trk16L, Trk16R, Grp1L, Grp1R ... Grp4L, Grp4R)
 		// populate auxSends[0..39]: Take the trackTaps/groupTaps indicated by the Aux sends mode (with per-track option)
 				
-		float masterGain = gInfo->masterFaderScalesSends == 0 ? 1.0f : (master.gainMatrixSlewers.out[1] + master.gainMatrixSlewers.out[2]) * master.chainGainAndMuteSlewers.out[2];
+		float masterGain = gInfo->masterFaderScalesSends == 0 ? 1.0f : (master->gainMatrixSlewers.out[1] + master->gainMatrixSlewers.out[2]) * master->chainGainAndMuteSlewers.out[2];
 		
 		// tracks
 		if ( gInfo->auxSendsMode < 4 && gInfo->masterFaderScalesSends == 0 && (gInfo->groupsControlTrackSendLevels == 0 || gInfo->groupUsage[N_GRP] == 0) ) {
@@ -972,7 +973,7 @@ struct MixMaster : Module {
 			// master mute
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2));
 			if (state != 0) {
-				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMuteLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master->momentCvMuteLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MUTE_PARAM].getValue();// toggle
 						params[MAIN_MUTE_PARAM].setValue(newParam);
@@ -985,7 +986,7 @@ struct MixMaster : Module {
 			// master dim
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 1].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 1));
 			if (state != 0) {
-				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvDimLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master->momentCvDimLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_DIM_PARAM].getValue();// toggle
 						params[MAIN_DIM_PARAM].setValue(newParam);
@@ -998,7 +999,7 @@ struct MixMaster : Module {
 			// master mono
 			state = muteSoloCvTriggers[N_TRK * 2 + N_GRP * 2 + 2].process(inputs[GRPM_MUTESOLO_INPUT].getVoltage(N_GRP * 2 + 2));
 			if (state != 0) {
-				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master.momentCvMonoLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
+				if (gInfo->directOutPanStereoMomentCvLinearVol.cc4[2] >= 2 ? master->momentCvMonoLocal : gInfo->directOutPanStereoMomentCvLinearVol.cc4[2]) {
 					if (state == 1) {
 						float newParam = 1.0f - params[MAIN_MONO_PARAM].getValue();// toggle
 						params[MAIN_MONO_PARAM].setValue(newParam);
@@ -1270,20 +1271,20 @@ struct MixMasterWidget : ModuleWidget {
 		// Master label
 		addChild(masterDisplay = createWidget<MasterDisplay>(mm2px(Vec(294.82 - 7.25, 31.25 - 2.65))));
 		if (module) {
-			masterDisplay->dcBlock = &(module->master.dcBlock);
-			masterDisplay->clipping = &(module->master.clipping);
-			masterDisplay->fadeRate = &(module->master.fadeRate);
-			masterDisplay->fadeProfile = &(module->master.fadeProfile);
-			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);
+			masterDisplay->dcBlock = &(module->master->dcBlock);
+			masterDisplay->clipping = &(module->master->clipping);
+			masterDisplay->fadeRate = &(module->master->fadeRate);
+			masterDisplay->fadeProfile = &(module->master->fadeProfile);
+			masterDisplay->vuColorThemeLocal = &(module->master->vuColorThemeLocal);
 			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo->directOutPanStereoMomentCvLinearVol);
-			masterDisplay->momentCvMuteLocal = &(module->master.momentCvMuteLocal);
-			masterDisplay->momentCvDimLocal = &(module->master.momentCvDimLocal);
-			masterDisplay->momentCvMonoLocal = &(module->master.momentCvMonoLocal);
-			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
-			masterDisplay->chainOnly = &(module->master.chainOnly);
-			masterDisplay->dimGain = &(module->master.dimGain);
-			masterDisplay->masterLabel = module->master.masterLabel;
-			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
+			masterDisplay->momentCvMuteLocal = &(module->master->momentCvMuteLocal);
+			masterDisplay->momentCvDimLocal = &(module->master->momentCvDimLocal);
+			masterDisplay->momentCvMonoLocal = &(module->master->momentCvMonoLocal);
+			masterDisplay->dispColorLocal = &(module->master->dispColorLocal);
+			masterDisplay->chainOnly = &(module->master->chainOnly);
+			masterDisplay->dimGain = &(module->master->dimGain);
+			masterDisplay->masterLabel = module->master->masterLabel;
+			masterDisplay->dimGainIntegerDB = &(module->master->dimGainIntegerDB);
 			masterDisplay->colorAndCloak = &(module->gInfo->colorAndCloak);
 			masterDisplay->idSrc = &(module->id);
 			masterDisplay->masterFaderScalesSendsSrc = &(module->gInfo->masterFaderScalesSends);
@@ -1294,19 +1295,19 @@ struct MixMasterWidget : ModuleWidget {
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82, 70.3)));
-			newVU->srcLevels = module->master.vu.vuValues;
-			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
+			newVU->srcLevels = module->master->vu.vuValues;
+			newVU->srcMuteGhost = &(module->master->fadeGainScaled);
 			newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
-			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
-			newVU->clippingPtr = &(module->master.clipping);
+			newVU->colorThemeLocal = &(module->master->vuColorThemeLocal);
+			newVU->clippingPtr = &(module->master->clipping);
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[TMixMaster::MAIN_FADER_PARAM]);
-			newFP->srcParamWithCV = &(module->master.paramWithCV);
+			newFP->srcParamWithCV = &(module->master->paramWithCV);
 			newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
-			newFP->srcFadeGain = &(module->master.fadeGain);
-			newFP->srcFadeRate = &(module->master.fadeRate);
+			newFP->srcFadeGain = &(module->master->fadeGain);
+			newFP->srcFadeRate = &(module->master->fadeRate);
 			addChild(newFP);				
 		}
 		
@@ -1314,7 +1315,7 @@ struct MixMasterWidget : ModuleWidget {
 		MmMuteFadeButton* newMuteFade;
 		addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(294.82, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM));
 		if (module) {
-			newMuteFade->type = &(module->master.fadeRate);
+			newMuteFade->type = &(module->master->fadeRate);
 		}
 		
 		// Master dim
@@ -1577,20 +1578,20 @@ struct MixMasterJrWidget : ModuleWidget {
 		// Master label
 		addChild(masterDisplay = createWidget<MasterDisplay>(mm2px(Vec(294.82 - 12.7 * 10 - 7.25, 31.25 - 2.65))));
 		if (module) {
-			masterDisplay->dcBlock = &(module->master.dcBlock);
-			masterDisplay->clipping = &(module->master.clipping);
-			masterDisplay->fadeRate = &(module->master.fadeRate);
-			masterDisplay->fadeProfile = &(module->master.fadeProfile);
-			masterDisplay->vuColorThemeLocal = &(module->master.vuColorThemeLocal);		
+			masterDisplay->dcBlock = &(module->master->dcBlock);
+			masterDisplay->clipping = &(module->master->clipping);
+			masterDisplay->fadeRate = &(module->master->fadeRate);
+			masterDisplay->fadeProfile = &(module->master->fadeProfile);
+			masterDisplay->vuColorThemeLocal = &(module->master->vuColorThemeLocal);		
 			masterDisplay->directOutPanStereoMomentCvLinearVol = &(module->gInfo->directOutPanStereoMomentCvLinearVol);
-			masterDisplay->momentCvMuteLocal = &(module->master.momentCvMuteLocal);
-			masterDisplay->momentCvDimLocal = &(module->master.momentCvDimLocal);
-			masterDisplay->momentCvMonoLocal = &(module->master.momentCvMonoLocal);
-			masterDisplay->dispColorLocal = &(module->master.dispColorLocal);
-			masterDisplay->chainOnly = &(module->master.chainOnly);
-			masterDisplay->dimGain = &(module->master.dimGain);
-			masterDisplay->masterLabel = module->master.masterLabel;
-			masterDisplay->dimGainIntegerDB = &(module->master.dimGainIntegerDB);
+			masterDisplay->momentCvMuteLocal = &(module->master->momentCvMuteLocal);
+			masterDisplay->momentCvDimLocal = &(module->master->momentCvDimLocal);
+			masterDisplay->momentCvMonoLocal = &(module->master->momentCvMonoLocal);
+			masterDisplay->dispColorLocal = &(module->master->dispColorLocal);
+			masterDisplay->chainOnly = &(module->master->chainOnly);
+			masterDisplay->dimGain = &(module->master->dimGain);
+			masterDisplay->masterLabel = module->master->masterLabel;
+			masterDisplay->dimGainIntegerDB = &(module->master->dimGainIntegerDB);
 			masterDisplay->colorAndCloak = &(module->gInfo->colorAndCloak);
 			masterDisplay->idSrc = &(module->id);
 			masterDisplay->masterFaderScalesSendsSrc = &(module->gInfo->masterFaderScalesSends);
@@ -1601,19 +1602,19 @@ struct MixMasterJrWidget : ModuleWidget {
 		if (module) {
 			// VU meter
 			VuMeterMaster *newVU = createWidgetCentered<VuMeterMaster>(mm2px(Vec(294.82 - 12.7 * 10, 70.3)));
-			newVU->srcLevels = module->master.vu.vuValues;
-			newVU->srcMuteGhost = &(module->master.fadeGainScaled);
+			newVU->srcLevels = module->master->vu.vuValues;
+			newVU->srcMuteGhost = &(module->master->fadeGainScaled);
 			newVU->colorThemeGlobal = &(module->gInfo->colorAndCloak.cc4[vuColorGlobal]);
-			newVU->colorThemeLocal = &(module->master.vuColorThemeLocal);
-			newVU->clippingPtr = &(module->master.clipping);
+			newVU->colorThemeLocal = &(module->master->vuColorThemeLocal);
+			newVU->clippingPtr = &(module->master->clipping);
 			addChild(newVU);
 			// Fade pointer
 			CvAndFadePointerMaster *newFP = createWidgetCentered<CvAndFadePointerMaster>(mm2px(Vec(294.82 - 12.7 * 10 - 3.4, 70.3)));
 			newFP->srcParam = &(module->params[TMixMaster::MAIN_FADER_PARAM]);
-			newFP->srcParamWithCV = &(module->master.paramWithCV);
+			newFP->srcParamWithCV = &(module->master->paramWithCV);
 			newFP->colorAndCloak = &(module->gInfo->colorAndCloak);
-			newFP->srcFadeGain = &(module->master.fadeGain);
-			newFP->srcFadeRate = &(module->master.fadeRate);
+			newFP->srcFadeGain = &(module->master->fadeGain);
+			newFP->srcFadeRate = &(module->master->fadeRate);
 			addChild(newFP);				
 		}
 		
@@ -1621,7 +1622,7 @@ struct MixMasterJrWidget : ModuleWidget {
 		MmMuteFadeButton* newMuteFade;
 		addParam(newMuteFade = createParamCentered<MmMuteFadeButton>(mm2px(Vec(294.82 - 12.7 * 10, 109.8)), module, TMixMaster::MAIN_MUTE_PARAM));
 		if (module) {
-			newMuteFade->type = &(module->master.fadeRate);
+			newMuteFade->type = &(module->master->fadeRate);
 		}
 		
 		// Master dim
