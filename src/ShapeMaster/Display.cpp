@@ -199,7 +199,7 @@ void ShapeMasterDisplay::onDragStart(const event::DragStart& e) {
 				// Push ShapeCompleteChange history action (rest is done in onDragEnd())
 				dragHistoryStep = new ShapeCompleteChange;
 				dragHistoryStep->shapeSrc = shape;
-				dragHistoryStep->oldShape = new Shape();
+				dragHistoryStep->oldShape = new Shape(NULL);
 				shape->copyShapeTo(dragHistoryStep->oldShape);
 			}
 		}
@@ -286,7 +286,7 @@ void ShapeMasterDisplay::onDragEnd(const event::DragEnd& e) {
 	
 	// history
 	if (dragHistoryStep != NULL) {
-		dragHistoryStep->newShape = new Shape();
+		dragHistoryStep->newShape = new Shape(NULL);
 		shape->copyShapeTo(dragHistoryStep->newShape);
 		dragHistoryStep->name = "add/move step";
 		APP->history->push(dragHistoryStep);

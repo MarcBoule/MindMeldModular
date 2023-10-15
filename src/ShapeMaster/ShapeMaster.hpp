@@ -78,6 +78,7 @@ struct ShapeMaster : Module {
 	PresetAndShapeManager presetAndShapeManager;
 	Channel* channelDirtyCache;
 	Param channelDirtyCacheParams[NUM_CHAN_PARAMS] = {};
+	std::atomic_flag lock_shape[8] = {ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT};
 
 
 	ShapeMaster(); 

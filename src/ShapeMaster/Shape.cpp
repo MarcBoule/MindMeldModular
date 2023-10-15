@@ -27,7 +27,9 @@ float Shape::applyScalingToCtrl(float ctrl, float exponent) {
 
 
 void Shape::onReset() {
-	lockShapeBlocking();
+	if (lock_shape) {// needed here since we can construct with a NULL lock_shape (from channelDirtyCache) which will call the reset automatically, but all good after that
+		lockShapeBlocking();
+	}
 	points[0].x = 0.0f;// must be 0.0f
 	points[0].y = 0.0f;
 	points[1].x = 0.5f;
@@ -41,7 +43,9 @@ void Shape::onReset() {
 	numPts = 3;
 	pc = 0;// not saved
 	pcDelta = 0;// not saved
-	unlockShape();
+	if (lock_shape) {// see comment above
+		unlockShape();
+	}
 }
 
 

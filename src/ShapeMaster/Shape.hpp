@@ -67,12 +67,9 @@ class Shape {
 	}
 	
 	
-	Shape() {
-		lock_shape = new std::atomic_flag(ATOMIC_FLAG_INIT);
+	Shape(std::atomic_flag* _lock_shape) {
+		lock_shape = _lock_shape;
 		onReset(); 
-	}
-	~Shape() {
-		delete lock_shape;
 	}
 		
 	void onReset();

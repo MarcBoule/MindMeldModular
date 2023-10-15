@@ -75,12 +75,13 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	configLight(SC_LPF_LIGHT, "Current channel sidechain LPF active");
 	
 	
-	channelDirtyCache = new Channel(0, &running, NULL, NULL, &inputs[0], &outputs[0], channelDirtyCacheParams, NULL, NULL);
+	channelDirtyCache = new Channel(0, &running, NULL, NULL, &inputs[0], &outputs[0], channelDirtyCacheParams, NULL, NULL, NULL);
 	channels.reserve(8);
 	presetAndShapeManager.construct(&(channels[0]), channelDirtyCache, &miscSettings3);
 	for (int c = 0; c < 8; c++) {
 		ParamQuantity* pqReps = paramQuantities[REPETITIONS_PARAM + c * NUM_CHAN_PARAMS];
-		channels.push_back(Channel(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], pqReps, &presetAndShapeManager));
+		std::atomic_flag* _lock_shape = &(lock_shape[c]);
+		channels.push_back(Channel(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], pqReps, &presetAndShapeManager, _lock_shape));
 	}
 
 	onReset();

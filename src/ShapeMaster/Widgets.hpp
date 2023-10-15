@@ -243,7 +243,7 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 				// Push ShapeCompleteChange history action (rest is done further below)
 				ShapeCompleteChange* h = new ShapeCompleteChange;
 				h->shapeSrc = channels[*currChan].getShape();
-				h->oldShape = new Shape();
+				h->oldShape = new Shape(NULL);
 				h->shapeSrc->copyShapeTo(h->oldShape);
 
 				// Internal memory version:
@@ -278,13 +278,13 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 				buttonPressed = 1;
 				
 				if (successPaste) {
-					h->newShape = new Shape();
+					h->newShape = new Shape(NULL);
 					h->shapeSrc->copyShapeTo(h->newShape);
 					h->name = "paste shape";
 					APP->history->push(h);
 				}
 				else {
-					delete h;// h->oldShape will be automatically deleted by desctructor
+					delete h;// h->oldShape will be automatically deleted by destructor
 				}
 			}
 			leftX += textWidthsPx[1];
