@@ -810,7 +810,7 @@ struct TileChoiceItem : MenuItem {
 	uint8_t info = 0;
 	float defPar = 0.0f;
 	
-	void construct(PatchMaster* _module, int _t, int _o, uint8_t _info, float _defPar = 0.0f) {
+	void config(PatchMaster* _module, int _t, int _o, uint8_t _info, float _defPar = 0.0f) {
 		module = _module;
 		t = _t;
 		order = _o;
@@ -846,10 +846,10 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Unipolar", "");
-					newItem->construct(module, t, o, TT_KNOB_L | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_KNOB_L | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Bipolar", "");
-					newItem->construct(module, t, o, TT_KNOB_C | TS_SMALL, 0.5f);
+					newItem->config(module, t, o, TT_KNOB_C | TS_SMALL, 0.5f);
 					menu->addChild(newItem);
 				}
 			));
@@ -858,10 +858,10 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Unipolar", "");
-					newItem->construct(module, t, o, TT_KNOB_L | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_KNOB_L | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Bipolar", "");
-					newItem->construct(module, t, o, TT_KNOB_C | TS_MEDIUM, 0.5f);
+					newItem->config(module, t, o, TT_KNOB_C | TS_MEDIUM, 0.5f);
 					menu->addChild(newItem);
 				}
 			));
@@ -870,10 +870,10 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Unipolar", "");
-					newItem->construct(module, t, o, TT_KNOB_L | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_KNOB_L | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Bipolar", "");
-					newItem->construct(module, t, o, TT_KNOB_C | TS_LARGE, 0.5f);
+					newItem->config(module, t, o, TT_KNOB_C | TS_LARGE, 0.5f);
 					menu->addChild(newItem);
 				}
 			));
@@ -889,22 +889,22 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Momentary", "");
-					newItem->construct(module, t, o, TT_BUTN_M | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_M | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Momentary with toggled light", "");
-					newItem->construct(module, t, o, TT_BUTN_MTL | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_MTL | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched", "");
-					newItem->construct(module, t, o, TT_BUTN_N | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_N | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched (inverted light)", "");
-					newItem->construct(module, t, o, TT_BUTN_I | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_I | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Radio button trig", "");
-					newItem->construct(module, t, o, TT_BUTN_RT | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_RT | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Radio button latched", "");
-					newItem->construct(module, t, o, TT_BUTN_RL | TS_SMALL, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_RL | TS_SMALL, 0.0f);
 					menu->addChild(newItem);
 				}
 			));
@@ -913,22 +913,22 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Momentary", "");
-					newItem->construct(module, t, o, TT_BUTN_M | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_M | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Momentary with toggled light", "");
-					newItem->construct(module, t, o, TT_BUTN_MTL | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_MTL | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched", "");
-					newItem->construct(module, t, o, TT_BUTN_N | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_N | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched (inverted light)", "");
-					newItem->construct(module, t, o, TT_BUTN_I | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_I | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Radio button trig", "");
-					newItem->construct(module, t, o, TT_BUTN_RT | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_RT | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Radio button latched", "");
-					newItem->construct(module, t, o, TT_BUTN_RL | TS_MEDIUM, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_RL | TS_MEDIUM, 0.0f);
 					menu->addChild(newItem);
 				}
 			));
@@ -937,22 +937,22 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Momentary", "");
-					newItem->construct(module, t, o, TT_BUTN_M | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_M | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Momentary with toggled light", "");
-					newItem->construct(module, t, o, TT_BUTN_MTL | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_MTL | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched", "");
-					newItem->construct(module, t, o, TT_BUTN_N | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_N | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Latched (inverted light)", "");
-					newItem->construct(module, t, o, TT_BUTN_I | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_I | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Radio button trig", "");
-					newItem->construct(module, t, o, TT_BUTN_RT | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_RT | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Radio button latched", "");
-					newItem->construct(module, t, o, TT_BUTN_RL | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_BUTN_RL | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 				}
 			));
@@ -967,10 +967,10 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Unipolar", "");
-					newItem->construct(module, t, o, TT_FADER_B | TS_LARGE, 0.0f);
+					newItem->config(module, t, o, TT_FADER_B | TS_LARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Bipolar", "");
-					newItem->construct(module, t, o, TT_FADER_C | TS_LARGE, 0.5f);
+					newItem->config(module, t, o, TT_FADER_C | TS_LARGE, 0.5f);
 					menu->addChild(newItem);
 				}
 			));
@@ -978,10 +978,10 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Unipolar", "");
-					newItem->construct(module, t, o, TT_FADER_B | TS_XLARGE, 0.0f);
+					newItem->config(module, t, o, TT_FADER_B | TS_XLARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Bipolar", "");
-					newItem->construct(module, t, o, TT_FADER_C | TS_XLARGE, 0.5f);
+					newItem->config(module, t, o, TT_FADER_C | TS_XLARGE, 0.5f);
 					menu->addChild(newItem);
 				}
 			));			
@@ -989,10 +989,10 @@ void createControllerChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mo
 				[=](Menu* menu) {
 					TileChoiceItem *newItem;
 					newItem = createMenuItem<TileChoiceItem>("Unipolar", "");
-					newItem->construct(module, t, o, TT_FADER_B | TS_XXLARGE, 0.0f);
+					newItem->config(module, t, o, TT_FADER_B | TS_XXLARGE, 0.0f);
 					menu->addChild(newItem);
 					newItem = createMenuItem<TileChoiceItem>("Bipolar", "");
-					newItem->construct(module, t, o, TT_FADER_C | TS_XXLARGE, 0.5f);
+					newItem->config(module, t, o, TT_FADER_C | TS_XXLARGE, 0.5f);
 					menu->addChild(newItem);
 				}
 			));
@@ -1008,34 +1008,34 @@ void createSeparatorChoiceMenuOne(ui::Menu* menu, int t, int o, PatchMaster* mod
 	TileChoiceItem *newItem;
 		
 	newItem = createMenuItem<TileChoiceItem>("Divider label", "");
-	newItem->construct(module, t, o, TS_XSMALL | TT_SEP);
+	newItem->config(module, t, o, TS_XSMALL | TT_SEP);
 	menu->addChild(newItem);
 	
 	menu->addChild(createSubmenuItem("Blank", "",
 		[=](Menu* menu) {			
 			TileChoiceItem *newItem;
 			newItem = createMenuItem<TileChoiceItem>("XX-Small", "");
-			newItem->construct(module, t, o, TS_XXSMALL | TT_BLANK);
+			newItem->config(module, t, o, TS_XXSMALL | TT_BLANK);
 			menu->addChild(newItem);
 			
 			newItem = createMenuItem<TileChoiceItem>("X-Small", "");
-			newItem->construct(module, t, o, TS_XSMALL | TT_BLANK);
+			newItem->config(module, t, o, TS_XSMALL | TT_BLANK);
 			menu->addChild(newItem);
 			
 			newItem = createMenuItem<TileChoiceItem>("Smaller", "");
-			newItem->construct(module, t, o, TS_SMALLER | TT_BLANK);
+			newItem->config(module, t, o, TS_SMALLER | TT_BLANK);
 			menu->addChild(newItem);
 			
 			newItem = createMenuItem<TileChoiceItem>("Small", "");
-			newItem->construct(module, t, o, TS_SMALL | TT_BLANK);
+			newItem->config(module, t, o, TS_SMALL | TT_BLANK);
 			menu->addChild(newItem);
 			
 			newItem = createMenuItem<TileChoiceItem>("Medium", "");
-			newItem->construct(module, t, o, TS_MEDIUM | TT_BLANK);
+			newItem->config(module, t, o, TS_MEDIUM | TT_BLANK);
 			menu->addChild(newItem);
 			
 			newItem = createMenuItem<TileChoiceItem>("Large", "");
-			newItem->construct(module, t, o, TS_LARGE | TT_BLANK);
+			newItem->config(module, t, o, TS_LARGE | TT_BLANK);
 			menu->addChild(newItem);
 		}
 	));
@@ -1049,7 +1049,7 @@ struct PmBgBase : SvgWidget {
 	int8_t* highlightTileMoveDest = NULL;// is an order
 	int tileNumber = 0;
 	int tileOrder = 0;
-	float manualBgHeight = 0.0f;// need extra special height for manual tiles so as to not mess with box.size.y, since that is needed for proper tile moving outlines (and proper intertile space for right clickign the module bg to get module menu)
+	float manualBgHeight = 0.0f;// need extra special height for manual tiles so as to not mess with box.size.y, since that is needed for proper tile moving outlines (and proper intertile space for right clicking the module bg to get module menu)
 	
 	// local
 	float onButtonMouseY = 0.0f;// Y pixel position of button click in rack space, used for a delta in onDragMove
