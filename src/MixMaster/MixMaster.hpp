@@ -21,7 +21,7 @@ struct GlobalInfo {
 		// panLawStereo: Stereo balance linear (default), Stereo balance equal power (+3dB boost since one channel lost),  True pan (linear redistribution but is not equal power), Per-track
 		// momentaryCvButtons: 1 = yes (original rising edge only version), 0 = level sensitive (emulated with rising and falling detection)
 		// linearVolCvInputs: 0 means powN, 1 means linear
-	int panLawMono;// +0dB (no compensation),  +3 (equal power),  +4.5 (compromize),  +6dB (linear, default)
+	int panLawMono;// +0dB (no compensation),  +3 (equal power),  +4.5 (compromise),  +6dB (linear, default)
 	int8_t directOutsSkipGroupedTracks;// 0 no (default), 1 is yes
 	int8_t auxSendsMode;// 0 is pre-insert, 1 is post-insert, 2 is post-fader, 3 is post-solo, 4 is per-track choice
 	int groupsControlTrackSendLevels;//  0 = no, 1 = yes
@@ -53,7 +53,7 @@ struct GlobalInfo {
 	float *values20;
 	float maxTGFader;
 	float fadeRates[N_TRK + N_GRP];// reset and json done in tracks and groups. fade rates for tracks and groups
-	int groupUsage[N_GRP + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mututally exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
+	int groupUsage[N_GRP + 1];// bit 0 of first element shows if first track mapped to first group, etc... bitfields are mutually exclusive between all first 4 ints, last int is bitwise OR of first 4 ints.
 
 	
 	void clearLinked(int index) {linkBitMask &= ~(1 << index);}
@@ -1629,7 +1629,7 @@ struct MixerTrack {
 		dest->invertInput = invertInput;
 		dest->linkedFader = isLinked(&(gInfo->linkBitMask), trackNum);
 	}
-	void read(TrackSettingsCpBuffer *src) {
+	void read(const TrackSettingsCpBuffer *src) {
 		gainAdjust = src->gainAdjust;
 		*fadeRate = src->fadeRate;
 		fadeProfile = src->fadeProfile;
@@ -2101,26 +2101,25 @@ struct MixerAux {
 	float fadeGainScaledWithSolo;
 	float soloGain;
 
-
 	// no need to save, no reset
 	int auxNum;// 0 to 3
 	std::string ids;
 	GlobalInfo *gInfo;
 	Input *inInsert;
 	float *flMute;
-	float *flSolo0;
 	float *flGroup;
 	float *fadeRate;
 	float *fadeProfile;
 	float *taps;
 	int8_t* panLawStereoLocal;
 
+
 	int getAuxGroup() {return (int)(*flGroup + 0.5f);}
 	float calcFadeGain() {return *flMute >= 0.5f ? 0.0f : 1.0f;}
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
-	void construct(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values20, float* _taps, int8_t* _panLawStereoLocal) {
+	MixerAux(int _auxNum, GlobalInfo *_gInfo, Input *_inputs, float* _values20, float* _taps, int8_t* _panLawStereoLocal) {
 		auxNum = _auxNum;
 		ids = "id_a" + std::to_string(auxNum) + "_";
 		gInfo = _gInfo;
@@ -2131,8 +2130,11 @@ struct MixerAux {
 		fadeProfile = &_values20[auxNum + 16];
 		taps = _taps;
 		panLawStereoLocal = _panLawStereoLocal;
+		
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		muteSoloGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
+		
+		onReset();
 	}
 
 
@@ -2186,7 +2188,7 @@ struct MixerAux {
 		soloGain = calcSoloGain();
 	}
 	
-	void process(float *mix, float *auxRetFadePanFadecv, bool eco) {// mixer aux
+	void process(float *mix, const float *auxRetFadePanFadecv, bool eco) {// mixer aux
 		// auxRetFadePan[0] points fader value, 
 		// auxRetFadePan[4] points pan value, 
 		// auxRetFadePan[8] points fader cv value, 

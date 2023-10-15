@@ -85,7 +85,7 @@ struct MixMaster : Module {
 	GlobalInfo gInfo;
 	MixerTrack tracks[N_TRK];
 	MixerGroup groups[N_GRP];
-	MixerAux aux[4];
+	std::vector<MixerAux> aux;// size 4
 	MixerMaster master;
 	
 	// No need to save, with reset
@@ -238,8 +238,9 @@ struct MixMaster : Module {
 		for (int i = 0; i < N_GRP; i++) {
 			groups[i].construct(i, &gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
 		}
+		aux.reserve(4);
 		for (int i = 0; i < 4; i++) {
-			aux[i].construct(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]);
+			aux.push_back(MixerAux(i, &gInfo, &inputs[0], values20, &auxTaps[i << 1], &stereoPanModeLocalAux.cc4[i]));
 		}
 		master.construct(&gInfo, &params[0], &inputs[0]);
 		muteTrackWhenSoloAuxRetSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second 
@@ -260,7 +261,7 @@ struct MixMaster : Module {
 	}
 
 	
-	void onReset() override {
+	void onReset() override final {
 		gInfo.onReset();
 		for (int i = 0; i < N_TRK; i++) {
 			tracks[i].onReset();
@@ -528,7 +529,7 @@ struct MixMaster : Module {
 		
 		// From Aux-Expander
 		if (auxExpanderPresent) {
-			MfaExpInterface *messagesFromExpander = (MfaExpInterface*)rightExpander.consumerMessage;// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
+			MfaExpInterface *messagesFromExpander = static_cast<MfaExpInterface*>(rightExpander.consumerMessage);// could be invalid pointer when !expanderPresent, so read it only when expanderPresent
 			
 			// Slow values from expander
 			if (messagesFromExpander->updateSlow) {
@@ -672,7 +673,7 @@ struct MixMaster : Module {
 		
 		// To Aux-Expander
 		if (auxExpanderPresent) {
-			AfmExpInterface *messageToExpander = (AfmExpInterface*)(rightExpander.module->leftExpander.producerMessage);
+			AfmExpInterface *messageToExpander = static_cast<AfmExpInterface*>(rightExpander.module->leftExpander.producerMessage);
 			
 			// Slow
 			messageToExpander->updateSlow = refresh.refreshCounter == 0;
@@ -762,12 +763,12 @@ struct MixMaster : Module {
 			memcpy(auxSends, &trackTaps[gInfo.auxSendsMode << (3 + N_TRK / 8)], (N_TRK * 2) * 4);
 		}
 		else {			
-			int trkGroup;
 			for (int trk = 0; trk < N_TRK; trk++) {
 				// tracks should have aux sends even when grouped
 				int tapIndex = (tracks[trk].auxSendsMode << (3 + N_TRK / 8));
 				float trackL = trackTaps[tapIndex + (trk << 1) + 0];
 				float trackR = trackTaps[tapIndex + (trk << 1) + 1];
+				int trkGroup;
 				if (gInfo.groupsControlTrackSendLevels != 0 && (trkGroup = (int)(tracks[trk].paGroup->getValue() + 0.5f)) != 0) {
 					trkGroup--;
 					simd::float_4 sigs(trackL, trackR, trackR, trackL);
@@ -862,15 +863,15 @@ struct MixMaster : Module {
 			}
 			
 			// Aux
-			// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other diretct outs
+			// this uses one of the taps in the aux return signal flow (same signal flow as a group), and choice of tap is same as other direct outs
 			if (auxExpanderPresent) {
 				if (gInfo.directOutPanStereoMomentCvLinearVol.cc4[0] < 4) {// global direct outs
-					int tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0];
+					tapIndex = gInfo.directOutPanStereoMomentCvLinearVol.cc4[0];
 					memcpy(outputs[outputNum].getVoltages(8), &auxTaps[(tapIndex << 3)], 4 * 8);
 				}
 				else {// per aux direct outs
 					for (unsigned int i = 0; i < 4; i++) {
-						int tapIndex = directOutsModeLocalAux.cc4[i];
+						tapIndex = directOutsModeLocalAux.cc4[i];
 						int offset = (tapIndex << 3) + (i << 1);
 						outputs[outputNum].setVoltage(auxTaps[offset + 0], 8 + 2 * i);
 						outputs[outputNum].setVoltage(auxTaps[offset + 1], 8 + 2 * i + 1);
@@ -1030,7 +1031,7 @@ struct MixMasterWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/mixmaster.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 		
 		// Inserts and CVs
@@ -1343,7 +1344,7 @@ struct MixMasterJrWidget : ModuleWidget {
 
 		// Main panels from Inkscape
         setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/dark/mixmaster-jr.svg")));
-		SvgPanel* svgPanel = (SvgPanel*)getPanel();
+		SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 		panelBorder = findBorder(svgPanel->fb);
 		
 		// Inserts and CVs

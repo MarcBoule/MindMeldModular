@@ -57,7 +57,7 @@ struct MixerInterchangeItem : MenuItem {
 
 
 void appendContextMenu(Menu *menu) override {		
-	TMixMaster* module = (TMixMaster*)(this->module);
+	TMixMaster* module = static_cast<TMixMaster*>(this->module);
 	assert(module);
 	
 	MixerInterchangeItem *interchangeItem = createMenuItem<MixerInterchangeItem>("MixMaster swap", RIGHT_ARROW);
@@ -198,7 +198,7 @@ void draw(const DrawArgs& args) override {
 
 void step() override {
 	if (module) {
-		TMixMaster* module = (TMixMaster*)(this->module);
+		TMixMaster* module = static_cast<TMixMaster*>(this->module);
 		
 		// Track labels (pull from module)
 		if (module->updateTrackLabelRequest != 0) {// pull request from module
@@ -219,7 +219,7 @@ void step() override {
 		int newSizeAdd = (module->auxExpanderPresent ? 3 : 0);
 		if (panelBorder->box.size.x != (box.size.x + newSizeAdd)) {
 			panelBorder->box.size.x = (box.size.x + newSizeAdd);
-			SvgPanel* svgPanel = (SvgPanel*)getPanel();
+			SvgPanel* svgPanel = static_cast<SvgPanel*>(getPanel());
 			svgPanel->fb->dirty = true;
 		}
 		
