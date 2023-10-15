@@ -12,15 +12,8 @@
 
 
 Channel::Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager) {
-	// channelSettings.cc1 = 0;
-	// channelSettings2.cc1 = 0;
-	// channelSettings3.cc1 = 0;
-	// channelSettings4.cc1 = 0;
-
 	chanNum = _chanNum;
 	running = _running;
-	hpFilter.setParameters(true, 0.1f);
-	lpFilter.setParameters(false, 0.4f);
 	if (_inputs) {
 		inInput = &_inputs[IN_INPUTS + chanNum];
 		scInput = &_inputs[SIDECHAIN_INPUT];
@@ -29,6 +22,9 @@ Channel::Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetect
 		outOutput = &_outputs[OUT_OUTPUTS + chanNum];
 		cvOutput = &_outputs[CV_OUTPUTS + chanNum];
 	}
+	hpFilter.setParameters(true, 0.1f);
+	lpFilter.setParameters(false, 0.4f);
+
 	paPhase = &_params[PHASE_PARAM + chanNum * NUM_CHAN_PARAMS];
 	paResponse = &_params[RESPONSE_PARAM + chanNum * NUM_CHAN_PARAMS];
 	paWarp = &_params[WARP_PARAM + chanNum * NUM_CHAN_PARAMS];
@@ -59,6 +55,7 @@ void Channel::onReset(bool withParams) {
 		paHigh->setValue(DEFAULT_HIGH);
 		paLow->setValue(DEFAULT_LOW);
 	}
+	slewLimiter.reset();
 	setHPFCutoffSqFreq(SC_HPF_SQFREQ_DEF);
 	setLPFCutoffSqFreq(SC_LPF_SQFREQ_DEF);
 	sensitivity = DEFAULT_SENSITIVITY;
@@ -119,6 +116,7 @@ void Channel::resetNonJson() {
 	warpPhaseResponseAmountCvConnected = false;
 	xoverSlewWithCv = simd::float_4(paCrossover->getValue(), paHigh->getValue(), paLow->getValue(), paSlew->getValue());
 	xoverSlewCvConnected = false;
+	nodeTrigPulseGen.reset();
 	setCrossoverCutoffFreq();
 }
 

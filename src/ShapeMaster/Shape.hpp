@@ -74,7 +74,7 @@ class Shape {
 	~Shape() {
 		delete lock_shape;
 	}
-	
+		
 	void onReset();
 	
 	void initMinPts();

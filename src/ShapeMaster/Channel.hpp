@@ -76,25 +76,25 @@ class Channel {
 	// none
 	
 	// need to save, with reset
-	Param* paPhase = nullptr;
-	Param* paResponse = nullptr;
-	Param* paWarp = nullptr;
-	Param* paAmount = nullptr;
-	Param* paSlew = nullptr;
-	Param* paSmooth = nullptr;
-	Param* paCrossover = nullptr;
-	Param* paHigh = nullptr;
-	Param* paLow = nullptr;
-	Param* paPrevNextPreSha = nullptr;
+	Param* paPhase;
+	Param* paResponse;
+	Param* paWarp;
+	Param* paAmount;
+	Param* paSlew;
+	Param* paSmooth;
+	Param* paCrossover;
+	Param* paHigh;
+	Param* paLow;
+	Param* paPrevNextPreSha;
 	SlewLimiterSingle slewLimiter;
-	float hpfCutoffSqFreq = 0.0f;// always use getter and setter since tied to Biquad
-	float lpfCutoffSqFreq = 0.0f;// always use getter and setter since tied to Biquad
-	float sensitivity = 0.0f;
-	float gainAdjustVca = 0.0f;// this is a gain here (not dB)
-	float gainAdjustSc = 0.0f;// this is a gain here (not dB)
-	float nodeTrigDuration = 0.0f;
-	uint8_t gridX = 0;
-	int8_t rangeIndex = 0;
+	float hpfCutoffSqFreq;// always use getter and setter since tied to Biquad
+	float lpfCutoffSqFreq;// always use getter and setter since tied to Biquad
+	float sensitivity;
+	float gainAdjustVca;// this is a gain here (not dB)
+	float gainAdjustSc;// this is a gain here (not dB)
+	float nodeTrigDuration;
+	uint8_t gridX;
+	int8_t rangeIndex;
 	public:
 	PackedBytes4 channelSettings;
 	PackedBytes4 channelSettings2;
@@ -110,35 +110,35 @@ class Channel {
 	
 
 	// no need to save, with reset
-	double sampleTime = 0.0f;
+	double sampleTime;
 	LinkwitzRileyStereo8xCrossover xover;
-	float lastCrossoverParamWithCv = 0.0f;
+	float lastCrossoverParamWithCv;
 	ButterworthFourthOrder hpFilter;
 	ButterworthFourthOrder lpFilter;
 	FirstOrderFilter smoothFilter;
-	float lastSmoothParam = 0.0f;
-	double lastProcessXt = 0.0;
-	bool channelActive = false;
-	int vcaPreSize = 0;
-	int vcaPostSize = 0;
-	float scSignal = 0.0f;// implicitly mono
-	float scEnvelope = 0.0f;// implicitly mono
+	float lastSmoothParam;
+	double lastProcessXt;
+	bool channelActive;
+	int vcaPreSize;
+	int vcaPostSize;
+	float scSignal;// implicitly mono
+	float scEnvelope;// implicitly mono
 	dsp::SlewLimiter scEnvSlewer;
 	public:
 	simd::float_4 warpPhaseResponseAmountWithCv;// warp = [0]
-	bool warpPhaseResponseAmountCvConnected = false;
+	bool warpPhaseResponseAmountCvConnected;
 	simd::float_4 xoverSlewWithCv;// xfreq = [0], xhigh = [1], xlow = [2], slew = [3] (slew unrelated to xvoer)
-	bool xoverSlewCvConnected = false;
+	bool xoverSlewCvConnected;
 	private:
 	dsp::PulseGenerator nodeTrigPulseGen;
 		
 	// no need to save, no reset
-	int chanNum = 0;
-	bool* running = nullptr;
-	Input* inInput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
-	Input* scInput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
-	Output* outOutput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
-	Output* cvOutput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
+	int chanNum;
+	bool* running;
+	Input* inInput;// use only in process() because of channelDirtyCache and possible nullness
+	Input* scInput;// use only in process() because of channelDirtyCache and possible nullness
+	Output* outOutput;// use only in process() because of channelDirtyCache and possible nullness
+	Output* cvOutput;// use only in process() because of channelDirtyCache and possible nullness
 	float lengthUnsyncOld = -10.0f;// don't need init nor reset for this, used in caching detection with param that is [-1.0f : 1.0f], used with next line
 	std::string lengthUnsyncTextOld;// used with previous line
 	float vcaPre[16] = {};
