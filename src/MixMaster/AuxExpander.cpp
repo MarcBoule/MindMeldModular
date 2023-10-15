@@ -27,7 +27,7 @@ struct AuxExpander : Module {
 	};
 	
 	enum InputIds {
-		ENUMS(RETURN_INPUTS, 2 * 4),// must be first element (see AuxspanderAux.construct()). Mapping: left A, right A, left B, right B, left C, right C, left D, right D
+		ENUMS(RETURN_INPUTS, 2 * 4),// must be first element (see AuxspanderAux constructor). Mapping: left A, right A, left B, right B, left C, right C, left D, right D
 		ENUMS(POLY_AUX_AD_CV_INPUTS, N_GRP),// size happens to coincide with N_GRP
 		POLY_AUX_M_CV_INPUT,
 		POLY_GRPS_AD_CV_INPUT,// Mapping: 1A, 2A, 3A, 4A, 1B, etc

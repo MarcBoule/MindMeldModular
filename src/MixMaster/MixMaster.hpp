@@ -852,7 +852,7 @@ struct MixerGroup {
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
-	void construct(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps, float* _insertOuts) {
+	MixerGroup(int _groupNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _groupName, float* _taps, float* _insertOuts) {
 		groupNum = _groupNum;
 		ids = "id_g" + std::to_string(groupNum) + "_";
 		gInfo = _gInfo;
@@ -868,6 +868,7 @@ struct MixerGroup {
 		groupName = _groupName;
 		taps = _taps;
 		insertOuts = _insertOuts;
+		
 		fadeRate = &(_gInfo->fadeRates[N_TRK + groupNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		gainAdjustSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
@@ -877,6 +878,8 @@ struct MixerGroup {
 			hpFilter[i].setParameters(true, 0.1f);
 			lpFilter[i].setParameters(false, 0.4f);
 		}
+		
+		onReset();
 	}
 
 
@@ -900,19 +903,21 @@ struct MixerGroup {
 
 
 	void resetNonJson() {
-		panMatrix = 0.0f;
-		gainMatrix = 0.0f;
-		volCv = 0.0f;
 		gainMatrixSlewers.reset();
+		gainAdjustSlewer.reset();
+		stereoWidthSlewer.reset();
 		muteSoloGainSlewer.reset();
-		setHPFCutoffFreq(paHpfCutoff->getValue());// off
-		setLPFCutoffFreq(paLpfCutoff->getValue());// off
-		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
-		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].reset();
 			lpFilter[i].reset();
 		}
+		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
+		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
+		setHPFCutoffFreq(paHpfCutoff->getValue());// off
+		setLPFCutoffFreq(paLpfCutoff->getValue());// off
+		panMatrix = 0.0f;
+		gainMatrix = 0.0f;
+		volCv = 0.0f;
 		oldPan = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();
@@ -1381,7 +1386,7 @@ struct MixerTrack {
 	bool isFadeMode() {return *fadeRate >= GlobalConst::minFadeRate;}
 
 
-	void construct(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts) {
+	MixerTrack(int _trackNum, GlobalInfo *_gInfo, Input *_inputs, Param *_params, char* _trackName, float* _taps, float* _groupTaps, float* _insertOuts) {
 		trackNum = _trackNum;
 		ids = "id_t" + std::to_string(trackNum) + "_";
 		gInfo = _gInfo;
@@ -1402,6 +1407,7 @@ struct MixerTrack {
 		taps = _taps;
 		groupTaps = _groupTaps;
 		insertOuts = _insertOuts;
+		
 		fadeRate = &(_gInfo->fadeRates[trackNum]);
 		gainMatrixSlewers.setRiseFall(simd::float_4(GlobalConst::antipopSlewSlow)); // slew rate is in input-units per second (ex: V/s)
 		inGainSlewer.setRiseFall(GlobalConst::antipopSlewFast); // slew rate is in input-units per second (ex: V/s)
@@ -1411,6 +1417,8 @@ struct MixerTrack {
 			hpFilter[i].setParameters(true, 0.1f);
 			lpFilter[i].setParameters(false, 0.4f);
 		}
+		
+		onReset();
 	}
 
 
@@ -1444,14 +1452,14 @@ struct MixerTrack {
 		inGainSlewer.reset();
 		stereoWidthSlewer.reset();
 		muteSoloGainSlewer.reset(); 
-		setHPFCutoffFreq(paHpfCutoff->getValue());// off
-		setLPFCutoffFreq(paLpfCutoff->getValue());// off
-		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
-		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
 		for (int i = 0; i < 2; i++) {
 			hpFilter[i].reset();
 			lpFilter[i].reset();
 		}
+		// lastHpfCutoff; automatically set in setHPFCutoffFreq()
+		// lastLpfCutoff; automatically set in setLPFCutoffFreq()
+		setHPFCutoffFreq(paHpfCutoff->getValue());// off
+		setLPFCutoffFreq(paLpfCutoff->getValue());// off
 		oldPan = -10.0f;
 		oldPanSignature.cc1 = 0xFFFFFFFF;
 		vu.reset();

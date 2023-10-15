@@ -83,8 +83,8 @@ struct MixMaster : Module {
 	// Need to save, with reset
 	alignas(4) char trackLabels[4 * (N_TRK + N_GRP) + 4];// 4 chars per label, 16 (8) tracks and 4 (2) groups means 20 (10) labels, null terminate the end the whole array only, pad with three extra chars for alignment
 	GlobalInfo* gInfo;
-	MixerTrack tracks[N_TRK];
-	MixerGroup groups[N_GRP];
+	std::vector<MixerTrack> tracks;// size N_TRK
+	std::vector<MixerGroup> groups;// size N_GRP
 	std::vector<MixerAux> aux;// size 4
 	MixerMaster* master;
 	
@@ -232,11 +232,13 @@ struct MixMaster : Module {
 
 		gInfo = new GlobalInfo(&params[0], values20);
 		trackLabels[4 * (N_TRK + N_GRP)] = 0;
+		tracks.reserve(N_TRK);
 		for (int i = 0; i < N_TRK; i++) {
-			tracks[i].construct(i, gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]);
+			tracks.push_back(MixerTrack(i, gInfo, &inputs[0], &params[0], &(trackLabels[4 * i]), &trackTaps[i << 1], groupTaps, &trackInsertOuts[i << 1]));
 		}
+		groups.reserve(N_GRP);
 		for (int i = 0; i < N_GRP; i++) {
-			groups[i].construct(i, gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]);
+			groups.push_back(MixerGroup(i, gInfo, &inputs[0], &params[0], &(trackLabels[4 * (N_TRK + i)]), &groupTaps[i << 1], &groupInsertOuts[i << 1]));
 		}
 		aux.reserve(4);
 		for (int i = 0; i < 4; i++) {
@@ -1061,7 +1063,7 @@ struct MixMasterWidget : ModuleWidget {
 				// trackDisplays[i]->tabNextFocus = // done after the for loop
 				trackDisplays[i]->colorAndCloak = &(module->gInfo->colorAndCloak);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
-				trackDisplays[i]->tracks = module->tracks;
+				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				trackDisplays[i]->numTracks = N_TRK;
@@ -1373,7 +1375,7 @@ struct MixMasterJrWidget : ModuleWidget {
 				// trackDisplays[i]->tabNextFocus = // done after the for loop
 				trackDisplays[i]->colorAndCloak = &(module->gInfo->colorAndCloak);
 				trackDisplays[i]->dispColorLocal = &(module->tracks[i].dispColorLocal);				
-				trackDisplays[i]->tracks = module->tracks;
+				trackDisplays[i]->tracks = &(module->tracks[0]);
 				trackDisplays[i]->trackNumSrc = i;
 				trackDisplays[i]->auxExpanderPresentPtr = &(module->auxExpanderPresent);
 				trackDisplays[i]->numTracks = N_TRK;
