@@ -40,7 +40,7 @@ class Shape {
 	int pc;// point cache, index into points, has to be managed in lockstep with numPts such that 0 <= pc < (numPts - 1)
 	int pcDelta;
 	
-	std::atomic_flag lock_shape = ATOMIC_FLAG_INIT;// blocking and mandatory for all modifications that can temporarily change invariants, non-blocking test for process() (should leave output unchanged when can't acquire lock)
+	std::atomic_flag* lock_shape;// blocking and mandatory for all modifications that can temporarily change invariants, non-blocking test for process() (should leave output unchanged when can't acquire lock)
 	float evalShapeForProcessRet = 0.0f;
 	
 	
@@ -54,21 +54,25 @@ class Shape {
 		return (rndVal - 0.5f) * _ctrlMax * 0.01f + 0.5f;
 	}	
 	
-	bool lockShapeNonBlocking() {// returns true if we got the lock successfuly
-		return !lock_shape.test_and_set();//std::memory_order_acquire);
+	bool lockShapeNonBlocking() {// returns true if we got the lock successfully
+		return !lock_shape->test_and_set();//std::memory_order_acquire);
 	}
 	
 	void lockShapeBlocking() {
-		while (lock_shape.test_and_set()) {};//std::memory_order_acquire)) {}
+		while (lock_shape->test_and_set()) {};//std::memory_order_acquire)) {}
 	}
 	
 	void unlockShape() {// only call this after having called lockShapeBlocking() or after a successful lockShapeNonBlocking()
-		lock_shape.clear();//std::memory_order_release);
+		lock_shape->clear();//std::memory_order_release);
 	}
 	
 	
 	Shape() {
+		lock_shape = new std::atomic_flag(ATOMIC_FLAG_INIT);
 		onReset(); 
+	}
+	~Shape() {
+		delete lock_shape;
 	}
 	
 	void onReset();

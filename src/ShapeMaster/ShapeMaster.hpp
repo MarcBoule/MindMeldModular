@@ -56,7 +56,7 @@ struct ShapeMaster : Module {
 	PackedBytes4 miscSettings3;
 	RandomSettings randomSettings;
 	float lineWidth = 0.0f;
-	Channel channels[8];
+	std::vector<Channel> channels;// size 8
 	int currChan = 0;
 
 
@@ -76,20 +76,21 @@ struct ShapeMaster : Module {
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger resetTrigger;
 	PresetAndShapeManager presetAndShapeManager;
-	Channel channelDirtyCache;
+	Channel* channelDirtyCache;
 	Param channelDirtyCacheParams[NUM_CHAN_PARAMS] = {};
 
 
 	ShapeMaster(); 
 
-	// ~ShapeMaster() {
+	~ShapeMaster() {
 		// if (channelCopyPasteCache != NULL) {
 			// json_decref(channelCopyPasteCache);
 		// }
-	// }
+		delete channelDirtyCache;
+	}
 	
 	
-	void onReset() override;
+	void onReset() override final;
 	
 	
 	void resetNonJson() {

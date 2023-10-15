@@ -11,7 +11,12 @@
 
 
 
-void Channel::construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, std::vector<ParamQuantity*>* _paramQuantitiesSrc, PresetAndShapeManager* _presetAndShapeManager) {
+Channel::Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager) {
+	// channelSettings.cc1 = 0;
+	// channelSettings2.cc1 = 0;
+	// channelSettings3.cc1 = 0;
+	// channelSettings4.cc1 = 0;
+
 	chanNum = _chanNum;
 	running = _running;
 	hpFilter.setParameters(true, 0.1f);
@@ -35,15 +40,11 @@ void Channel::construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, Cloc
 	paLow = &_params[LOW_PARAM + chanNum * NUM_CHAN_PARAMS];
 	paPrevNextPreSha = &_params[PREV_NEXT_PRE_SHA + chanNum * NUM_CHAN_PARAMS];
 	smoothFilter.setParameters(false, 0.4f);
-	ParamQuantity* pqReps = NULL;
-	if (_paramQuantitiesSrc) {
-		pqReps = (*_paramQuantitiesSrc)[REPETITIONS_PARAM + chanNum * NUM_CHAN_PARAMS];
-	}
 	presetAndShapeManager = _presetAndShapeManager;// can be null
 	clockDetector = _clockDetector;
-	
 	playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration);
-	// onReset(false); // not needed since ShapeMaster::onReset() will propagate to Channel::onReset();
+	
+	onReset(false); // redundant since ShapeMaster::onReset() will propagate to Channel::onReset(), but keep to reset anyways for static code analysis warnings (but we can avoid withParams at least)
 }
 
 void Channel::onReset(bool withParams) {		

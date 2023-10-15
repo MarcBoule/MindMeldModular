@@ -150,13 +150,7 @@ class Channel {
 	
 	public:
 
-	Channel() {
-		channelSettings.cc1 = 0;
-		channelSettings2.cc1 = 0;
-		channelSettings3.cc1 = 0;
-		channelSettings4.cc1 = 0;
-	}
-	void construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, std::vector<ParamQuantity*>* _paramQuantitiesSrc, PresetAndShapeManager* _presetAndShapeManager);
+	Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager);
 	
 	void onReset(bool withParams);
 	
