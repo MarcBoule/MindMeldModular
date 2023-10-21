@@ -75,14 +75,11 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	configLight(SC_LPF_LIGHT, "Current channel sidechain LPF active");
 	
 	
-	channelDirtyCache = new Channel(0, &running, NULL, NULL, &inputs[0], &outputs[0], channelDirtyCacheParams, NULL, NULL, NULL);
-	channels.reserve(8);
-	presetAndShapeManager.construct(&(channels[0]), channelDirtyCache, &miscSettings3);
 	for (int c = 0; c < 8; c++) {
-		ParamQuantity* pqReps = paramQuantities[REPETITIONS_PARAM + c * NUM_CHAN_PARAMS];
-		std::atomic_flag* _lock_shape = &(lock_shape[c]);
-		channels.push_back(Channel(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], pqReps, &presetAndShapeManager, _lock_shape));
+		channels[c].construct(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], &paramQuantities, &presetAndShapeManager);
 	}
+	presetAndShapeManager.construct(channels, &channelDirtyCache, &miscSettings3);
+	channelDirtyCache.construct(0, &running, NULL, NULL, &inputs[0], &outputs[0], channelDirtyCacheParams, NULL, NULL);
 
 	onReset();
 }
@@ -108,7 +105,7 @@ void ShapeMaster::onReset() {
 	for (int c = 0; c < NUM_CHAN; c++) {
 		channels[c].onReset(false);
 	}
-	channelDirtyCache->onReset(true);
+	channelDirtyCache.onReset(true);
 	currChan = 0;
 	resetNonJson();
 }
@@ -261,7 +258,7 @@ void ShapeMaster::process(const ProcessArgs &args) {
 
 	// Main process
 	for (int c = 0; c < NUM_CHAN; c++) {
-		channels[c].process(c == fsDiv8, (cvExp != NULL) ? (&(cvExp->chanCvs[c])) : NULL);
+		channels[c].process(c == fsDiv8, cvExp ? &(cvExp->chanCvs[c]) : NULL);
 	}
 	
 	// Scope
@@ -425,7 +422,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	SmChannelButton* channelButton;
 	addChild(channelButton = createWidgetCentered<SmChannelButton>(mm2px(Vec(27.94f + 53.792f / 2.0f, aboveDispY))));
 	if (module) {
-		channelButton->channels = &(module->channels[0]);
+		channelButton->channels = module->channels;
 		channelButton->currChan = &(module->currChan);
 		channelButton->miscSettings2GlobalSrc = &(module->miscSettings2);
 		channelButton->trigExpPresentSrc = &(module->expPresentRight);
@@ -482,10 +479,10 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	if (module) {
 		scopeButtons->settingSrc = &module->miscSettings.cc4[2];
 		scopeButtons->currChan = &(module->currChan);
-		scopeButtons->channels = &(module->channels[0]);
+		scopeButtons->channels = module->channels;
 		scopeButtons->scopeBuffers = &(module->scopeBuffers);
 		shapeButtons->currChan = &(module->currChan);
-		shapeButtons->channels = &(module->channels[0]);
+		shapeButtons->channels = module->channels;
 	}
 
 	// Display area
@@ -498,12 +495,12 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	smDisplayLight->dragPtSelect = &(smDisplay->dragPtSelect);
 	if (module) {
 		smDisplay->currChan = &(module->currChan);
-		smDisplay->channels = &(module->channels[0]);
+		smDisplay->channels = module->channels;
 		smDisplay->lineWidthSrc = &(module->lineWidth);
 		smDisplay->setting3Src = &(module->miscSettings3);
 
 		smDisplayLight->currChan = &(module->currChan);
-		smDisplayLight->channels = &(module->channels[0]);
+		smDisplayLight->channels = module->channels;
 		smDisplayLight->displayInfo = &displayInfo;
 		smDisplayLight->settingSrc = &(module->miscSettings);
 		smDisplayLight->setting2Src = &(module->miscSettings2);
@@ -517,7 +514,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	addChild(bigNumbers = createWidgetCentered<BigNumbers>(mm2px(Vec(96.52f, 79.0f))));
 	if (module) {
 		bigNumbers->currChan = &(module->currChan);
-		bigNumbers->channels = &(module->channels[0]);
+		bigNumbers->channels = module->channels;
 		bigNumbers->displayInfo = &displayInfo;
 	}
 
@@ -533,9 +530,9 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		addParam(smButtons[c][1] = createParamCentered<SmLoopButton>(mm2px(Vec(61.23f, belowDispY)), module, LOOP_PARAM + cp));
 		if (module) {
 			(static_cast<SmPlayButton*>(smButtons[c][3]))->currChan = &(module->currChan);
-			(static_cast<SmPlayButton*>(smButtons[c][3]))->channels = &(module->channels[0]);
+			(static_cast<SmPlayButton*>(smButtons[c][3]))->channels = module->channels;
 			(static_cast<SmLoopButton*>(smButtons[c][1]))->currChan = &(module->currChan);
-			(static_cast<SmLoopButton*>(smButtons[c][1]))->channels = &(module->channels[0]);
+			(static_cast<SmLoopButton*>(smButtons[c][1]))->channels = module->channels;
 		}
 	}
 	// GridX and range
@@ -563,7 +560,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		addParam(smButtons[c][0] = createParamCentered<SmLockButton>(lockPosVec, module, LOCK_PARAM + cp));
 		if (module) {
 			(static_cast<SmSyncButton*>(smButtons[c][4]))->currChan = &(module->currChan);
-			(static_cast<SmSyncButton*>(smButtons[c][4]))->channels = &(module->channels[0]);
+			(static_cast<SmSyncButton*>(smButtons[c][4]))->channels = module->channels;
 			(static_cast<SmSyncButton*>(smButtons[c][4]))->inClock = &(module->inputs[CLOCK_INPUT]);
 			(static_cast<SmSyncButton*>(smButtons[c][4]))->displayInfo = &displayInfo;
 			
@@ -717,7 +714,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 	addParam(sidechainSettingsButton = createParamCentered<SmSidechainSettingsButton>(mm2px(Vec(187.24f, 101.87f)), module, GEAR_PARAM));
 	if (module) {
 		sidechainSettingsButton->currChan = &(module->currChan);
-		sidechainSettingsButton->channels = &(module->channels[0]);
+		sidechainSettingsButton->channels = module->channels;
 	}
 	svgPanel->fb->addChild(createWidgetCentered<Dots8p0c112Svg>(mm2px(Vec(173.05f, knob2Y))));
 	for (int c = 0; c < 8; c++) {
@@ -732,7 +729,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		for (int c = 0; c < 8; c++) {
 			for (int i = 0; i < NUM_KNOB_PARAMS; i++) {
 				smKnobs[c][i]->currChan = &(module->currChan);// will likely need this for CV arcs
-				smKnobs[c][i]->channels = &(module->channels[0]);// will likely need this for CV arcs
+				smKnobs[c][i]->channels = module->channels;// will likely need this for CV arcs
 				smKnobs[c][i]->detailsShowSrc = &(module->miscSettings.cc4[0]);
 				smKnobs[c][i]->cloakedModeSrc = &(module->cloakedMode);
 				smKnobs[c][i]->displayInfo = &displayInfo;
@@ -752,7 +749,7 @@ ShapeMasterWidget::ShapeMasterWidget(ShapeMaster *module) {
 		for (int i = 0; i < NUM_SM_LABELS; i++) {
 			smLabels[i]->knobLabelColorsSrc = &(module->miscSettings.cc4[1]);// unused in [18] and [19] since they are in the display color (GridX and Range)
 			smLabels[i]->currChan = &(module->currChan);
-			smLabels[i]->channels = &(module->channels[0]);
+			smLabels[i]->channels = module->channels;
 		}
 	}
 	
@@ -811,25 +808,25 @@ void ShapeMasterWidget::step() {
 			std::string currChanPresetPath = module->channels[chan].getPresetPath();
 			std::string currChanShapePath = module->channels[chan].getShapePath();
 			if (!currChanPresetPath.empty()) {
-				if (!(module->channelDirtyCache->getPresetPath() == currChanPresetPath)) {
-					if (!loadPresetOrShape(currChanPresetPath, module->channelDirtyCache, true, &unsupportedSync, false)) {
+				if (!(module->channelDirtyCache.getPresetPath() == currChanPresetPath)) {
+					if (!loadPresetOrShape(currChanPresetPath, &module->channelDirtyCache, true, &unsupportedSync, false)) {
 						currChanPresetPath = "";
 						module->channels[chan].setPresetPath(currChanPresetPath);
 					}
 				}
 				if (!currChanPresetPath.empty()) {
-					presetOrShapeDirty = module->channels[chan].isDirty(module->channelDirtyCache);
+					presetOrShapeDirty = module->channels[chan].isDirty(&module->channelDirtyCache);
 				}
 			}
 			else if (!currChanShapePath.empty()) {
-				if (!(module->channelDirtyCache->getShapePath() == currChanShapePath)) {
-					if (!loadPresetOrShape(currChanShapePath, module->channelDirtyCache, false, NULL, false)) {
+				if (!(module->channelDirtyCache.getShapePath() == currChanShapePath)) {
+					if (!loadPresetOrShape(currChanShapePath, &module->channelDirtyCache, false, NULL, false)) {
 						currChanShapePath = "";
 						module->channels[chan].setShapePath(currChanShapePath);
 					}	
 				}
 				if (!currChanShapePath.empty()) {
-					presetOrShapeDirty = module->channels[chan].isDirtyShape(module->channelDirtyCache);
+					presetOrShapeDirty = module->channels[chan].isDirtyShape(&module->channelDirtyCache);
 				}
 			}
 			else {

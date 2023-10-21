@@ -14,8 +14,8 @@
 #include "Channel.hpp"
 
 
-bool loadPresetOrShape(const std::string path, Channel* dest, bool isPreset, bool* unsupportedSync, bool withHistory);
-void savePresetOrShape(const std::string path, Channel* dest, bool isPreset, Channel* channelDirtyCache);
+bool loadPresetOrShape(const std::string& path, Channel* dest, bool isPreset, bool* unsupportedSync, bool withHistory);
+void savePresetOrShape(const std::string& path, Channel* dest, bool isPreset, Channel* channelDirtyCache);
 
 
 // ----------------------------------------------------------------------------

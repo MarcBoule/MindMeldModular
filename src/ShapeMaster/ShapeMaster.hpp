@@ -56,7 +56,7 @@ struct ShapeMaster : Module {
 	PackedBytes4 miscSettings3;
 	RandomSettings randomSettings;
 	float lineWidth = 0.0f;
-	std::vector<Channel> channels;// size 8
+	Channel channels[8];
 	int currChan = 0;
 
 
@@ -76,19 +76,17 @@ struct ShapeMaster : Module {
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger resetTrigger;
 	PresetAndShapeManager presetAndShapeManager;
-	Channel* channelDirtyCache;
+	Channel channelDirtyCache;
 	Param channelDirtyCacheParams[NUM_CHAN_PARAMS] = {};
-	std::atomic_flag lock_shape[8] = {ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT, ATOMIC_FLAG_INIT};
 
 
 	ShapeMaster(); 
 
-	~ShapeMaster() {
+	// ~ShapeMaster() {
 		// if (channelCopyPasteCache != NULL) {
 			// json_decref(channelCopyPasteCache);
 		// }
-		delete channelDirtyCache;
-	}
+	// }
 	
 	
 	void onReset() override final;

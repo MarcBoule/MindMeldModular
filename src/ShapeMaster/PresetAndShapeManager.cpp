@@ -22,7 +22,7 @@ std::string getUserPath(bool isPreset) {
 void appendDirMenu(std::string dirPath, Menu* menu, Channel* channel, bool isPreset);// defined in this file
 
 
-bool loadPresetOrShape(const std::string path, Channel* dest, bool isPreset, bool* unsupportedSync, bool withHistory) {
+bool loadPresetOrShape(const std::string& path, Channel* dest, bool isPreset, bool* unsupportedSync, bool withHistory) {
 	// returns success
 	// unsupportedSync must only be non-null when isPreset is true and we are loading for the dirty cache
 	// 
@@ -108,7 +108,7 @@ bool loadPresetOrShape(const std::string path, Channel* dest, bool isPreset, boo
 }
 
 
-void savePresetOrShape(const std::string path, Channel* channel, bool isPreset, Channel* channelDirtyCache) {
+void savePresetOrShape(const std::string& path, Channel* channel, bool isPreset, Channel* channelDirtyCache) {
 	INFO((isPreset ? "Saving ShapeMaster channel preset %s" : "Saving ShapeMaster shape %s"), path.c_str());
 	json_t* channelPresetOrShapeJ = isPreset ? 
 		channel->dataToJsonChannel(WITH_PARAMS, WITH_PRO_UNSYNC_MATCH, WITHOUT_FULL_SETTINGS) : 

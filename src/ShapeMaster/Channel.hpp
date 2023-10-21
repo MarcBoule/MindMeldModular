@@ -76,25 +76,25 @@ class Channel {
 	// none
 	
 	// need to save, with reset
-	Param* paPhase;
-	Param* paResponse;
-	Param* paWarp;
-	Param* paAmount;
-	Param* paSlew;
-	Param* paSmooth;
-	Param* paCrossover;
-	Param* paHigh;
-	Param* paLow;
-	Param* paPrevNextPreSha;
+	Param* paPhase = nullptr;
+	Param* paResponse = nullptr;
+	Param* paWarp = nullptr;
+	Param* paAmount = nullptr;
+	Param* paSlew = nullptr;
+	Param* paSmooth = nullptr;
+	Param* paCrossover = nullptr;
+	Param* paHigh = nullptr;
+	Param* paLow = nullptr;
+	Param* paPrevNextPreSha = nullptr;
 	SlewLimiterSingle slewLimiter;
-	float hpfCutoffSqFreq;// always use getter and setter since tied to Biquad
-	float lpfCutoffSqFreq;// always use getter and setter since tied to Biquad
-	float sensitivity;
-	float gainAdjustVca;// this is a gain here (not dB)
-	float gainAdjustSc;// this is a gain here (not dB)
-	float nodeTrigDuration;
-	uint8_t gridX;
-	int8_t rangeIndex;
+	float hpfCutoffSqFreq = 0.0f;// always use getter and setter since tied to Biquad
+	float lpfCutoffSqFreq = 0.0f;// always use getter and setter since tied to Biquad
+	float sensitivity = 0.0f;
+	float gainAdjustVca = 0.0f;// this is a gain here (not dB)
+	float gainAdjustSc = 0.0f;// this is a gain here (not dB)
+	float nodeTrigDuration = 0.0f;
+	uint8_t gridX = 0;
+	int8_t rangeIndex = 0;
 	public:
 	PackedBytes4 channelSettings;
 	PackedBytes4 channelSettings2;
@@ -110,35 +110,35 @@ class Channel {
 	
 
 	// no need to save, with reset
-	double sampleTime;
+	double sampleTime = 0.0f;
 	LinkwitzRileyStereo8xCrossover xover;
-	float lastCrossoverParamWithCv;
+	float lastCrossoverParamWithCv = 0.0f;
 	ButterworthFourthOrder hpFilter;
 	ButterworthFourthOrder lpFilter;
 	FirstOrderFilter smoothFilter;
-	float lastSmoothParam;
-	double lastProcessXt;
-	bool channelActive;
-	int vcaPreSize;
-	int vcaPostSize;
-	float scSignal;// implicitly mono
-	float scEnvelope;// implicitly mono
+	float lastSmoothParam = 0.0f;
+	double lastProcessXt = 0.0;
+	bool channelActive = false;
+	int vcaPreSize = 0;
+	int vcaPostSize = 0;
+	float scSignal = 0.0f;// implicitly mono
+	float scEnvelope = 0.0f;// implicitly mono
 	dsp::SlewLimiter scEnvSlewer;
 	public:
 	simd::float_4 warpPhaseResponseAmountWithCv;// warp = [0]
-	bool warpPhaseResponseAmountCvConnected;
+	bool warpPhaseResponseAmountCvConnected = false;
 	simd::float_4 xoverSlewWithCv;// xfreq = [0], xhigh = [1], xlow = [2], slew = [3] (slew unrelated to xvoer)
-	bool xoverSlewCvConnected;
+	bool xoverSlewCvConnected = false;
 	private:
 	dsp::PulseGenerator nodeTrigPulseGen;
 		
 	// no need to save, no reset
-	int chanNum;
-	bool* running;
-	Input* inInput;// use only in process() because of channelDirtyCache and possible nullness
-	Input* scInput;// use only in process() because of channelDirtyCache and possible nullness
-	Output* outOutput;// use only in process() because of channelDirtyCache and possible nullness
-	Output* cvOutput;// use only in process() because of channelDirtyCache and possible nullness
+	int chanNum = 0;
+	bool* running = nullptr;
+	Input* inInput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
+	Input* scInput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
+	Output* outOutput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
+	Output* cvOutput = nullptr;// use only in process() because of channelDirtyCache and possible nullness
 	float lengthUnsyncOld = -10.0f;// don't need init nor reset for this, used in caching detection with param that is [-1.0f : 1.0f], used with next line
 	std::string lengthUnsyncTextOld;// used with previous line
 	float vcaPre[16] = {};
@@ -146,41 +146,17 @@ class Channel {
 	PresetAndShapeManager* presetAndShapeManager = nullptr;
 	ClockDetector* clockDetector = nullptr;
 	bool prevNextButtonsClicked[4] = {};// matches the PREV_NEXT_PRE_SHA param
-	dsp::SchmittTrigger arrowButtonTriggers[4] = {};
+	dsp::SchmittTrigger arrowButtonTriggers[4] = {};	
 	
 	public:
 
-	Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager, std::atomic_flag* lock_shape) : shape(lock_shape) {
-		chanNum = _chanNum;
-		running = _running;
-		if (_inputs) {
-			inInput = &_inputs[IN_INPUTS + chanNum];
-			scInput = &_inputs[SIDECHAIN_INPUT];
-		}
-		if (_outputs) {
-			outOutput = &_outputs[OUT_OUTPUTS + chanNum];
-			cvOutput = &_outputs[CV_OUTPUTS + chanNum];
-		}
-		hpFilter.setParameters(true, 0.1f);
-		lpFilter.setParameters(false, 0.4f);
-
-		paPhase = &_params[PHASE_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paResponse = &_params[RESPONSE_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paWarp = &_params[WARP_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paAmount = &_params[AMOUNT_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paSlew = &_params[SLEW_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paSmooth = &_params[SMOOTH_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paCrossover = &_params[CROSSOVER_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paHigh = &_params[HIGH_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paLow = &_params[LOW_PARAM + chanNum * NUM_CHAN_PARAMS];
-		paPrevNextPreSha = &_params[PREV_NEXT_PRE_SHA + chanNum * NUM_CHAN_PARAMS];
-		smoothFilter.setParameters(false, 0.4f);
-		presetAndShapeManager = _presetAndShapeManager;// can be null
-		clockDetector = _clockDetector;
-		playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration);
-		
-		onReset(false); // redundant since ShapeMaster::onReset() will propagate to Channel::onReset(), but keep to reset anyways for static code analysis warnings (but we can avoid withParams at least)	
+	Channel() {
+		channelSettings.cc1 = 0;
+		channelSettings2.cc1 = 0;
+		channelSettings3.cc1 = 0;
+		channelSettings4.cc1 = 0;
 	}
+	void construct(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, std::vector<ParamQuantity*>* _paramQuantitiesSrc, PresetAndShapeManager* _presetAndShapeManager);
 	
 	void onReset(bool withParams);
 	
@@ -232,14 +208,14 @@ class Channel {
 		if (withHistory) {
 			h = new ShapeCompleteChange;
 			h->shapeSrc = &shape;
-			h->oldShape = new Shape(NULL);
+			h->oldShape = new Shape();
 			shape.copyShapeTo(h->oldShape);
 		}
 		
 		shape.randomizeShape(&randomSettings, getGridX(), getRangeIndex(), isDecoupledFirstAndLast());
 		
 		if (withHistory) {
-			h->newShape = new Shape(NULL);
+			h->newShape = new Shape();
 			shape.copyShapeTo(h->newShape);
 			h->name = "randomise shape";
 			APP->history->push(h);
