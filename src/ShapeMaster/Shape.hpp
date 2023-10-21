@@ -33,15 +33,15 @@ class Shape {
 	//   * ctrl[numPts-1] is unused and always 0.5f
 	//   * type[numPts-1] is unused and always 0
 	//   * x values of all points are always sorted
-	Vec points[MAX_PTS];
-	float ctrl[MAX_PTS];// from MIN_CTRL to 1-MIN_CTRL, positive only, this is a percentage of the abs(dy) span
-	int8_t type[MAX_PTS];// 0 is smooth, 1 is s-shape
+	Vec points[MAX_PTS] = {};
+	float ctrl[MAX_PTS] = {};// from MIN_CTRL to 1-MIN_CTRL, positive only, this is a percentage of the abs(dy) span
+	int8_t type[MAX_PTS] = {};// 0 is smooth, 1 is s-shape
 	int numPts;
 	int pc;// point cache, index into points, has to be managed in lockstep with numPts such that 0 <= pc < (numPts - 1)
 	int pcDelta;
+	float evalShapeForProcessRet;
 	
 	std::atomic_flag* lock_shape;// blocking and mandatory for all modifications that can temporarily change invariants, non-blocking test for process() (should leave output unchanged when can't acquire lock)
-	float evalShapeForProcessRet = 0.0f;
 	
 	
 	public:
@@ -68,6 +68,7 @@ class Shape {
 	
 	
 	Shape(std::atomic_flag* _lock_shape) {
+		// _lock_shape can be null (when channelDirtyCache)
 		lock_shape = _lock_shape;
 		onReset(); 
 	}

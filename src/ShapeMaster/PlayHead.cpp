@@ -10,16 +10,8 @@
 #include "PresetAndShapeManager.hpp"
 
 
-void PlayHead::construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen, float* _nodeTrigDuration) {
-	chanNum = _chanNum;
-	sosEosEoc = _sosEosEoc;
-	clockDetector = _clockDetector;
-	running = _running;
-	scEnvelope = _scEnvelope;
-	presetAndShapeManager = _presetAndShapeManager;
-	nodeTrigPulseGen = _nodeTrigPulseGen;
-	nodeTrigDuration = _nodeTrigDuration;
-	paramQuantityRepititionSrc = _paramQuantityRepititionSrc;
+PlayHead::PlayHead(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen, float* _nodeTrigDuration) {
+	// DEBUG("PlayHead construct %i, cd=%llu", _chanNum, (unsigned long long)_clockDetector);	
 	paRepetitions = &_chanParams[REPETITIONS_PARAM];
 	paLengthSync = &_chanParams[LENGTH_SYNC_PARAM];
 	paLengthUnsync = &_chanParams[LENGTH_UNSYNC_PARAM];
@@ -30,11 +22,31 @@ void PlayHead::construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clo
 	paPlay = &_chanParams[PLAY_PARAM];
 	paSustainLoop = &_chanParams[LOOP_PARAM];
 	paOffset = &_chanParams[OFFSET_PARAM];
-	auditionSlewer.setRiseFall(125.0f);
 	paAudition = &_chanParams[AUDITION_PARAM];
 	paTrigLevel = &_chanParams[TRIGLEV_PARAM];
+	
+	auditionSlewer.setRiseFall(125.0f);
+	
+	chanNum = _chanNum;
+	sosEosEoc = _sosEosEoc;
+	loopingOrSustaining = false;
+	lastPaLengthUnsync = 0.0f;
+	lastPaLengthUnsyncWithCv = 0.0f;
+	lastLengthUnsyncTime = (double)LENGTH_UNSYNC_MULT;
+	lastLengthUnsyncTimeWithCv = (double)LENGTH_UNSYNC_MULT;
+	clockDetector = _clockDetector;
+	running = _running;
+	scEnvelope = _scEnvelope;
+	presetAndShapeManager = _presetAndShapeManager;
+	paramQuantityRepititionSrc = _paramQuantityRepititionSrc;
 	inTrig = _trigInput;
-	// onReset(false); // not needed since ShapeMaster::onReset() will propagate to PlayHead::onReset();
+	length = 1.0;
+	lengths[0] = 1.0; lengths[1]= 1.0;
+	reverse = false;
+	nodeTrigPulseGen = _nodeTrigPulseGen;
+	nodeTrigDuration = _nodeTrigDuration;
+	
+	onReset(false);// redundant since ShapeMaster::onReset() will propagate to Channel::onReset(), but keep to reset anyways for static code analysis warnings (but we can avoid withParams at least)
 }
 
 
@@ -71,27 +83,53 @@ void PlayHead::onReset(bool withParams) {
 	playHeadSettings3.cc4[1] = 0x0;// Channel reset on sustain
 	playHeadSettings3.cc4[2] = 0x0;// (unused)
 	playHeadSettings3.cc4[3] = 0x0;// (unused)
-	setRepetitions(setAndRetDefaultReps());// always have to do this since when the rep param itself was reset by Rack, the default value has not been updated yet, and only now the value is known
-	resetNonJson();
-	paLengthUnsync->setValue(DEFAULT_LENGTH_UNSYNC);// needed since engine thread can see sync turn off as the result of the ctrl-i and unsync will not be ok (because of mirroring sync effective length to unsync)
+	float rpa = setAndRetDefaultReps();
+	if (withParams) {
+		setRepetitions(rpa);// always have to do this since when the rep param itself was reset by Rack, the default value has not been updated yet, and only now the value is known
+	}
+	resetNonJson(withParams);
+	if (withParams) {
+		paLengthUnsync->setValue(DEFAULT_LENGTH_UNSYNC);// needed since engine thread can see sync turn off as the result of the ctrl-i and unsync will not be ok (because of mirroring sync effective length to unsync)
+	}
 }
 
 
-void PlayHead::resetNonJson() {
+void PlayHead::resetNonJson(bool withParams) {
+	// state done in initRun()->stop(true) below
+	// cycleCount done in initRun(true) below
+	// lengthIndex done in initRun(true) below
+	// xt done in initRun(true) below
+	// pendingTrig done in initRun(true) below
+	// slowSlewPulseGen done in initRun(true) below
 	lastTrigMode = trigMode;
-	localSyncButton = paSync->getValue() >= 0.5f;
-	localLockButton = paLock->getValue() >= 0.5f;
-	localFreezeButton = paFreeze->getValue() >= 0.5f;
-	localPlayButton = paPlay->getValue() >= 0.5f;
+	if (withParams) {
+		localSyncButton = paSync->getValue() >= 0.5f;
+		localLockButton = paLock->getValue() >= 0.5f;
+		localFreezeButton = paFreeze->getValue() >= 0.5f;
+		localPlayButton = paPlay->getValue() >= 0.5f;
+		lengthSyncWithCv = paLengthSync->getValue();
+		lengthUnsyncWithCv = paLengthUnsync->getValue();
+	}
+	else {
+		localSyncButton = false;
+		localLockButton = false;
+		localFreezeButton = false;
+		localPlayButton = false;
+		lengthSyncWithCv = 0.0f;
+		lengthUnsyncWithCv = 0.0f;
+	}
 	auditionSlewer.reset();
 	trigTrigger.reset();
 	scTrigger = true;
 	holdOffTimer = 0.0f;
 	setAndRetDefaultReps();
-	offsetSwingLoopsWithCv = simd::float_4(paOffset->getValue(), paSwing->getValue(), loopStart, loopEndAndSustain);
+	if (withParams) {
+		offsetSwingLoopsWithCv = simd::float_4(paOffset->getValue(), paSwing->getValue(), loopStart, loopEndAndSustain);
+	}
+	else {
+		offsetSwingLoopsWithCv = simd::float_4(0.0f, 0.0f, loopStart, loopEndAndSustain);
+	}
 	offsetSwingLoopsCvConnected = false;
-	lengthSyncWithCv = paLengthSync->getValue();
-	lengthUnsyncWithCv = paLengthUnsync->getValue();
 	lengthCvConnected = false;
 	initRun(true);
 }
@@ -237,7 +275,7 @@ bool PlayHead::dataFromJsonPlayHead(json_t *channelJ, bool withParams, bool isDi
 	if (playHeadSettings3J) playHeadSettings3.cc1 = json_integer_value(playHeadSettings3J);
 
 	if (!isDirtyCacheLoad) {
-		resetNonJson();
+		resetNonJson(true);
 	}
 	
 	return unsupportedSync;

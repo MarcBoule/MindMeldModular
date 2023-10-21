@@ -81,6 +81,7 @@ ShapeMaster::ShapeMaster() {// : worker(&ShapeMaster::worker_nextPresetOrShape, 
 	for (int c = 0; c < 8; c++) {
 		ParamQuantity* pqReps = paramQuantities[REPETITIONS_PARAM + c * NUM_CHAN_PARAMS];
 		std::atomic_flag* _lock_shape = &(lock_shape[c]);
+		// DEBUG("channel %i cstr", c);
 		channels.push_back(Channel(c, &running, &sosEosEoc, &clockDetector, &inputs[0], &outputs[0], &params[0], pqReps, &presetAndShapeManager, _lock_shape));
 	}
 

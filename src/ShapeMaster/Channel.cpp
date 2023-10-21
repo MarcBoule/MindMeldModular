@@ -11,39 +11,7 @@
 
 
 
-// Channel::Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager, std::atomic_flag* lock_shape) {
-	// chanNum = _chanNum;
-	// running = _running;
-	// if (_inputs) {
-		// inInput = &_inputs[IN_INPUTS + chanNum];
-		// scInput = &_inputs[SIDECHAIN_INPUT];
-	// }
-	// if (_outputs) {
-		// outOutput = &_outputs[OUT_OUTPUTS + chanNum];
-		// cvOutput = &_outputs[CV_OUTPUTS + chanNum];
-	// }
-	// hpFilter.setParameters(true, 0.1f);
-	// lpFilter.setParameters(false, 0.4f);
-
-	// paPhase = &_params[PHASE_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paResponse = &_params[RESPONSE_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paWarp = &_params[WARP_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paAmount = &_params[AMOUNT_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paSlew = &_params[SLEW_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paSmooth = &_params[SMOOTH_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paCrossover = &_params[CROSSOVER_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paHigh = &_params[HIGH_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paLow = &_params[LOW_PARAM + chanNum * NUM_CHAN_PARAMS];
-	// paPrevNextPreSha = &_params[PREV_NEXT_PRE_SHA + chanNum * NUM_CHAN_PARAMS];
-	// smoothFilter.setParameters(false, 0.4f);
-	// presetAndShapeManager = _presetAndShapeManager;// can be null
-	// clockDetector = _clockDetector;
-	// playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration);
-	
-	// onReset(false); // redundant since ShapeMaster::onReset() will propagate to Channel::onReset(), but keep to reset anyways for static code analysis warnings (but we can avoid withParams at least)
-// }
-
-void Channel::onReset(bool withParams) {		
+void Channel::onReset(bool withParams) {
 	if (withParams) {
 		paPhase->setValue(DEFAULT_PHASE);
 		paResponse->setValue(DEFAULT_RESPONSE);

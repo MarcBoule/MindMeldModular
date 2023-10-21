@@ -150,7 +150,11 @@ class Channel {
 	
 	public:
 
-	Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager, std::atomic_flag* lock_shape) : shape(lock_shape) {
+	Channel(int _chanNum, bool* _running, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, Input* _inputs, Output* _outputs, Param* _params, ParamQuantity* pqReps, PresetAndShapeManager* _presetAndShapeManager, std::atomic_flag* lock_shape) : 
+		shape(lock_shape), 
+		playHead(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration) 	
+	{
+		// DEBUG("Channel construct %i, cd=%llu", _chanNum, (unsigned long long)_clockDetector);
 		chanNum = _chanNum;
 		running = _running;
 		if (_inputs) {
@@ -177,9 +181,9 @@ class Channel {
 		smoothFilter.setParameters(false, 0.4f);
 		presetAndShapeManager = _presetAndShapeManager;// can be null
 		clockDetector = _clockDetector;
-		playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration);
+		// playHead.construct(_chanNum, _sosEosEoc, _clockDetector, _running, pqReps, &_params[chanNum * NUM_CHAN_PARAMS], &_inputs[TRIG_INPUTS + chanNum], &scEnvelope, _presetAndShapeManager, &nodeTrigPulseGen, &nodeTrigDuration);
 		
-		onReset(false); // redundant since ShapeMaster::onReset() will propagate to Channel::onReset(), but keep to reset anyways for static code analysis warnings (but we can avoid withParams at least)	
+		onReset(false);// redundant since ShapeMaster::onReset() will propagate to Channel::onReset(), but keep to reset anyways for static code analysis warnings (but we can avoid withParams at least)	
 	}
 	
 	void onReset(bool withParams);

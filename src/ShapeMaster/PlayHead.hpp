@@ -56,74 +56,74 @@ class PlayHead {
 
 	private:
 	// need to save, with reset
-	Param* paRepetitions = nullptr;
-	Param* paLengthSync = nullptr;
-	Param* paLengthUnsync = nullptr;// this is the exponent, the actual length time can be obtained using calcLengthUnsyncTime()
-	Param* paSync = nullptr;
-	Param* paLock = nullptr;
-	Param* paSwing = nullptr;
-	Param* paFreeze = nullptr;
-	Param* paPlay = nullptr;
-	Param* paSustainLoop = nullptr;
-	Param* paOffset = nullptr;
-	Param* paAudition = nullptr;
-	Param* paTrigLevel = nullptr;
-	int8_t playMode = 0;
-	int8_t trigMode = 0;
-	float hysteresis = 0.0f;
-	float holdOff = 0.0f;
-	float loopStart = 0.0f;// 0.0f to loopEndAndSustain - LOOP_SUS_SAFETY;
-	double loopEndAndSustain = 0.0;// LOOP_SUS_SAFETY to 1.0f - LOOP_SUS_SAFETY; made double since equality test with xt for EOS
+	Param* paRepetitions;
+	Param* paLengthSync;
+	Param* paLengthUnsync;// this is the exponent, the actual length time can be obtained using calcLengthUnsyncTime()
+	Param* paSync;
+	Param* paLock;
+	Param* paSwing;
+	Param* paFreeze;
+	Param* paPlay;
+	Param* paSustainLoop;
+	Param* paOffset;
+	Param* paAudition;
+	Param* paTrigLevel;
+	int8_t playMode;
+	int8_t trigMode;
+	float hysteresis;
+	float holdOff;
+	float loopStart;// 0.0f to loopEndAndSustain - LOOP_SUS_SAFETY;
+	double loopEndAndSustain;// LOOP_SUS_SAFETY to 1.0f - LOOP_SUS_SAFETY; made double since equality test with xt for EOS
 	PackedBytes4 playHeadSettings;
 	PackedBytes4 playHeadSettings2;
 	PackedBytes4 playHeadSettings3;
 
 
 	// no need to save, with reset
-	int state = 0;
-	int32_t cycleCount = 0;// start at 0
-	int32_t lengthIndex = 0;// start at 0, can only be 0 or 1
-	double xt = 0.0;// in normalized time [0: 1[ (only moves forward for simplicity, code will adjust for backward cycles)
-	long pendingTrig = 0;
-	dsp::PulseGenerator slowSlewPulseGen;// to force a slower slew when state change or reset, etc. The pulse's duration should be 1/RF (in seconds) where RF is the riseFall number if the dependant slew generator
-	int8_t lastTrigMode = 0;
-	bool localSyncButton = false;// use this within playhead when critical to get a consistent read on this, since there is toggle code that must run consistently with process()'s view on button state (so can't use button directly, because toggle code is slow)
-	bool localLockButton = false;// same comment as localSyncButton
-	bool localFreezeButton = false;
-	bool localPlayButton = false;
+	int state;
+	int32_t cycleCount;// start at 0
+	int32_t lengthIndex;// start at 0, can only be 0 or 1
+	double xt;// in normalized time [0: 1[ (only moves forward for simplicity, code will adjust for backward cycles)
+	long pendingTrig;
+	dsp::PulseGenerator slowSlewPulseGen;// to force a slower slew when state change or reset, etc. The pulse's duration should be 1/RF (in seconds) where RF is the riseFall number if the dependent slew generator
+	int8_t lastTrigMode;
+	bool localSyncButton;// use this within playhead when critical to get a consistent read on this, since there is toggle code that must run consistently with process()'s view on button state (so can't use button directly, because toggle code is slow)
+	bool localLockButton;// same comment as localSyncButton
+	bool localFreezeButton;
+	bool localPlayButton;
+	float lengthSyncWithCv;
+	float lengthUnsyncWithCv;
 	SlewLimiterSingle auditionSlewer;
 	TriggerRiseFall trigTrigger;
-	bool scTrigger = false;// make bool so that it can use trig
-	float holdOffTimer = 0.0f;// <= 0.0f means ready to accept new sc trig, > 0.0f means no new trig can register
+	bool scTrigger;// make bool so that it can use trig
+	float holdOffTimer;// <= 0.0f means ready to accept new sc trig, > 0.0f means no new trig can register
 	public:
 	simd::float_4 offsetSwingLoopsWithCv;// offset = [0], swing = [1], loopstart = [2], loopend = [3]
-	bool offsetSwingLoopsCvConnected = false;
-	float lengthSyncWithCv = 0.0f;
-	float lengthUnsyncWithCv = 0.0f;
-	bool lengthCvConnected = false;// serves for both sync and unsync
+	bool offsetSwingLoopsCvConnected;
+	bool lengthCvConnected;// serves for both sync and unsync
 	private:
 	
 	
 	// no need to save, no reset
-	int chanNum = 0;
-	uint32_t* sosEosEoc = nullptr;
-	bool loopingOrSustaining = false;// reset by start(), which is only way to get STEPPING; STEPPING guards loopingOrSustaining use
-	float lastPaLengthUnsync = 0.0f;
-	float lastPaLengthUnsyncWithCv = 0.0f;
-	double lastLengthUnsyncTime = (double)LENGTH_UNSYNC_MULT;
-	double lastLengthUnsyncTimeWithCv = (double)LENGTH_UNSYNC_MULT;
-	ClockDetector* clockDetector = nullptr;
-	bool* running = nullptr;
-	float* scEnvelope = nullptr;
-	PresetAndShapeManager* presetAndShapeManager = nullptr;
-	ParamQuantity* paramQuantityRepititionSrc = nullptr;
-	Input* inTrig = nullptr;
-	double length = 1.0;// this is not a double length; only valid when state == STEPPING
-	double lengths[2] = {1.0, 1.0} ;// sum must equal 2 * length; only valid when state == STEPPING
+	int chanNum;
+	uint32_t* sosEosEoc;
+	bool loopingOrSustaining;// reset by start(), which is only way to get STEPPING; STEPPING guards loopingOrSustaining use
+	float lastPaLengthUnsync;
+	float lastPaLengthUnsyncWithCv;
+	double lastLengthUnsyncTime;
+	double lastLengthUnsyncTimeWithCv;
+	ClockDetector* clockDetector;
+	bool* running;
+	float* scEnvelope;
+	PresetAndShapeManager* presetAndShapeManager;
+	ParamQuantity* paramQuantityRepititionSrc;
+	Input* inTrig;
+	double length;// this is not a double length; only valid when state == STEPPING
+	double lengths[2];// sum must equal 2 * length; only valid when state == STEPPING
 	LengthSyncInfo lsi;
-	bool reverse = false;// valid only after calling this.process()
-	dsp::PulseGenerator* nodeTrigPulseGen = nullptr;
-	float* nodeTrigDuration = nullptr;
+	bool reverse;// valid only after calling this.process()
+	dsp::PulseGenerator* nodeTrigPulseGen;
+	float* nodeTrigDuration;
 	
 	
 	#ifdef SM_PRO
@@ -145,16 +145,11 @@ class PlayHead {
 	
 	public: 
 	
-	PlayHead() {
-		playHeadSettings.cc1 = 0;
-		playHeadSettings2.cc1 = 0;
-		playHeadSettings3.cc1 = 0;
-	}
-	void construct(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen, float* nodeTrigDuration);
+	PlayHead(int _chanNum, uint32_t* _sosEosEoc, ClockDetector* _clockDetector, bool* _running, ParamQuantity* _paramQuantityRepititionSrc, Param* _chanParams, Input* _trigInput, float* _scEnvelope, PresetAndShapeManager* _presetAndShapeManager, dsp::PulseGenerator* _nodeTrigPulseGen, float* nodeTrigDuration);
 	
 	void onReset(bool withParams);
 	
-	void resetNonJson();
+	void resetNonJson(bool withParams);
 	
 	void initRun(bool withSlowSlew = false);
 	
