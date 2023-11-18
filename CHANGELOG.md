@@ -1,5 +1,6 @@
 ### 2.4.0 (in development)
 
+- Add one decimal of precision to dim gain sliders' readouts in Mixers and MasterChan (in menus)
 - Fix code warnings using Cppcheck
 
 
