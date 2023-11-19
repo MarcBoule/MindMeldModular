@@ -1,17 +1,17 @@
 ### 2.4.0 (in development)
 
-- Add one decimal of precision to dim gain sliders' readouts in Mixers and MasterChan (in menus)
-- Fix code warnings using Cppcheck
+- Mixers and MasterChan: Added one decimal of precision to dim gain sliders' readouts in (in menus)
+- Fixed code warnings using Cppcheck
 
 
 ### 2.2.3 (2023-04-11)
 
-- Fix issue with Schmitt trigger
+- Fixed issue with Schmitt trigger
 
 
 ### 2.2.2 (2023-03-26)
 
-- PatchMaster: Fix issue with smooth parameter API change
+- PatchMaster: Fixed issue with smooth parameter API change
 
 
 ### 2.2.1 (2023-01-12)
