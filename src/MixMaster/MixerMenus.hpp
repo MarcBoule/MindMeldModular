@@ -932,8 +932,8 @@ struct DimGainQuantity : Quantity {
 	float getDisplayValue() override {return getValue();}
 	std::string getDisplayValueString() override {
 		float valGain = getDisplayValue();
-		// valGain =  std::round(valGain);
-		return string::f("%.1f", math::normalizeZero(valGain));
+		valGain =  std::round(valGain);
+		return string::f("%g", math::normalizeZero(valGain));
 	}
 	void setDisplayValue(float displayValue) override {setValue(displayValue);}
 	std::string getLabel() override {return "Dim gain";}
