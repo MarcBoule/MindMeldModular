@@ -241,6 +241,7 @@ The RouteMaster modules are designed to work with PatchMaster (although they can
 * Omri Cohen, [MindMeld PatchMaster Overview and Tutorial](https://www.youtube.com/watch?v=uyQhRD1sc0A)
 * Omri Cohen, [MixMaster from MindMeld](https://www.youtube.com/watch?v=YcTPaG6N6nI)
 * Omri Cohen, [The Many Things You Can Do With ShapeMaster Pro from MindMeld](https://www.youtube.com/watch?v=GL6e4Mqqp2Y)
+* Omri Cohen, [2 ways of EQ\compression with MixMaster](https://www.youtube.com/watch?v=8siWVmUV-ck)
 * Artem Leonov, [Techno Patch from Scratch with new MindMelder MixMaster mixer in VCV Rack](https://www.youtube.com/watch?v=WsjscQvwBVk)
 * Artem Leonov, [Mixing mini patches in VCV RACK with new MINDMELD EQMASTER module](https://www.youtube.com/watch?v=wW1UREZQQXU)
 * Jakub Ciupinski, ShapeMaster [Ep.1-Intro](https://www.youtube.com/watch?v=dq87VzR-37I), [Ep.2-LFO](https://www.youtube.com/watch?v=rI9GSK90Tio), [Ep.3-Sequencer](https://www.youtube.com/watch?v=X92K5c9NAh4), [Ep.4-Random](https://www.youtube.com/watch?v=x-azB2iyjfY), [Ep.5-Time/Groove shaping](https://www.youtube.com/watch?v=m7XY0v_hSAE), [Ep.6-Multifunctions](https://www.youtube.com/watch?v=1bWlMzLIYAg), [Ep.7-PhaseSeq](https://www.youtube.com/watch?v=Ue7blVMOKL0), [Ep.8-Playheads](https://www.youtube.com/watch?v=zL3qVTyhntM)
