@@ -526,7 +526,7 @@ struct PercentQuantity : Quantity {
 	float *srcValue = NULL;
 	std::string label;
 	  
-	PercentQuantity(float *_srcValue, std::string _label) {
+	PercentQuantity(float *_srcValue, const std::string& _label) {
 		srcValue = _srcValue;
 		label = _label;
 	}

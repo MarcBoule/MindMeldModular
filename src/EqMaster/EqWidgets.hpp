@@ -648,7 +648,7 @@ struct EqCurveAndGrid : TransparentWidget {
 	
 	
 	// text labels in grid lines
-	void textAtFreqAndDb(const DrawArgs &args, float freq, float dB, std::string text) {
+	void textAtFreqAndDb(const DrawArgs &args, float freq, float dB, const std::string& text) {
 		float logFreq = std::log10(freq);
 		float textX = math::rescale(logFreq, minLogFreq, maxLogFreq, 0.0f, box.size.x);
 		float textY = math::rescale(dB, minDb, maxDb, box.size.y, 0.0f);
