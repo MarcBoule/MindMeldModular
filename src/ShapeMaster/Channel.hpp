@@ -348,15 +348,15 @@ class Channel {
 	void toggleSidechainLowTrig() {
 		playHead.toggleSidechainLowTrig();
 	}
-	void setPresetPath(std::string newPresetPath) {
+	void setPresetPath(const std::string& newPresetPath) {
 		presetPath = newPresetPath;
 		shapePath = "";
 	}
-	void setShapePath(std::string newShapePath) {
+	void setShapePath(const std::string& newShapePath) {
 		shapePath = newShapePath;
 		presetPath = "";
 	}
-	void setChanName(std::string newChanName) {
+	void setChanName(const std::string& newChanName) {
 		chanName = newChanName;
 	}
 	void updateChannelActive() {
