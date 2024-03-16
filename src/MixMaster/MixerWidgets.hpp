@@ -708,7 +708,7 @@ struct TrackDisplay : EditableDisplayBase {
 			fadeProfSlider->box.size.x = 200.0f;
 			menu->addChild(fadeProfSlider);
 			
-			menu->addChild(createCheckMenuItem("Link fader and fade", "",
+			menu->addChild(createCheckMenuItem("Link fader & fade (ctrl/cmd+click)", "",
 				[=]() {return isLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc);},
 				[=]() {toggleLinked(&(srcTrack->gInfo->linkBitMask), trackNumSrc);}
 			));
@@ -864,7 +864,7 @@ struct GroupDisplay : EditableDisplayBase {
 			menu->addChild(fadeProfSlider);
 			
 			int groupNumForLink = numTracks + srcGroup->groupNum;
-			menu->addChild(createCheckMenuItem("Link fader and fade", "",
+			menu->addChild(createCheckMenuItem("Link fader & fade (ctrl/cmd+click)", "",
 				[=]() {return isLinked(&(srcGroup->gInfo->linkBitMask), groupNumForLink);},
 				[=]() {toggleLinked(&(srcGroup->gInfo->linkBitMask), groupNumForLink);}
 			));
