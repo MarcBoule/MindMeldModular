@@ -123,7 +123,7 @@ struct TimeValueField : ui::TextField {
 		// TextField::step();
 	}
 
-	void setChannel(Channel* _channel, std::string initText, int _pt, float _length) {
+	void setChannel(Channel* _channel, const std::string& initText, int _pt, float _length) {
 		channel = _channel;
 		text = initText;
 		pt = _pt;
@@ -174,7 +174,7 @@ struct VoltValueField : ui::TextField {
 		// TextField::step();
 	}
 
-	void setChannel(Channel* _channel, std::string initText, int _pt, float _length) {
+	void setChannel(Channel* _channel, const std::string& initText, int _pt, float _length) {
 		channel = _channel;
 		text = initText;
 		pt = _pt;
