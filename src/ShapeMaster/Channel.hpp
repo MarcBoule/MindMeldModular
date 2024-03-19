@@ -146,7 +146,7 @@ class Channel {
 	PresetAndShapeManager* presetAndShapeManager = nullptr;
 	ClockDetector* clockDetector = nullptr;
 	bool prevNextButtonsClicked[4] = {};// matches the PREV_NEXT_PRE_SHA param
-	dsp::SchmittTrigger arrowButtonTriggers[4] = {};	
+	dsp::SchmittTrigger arrowButtonTriggers[4];	
 	
 	public:
 
