@@ -212,7 +212,7 @@ Separators take the form of Divider Labels (for labelling sections of your contr
 
 ### Preserving mappings in saved selections
 
-In order to preserve mappings in saved selections, they should be recalled using Stoermelder's S++ module. Mappings are also preserved when using Stoermelder's Strip module.
+In order to preserve mappings in saved selections, they should be recalled using Stoermelder's [Strip++](https://library.vcvrack.com/Stoermelder-P1/StripPp) module. Mappings are also preserved when using Stoermelder's Strip module.
 
 ### Master Chan
 
