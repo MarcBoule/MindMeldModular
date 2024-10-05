@@ -57,6 +57,7 @@ struct PatchMaster : Module {
 
 	// No need to save, no reset
 	RefreshCounter refresh;	
+	Trigger radioTriggers[NUM_CTRL];// indexed by tile number 
 	
 	
 	PatchMaster() {
@@ -396,6 +397,24 @@ struct PatchMaster : Module {
 		
 		// Inputs and slow
 		if (refresh.processInputs()) {
+			// radioTriggers
+			for (int tview = 0; tview < NUM_CTRL + NUM_SEP; tview++) {
+				int t = tileOrders.orders[tview];
+				if (t < 0) {
+					break;
+				}
+				if (t < NUM_CTRL) {
+					uint8_t tctrl = tileInfos.infos[t] & TI_TYPE_MASK;
+					if (radioTriggers[t].process(params[t].getValue())) {
+						if (tctrl == TT_BUTN_RT || tctrl == TT_BUTN_RL) {
+							radioPressed(tview);
+						}
+						else if (tctrl == TT_BUTN_MTL) {
+							momentaryWithToggledLightPressed(tview);
+						}
+					}
+				}
+			}
 		}// userInputs refresh
 		
 		
@@ -1699,7 +1718,6 @@ struct PatchMasterWidget : ModuleWidget {
 	PanelBorder* panelBorder;
 	SvgWidget* logoSvg;
 	SvgWidget* omriLogoSvg;
-	Trigger radioTriggers[NUM_CTRL];// indexed by tile number 
 		
 	TileInfos tileInfosLast;// this should always match what is in the pointers below, and when it does not match tileInfosMw->info, tiles need to be repopulated and then infoMw set to match tileInfosMw->info
 	TileOrders tileOrdersLast;
@@ -2141,7 +2159,7 @@ struct PatchMasterWidget : ModuleWidget {
 								module->params[PatchMaster::TILE_PARAMS + t].setValue((module->params[PatchMaster::TILE_PARAMS + t].getValue() >= 0.5f && !newIsMoment) ? 1.0f : 0.0f);
 								(static_cast<PmCtrlLightWidget*>(tileControllerLights[t]))->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
 							}
-							radioTriggers[t].reset();
+							module->radioTriggers[t].reset();
 						}
 						else if (isCtlrAKnob(ti)) {
 							if (tsize == TS_LARGE) {
@@ -2365,7 +2383,7 @@ struct PatchMasterWidget : ModuleWidget {
 				}
 			}
 			
-			// radioTriggers, mapping and led button lights
+			// mapping and led button lights
 			for (int tview = 0; tview < NUM_CTRL + NUM_SEP; tview++) {
 				int t = module->tileOrders.orders[tview];
 				if (t < 0) {
@@ -2375,15 +2393,6 @@ struct PatchMasterWidget : ModuleWidget {
 					uint8_t ti = module->tileInfos.infos[t];
 					uint8_t tctrl = ti & TI_TYPE_MASK;
 					
-					// radio triggers
-					if (radioTriggers[t].process(module->params[t].getValue())) {
-						if (tctrl == TT_BUTN_RT || tctrl == TT_BUTN_RL) {
-							module->radioPressed(tview);
-						}
-						else if (tctrl == TT_BUTN_MTL) {
-							module->momentaryWithToggledLightPressed(tview);
-						}
-					}
 					if (isTileVisible(ti)) {
 						// mapping lights
 						for (int m = 0; m < 4; m++) {
