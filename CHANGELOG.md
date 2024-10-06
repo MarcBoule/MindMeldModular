@@ -1,6 +1,7 @@
-### 2.4.0 (in development)
+### 2.5.0 (in development)
 
 - Fix code warnings using Cppcheck
+- Fix DAW bug in PatchMaster (issue #114)
 
 
 ### 2.2.3 (2023-04-11)
