@@ -2158,8 +2158,8 @@ struct PatchMasterWidget : ModuleWidget {
 								module->paramQuantities[PatchMaster::TILE_PARAMS + t]->defaultValue = 0.0f;
 								module->params[PatchMaster::TILE_PARAMS + t].setValue((module->params[PatchMaster::TILE_PARAMS + t].getValue() >= 0.5f && !newIsMoment) ? 1.0f : 0.0f);
 								(static_cast<PmCtrlLightWidget*>(tileControllerLights[t]))->highlightColor = &(module->tileSettings.settings[t].cc4[0]);
+								module->radioTriggers[t].reset();
 							}
-							module->radioTriggers[t].reset();
 						}
 						else if (isCtlrAKnob(ti)) {
 							if (tsize == TS_LARGE) {
