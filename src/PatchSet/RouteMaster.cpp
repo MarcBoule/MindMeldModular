@@ -135,7 +135,7 @@ struct RouteMaster : Module {
 		}
 		miscSettings.cc4[0] = 0x0;// name color
 		miscSettings.cc4[1] = 0x1;// get labels from param mapping
-		miscSettings.cc4[2] = 0x0;// unused
+		miscSettings.cc4[2] = 0x0;// mux out poly mode: 0x0 = max of num chans of active inputs, 0x1 = num chans of selected input
 		miscSettings.cc4[3] = 0x0;// unused
 		
 		resetNonJson();
@@ -232,8 +232,16 @@ struct RouteMaster : Module {
 			// 5 to 1 mux
 			for (int w = 0; w < WIDTH; w++) {
 				int maxInChans = -1;
-				for (int i = 0; i < INS; i++) {
-					maxInChans = std::max(maxInChans, inputs[IN_INPUTS + i + (INS * w)].getChannels());
+				// mux out poly mode:
+				if (miscSettings.cc4[2] == 0) {
+					// mux out poly mode is max of num chans of active inputs
+					for (int i = 0; i < INS; i++) {
+						maxInChans = std::max(maxInChans, inputs[IN_INPUTS + i + (INS * w)].getChannels());
+					}
+				}
+				else {
+					// mux out poly mode is num chans of selected input
+					maxInChans = inputs[IN_INPUTS + sel + (INS * w)].getChannels();				
 				}
 				if (outputs[OUT_OUTPUTS + w].getChannels() != maxInChans) {
 					outputs[OUT_OUTPUTS + w].setChannels(maxInChans);
@@ -337,6 +345,25 @@ struct RouteMasterWidget : ModuleWidget {
 		}
 	};
 	
+	// poly stereo menu item
+	struct MuxPolyOutputItem : MenuItem {
+		int8_t *polyModeSrc = nullptr;
+
+		Menu *createChildMenu() override {
+			Menu *menu = new Menu;
+			menu->addChild(createCheckMenuItem("Max of active inputs", "",
+				[=]() {return *polyModeSrc == 0;},
+				[=]() {*polyModeSrc = 0;}
+			));
+			menu->addChild(createCheckMenuItem("Selected input", "",
+				[=]() {return *polyModeSrc == 1;},
+				[=]() {*polyModeSrc = 1;}
+			));
+			return menu;
+		}
+	};
+	
+	
 	
 	void appendContextMenu(Menu *menu) override {
 		RouteMaster<INS, OUTS, WIDTH> *module = static_cast<RouteMaster<INS, OUTS, WIDTH>*>(this->module);
@@ -375,6 +402,16 @@ struct RouteMasterWidget : ModuleWidget {
 			NameOrLabelValueField* labelsValueField = new NameOrLabelValueField(module, i);
 			labelsValueField->box.size.x = 100;
 			menu->addChild(labelsValueField);	
+		}
+		
+		// mux out poly mode
+		if (OUTS == 1) {
+			menu->addChild(new MenuSeparator());
+			menu->addChild(createMenuLabel("Settings:"));
+			
+			MuxPolyOutputItem *polyOutItem = createMenuItem<MuxPolyOutputItem>("Poly output behavior", RIGHT_ARROW);
+			polyOutItem->polyModeSrc = &(module->miscSettings.cc4[2]);
+			menu->addChild(polyOutItem);
 		}
 	}		
 	
