@@ -1,3 +1,8 @@
+### 2.5.1 (in development)
+
+- RouteMaster 5>1 modules: add output poly mode option in module's menu 
+
+
 ### 2.5.0 (2024-10-19)
 
 - Fix code warnings using Cppcheck
