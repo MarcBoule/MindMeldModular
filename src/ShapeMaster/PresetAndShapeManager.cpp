@@ -31,12 +31,10 @@ bool loadPresetOrShape(const std::string& path, Channel* dest, bool isPreset, bo
 		// Exit silently
 		return false;
 	}
-	DEFER({
-		std::fclose(file);
-	});
 
 	json_error_t error;
 	json_t* presetOrShapeFileJ = json_loadf(file, 0, &error);
+	std::fclose(file);
 	if (!presetOrShapeFileJ) {
 		std::string message = string::f("JSON parsing error at %s %d:%d %s", error.source, error.line, error.column, error.text);
 #ifdef USING_CARDINAL_NOT_RACK
@@ -46,9 +44,7 @@ bool loadPresetOrShape(const std::string& path, Channel* dest, bool isPreset, bo
 #endif
 		return false;
 	}
-	DEFER({
-		json_decref(presetOrShapeFileJ);
-	});
+	// else must json_decref(presetOrShapeFileJ) on all returns
 	
 	json_t *channelPresetOrShapeJ = json_object_get(presetOrShapeFileJ, isPreset ? "ShapeMaster channel preset" : "ShapeMaster shape");
 	if (!channelPresetOrShapeJ) {
@@ -58,6 +54,7 @@ bool loadPresetOrShape(const std::string& path, Channel* dest, bool isPreset, bo
 #else
 		osdialog_message(OSDIALOG_WARNING, OSDIALOG_OK, message.c_str());
 #endif
+		json_decref(presetOrShapeFileJ);
 		return false;
 	}
 
@@ -104,6 +101,7 @@ bool loadPresetOrShape(const std::string& path, Channel* dest, bool isPreset, bo
 	if (h) {
 		APP->history->push(h);
 	}
+	json_decref(presetOrShapeFileJ);
 	return true;
 }
 
@@ -114,9 +112,6 @@ void savePresetOrShape(const std::string& path, Channel* channel, bool isPreset,
 		channel->dataToJsonChannel(WITH_PARAMS, WITH_PRO_UNSYNC_MATCH, WITHOUT_FULL_SETTINGS) : 
 		channel->dataToJsonShape();
 	json_t* presetOrShapeFileJ = json_object();		
-	DEFER({
-		json_decref(presetOrShapeFileJ);
-	});
 	json_object_set_new(presetOrShapeFileJ, isPreset ? "ShapeMaster channel preset" : "ShapeMaster shape", channelPresetOrShapeJ);
 
 	// Write to temporary path and then rename it to the correct path
@@ -129,6 +124,7 @@ void savePresetOrShape(const std::string& path, Channel* channel, bool isPreset,
 
 	json_dumpf(presetOrShapeFileJ, file, JSON_INDENT(2) | JSON_REAL_PRECISION(9));
 	std::fclose(file);
+	json_decref(presetOrShapeFileJ);
 	system::copy(tmpPath, path); system::remove(tmpPath);// system::moveFile(tmpPath, path);
 
 	if (isPreset) {
@@ -332,6 +328,7 @@ struct SaveUserSubItem : MenuItem {
 		pathSelected(channel, channelDirtyCache, isPreset, pathC);
 		osdialog_filters_free(filters);
 #endif
+		free(pathC);
 	}
 
 	static void pathSelected(Channel* channel, Channel* channelDirtyCache, bool isPreset, char* pathC) {
@@ -339,9 +336,6 @@ struct SaveUserSubItem : MenuItem {
 			// Fail silently
 			return;
 		}
-		DEFER({
-			free(pathC);
-		});
 		
 		// Append .smpr or .smsh extension if no extension was given.
 		std::string pathStr = pathC;

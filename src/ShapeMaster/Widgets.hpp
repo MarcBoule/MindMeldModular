@@ -262,7 +262,6 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 						WARN("IOP error json parsing clipboard");
 					}
 					else {
-						DEFER({json_decref(clipboardJ);});
 						// MindMeld-ShapeMaster-Clipboard-Shape
 						json_t* shapeJ = json_object_get(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Shape");
 						if (!shapeJ) {
@@ -272,6 +271,7 @@ struct ShapeCommandsButtons : OpaqueWidget {// must use Opaque since LightWidget
 							channels[*currChan].getShape()->dataFromJsonShape(shapeJ);
 							successPaste = true;
 						}
+						json_decref(clipboardJ);
 					}	
 				}
 				

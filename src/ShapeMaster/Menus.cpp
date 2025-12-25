@@ -511,7 +511,6 @@ struct PasteChanelItem : MenuItem {
 				WARN("IOP error json parsing clipboard");
 			}
 			else {
-				DEFER({json_decref(clipboardJ);});
 				// MindMeld-ShapeMaster-Clipboard-Channel
 				json_t* channelJ = json_object_get(clipboardJ, "MindMeld-ShapeMaster-Clipboard-Channel");
 				if (!channelJ) {
@@ -521,6 +520,7 @@ struct PasteChanelItem : MenuItem {
 					channelDestination->dataFromJsonChannel(channelJ, WITH_PARAMS, ISNOT_DIRTY_CACHE_LOAD, WITH_FULL_SETTINGS, false);
 					successPaste = true;
 				}
+				json_decref(clipboardJ);
 			}	
 		}
 
