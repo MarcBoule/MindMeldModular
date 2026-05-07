@@ -1477,8 +1477,11 @@ struct PmBgBase : SvgWidget {
 					return;
 				}
 				else if (e.key >= GLFW_KEY_1 && e.key <= GLFW_KEY_4) {
-					int mapNumber = e.key - GLFW_KEY_1;
-					module->startMapping(tileNumber, mapNumber, static_cast<SvgWidget*>(tileBackgrounds[tileNumber]));
+					bool isCtrl = tileNumber < NUM_CTRL;
+					if (isCtrl) {
+						int mapNumber = e.key - GLFW_KEY_1;
+						module->startMapping(tileNumber, mapNumber, static_cast<SvgWidget*>(tileBackgrounds[tileNumber]));
+					}
 					e.consume(this);
 					return;
 				}
