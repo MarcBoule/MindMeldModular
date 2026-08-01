@@ -1140,6 +1140,14 @@ struct MmSoloButtonMutex : MmSoloButton {
 						if (i != paramQuantity->paramId - baseSoloParamId) {
 							soloParams[i].setValue(0.0f);
 						}
+						else {
+							if (soloParams[i].getValue() > 0.5f) {
+								soloParams[i].setValue(0.0f);
+							}
+							else {
+								soloParams[i].setValue(1.0f);
+							}
+						}
 					}
 					e.consume(this);
 					return;
@@ -1165,6 +1173,14 @@ struct MmMuteFadeButtonWithClear : MmMuteFadeButton {
 				for (int i = 0; i < (numTracksAndGroups); i++) {
 					if (i != paramQuantity->paramId - baseMuteParamId) {
 						muteParams[i].setValue(0.0f);
+					}
+					else {
+						if (muteParams[i].getValue() > 0.5f) {
+							muteParams[i].setValue(0.0f);
+						}
+						else {
+							muteParams[i].setValue(1.0f);
+						}
 					}
 				}
 				e.consume(this);

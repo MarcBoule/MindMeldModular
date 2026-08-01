@@ -1,6 +1,7 @@
-### 2.5.1 (in development)
+### 2.5.1 (2026-08-01)
 
-- RouteMaster 5>1 modules: add output poly mode option in module's menu 
+- RouteMaster 5>1 modules: add output poly mode option in module's menu
+- MixMaster: fix ctrl/cmd+shift click of mute/solo buttons to conform to manual
 
 
 ### 2.5.0 (2024-10-19)
